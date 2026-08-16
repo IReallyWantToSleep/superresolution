@@ -221,13 +221,8 @@ public class View {
     }
 
     public void dispatchMouseMove(float x, float y) {
-        AbstractWidget<?> hoveredWidget = findTopHoveredWidget();
-        if (hoveredWidget != null && hoveredWidget != activeDialog) {
-            MouseCursor.HAND.use();
-        } else {
-            MouseCursor.ARROW.use();
-        }
         if (activeDialog != null && (activeDialog.isShowing() || activeDialog.isDismissing()) && activeDialog.handleMouseMove(x, y)) {
+            updateMouseCursor();
             return;
         }
         for (FrameEntry entry : frames) {
@@ -238,6 +233,7 @@ public class View {
             entry.frame.dispatchMouseMove(x - frameX, y - frameY);
 
         }
+        updateMouseCursor();
     }
 
     public void dispatchMousePress(float x, float y, int button) {
@@ -385,6 +381,15 @@ public class View {
             }
         }
         return null;
+    }
+
+    private void updateMouseCursor() {
+        AbstractWidget<?> hoveredWidget = findTopHoveredWidget();
+        if (hoveredWidget != null && hoveredWidget != activeDialog) {
+            hoveredWidget.getMouseCursor().use();
+        } else {
+            MouseCursor.ARROW.use();
+        }
     }
 
     private Optional<Tooltip> collectTooltip(Vector2f mousePosition) {

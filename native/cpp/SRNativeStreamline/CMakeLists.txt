@@ -21,7 +21,6 @@ find_package(Vulkan REQUIRED)
 link_directories(
     ${PROJECT_SOURCE_DIR}/libraries/${LIB_PLATFORM}
     ${PROJECT_SOURCE_DIR}/../SRNativeMain/libraries/${LIB_PLATFORM}
-    ${CMAKE_SOURCE_DIR}/third_party/Streamline/lib/x64
 )
 
 include_directories(
@@ -40,6 +39,5 @@ set_target_properties(SR_STREAMLINE_LIB PROPERTIES OUTPUT_NAME "libSuperResoluti
 
 target_link_libraries(SR_STREAMLINE_LIB
     SR_MAIN_LIB
-    sl.interposer
     ${Vulkan_LIBRARIES}
 )

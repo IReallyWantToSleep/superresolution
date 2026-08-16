@@ -7,6 +7,9 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.jvm.tasks.Jar
+// Imported because in a Kotlin build script `java` resolves to the Gradle extension,
+// which shadows the java.* package.
+import java.util.zip.ZipFile
 
 plugins {
     `java-library`
@@ -109,8 +112,8 @@ dependencies {
     compileOnly("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")
     compileOnly("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}")
 
-    compileOnly("com.electronwill.night-config:toml:3.6.0")
-    compileOnly("com.electronwill.night-config:core:3.6.0")
+    compileOnly("com.electronwill.night-config:toml:3.8.3")
+    compileOnly("com.electronwill.night-config:core:3.8.3")
 
     compileOnly("net.neoforged:bus:8.0.5")
 
@@ -260,72 +263,160 @@ artifacts {
 }
 
 val useDebugLib = gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true
-val streamlineBinDir = rootProject.file(
-    providers.gradleProperty("streamline_bin_dir").orElse("K:/sl/bin/x64").get()
-)
-val streamlineResourceLibDir = layout.projectDirectory.dir("src/main/resources/lib")
-val requiredStreamlineLibraries = listOf(
-    "NvLowLatencyVk.dll",
-    "sl.common.dll",
-    "sl.dlss_g.dll",
-    "sl.interposer.dll",
-    "sl.pcl.dll",
-    "sl.reflex.dll"
-)
 
-fun registerStreamlineSyncTask(
-    taskName: String,
-    sourceDir: File,
-    targetDirName: String
-) = tasks.register<Sync>(taskName) {
-    group = "build"
-    description = "Copy required Streamline libraries into $targetDirName"
-
-    from(sourceDir) {
-        include(requiredStreamlineLibraries)
-    }
-    into(streamlineResourceLibDir.dir(targetDirName))
-
-    doFirst {
-        val missingLibraries = requiredStreamlineLibraries.filterNot { sourceDir.resolve(it).isFile }
-        if (missingLibraries.isNotEmpty()) {
-            throw GradleException(
-                "Streamline library source is incomplete: ${sourceDir.absolutePath}; missing: " +
-                        missingLibraries.joinToString()
-            )
-        }
-    }
-}
-
-val syncStreamlineReleaseLibs = registerStreamlineSyncTask(
-    "syncStreamlineReleaseLibs",
-    streamlineBinDir,
-    "sl.rel"
-)
-val syncStreamlineDebugLibs = registerStreamlineSyncTask(
-    "syncStreamlineDebugLibs",
-    streamlineBinDir.resolve("development"),
-    "sl.dev"
+// Cross-platform NVNGX DLSS-G snippet: the Linux binary ships inside the vendored
+// DLSS SDK and is renamed to the unversioned form the NGX loader searches for.
+val dlssgLinuxSnippet = rootProject.file(
+    "native/cpp/SRNativeNGX/third_party/DLSS/lib/Linux_x86_64/" +
+            (if (useDebugLib) "dev" else "rel") +
+            "/libnvidia-ngx-dlssg.so.310.7.0"
 )
 
 tasks.named<ProcessResources>("processResources") {
-    dependsOn(syncStreamlineReleaseLibs, syncStreamlineDebugLibs)
-
     if (useDebugLib) {
         exclude("**/libSuperResolution*+*+release.*")
     } else {
         exclude("**/libSuperResolution*+*+debug.*")
     }
 
-    exclude(
-        "lib/sl.dev/**",
-        "lib/sl.rel/**",
-        "lib/sl.*.dll",
-        "lib/NvLowLatencyVk.dll"
-    )
+    if (dlssgLinuxSnippet.isFile) {
+        from(dlssgLinuxSnippet) {
+            rename { "libnvidia-ngx-dlssg.so" }
+            into("lib")
+        }
+    } else {
+        logger.warn("DLSS-G Linux snippet not found at ${dlssgLinuxSnippet}; the jar will not bundle it")
+    }
+}
 
-    from(streamlineResourceLibDir.dir(if (useDebugLib) "sl.dev" else "sl.rel")) {
-        include(requiredStreamlineLibraries)
-        into("lib")
+/*
+ * API publishing.
+ *
+ * Only classes are published, without the bundled natives: the mod jar is ~44MB, of which
+ * ~42MB is native libraries that a dependent mod never needs to compile against. The API
+ * jar is a couple of MB, which matters because the publish matrix is one artifact per
+ * Minecraft version per loader.
+ *
+ * This module is never remapped, so publishing from here also side-steps having to choose
+ * between `jar` and Loom's `remapJar` depending on whether the target Minecraft version is
+ * obfuscated.
+ *
+ * Development builds publish as -SNAPSHOT so they stay redeployable; the mod's own version
+ * (which carries +dev.<commit> and the graphics backend, and is what the Modrinth and
+ * CurseForge tasks consume) is deliberately left alone.
+ */
+apply(plugin = "maven-publish")
+
+val srIsDevBuild = (gradle.extensions.extraProperties.properties["isDev"] as? Boolean) == true
+val minecraftVersionConfig = providers.gradleProperty("minecraft_version_config").orNull
+    ?: throw GradleException("缺少属性 minecraft_version_config")
+val publishingApiToShnexus = gradle.startParameter.taskNames.any { taskName ->
+    taskName.substringAfterLast(':') == "publishApiPublicationToShnexusRepository"
+}
+
+if (publishingApiToShnexus && minecraftVersionConfig != "1.20.1") {
+    throw GradleException(
+        "远程 Super Resolution API 发布必须使用 minecraft_version_config=1.20.1；"
+            + "请执行 :publishApiToShnexus。"
+    )
+}
+
+// Resolved out here on purpose: inside the task configuration block `extensions` would
+// resolve to the task's own container, since Task is ExtensionAware too.
+val apiMainOutput = extensions.getByType<SourceSetContainer>().named("main").get().output
+
+// Java 17, i.e. the 1.20.1 configuration. The published API is a single artifact shared
+// by every Minecraft version that consumes it, so it has to be readable by the oldest
+// toolchain among them.
+val apiMaxClassFileMajor = 61
+val apiSourceVersionConfig = "1.20.1"
+
+val apiJar = tasks.register<Jar>("apiJar") {
+    group = "publishing"
+    description = "Classes-only jar for mods compiling against the Super Resolution API"
+    archiveClassifier.set("api")
+    from(apiMainOutput)
+    exclude("lib/**")
+
+    // The API is version-independent - its public signatures are identical across every
+    // supported Minecraft version - but its class files are not: each version compiles at
+    // its own java_version (17, 21, 25). A newer class file cannot be read at all by an
+    // older toolchain, so building this from the wrong config would silently produce an
+    // artifact that breaks consumers targeting older Minecraft. Enforce it here rather
+    // than relying on remembering.
+    doLast {
+        val offenders = mutableListOf<String>()
+        ZipFile(archiveFile.get().asFile).use { zip ->
+            zip.entries().asSequence()
+                .filter { it.name.endsWith(".class") }
+                .forEach { entry ->
+                    zip.getInputStream(entry).use { input ->
+                        val header = input.readNBytes(8)
+                        if (header.size == 8) {
+                            val major = ((header[6].toInt() and 0xFF) shl 8) or (header[7].toInt() and 0xFF)
+                            if (major > apiMaxClassFileMajor) {
+                                offenders += "${entry.name} (class file major $major)"
+                            }
+                        }
+                    }
+                }
+        }
+        if (offenders.isNotEmpty()) {
+            throw GradleException(
+                "The API jar contains class files newer than Java 17 (major $apiMaxClassFileMajor), "
+                    + "so mods built for older Minecraft versions could not read it. "
+                    + "Build it from the oldest configuration that consumers target: "
+                    + "-Pminecraft_version_config=$apiSourceVersionConfig\n"
+                    + offenders.take(5).joinToString("\n") { "  $it" }
+                    + if (offenders.size > 5) "\n  ... and ${offenders.size - 5} more" else ""
+            )
+        }
+    }
+}
+
+extensions.configure<PublishingExtension> {
+    publications {
+        register<MavenPublication>("api") {
+            // One artifact for every Minecraft version: the API's public signatures are
+            // identical across all of them and reference no Minecraft types, so there is
+            // nothing to qualify the coordinate with. The group has to stay lowercase or
+            // case-sensitive repository lookups miss it; it is taken from the root project
+            // now that that is lowercase there too.
+            groupId = rootProject.group.toString()
+            artifactId = "superresolution-api"
+            version = "${rootProject.property("mod_version")}" + if (srIsDevBuild) "-SNAPSHOT" else ""
+            artifact(apiJar) { classifier = null }
+            pom {
+                name.set("Super Resolution API")
+                description.set("Compile-time API for mods extending Super Resolution")
+                url.set("https://github.com/187J3X1-114514/superresolution")
+                licenses {
+                    license {
+                        name.set("GNU General Public License v3.0 or later")
+                        url.set("https://www.gnu.org/licenses/gpl-3.0.txt")
+                    }
+                }
+            }
+        }
+    }
+
+    repositories {
+        val nexusUser = providers.gradleProperty("shnexusUsername").orNull
+        val nexusPassword = providers.gradleProperty("shnexusPassword").orNull
+        if (nexusUser != null && nexusPassword != null) {
+            maven {
+                name = "shnexus"
+                // Nexus keeps releases immutable, so development builds have to go to the
+                // snapshot repository to stay redeployable.
+                url = uri(
+                    if (srIsDevBuild) "https://nexus.nyat.icu/repository/maven-snapshots/"
+                    else "https://nexus.nyat.icu/repository/maven-releases/"
+                )
+                credentials {
+                    username = nexusUser
+                    password = nexusPassword
+                }
+            }
+        }
     }
 }

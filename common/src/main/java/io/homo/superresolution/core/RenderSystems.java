@@ -147,7 +147,12 @@ public class RenderSystems {
                 .addDeviceExtension("VK_NVX_image_view_handle")
                 .addDeviceExtension(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME)
                 .addDeviceExtension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME)
-                .addDeviceExtension(VK_EXT_PRIVATE_DATA_EXTENSION_NAME);
+                .addDeviceExtension(VK_EXT_PRIVATE_DATA_EXTENSION_NAME)
+                .addDeviceExtension("VK_NV_optical_flow")//DLSS-FG
+                .addDeviceExtension("VK_KHR_synchronization2")//DLSS-FG
+                .addDeviceExtension("VK_KHR_format_feature_flags2")//DLSS-FG
+                .addDeviceExtension("VK_KHR_timeline_semaphore")//DLSS-FG
+                .addDeviceExtension("VK_EXT_calibrated_timestamps");//DLSS-FG
         if (Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS) {
             vulkan.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
                     .addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);

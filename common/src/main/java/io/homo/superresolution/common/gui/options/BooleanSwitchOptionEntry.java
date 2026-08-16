@@ -48,8 +48,8 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
             this.value = (Boolean) event.getNewValue();
             if (saveConsumer != null) {
                 if (!saveConsumer.apply(this.value)) {
-                    aSwitch.toggleChecked();
                     this.value = (Boolean) event.getOldValue();
+                    aSwitch.setChecked(this.value);
                 }
             }
             if (saveRunnable != null) {
@@ -58,6 +58,11 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
         });
         aSwitch.setTooltipSupplier(this::resolveTooltip);
         container.addControl(aSwitch);
+    }
+
+    public void setCurrentValue(boolean value) {
+        this.value = value;
+        aSwitch.setChecked(value);
     }
 
     @Override

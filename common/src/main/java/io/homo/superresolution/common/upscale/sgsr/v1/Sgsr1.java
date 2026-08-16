@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.common.upscale.sgsr.v1;
 
+import io.homo.superresolution.api.InputResourceType;
+
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
@@ -122,7 +124,7 @@ public class Sgsr1 extends AbstractAlgorithm {
 
         );
         buffer.fillBuffer();
-        sgsrPipeline.descriptorSet().samplerTexture("ps0", dispatchResource.resources().colorTexture());
+        sgsrPipeline.descriptorSet().samplerTexture("ps0", dispatchResource.resources().get(InputResourceType.Color));
         sgsrPipeline.descriptorSet().uniformBuffer("sgsr1_data", ubo);
         sgsrPipeline.descriptorSet().update();
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();

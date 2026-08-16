@@ -22,7 +22,9 @@ package io.homo.superresolution.common.mixin.presentation.v26_1_x;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
+import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -36,10 +38,12 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             at = @At(
                     value = "INVOKE",
                     target = "Lnet/minecraft/client/renderer/GameRenderer;render(Lnet/minecraft/client/DeltaTracker;Z)V",
-                    shift = At.Shift.AFTER
+                    shift =  At.Shift.AFTER
             )
     )
-    private void super_resolution$presentCapturedFrame(boolean advanceGameTime, CallbackInfo ci) {
+    private void super_resolution$renderAndPresent(
+            boolean advanceGameTime, CallbackInfo ci
+    ) {
         if (VulkanPresentationFeature.isRequested()) {
             VulkanPresentationWindow.endMinecraftFrame();
         }

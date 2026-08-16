@@ -1,5 +1,5 @@
 /*
- * Anemone Mod
+ * Super Resolution
  * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
@@ -34,8 +34,8 @@ public abstract class MouseHandlerReflexMixin {
 		at = @At("HEAD"),
 		require = 1
 	)
-	private void handleTriggerFlash(long windowPointer, int button, int action, int modifiers, CallbackInfo ci) {
-		if (!LowLatency.isAvailable()) {
+	private void super_resolution$handleTriggerFlash(long windowPointer, int button, int action, int modifiers, CallbackInfo ci) {
+		if (!LowLatency.isPclAvailable()) {
 			return;
 		}
 

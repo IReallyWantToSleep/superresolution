@@ -17,11 +17,14 @@
  */
 
 import groovy.json.JsonSlurper
+import net.neoforged.nfrtgradle.CreateMinecraftArtifacts
 import utils.CurseForgeUploader
 import utils.ModrinthUploader
 import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
+
+private val consoleReader = BufferedReader(InputStreamReader(System.`in`))
 
 plugins {
     id("net.neoforged.moddev") version "2.0.141" apply false
@@ -48,8 +51,6 @@ allprojects {
     repositories {
         mavenCentral()
         maven(url = "https://maven.neoforged.net/releases")
-        maven(url = "https://maven.aliyun.com/repository/central")
-        maven(url = "https://maven.aliyun.com/repository/gradle-plugin")
         maven(url = "https://maven.architectury.dev/")
         maven(url = "https://maven.nucleoid.xyz/")
         maven(url = "https://maven.shedaniel.me/")
@@ -61,6 +62,24 @@ allprojects {
     }
 
     if (project.name != "native") {
+        // On Linux, NeoForm's decompile step spawns Vineflower with only -Xmx4G, which
+        // OOMs on modern Minecraft. Route the tool JVM through a wrapper that raises the
+        // heap. MDG sets `toolsJavaExecutable` from its tools toolchain in the task's
+        // registration action, so we override it with a `named(...).configure` action,
+        // which runs after the registration action and thus wins the last-write.
+        if (System.getProperty("os.name").contains("linux", ignoreCase = true)) {
+            val toolWrapper = rootProject.file("script/java_tool_wrapper.sh")
+            plugins.withId("net.neoforged.moddev") {
+                afterEvaluate {
+                    // Configure after registration (create$8 already ran during MDG's
+                    // afterEvaluate) so this set wins the last-write over MDG's toolchain.
+                    tasks.withType(CreateMinecraftArtifacts::class.java).forEach {
+                        it.toolsJavaExecutable.set(toolWrapper.absolutePath)
+                    }
+                }
+            }
+        }
+
         //apply(plugin = "systems.manifold.manifold-gradle-plugin")
         //extensions.findByName("manifold")?.withGroovyBuilder {
         //    setProperty("manifoldVersion", rootProject.property("manifold_version"))
@@ -74,7 +93,9 @@ allprojects {
             options.compilerArgs.add("-Xplugin:Manifold")
             options.encoding = "UTF-8"
             options.isFork = true
-            options.forkOptions.memoryMaximumSize = "4g"
+            // One forked javac per concurrent compile task, so this multiplies by
+            // org.gradle.workers.max. Keep the product well under physical RAM.
+            options.forkOptions.memoryMaximumSize = "2g"
         }
 
         dependencies {
@@ -210,6 +231,30 @@ tasks.register<Delete>("cleanBuildJars") {
     delete(srOutputDir)
 }
 
+tasks.register<GradleBuild>("publishApiToShnexus") {
+    group = "publishing"
+    description = "以 Minecraft 1.20.1（Java 17）配置发布 Super Resolution API 到 shnexus"
+    buildName = "superresolution_api_1_20_1"
+    dir = rootDir
+    setTasks(listOf(":common:publishApiPublicationToShnexusRepository"))
+    startParameter.projectProperties["minecraft_version_config"] = "1.20.1"
+    startParameter.projectProperties["is_dev"] = "true"
+    listOf("shnexusUsername", "shnexusPassword").forEach { property ->
+        providers.gradleProperty(property).orNull?.let { value ->
+            startParameter.projectProperties[property] = value
+        }
+    }
+    startParameter.consoleOutput = ConsoleOutput.Plain
+
+    doFirst {
+        val missing = listOf("shnexusUsername", "shnexusPassword")
+            .filterNot { providers.gradleProperty(it).isPresent }
+        if (missing.isNotEmpty()) {
+            throw GradleException("缺少远程发布凭据: ${missing.joinToString()}")
+        }
+    }
+}
+
 tasks.register("buildOneVersion") {
     group = "build"
     description = "构建指定版本并收集产物，使用 -Psr.version=<configName>"
@@ -266,15 +311,26 @@ tasks.named("buildAllVersions") {
 tasks.register("uploadToModrinth") {
     doLast {
         val (currentVersion, latestChangelog) = findLatestChangelog()
+        val autoConfirm = project.findProperty("modrinth.autoConfirm")
+            ?.toString()
+            ?.toBoolean() ?: false
 
         println("\n=== 最新版本更新日志 ($currentVersion) ===\n")
         println(latestChangelog)
         println("\n========================")
 
-        var confirm = getConsoleInput("是否使用此更新日志？(Y/N): ").trim().lowercase()
-        if (!confirm.startsWith("y")) {
-            println("上传已取消")
-            return@doLast
+        if (!autoConfirm) {
+            var confirm = getConsoleInput("是否使用此更新日志？(Y/N): ").trim().lowercase()
+            if (!confirm.startsWith("y")) {
+                println("上传已取消")
+                return@doLast
+            }
+
+            confirm = getConsoleInput("是否继续？(Y/N): ").trim().lowercase()
+            if (!confirm.startsWith("y")) {
+                println("上传已取消")
+                return@doLast
+            }
         }
 
         ModrinthUploader.init()
@@ -286,12 +342,6 @@ tasks.register("uploadToModrinth") {
             }
         }
 
-        confirm = getConsoleInput("是否继续？(Y/N): ").trim().lowercase()
-        if (!confirm.startsWith("y")) {
-            println("上传已取消")
-            return@doLast
-        }
-
         jarsDir.listFiles()?.forEach { file ->
             if (file.name.startsWith("super") && file.name.endsWith(".jar")) {
                 var notSucceed = true
@@ -301,8 +351,8 @@ tasks.register("uploadToModrinth") {
                         notSucceed = false
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        confirm = getConsoleInput("上传失败，是否重试？(Y/N): ").trim().lowercase()
-                        if (!confirm.startsWith("y")) {
+                        val retry = getConsoleInput("上传失败，是否重试？(Y/N): ").trim().lowercase()
+                        if (!retry.startsWith("y")) {
                             notSucceed = false
                         }
                     }
@@ -454,9 +504,8 @@ fun findLatestChangelog(): Pair<String?, String> {
 fun getConsoleInput(prompt: String): String {
     try {
         print(prompt)
-        val br = BufferedReader(InputStreamReader(System.`in`))
         println()
-        return br.readLine()
+        return consoleReader.readLine() ?: ""
     } catch (e: IOException) {
         throw GradleException("无法读取用户输入", e)
     }

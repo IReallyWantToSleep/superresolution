@@ -97,6 +97,7 @@ struct NVGstate
     int fontAxisCount;
     char fontAxisTag[NVG_MAX_FONT_AXES][NVG_FONT_AXIS_NAME_SIZE + 1];
     float fontAxisValue[NVG_MAX_FONT_AXES];
+    unsigned long long textMeasureStateVersion;
 };
 
 typedef struct NVGstate NVGstate;
@@ -137,6 +138,7 @@ struct NVGcontext
     float commandx, commandy;
     NVGstate states[NVG_MAX_STATES];
     int nstates;
+    unsigned long long nextTextMeasureStateVersion;
     NVGpathCache *cache;
     float tessTol;
     float distTol;
@@ -320,6 +322,13 @@ extern "C"
     static NVGstate *nvg__getState(NVGcontext *ctx)
     {
         return &ctx->states[ctx->nstates - 1];
+    }
+
+    static void nvg__markTextMeasureStateChanged(NVGcontext *ctx)
+    {
+        if (ctx == NULL || ctx->nstates <= 0)
+            return;
+        nvg__getState(ctx)->textMeasureStateVersion = ++ctx->nextTextMeasureStateVersion;
     }
 
     static void nvg__applyFontVariationAxes(NVGcontext *ctx, NVGstate *state)
@@ -761,6 +770,7 @@ extern "C"
             state->fontAxisTag[i][0] = '\0';
             state->fontAxisValue[i] = 0.0f;
         }
+        state->textMeasureStateVersion = ++ctx->nextTextMeasureStateVersion;
         // Ensure font stash reflects the reset state's axes (no-op if none)
         nvg__applyFontVariationAxes(ctx, state);
     }
@@ -2679,6 +2689,7 @@ extern "C"
         if (state->fontId != font)
         {
             fonsSetVariationAxis(ctx->fs, font, axisTag, value);
+            nvg__markTextMeasureStateChanged(ctx);
             return;
         }
 
@@ -2693,6 +2704,7 @@ extern "C"
 
                 state->fontAxisValue[i] = value;
                 nvg__applyFontVariationAxes(ctx, state);
+                nvg__markTextMeasureStateChanged(ctx);
                 return;
             }
         }
@@ -2716,6 +2728,7 @@ extern "C"
 
         // Apply stored axes for the state's font after change
         nvg__applyFontVariationAxes(ctx, state);
+        nvg__markTextMeasureStateChanged(ctx);
     }
 
     int nvgFontGetVariationAxisCount(NVGcontext *ctx, int font)
@@ -2732,43 +2745,72 @@ extern "C"
     void nvgFontSize(NVGcontext *ctx, float size)
     {
         NVGstate *state = nvg__getState(ctx);
+        if (state->fontSize == size)
+            return;
         state->fontSize = size;
+        nvg__markTextMeasureStateChanged(ctx);
     }
 
     void nvgFontBlur(NVGcontext *ctx, float blur)
     {
         NVGstate *state = nvg__getState(ctx);
+        if (state->fontBlur == blur)
+            return;
         state->fontBlur = blur;
+        nvg__markTextMeasureStateChanged(ctx);
     }
 
     void nvgTextLetterSpacing(NVGcontext *ctx, float spacing)
     {
         NVGstate *state = nvg__getState(ctx);
+        if (state->letterSpacing == spacing)
+            return;
         state->letterSpacing = spacing;
+        nvg__markTextMeasureStateChanged(ctx);
     }
 
     void nvgTextLineHeight(NVGcontext *ctx, float lineHeight)
     {
         NVGstate *state = nvg__getState(ctx);
+        if (state->lineHeight == lineHeight)
+            return;
         state->lineHeight = lineHeight;
+        nvg__markTextMeasureStateChanged(ctx);
     }
 
     void nvgTextAlign(NVGcontext *ctx, int align)
     {
         NVGstate *state = nvg__getState(ctx);
+        if (state->textAlign == align)
+            return;
         state->textAlign = align;
+        nvg__markTextMeasureStateChanged(ctx);
     }
 
     void nvgFontFaceId(NVGcontext *ctx, int font)
     {
         NVGstate *state = nvg__getState(ctx);
+        if (state->fontId == font)
+            return;
         state->fontId = font;
+        nvg__markTextMeasureStateChanged(ctx);
     }
 
     void nvgFontFace(NVGcontext *ctx, const char *font)
     {
         NVGstate *state = nvg__getState(ctx);
-        state->fontId = fonsGetFontByName(ctx->fs, font);
+        int fontId = fonsGetFontByName(ctx->fs, font);
+        if (state->fontId == fontId)
+            return;
+        state->fontId = fontId;
+        nvg__markTextMeasureStateChanged(ctx);
+    }
+
+    unsigned long long nvgTextMeasureStateVersion(NVGcontext *ctx)
+    {
+        if (ctx == NULL || ctx->nstates <= 0)
+            return 0;
+        return nvg__getState(ctx)->textMeasureStateVersion;
     }
 
     static float nvg__quantize(float a, float d)
@@ -2835,14 +2877,12 @@ extern "C"
         NVGpaint paint = state->fill;
 
         // Render triangles.
-        paint.image = ctx->fontImages[ctx->fontImageIdx];
-
         // Apply global alpha
         paint.innerColor.a *= state->alpha;
         paint.outerColor.a *= state->alpha;
 
         ctx->params.renderTriangles(ctx->params.userPtr, &paint, state->compositeOperation, &state->scissor, verts,
-                                    nverts, ctx->fringeWidth);
+                                    nverts, ctx->fringeWidth, ctx->fontImages[ctx->fontImageIdx]);
 
         ctx->drawCallCount++;
         ctx->textTriCount += nverts / 3;
@@ -2860,7 +2900,7 @@ extern "C"
         FONStextIter iter, prevIter;
         FONSquad q;
         NVGvertex *verts;
-        float fontScale = ctx->devicePxRatio; // 光留下DPI缩放，原版的逻辑导致transform scale频繁变化时字体抖动
+        float fontScale = ctx->devicePxRatio; // 保持字形图集尺寸稳定，避免缩放动画期间重采样抖动
         float invscale = 1.0f / fontScale;
         int cverts = 0;
         int nverts = 0;
@@ -2950,7 +2990,7 @@ extern "C"
                             int maxRows)
     {
         NVGstate *state = nvg__getState(ctx);
-        float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
+        float scale = ctx->devicePxRatio;
         float invscale = 1.0f / scale;
         FONStextIter iter, prevIter;
         FONSquad q;
@@ -3262,7 +3302,7 @@ extern "C"
     float nvgTextBounds(NVGcontext *ctx, float x, float y, const char *string, const char *end, float *bounds)
     {
         NVGstate *state = nvg__getState(ctx);
-        float scale = nvg__getFontScale(state) * ctx->devicePxRatio;
+        float scale = ctx->devicePxRatio;
         float invscale = 1.0f / scale;
         float width;
 

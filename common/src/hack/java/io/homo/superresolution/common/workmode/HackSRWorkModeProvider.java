@@ -1,5 +1,6 @@
 package io.homo.superresolution.common.workmode;
 
+import io.homo.superresolution.common.compat.iris.IrisCompatHelper;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImGuiDebugContext;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
@@ -13,7 +14,7 @@ public class HackSRWorkModeProvider implements SRWorkModeProvider {
 
     @Override
     public boolean isActive() {
-        return true;
+        return IrisCompatHelper.isCandidateEligible();
     }
 
     @Override
@@ -23,7 +24,16 @@ public class HackSRWorkModeProvider implements SRWorkModeProvider {
 
     @Override
     public SRWorkModeState getState() {
-        return SRWorkModeState.defaults();
+        SRWorkModeState defaults = SRWorkModeState.defaults();
+        return new SRWorkModeState(
+                defaults.initializationDescription(),
+                defaults.internalTextureFormat(),
+                defaults.motionVectorPreprocessingFunction(),
+                IrisCompatHelper.hasActiveShaderpack(),
+                defaults.shaderPackLoading(),
+                defaults.supportsFrameGeneration(),
+                defaults.disabledAlgorithms()
+        );
     }
 
     @Override

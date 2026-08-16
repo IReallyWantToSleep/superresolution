@@ -129,8 +129,8 @@ val sourceSets = extensions.getByType(SourceSetContainer::class.java)
 sourceSets.getByName("main").resources.srcDir("src/generated/resources")
 
 dependencies {
-    compileOnly("org.spongepowered:mixin:0.8.5")
-    annotationProcessor("org.spongepowered:mixin:0.8.5:processor")
+    compileOnly("net.fabricmc:sponge-mixin:0.15.2+mixin.0.8.7")
+    annotationProcessor("net.fabricmc:sponge-mixin:0.15.2+mixin.0.8.7")
     compileOnly("org.jetbrains:annotations:25.0.0")
     implementation("org.anarres:jcpp:1.4.14")
     val imguiAppDep = implementation("io.github.spair:imgui-java-app:$imguiVersion")

@@ -84,8 +84,7 @@ public final class NanoVGRhiBridge {
 
     private static final int VERTEX_STRIDE_BYTES = 16;
     private static final int PATH_STRIDE_BYTES = 16;
-    private static final int CALL_STRIDE_BYTES = 48;
-    private static final int CALL_STRIDE_BYTES_LEGACY = 44;
+    private static final int CALL_STRIDE_BYTES = 52;
     private static final long SHARED_RENDER_PASS_KEY = 0L;
 
     private static final Map<Integer, ITexture> TEXTURES = new ConcurrentHashMap<>();
@@ -369,8 +368,9 @@ public final class NanoVGRhiBridge {
                               int ncalls,
                               ByteBuffer uniforms,
                               int uniformBytes,
-                              int fragSize) {
-        if (ncalls <= 0 || nverts <= 0 || verts == null || calls == null || uniforms == null || fragSize <= 0) {
+                              int fragSize,
+                              int callStride) {
+        if (ncalls <= 0 || nverts <= 0 || verts == null || calls == null || uniforms == null || fragSize <= 0 || callStride != CALL_STRIDE_BYTES) {
             return;
         }
 
@@ -388,6 +388,16 @@ public final class NanoVGRhiBridge {
         ByteBuffer callsData = calls.duplicate().order(ByteOrder.nativeOrder());
         ByteBuffer uniformsData = uniforms.duplicate().order(ByteOrder.nativeOrder());
 
+        int requiredCallBytes;
+        try {
+            requiredCallBytes = Math.multiplyExact(ncalls, callStride);
+        } catch (ArithmeticException ignored) {
+            return;
+        }
+        if (callsData.remaining() < requiredCallBytes) {
+            return;
+        }
+
         int maxVertCount = Math.min(nverts, vertsData.remaining() / VERTEX_STRIDE_BYTES);
         int maxPathCount = pathsData == null ? 0 : Math.min(npaths, pathsData.remaining() / PATH_STRIDE_BYTES);
         int maxUniformBytes = Math.min(uniformBytes, uniformsData.remaining());
@@ -399,11 +409,6 @@ public final class NanoVGRhiBridge {
         fragUniformSourceStride = fragSize;
         fragUniformBindingStride = resolveFragUniformBindingStride(device, fragSize);
         if (fragUniformBindingStride <= 0) {
-            return;
-        }
-
-        int callStride = resolveCallStride(callsData, ncalls);
-        if (callStride == 0) {
             return;
         }
 
@@ -419,10 +424,6 @@ public final class NanoVGRhiBridge {
         List<DrawCommand> drawCommands = new ArrayList<>(ncalls * 2);
         for (int i = 0; i < ncalls; i++) {
             int callBase = i * callStride;
-            if (callBase < 0 || callBase + CALL_STRIDE_BYTES_LEGACY > callsData.limit()) {
-                continue;
-            }
-
             int type = callsData.getInt(callBase);
             int image = callsData.getInt(callBase + 4);
             int pathOffset = callsData.getInt(callBase + 8);
@@ -430,27 +431,12 @@ public final class NanoVGRhiBridge {
             int triangleOffset = callsData.getInt(callBase + 16);
             int triangleCount = callsData.getInt(callBase + 20);
             int uniformOffset = callsData.getInt(callBase + 24);
-            int uniformCount;
-            int blendSrcRgb;
-            int blendDstRgb;
-            int blendSrcAlpha;
-            int blendDstAlpha;
-            if (callStride >= CALL_STRIDE_BYTES) {
-                if (callBase + CALL_STRIDE_BYTES > callsData.limit()) {
-                    continue;
-                }
-                uniformCount = callsData.getInt(callBase + 28);
-                blendSrcRgb = callsData.getInt(callBase + 32);
-                blendDstRgb = callsData.getInt(callBase + 36);
-                blendSrcAlpha = callsData.getInt(callBase + 40);
-                blendDstAlpha = callsData.getInt(callBase + 44);
-            } else {
-                uniformCount = inferLegacyUniformCount(type);
-                blendSrcRgb = callsData.getInt(callBase + 28);
-                blendDstRgb = callsData.getInt(callBase + 32);
-                blendSrcAlpha = callsData.getInt(callBase + 36);
-                blendDstAlpha = callsData.getInt(callBase + 40);
-            }
+            int uniformCount = callsData.getInt(callBase + 28);
+            int blendSrcRgb = callsData.getInt(callBase + 32);
+            int blendDstRgb = callsData.getInt(callBase + 36);
+            int blendSrcAlpha = callsData.getInt(callBase + 40);
+            int blendDstAlpha = callsData.getInt(callBase + 44);
+            int fontImage = callsData.getInt(callBase + 48);
 
             if (!isCallRangeValid(pathOffset, pathCount, maxPathCount)) {
                 continue;
@@ -517,6 +503,7 @@ public final class NanoVGRhiBridge {
                         uniformsData,
                         fragSize,
                         image,
+                        fontImage,
                         triangleOffset,
                         triangleCount,
                         maxVertCount,
@@ -629,6 +616,7 @@ public final class NanoVGRhiBridge {
                             .uniformBuffer("frame", 0, 16)
                             .uniformBuffer("frag", 1, 256)
                             .uniformSamplerTexture("tex", 2)
+                            .uniformSamplerTexture("fontTex", 3)
                             .build()
             );
             shader.compile();
@@ -764,7 +752,7 @@ public final class NanoVGRhiBridge {
             int fillCount = paths.getInt(pathBase + 4);
             if (fillCount >= 3 && isVertexRangeValid(fillOffset, fillCount, maxVertCount)) {
                 emitDrawCommand(drawCommands, PrimitiveType.TriangleFan, fillOffset, fillCount, uniforms, uniformOffset,
-                        fragSize, 0, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
+                        fragSize, 0, 0, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_FILL_WRITE, 0);
             }
         }
@@ -782,7 +770,7 @@ public final class NanoVGRhiBridge {
                 int strokeCount = paths.getInt(pathBase + 12);
                 if (strokeCount > 0 && isVertexRangeValid(strokeOffset, strokeCount, maxVertCount)) {
                     emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, strokeOffset, strokeCount, uniforms, paintUniformOffset,
-                            fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
+                            fragSize, image, 0, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                             STENCIL_MODE_FILL_AA, ColorComponentFlags.ALL);
                 }
             }
@@ -790,7 +778,7 @@ public final class NanoVGRhiBridge {
             // Pass 3: draw bounding quad where stencil is not zero and clear stencil back to zero.
             if (triangleCount > 0 && isVertexRangeValid(triangleOffset, triangleCount, maxVertCount)) {
                 emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, triangleOffset, triangleCount, uniforms, paintUniformOffset,
-                        fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
+                        fragSize, image, 0, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_FILL_CLEAR, ColorComponentFlags.ALL);
             }
         }
@@ -826,12 +814,12 @@ public final class NanoVGRhiBridge {
 
             if (fillCount >= 3 && isVertexRangeValid(fillOffset, fillCount, maxVertCount)) {
                 emitDrawCommand(drawCommands, PrimitiveType.TriangleFan, fillOffset, fillCount, uniforms, uniformOffset,
-                        fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
+                        fragSize, image, 0, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_DISABLED, ColorComponentFlags.ALL);
             }
             if (strokeCount > 0 && isVertexRangeValid(strokeOffset, strokeCount, maxVertCount)) {
                 emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, strokeOffset, strokeCount, uniforms, uniformOffset,
-                        fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
+                        fragSize, image, 0, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_DISABLED, ColorComponentFlags.ALL);
             }
         }
@@ -871,7 +859,7 @@ public final class NanoVGRhiBridge {
                     continue;
                 }
                 emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, strokeOffset, strokeCount, uniforms, baseUniformOffset,
-                        fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
+                        fragSize, image, 0, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_STROKE_BASE, ColorComponentFlags.ALL);
             }
 
@@ -887,7 +875,7 @@ public final class NanoVGRhiBridge {
                     continue;
                 }
                 emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, strokeOffset, strokeCount, uniforms, uniformOffset,
-                        fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
+                        fragSize, image, 0, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_STROKE_AA, ColorComponentFlags.ALL);
             }
 
@@ -903,7 +891,7 @@ public final class NanoVGRhiBridge {
                     continue;
                 }
                 emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, strokeOffset, strokeCount, uniforms, uniformOffset,
-                        fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
+                        fragSize, image, 0, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                         STENCIL_MODE_STROKE_CLEAR, 0);
             }
             return;
@@ -921,7 +909,7 @@ public final class NanoVGRhiBridge {
                 continue;
             }
             emitDrawCommand(drawCommands, PrimitiveType.TriangleStrip, strokeOffset, strokeCount, uniforms, uniformOffset,
-                    fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
+                    fragSize, image, 0, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                     STENCIL_MODE_DISABLED, ColorComponentFlags.ALL);
         }
     }
@@ -930,6 +918,7 @@ public final class NanoVGRhiBridge {
                                            ByteBuffer uniforms,
                                            int fragSize,
                                            int image,
+                                           int fontImage,
                                            int triangleOffset,
                                            int triangleCount,
                                            int maxVertCount,
@@ -942,7 +931,7 @@ public final class NanoVGRhiBridge {
             return;
         }
         emitDrawCommand(drawCommands, PrimitiveType.Triangle, triangleOffset, triangleCount, uniforms, uniformOffset,
-                fragSize, image, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
+                fragSize, image, fontImage, blendSrcRgb, blendDstRgb, blendSrcAlpha, blendDstAlpha,
                 STENCIL_MODE_DISABLED, ColorComponentFlags.ALL);
     }
 
@@ -954,6 +943,7 @@ public final class NanoVGRhiBridge {
                                         int uniformOffset,
                                         int fragSize,
                                         int image,
+                                        int fontImage,
                                         int blendSrcRgb,
                                         int blendDstRgb,
                                         int blendSrcAlpha,
@@ -979,6 +969,7 @@ public final class NanoVGRhiBridge {
                 translatedUniformOffset,
                 fragSize,
                 image,
+                fontImage,
                 blendSrcRgb,
                 blendDstRgb,
                 blendSrcAlpha,
@@ -1013,11 +1004,13 @@ public final class NanoVGRhiBridge {
         );
 
         ITexture texture = TEXTURES.getOrDefault(drawCommand.image, dummyTexture);
+        ITexture fontTexture = TEXTURES.getOrDefault(drawCommand.fontImage, dummyTexture);
 
         pipeline.descriptorSet()
                 .uniformBuffer("frame", 0, frameUniformBuffer)
                 .uniformBufferRange("frag", 1, fragUniformBuffer, boundUniformOffset, drawCommand.uniformRange)
                 .samplerTexture("tex", 2, texture)
+                .samplerTexture("fontTex", 3, fontTexture)
                 .update();
 
         batchState.beginIfNeeded(commandBuffer);
@@ -1439,31 +1432,6 @@ public final class NanoVGRhiBridge {
         return translated > Integer.MAX_VALUE ? -1 : (int) translated;
     }
 
-    private static int resolveCallStride(ByteBuffer callsData, int ncalls) {
-        if (ncalls <= 0) {
-            return 0;
-        }
-        int bytes = callsData.remaining();
-        if (bytes < ncalls * CALL_STRIDE_BYTES_LEGACY) {
-            return 0;
-        }
-        int inferred = bytes / ncalls;
-        if (inferred >= CALL_STRIDE_BYTES) {
-            return CALL_STRIDE_BYTES;
-        }
-        return CALL_STRIDE_BYTES_LEGACY;
-    }
-
-    private static int inferLegacyUniformCount(int type) {
-        return switch (type) {
-            case GLNVG_FILL -> 2;
-            case GLNVG_CONVEXFILL -> 1;
-            case GLNVG_TRIANGLES -> 1;
-            case GLNVG_STROKE -> 1;
-            default -> 1;
-        };
-    }
-
     private static boolean isCallRangeValid(int offset, int count, int totalCount) {
         if (offset < 0 || count < 0) {
             return false;
@@ -1652,6 +1620,7 @@ public final class NanoVGRhiBridge {
         private final int uniformOffset;
         private final int uniformRange;
         private final int image;
+        private final int fontImage;
         private final int blendSrcRgb;
         private final int blendDstRgb;
         private final int blendSrcAlpha;
@@ -1665,6 +1634,7 @@ public final class NanoVGRhiBridge {
                             int uniformOffset,
                             int uniformRange,
                             int image,
+                            int fontImage,
                             int blendSrcRgb,
                             int blendDstRgb,
                             int blendSrcAlpha,
@@ -1677,6 +1647,7 @@ public final class NanoVGRhiBridge {
             this.uniformOffset = uniformOffset;
             this.uniformRange = uniformRange;
             this.image = image;
+            this.fontImage = fontImage;
             this.blendSrcRgb = blendSrcRgb;
             this.blendDstRgb = blendDstRgb;
             this.blendSrcAlpha = blendSrcAlpha;

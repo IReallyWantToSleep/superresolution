@@ -205,6 +205,8 @@ public:
 
     void FontFace(const std::string &font);
 
+    unsigned long long TextMeasureStateVersion();
+
     float Text(float x, float y, const std::string &string, const std::string *end = nullptr);
 
     void TextBox(float x, float y, float breakRowWidth, const std::string &string, const std::string *end = nullptr);

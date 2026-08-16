@@ -34,23 +34,34 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanCommandPool implements ICommandPool {
     private final VulkanDevice device;
+    private final VulkanQueue queue;
     private final EnumSet<CommandPoolFlags> flags;
+    private final String debugLabel;
     private final List<VulkanCommandBuffer> allocatedBuffers = new ArrayList<>();
     private final VulkanFencePool fencePool;
     private int graphicsQueueFamilyIndex;
     private long commandPool;
-    private VkQueue graphicsQueue;
 
     public VulkanCommandPool(VulkanDevice device, EnumSet<CommandPoolFlags> flags) {
+        this(device, device.getMainQueue(), flags, "MainCommandPool");
+    }
+
+    public VulkanCommandPool(
+            VulkanDevice device,
+            VulkanQueue queue,
+            EnumSet<CommandPoolFlags> flags,
+            String debugLabel
+    ) {
         this.device = device;
+        this.queue = queue;
         this.flags = flags.clone();
+        this.debugLabel = debugLabel;
         this.fencePool = new VulkanFencePool(this);
     }
 
     public void init() {
-        this.graphicsQueueFamilyIndex = device.getMainQueue().getQueueFamilyIndex();
+        this.graphicsQueueFamilyIndex = queue.getQueueFamilyIndex();
         createCommandPool();
-        createGraphicsQueue();
     }
 
     public List<VulkanCommandBuffer> getAllocatedBuffers() {
@@ -69,8 +80,8 @@ public class VulkanCommandPool implements ICommandPool {
         return commandPool;
     }
 
-    public VkQueue getGraphicsQueue() {
-        return graphicsQueue;
+    public VulkanQueue getQueue() {
+        return queue;
     }
 
     private void createCommandPool() {
@@ -90,15 +101,12 @@ public class VulkanCommandPool implements ICommandPool {
             LongBuffer pCommandPool = stack.mallocLong(1);
             VulkanUtils.VK_CHECK(vkCreateCommandPool(device.getVkDevice(), poolInfo, null, pCommandPool), "Failed to create command pool");
             commandPool = pCommandPool.get(0);
-            device.setDebugName(VK_OBJECT_TYPE_COMMAND_POOL, commandPool, "CommandPool flags=" + flags + " family=" + graphicsQueueFamilyIndex);
-        }
-    }
-
-    private void createGraphicsQueue() {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            PointerBuffer pQueue = stack.mallocPointer(1);
-            vkGetDeviceQueue(device.getVkDevice(), graphicsQueueFamilyIndex, 0, pQueue);
-            graphicsQueue = new VkQueue(pQueue.get(0), device.getVkDevice());
+            device.setDebugName(
+                    VK_OBJECT_TYPE_COMMAND_POOL,
+                    commandPool,
+                    debugLabel + " flags=" + flags + " family=" + graphicsQueueFamilyIndex
+                            + " queueIndex=" + queue.getQueueIndex()
+            );
         }
     }
 

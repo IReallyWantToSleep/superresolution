@@ -693,6 +693,14 @@ JNIEXPORT jobjectArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_Na
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nLineStyle
   (JNIEnv *, jclass, jlong, jint);
 
+/*
+ * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
+ * Method:    nTextMeasureStateVersion
+ * Signature: (J)J
+ */
+JNIEXPORT jlong JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nTextMeasureStateVersion
+  (JNIEnv *, jclass, jlong);
+
 #ifdef __cplusplus
 }
 #endif

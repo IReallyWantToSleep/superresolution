@@ -2,7 +2,6 @@ package io.homo.superresolution.shadercompat;
 
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.api.platform.Platform;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImGuiDebugContext;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
@@ -12,6 +11,8 @@ import io.homo.superresolution.common.workmode.SRWorkModeProvider;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 
 public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
@@ -59,12 +60,20 @@ public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
             }
         }
 
+        List<String> disabledAlgorithms = Collections.emptyList();
+        if (profile.isPresent() && profile.get().enabled && profile.get().upscale != null) {
+            disabledAlgorithms = profile.get().upscale.disabledAlgorithms;
+        }
+
         return new SRWorkModeState(
                 desc,
                 internalFormat,
                 motionVectorPreprocessingFunction,
                 ShaderCompatHandler.irisApiIsShaderPackInUse() || ShaderCompatHandler.irisHasShaderPack(),
-                ShaderCompatHandler.isLoadingShader()
+                ShaderCompatHandler.isLoadingShader(),
+                profile.isPresent() && profile.get().enabled && profile.get().upscale != null &&
+                        profile.get().upscale.supportsFrameGenerationOnly,
+                disabledAlgorithms
         );
     }
 
@@ -87,7 +96,6 @@ public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
         SRWorkModeState state = getState();
         ctx.property("Shader Pack In Use", state.shaderPackInUse());
         ctx.property("Shader Pack Loading", state.shaderPackLoading());
-        ctx.property("Force Disable Shader Compat", SuperResolutionConfig.isForceDisableShaderCompat());
         ctx.property("Internal Format", state.internalTextureFormat());
         ctx.property("Motion Vector Preprocess", state.motionVectorPreprocessingFunction());
 

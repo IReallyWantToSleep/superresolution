@@ -59,7 +59,7 @@ public class ScrollableFrame extends Frame {
         if (handler != null) {
             this.scrollHandler = handler;
             this.scrollHandler.setOnOffsetChanged(this::onScrollOffsetChanged);
-            updateScrollBounds();
+            updateScrollMetrics();
         }
     }
 
@@ -97,12 +97,12 @@ public class ScrollableFrame extends Frame {
 
     public void setHorizontalScrollEnabled(boolean enabled) {
         this.enableHorizontalScroll = enabled;
-        updateScrollBounds();
+        updateScrollMetrics();
     }
 
     public void setVerticalScrollEnabled(boolean enabled) {
         this.enableVerticalScroll = enabled;
-        updateScrollBounds();
+        updateScrollMetrics();
     }
 
     public float getScrollX() {
@@ -151,6 +151,7 @@ public class ScrollableFrame extends Frame {
     public void calculateLayout() {
         AbstractWidget<?> root = getRoot();
         if (root == null) {
+            updateScrollMetrics();
             return;
         }
 
@@ -171,7 +172,7 @@ public class ScrollableFrame extends Frame {
         );
         tempNode.calculateLayout(layoutWidth, layoutHeight);
 
-        updateScrollBounds();
+        updateScrollMetrics();
 
     }
 
@@ -267,20 +268,29 @@ public class ScrollableFrame extends Frame {
         return super.findInteractiveWidgetAt(pos,findDisabled);
     }
 
-    private void updateScrollBounds() {
+    private void updateScrollMetrics() {
         AbstractWidget<?> root = getRoot();
-        if (root == null || scrollHandler == null) {
+        if (scrollHandler == null) {
             return;
         }
+        if (root == null) {
+            scrollHandler.setScrollMetrics(IScrollHandler.ScrollMetrics.empty());
+            return;
+        }
+
         Rectangle viewport = getViewport();
 
-        float viewportWidth = viewport.width - contentPaddingLeft - contentPaddingRight;
-        float viewportHeight = viewport.height - contentPaddingTop - contentPaddingBottom;
+        float viewportWidth = Math.max(0.0f, viewport.width - contentPaddingLeft - contentPaddingRight);
+        float viewportHeight = Math.max(0.0f, viewport.height - contentPaddingTop - contentPaddingBottom);
 
-        float maxX = enableHorizontalScroll ? Math.max(0, root.getLayoutNode().getLayoutWidth() - (viewportWidth)) : 0;
-        float maxY = enableVerticalScroll ? Math.max(0, root.getLayoutNode().getLayoutHeight() - (viewportHeight)) : 0;
-
-        scrollHandler.setScrollBounds(new Vector2f(0, 0), new Vector2f(maxX, maxY));
+        scrollHandler.setScrollMetrics(new IScrollHandler.ScrollMetrics(
+                Math.max(0.0f, root.getLayoutNode().getLayoutWidth()),
+                Math.max(0.0f, root.getLayoutNode().getLayoutHeight()),
+                viewportWidth,
+                viewportHeight,
+                enableHorizontalScroll,
+                enableVerticalScroll
+        ));
     }
 
     public void update(float deltaTime) {

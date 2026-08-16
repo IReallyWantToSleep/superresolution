@@ -255,3 +255,23 @@ jobs:
           SR_API_ENDPOINT: ${{ secrets.SR_API_URL }}
           SR_API_TOKEN: ${{ secrets.SR_API_TOKEN }}
         run: python script/action_uploader.py --repo_dir ${{ github.workspace }} --target_dir ./build_jars --nightly
+
+      # Consumers such as Wisteria compile against the published API artifact rather than
+      # this source tree, so a green build that does not republish leaves them resolving a
+      # stale snapshot. That is exactly what broke Wisteria's CI when the application-managed
+      # dispatch SPI landed here: its build kept resolving an API jar predating the SPI.
+      # Runs last so a Nexus outage cannot cost the jars uploaded above.
+      - name: Publish API snapshot
+        if: ${{ steps.build.outcome == 'success' && github.ref == 'refs/heads/dev' }}
+        env:
+          ORG_GRADLE_PROJECT_shnexusUsername: ${{ secrets.SHNEXUS_USERNAME }}
+          ORG_GRADLE_PROJECT_shnexusPassword: ${{ secrets.SHNEXUS_PASSWORD }}
+        run: |
+          if [ -z "$ORG_GRADLE_PROJECT_shnexusUsername" ] || [ -z "$ORG_GRADLE_PROJECT_shnexusPassword" ]; then
+            echo "::warning::shnexus credentials are not configured; skipping the API publish"
+            exit 0
+          fi
+          # The API jar must be built from the oldest configuration consumers target: its
+          # public signatures are version-independent but its class files are not, and
+          # :common:apiJar fails the build if any class is newer than Java 17.
+          ./gradlew :common:publishApiPublicationToShnexusRepository -Pminecraft_version_config=1.20.1

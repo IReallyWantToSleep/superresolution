@@ -607,6 +607,9 @@ extern "C" {
     // Sets the font face based on specified name of current text style.
     void nvgFontFace(NVGcontext *ctx, const char *font);
 
+    // Returns the current text measurement state version.
+    unsigned long long nvgTextMeasureStateVersion(NVGcontext *ctx);
+
     // Draws text string at specified location. If end is specified only the sub-string up to the end is drawn.
     float nvgText(NVGcontext *ctx, float x, float y, const char *string, const char *end);
 
@@ -704,7 +707,7 @@ extern "C" {
                              NVGscissor *scissor, float fringe, float strokeWidth, const NVGpath *paths, int npaths);
 
         void (*renderTriangles)(void *uptr, NVGpaint *paint, NVGcompositeOperationState compositeOperation,
-                                NVGscissor *scissor, const NVGvertex *verts, int nverts, float fringe);
+                                NVGscissor *scissor, const NVGvertex *verts, int nverts, float fringe, int fontImage);
 
         void (*renderDelete)(void *uptr);
     };

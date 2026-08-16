@@ -19,7 +19,6 @@
 package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
@@ -38,13 +37,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
-    @Inject(method = "resize", at = @At(value = "HEAD"))
-    private void onResize(int i, int j, CallbackInfo ci) {
-        if (SuperResolution.isInit && SuperResolution.gameIsLoaded) {
-            SuperResolution.getInstance().resize(i, j);
-        }
-    }
-
     @Inject(at = @At(value = "HEAD"), method = "renderLevel", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
         if (Minecraft.getInstance().level != null) {

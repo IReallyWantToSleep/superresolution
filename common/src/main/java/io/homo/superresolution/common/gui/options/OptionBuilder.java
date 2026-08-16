@@ -38,6 +38,7 @@ public class OptionBuilder {
     protected List<AbstractOptionEntry<?, ?>> entries = new ArrayList<>();
     protected Runnable saveRunnable = () -> {
     };
+    protected Runnable restartRequiredCallback = null;
 
     public OptionBuilder(OptionCategory category) {
         this.category = category;
@@ -45,6 +46,11 @@ public class OptionBuilder {
 
     public OptionBuilder setSaveRunnable(Runnable saveRunnable) {
         this.saveRunnable = saveRunnable;
+        return this;
+    }
+
+    public OptionBuilder setRestartRequiredCallback(Runnable restartRequiredCallback) {
+        this.restartRequiredCallback = restartRequiredCallback;
         return this;
     }
 
@@ -111,16 +117,25 @@ public class OptionBuilder {
         OptionsContainer container = new OptionsContainer();
 
         for (AbstractOptionEntry<?, ?> entry : category.getEntries()) {
-            entry.setSaveRunnable(saveRunnable);
+            entry.setSaveRunnable(createEntrySaveRunnable(entry));
             container.addEntry(entry);
         }
 
         for (AbstractOptionEntry<?, ?> entry : entries) {
-            entry.setSaveRunnable(saveRunnable);
+            entry.setSaveRunnable(createEntrySaveRunnable(entry));
             container.addEntry(entry);
         }
 
         return container;
+    }
+
+    private Runnable createEntrySaveRunnable(AbstractOptionEntry<?, ?> entry) {
+        return () -> {
+            saveRunnable.run();
+            if (entry.isRequiresRestartGame() && restartRequiredCallback != null) {
+                restartRequiredCallback.run();
+            }
+        };
     }
 
     public static class OptionsContainer extends MaterialContainerWidget<OptionsContainer> {

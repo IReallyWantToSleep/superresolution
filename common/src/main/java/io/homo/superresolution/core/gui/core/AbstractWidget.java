@@ -32,6 +32,7 @@ import io.homo.superresolution.core.gui.core.layout.AbstractLayoutElement;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.impl.Destroyable;
+import io.homo.superresolution.core.utils.MouseCursor;
 import net.neoforged.bus.api.IEventBus;
 import org.joml.Vector2f;
 
@@ -327,6 +328,13 @@ public abstract class AbstractWidget<
 
     public boolean checkInteractive() {
         return isInteractive();
+    }
+
+    public MouseCursor getMouseCursor() {
+        if (isDisabled()) {
+            return MouseCursor.NOT_ALLOWED;
+        }
+        return isInteractive() ? MouseCursor.HAND : MouseCursor.ARROW;
     }
 
     public void render(RenderContext ctx, UIInputState inputState) {

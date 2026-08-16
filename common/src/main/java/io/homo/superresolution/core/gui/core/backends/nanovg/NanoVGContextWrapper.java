@@ -48,6 +48,7 @@ public class NanoVGContextWrapper {
     public IFrameBuffer frameBuffer;
     public io.homo.superresolution.thirdparty.nanovg.NanoVGContext rawContext;
     public float globalScale = 1.0f;
+    private float devicePixelRatio = 1.0f;
     /// 状态
     private Color S_fillColor = Color.black();
     private Color S_strokeColor = Color.black();
@@ -76,6 +77,10 @@ public class NanoVGContextWrapper {
 
     public float globalScale() {
         return globalScale;
+    }
+
+    public float devicePixelRatio() {
+        return devicePixelRatio;
     }
 
     ///
@@ -113,10 +118,11 @@ public class NanoVGContextWrapper {
                 GL_LINEAR
         );
         globalScale = (float) Math.max(UIScalingCalculator.calculateUIScaling((int) screenSize.x, (int) screenSize.y, 1.2f), 1);
+        devicePixelRatio = globalScale * 1.2f;
         rawContext.beginFrame(
                 screenSize.x,
                 screenSize.y,
-                globalScale * 1.2f
+                devicePixelRatio
         );
         rawContext.reset();
         rawContext.scale(1, 1);
@@ -126,10 +132,11 @@ public class NanoVGContextWrapper {
     public void beginB3DVulkan(B3DGuiVulkanTarget target) {
         Vector2f screenSize = MinecraftWindow.getWindowSize();
         globalScale = (float) Math.max(UIScalingCalculator.calculateUIScaling((int) screenSize.x, (int) screenSize.y, 1.2f), 1);
+        devicePixelRatio = globalScale * 1.2f;
         rawContext.beginFrame(
                 screenSize.x,
                 screenSize.y,
-                globalScale * 1.2f
+                devicePixelRatio
         );
         rawContext.reset();
         rawContext.scale(1, 1);

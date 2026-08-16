@@ -31,28 +31,28 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
+import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
+import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
-import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.optiscaler.OptiScalerLoader;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
+import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
-import io.homo.superresolution.core.graphics.GpuVendor;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.gui.MaterialUI;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.ngx.NgxInitializer;
-import io.homo.superresolution.core.ngx.NgxVulkan;
 import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.core.utils.MessageBox;
 import io.homo.superresolution.srapi.SuperResolutionNativeAPI;
@@ -74,6 +74,8 @@ public final class SuperResolution implements Destroyable {
             .add("resolutioncontrol-plus")
             .add("resolutioncontrol")
             .add("renderscale")
+            .add("gpu_booster")
+            .add("gpu_tape")
             .build();
     private static final Requirement commonRequirement = Requirement.nothing()
             .glMajorVersion(4).glMinorVersion(1);
@@ -95,10 +97,9 @@ public final class SuperResolution implements Destroyable {
     #else
     public static boolean isUsingVulkan = false;
     #endif
-    // 窗口拖拽时每帧触发 resize；算法重建昂贵，去抖到尺寸稳定后执行一次。
-    private static final long RESIZE_DEBOUNCE_MS = 120L;
-    private static volatile boolean pendingResize = false;
-    private static volatile long pendingResizeDeadlineMs = 0L;
+    // Guards the interop OpenGL context + Vulkan device teardown so it runs once per
+    // shutdown, whether triggered early (no presentation) or deferred to destroy() TAIL.
+    private static boolean graphicsBackendDestroyed = false;
 
     private static Minecraft minecraft = Minecraft.getInstance();
     private static SuperResolution instance;
@@ -153,13 +154,8 @@ public final class SuperResolution implements Destroyable {
 
         OptiScalerLoader.loadConfiguredDll();
         #if MC_VER != MC_26_2
-        boolean streamlineReady = Streamline.prepareEarly();
-        if (VulkanPresentationFeature.shouldInitializeStreamline() && !streamlineReady) {
-            IllegalStateException failure = new IllegalStateException(
-                    "Streamline is required for Vulkan presentation on Windows"
-            );
-            VulkanPresentationFeature.disableAfterFailure(failure);
-            throw failure;
+        if (VulkanPresentationFeature.shouldInitializeStreamline() && !Streamline.prepareEarly()) {
+            LOGGER.warn("Streamline is unavailable; falling back to non-Streamline backends.");
         }
         #endif
     }
@@ -175,13 +171,14 @@ public final class SuperResolution implements Destroyable {
         }
         SuperResolutionConfig.SPEC.load();
         gameIsStarted = true;
-        SuperResolutionKeyMapping.registerKeyMapping();
         instance = new SuperResolution();
         SuperResolution.check();
         SuperResolution.preInit();
+        Streamline.prepareEarly();
         SuperResolution.initRendering();
         SuperResolution.getInstance().init();
         MaterialUI.init();
+        FrameGeneration.initialize();
         if (Platform.currentPlatform.isInstallIris() && !B3DVulkanBridge.isB3DVulkanBackend()) {
             try {
                 Class.forName("net.irisshaders.iris.Iris").getMethod("reload").invoke(null);
@@ -196,8 +193,13 @@ public final class SuperResolution implements Destroyable {
         SuperResolution.getInstance().destroy();
     }
 
+    public static void onClientStopped() {
+        SuperResolution.getInstance().destroyGraphicsBackend();
+    }
+
     public static void onClientSetup() {
-        SuperResolutionKeyMapping.registerKeyMapping();
+        SuperResolutionConfig.SPEC.load();
+        SuperResolutionConfig.freezeStartupOptions();
         SRWorkModeManager.onClientSetup();
     }
 
@@ -338,6 +340,9 @@ public final class SuperResolution implements Destroyable {
             try {
                 currentAlgorithm = algorithmDescription.createNewInstance();
                 currentAlgorithm.initialize(desc);
+                // 算法创建时已按当前尺寸初始化，同步尺寸缓存避免渲染路径上重复重建。
+                cachedWidth = RenderHandlerManager.getScreenWidth();
+                cachedHeight = RenderHandlerManager.getScreenHeight();
                 SuperResolution.LOGGER.info("初始化算法 {}", algorithmDescription.getDisplayName());
                 return true;
             } catch (Exception e) {
@@ -398,12 +403,17 @@ public final class SuperResolution implements Destroyable {
 
             if (currentAlgorithm != null) {
                 VulkanPresentationWindow.flushCapturedFrame();
+                FrameGeneration.invalidateHistory();
                 currentAlgorithm.destroy();
+                LowLatency.onDestructiveRebuild();
             }
 
+            algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
             try {
                 currentAlgorithm = algorithmDescription.createNewInstance();
                 currentAlgorithm.initialize(desc);
+                cachedWidth = RenderHandlerManager.getScreenWidth();
+                cachedHeight = RenderHandlerManager.getScreenHeight();
                 lastAppliedDesc = desc;
                 lastAppliedAlgorithm = algorithmDescription;
                 return true;
@@ -452,76 +462,57 @@ public final class SuperResolution implements Destroyable {
 
         isInit = true;
         if (!B3DVulkanBridge.isB3DVulkanBackend()) {
-            this.resize(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight());
+            cachedWidth = RenderHandlerManager.getScreenWidth();
+            cachedHeight = RenderHandlerManager.getScreenHeight();
         }
     }
 
-    public void resize(int width, int height) {
-        if (width == cachedWidth && height == cachedHeight && !pendingResize) {
+    public static void resizeAlgorithmIfChanged(int w, int h) {
+        if (w == cachedWidth && h == cachedHeight) {
             return;
         }
-        // 立刻更新 cached 让上游比较立即等价，实际重建交给 tickResize 去抖后执行。
-        cachedWidth = width;
-        cachedHeight = height;
-        pendingResize = true;
-        pendingResizeDeadlineMs = System.currentTimeMillis() + RESIZE_DEBOUNCE_MS;
+        resizeAlgorithm(w, h);
     }
 
     public void forceResize(int width, int height) {
-        cachedWidth = width;
-        cachedHeight = height;
-        pendingResize = false;
-        SuperResolution self = getInstance();
-        if (self != null) {
-            self.applyPendingResize();
-        }
+        resizeAlgorithm(width, height);
     }
 
-    /** 每帧调用；尺寸稳定 RESIZE_DEBOUNCE_MS 后才真正重建算法。 */
-    public static void tickResize() {
-        if (!pendingResize) return;
-        if (System.currentTimeMillis() < pendingResizeDeadlineMs) return;
-        pendingResize = false;
-        SuperResolution self = getInstance();
-        if (self != null) {
-            self.applyPendingResize();
-        }
-    }
-
-    private void applyPendingResize() {
+    private static void resizeAlgorithm(int w, int h) {
+        cachedWidth = w;
+        cachedHeight = h;
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
             return;
         }
-        int w = MinecraftWindow.getWindowWidth();
-        int h = MinecraftWindow.getWindowHeight();
-        w = Math.max(32,w) ;
-        h = Math.max(32,h);
-        if (currentAlgorithm != null && SuperResolutionConfig.isEnableUpscaleOriginal()) {
-            VulkanPresentationWindow.flushCapturedFrame();
-            SuperResolutionAPI.EVENT_BUS.post(
-                    new AlgorithmResizeEvent(
-                            currentAlgorithm,
-                            RenderHandlerManager.getScreenWidth(),
-                            RenderHandlerManager.getScreenHeight(),
-                            RenderHandlerManager.getRenderWidth(),
-                            RenderHandlerManager.getRenderHeight()
-                    )
-            );
-            currentAlgorithm.resize(
-                    w,
-                    h
-            );
-            // 分辨率变了，时序历史无效。
-            currentAlgorithm.invalidateHistory();
+        if (currentAlgorithm == null || !SuperResolutionConfig.isEnableUpscaleOriginal()) {
+            return;
         }
-        AlgorithmManager.resize(w, h);
+        VulkanPresentationWindow.flushCapturedFrame();
+        SuperResolutionAPI.EVENT_BUS.post(
+                new AlgorithmResizeEvent(
+                        currentAlgorithm,
+                        RenderHandlerManager.getScreenWidth(),
+                        RenderHandlerManager.getScreenHeight(),
+                        RenderHandlerManager.getRenderWidth(),
+                        RenderHandlerManager.getRenderHeight()
+                )
+        );
+        currentAlgorithm.resize(
+                w,
+                h
+        );
+        // 分辨率变了，时序历史无效。
+        currentAlgorithm.invalidateHistory();
+        FrameGeneration.invalidateHistory();
     }
 
     public void destroy() {
         isInit = false;
         isRenderingInitialized = false;
-        pendingResize = false;
+        graphicsBackendDestroyed = false;
+        FrameGeneration.shutdown();
         VulkanPresentationFeature.shutdown();
+        LowLatency.shutdown();
         if (currentAlgorithm != null) {
             currentAlgorithm.destroy();
             currentAlgorithm = null;
@@ -531,7 +522,25 @@ public final class SuperResolution implements Destroyable {
         }
         SuperResolutionNativeAPI.srShutdown();
         Streamline.shutdown();
-        NgxVulkan.shutdown();
+        NgxInitializer.shutdown();
+        // In Vulkan-presentation (interop) mode the hidden OpenGL context and the Vulkan
+        // device are torn down later, in destroyGraphicsBackend() at Minecraft.destroy()
+        // TAIL, so Minecraft's own shutdown rendering (the disconnect progress screen and
+        // GL resource cleanup) still has a current GL context. Destroying them here left
+        // that rendering without a context and aborted the JVM on exit. Without the
+        // interop presentation there is no shared context to protect, so tear down now.
+        if (!VulkanPresentationFeature.isRequested()) {
+            destroyGraphicsBackend();
+        }
+    }
+
+    public void destroyGraphicsBackend() {
+        if (graphicsBackendDestroyed) {
+            return;
+        }
+        graphicsBackendDestroyed = true;
+        // GLFW must destroy the hidden OpenGL context before the Vulkan driver is torn down.
+        PresentationWindowState.destroyRenderWindow();
         RenderSystems.destroy();
     }
 }

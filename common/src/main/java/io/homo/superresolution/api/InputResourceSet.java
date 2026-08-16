@@ -21,15 +21,34 @@ package io.homo.superresolution.api;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import org.jetbrains.annotations.Nullable;
 
-public record InputResourceSet(
-        ITexture colorTexture,
+import java.util.EnumMap;
+import java.util.Objects;
 
-        ITexture depthTexture,
+public final class InputResourceSet {
+    private final EnumMap<InputResourceType, ITexture> resources = new EnumMap<>(InputResourceType.class);
 
-        ITexture motionVectorsTexture,
+    private InputResourceSet() {
+    }
 
-        @Nullable
-        ITexture exposureTexture
-) {
+    public static InputResourceSet create() {
+        return new InputResourceSet();
+    }
 
+    public InputResourceSet with(InputResourceType type, @Nullable ITexture resource) {
+        if (resource == null) {
+            resources.remove(Objects.requireNonNull(type, "type"));
+        } else {
+            resources.put(Objects.requireNonNull(type, "type"), resource);
+        }
+        return this;
+    }
+
+    @Nullable
+    public ITexture get(InputResourceType type) {
+        return resources.get(Objects.requireNonNull(type, "type"));
+    }
+
+    public boolean has(InputResourceType type) {
+        return resources.containsKey(Objects.requireNonNull(type, "type"));
+    }
 }

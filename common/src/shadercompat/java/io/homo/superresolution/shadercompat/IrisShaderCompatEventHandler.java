@@ -26,7 +26,6 @@ import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.UniformRegistrar;
@@ -153,10 +152,6 @@ public class IrisShaderCompatEventHandler {
     }
 
     private static void onMacroRegistration(MacroRegistrationEvent event) {
-        if (SuperResolutionConfig.isForceDisableShaderCompat()) {
-            return;
-        }
-        RenderHandlerManager.frameCount = 0;
 
         SRShaderCompatData config = IrisShaderCompatUtils.getCurrentShaderPackConfig().orElse(null);
         if (config == null) return;
@@ -167,9 +162,6 @@ public class IrisShaderCompatEventHandler {
     }
 
     private static void onUniformRegistration(UniformRegistrationEvent event) {
-        if (SuperResolutionConfig.isForceDisableShaderCompat()) {
-            return;
-        }
         SRShaderCompatData config = IrisShaderCompatUtils.getCurrentShaderPackConfig().orElse(null);
         if (config == null) return;
 

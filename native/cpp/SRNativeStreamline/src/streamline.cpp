@@ -7,6 +7,7 @@
 #include <mutex>
 #include <optional>
 #include <string>
+#include <utility>
 #include <vector>
 #ifndef NOMINMAX
 #define NOMINMAX
@@ -54,6 +55,186 @@ namespace {
     std::unique_ptr<JavaStreamlineSession> g_javaSession;
 
     using PFN_vkGetInstanceProcAddrSl = PFN_vkVoidFunction(VKAPI_PTR *)(VkInstance instance, const char *pName);
+
+    HMODULE loadStreamlineInterposer() {
+        HMODULE module = GetModuleHandleW(L"sl.interposer.dll");
+        if (module) {
+            return module;
+        }
+        if (!g_pluginPath.empty()) {
+            std::filesystem::path dllPath(g_pluginPath);
+            dllPath /= L"sl.interposer.dll";
+            module = LoadLibraryW(dllPath.c_str());
+            if (module) {
+                return module;
+            }
+        }
+        return LoadLibraryW(L"sl.interposer.dll");
+    }
+
+    // sl.interposer.dll is distributed separately from this bridge, so its exports are
+    // resolved at runtime instead of linked through the import library. Every core entry
+    // point goes through the callXxx wrappers below and degrades to eErrorNoPlugins
+    // (SR_RETURN_CODE_CANNOT_FIND_LIBRARY) when the DLL is absent.
+    struct StreamlineCore {
+        PFun_slInit *init;
+        PFun_slShutdown *shutdown;
+        PFun_slIsFeatureSupported *isFeatureSupported;
+        PFun_slIsFeatureLoaded *isFeatureLoaded;
+        PFun_slSetFeatureLoaded *setFeatureLoaded;
+        PFun_slEvaluateFeature *evaluateFeature;
+        PFun_slAllocateResources *allocateResources;
+        PFun_slFreeResources *freeResources;
+        PFun_slSetTag *setTag;
+        PFun_slSetTagForFrame *setTagForFrame;
+        PFun_slGetFeatureRequirements *getFeatureRequirements;
+        PFun_slGetFeatureVersion *getFeatureVersion;
+        PFun_slSetConstants *setConstants;
+        PFun_slGetFeatureFunction *getFeatureFunction;
+        PFun_slGetNewFrameToken *getNewFrameToken;
+        PFun_slSetVulkanInfo *setVulkanInfo;
+    };
+
+    std::mutex g_coreFunctionMutex;
+    StreamlineCore g_coreFunctions{};
+    bool g_coreFunctionsResolved = false;
+
+    template<typename T>
+    bool resolveCoreFunction(HMODULE module, const char *name, T *&out) {
+        out = reinterpret_cast<T *>(GetProcAddress(module, name));
+        return out != nullptr;
+    }
+
+    const StreamlineCore *coreFunctions() {
+        std::lock_guard<std::mutex> lock(g_coreFunctionMutex);
+        if (g_coreFunctionsResolved) {
+            return &g_coreFunctions;
+        }
+        HMODULE module = loadStreamlineInterposer();
+        if (!module) {
+            return nullptr;
+        }
+        StreamlineCore core{};
+        bool resolved = resolveCoreFunction(module, "slInit", core.init)
+            && resolveCoreFunction(module, "slShutdown", core.shutdown)
+            && resolveCoreFunction(module, "slIsFeatureSupported", core.isFeatureSupported)
+            && resolveCoreFunction(module, "slIsFeatureLoaded", core.isFeatureLoaded)
+            && resolveCoreFunction(module, "slSetFeatureLoaded", core.setFeatureLoaded)
+            && resolveCoreFunction(module, "slEvaluateFeature", core.evaluateFeature)
+            && resolveCoreFunction(module, "slAllocateResources", core.allocateResources)
+            && resolveCoreFunction(module, "slFreeResources", core.freeResources)
+            && resolveCoreFunction(module, "slSetTag", core.setTag)
+            && resolveCoreFunction(module, "slSetTagForFrame", core.setTagForFrame)
+            && resolveCoreFunction(module, "slGetFeatureRequirements", core.getFeatureRequirements)
+            && resolveCoreFunction(module, "slGetFeatureVersion", core.getFeatureVersion)
+            && resolveCoreFunction(module, "slSetConstants", core.setConstants)
+            && resolveCoreFunction(module, "slGetFeatureFunction", core.getFeatureFunction)
+            && resolveCoreFunction(module, "slGetNewFrameToken", core.getNewFrameToken)
+            && resolveCoreFunction(module, "slSetVulkanInfo", core.setVulkanInfo);
+        if (!resolved) {
+            return nullptr;
+        }
+        g_coreFunctions = core;
+        g_coreFunctionsResolved = true;
+        return &g_coreFunctions;
+    }
+
+    template<typename Fn, typename... Args>
+    sl::Result callCoreFunction(Fn *StreamlineCore::*member, Args &&... args) {
+        const StreamlineCore *core = coreFunctions();
+        return core
+                   ? (core->*member)(std::forward<Args>(args)...)
+                   : sl::Result::eErrorNoPlugins;
+    }
+
+    sl::Result callInit(const sl::Preferences &preferences) {
+        return callCoreFunction(&StreamlineCore::init, preferences, sl::kSDKVersion);
+    }
+
+    sl::Result callShutdown() {
+        return callCoreFunction(&StreamlineCore::shutdown);
+    }
+
+    sl::Result callIsFeatureSupported(sl::Feature feature, const sl::AdapterInfo &adapterInfo) {
+        return callCoreFunction(&StreamlineCore::isFeatureSupported, feature, adapterInfo);
+    }
+
+    sl::Result callIsFeatureLoaded(sl::Feature feature, bool &loaded) {
+        return callCoreFunction(&StreamlineCore::isFeatureLoaded, feature, loaded);
+    }
+
+    sl::Result callSetFeatureLoaded(sl::Feature feature, bool loaded) {
+        return callCoreFunction(&StreamlineCore::setFeatureLoaded, feature, loaded);
+    }
+
+    sl::Result callEvaluateFeature(
+        sl::Feature feature,
+        const sl::FrameToken &frame,
+        const sl::BaseStructure **inputs,
+        uint32_t numInputs,
+        sl::CommandBuffer *commandBuffer
+    ) {
+        return callCoreFunction(&StreamlineCore::evaluateFeature, feature, frame, inputs, numInputs, commandBuffer);
+    }
+
+    sl::Result callAllocateResources(
+        sl::CommandBuffer *commandBuffer,
+        sl::Feature feature,
+        const sl::ViewportHandle &viewport
+    ) {
+        return callCoreFunction(&StreamlineCore::allocateResources, commandBuffer, feature, viewport);
+    }
+
+    sl::Result callFreeResources(sl::Feature feature, const sl::ViewportHandle &viewport) {
+        return callCoreFunction(&StreamlineCore::freeResources, feature, viewport);
+    }
+
+    sl::Result callSetTag(
+        const sl::ViewportHandle &viewport,
+        const sl::ResourceTag *tags,
+        uint32_t numTags,
+        sl::CommandBuffer *commandBuffer
+    ) {
+        return callCoreFunction(&StreamlineCore::setTag, viewport, tags, numTags, commandBuffer);
+    }
+
+    sl::Result callSetTagForFrame(
+        const sl::FrameToken &frame,
+        const sl::ViewportHandle &viewport,
+        const sl::ResourceTag *tags,
+        uint32_t numTags,
+        sl::CommandBuffer *commandBuffer
+    ) {
+        return callCoreFunction(&StreamlineCore::setTagForFrame, frame, viewport, tags, numTags, commandBuffer);
+    }
+
+    sl::Result callGetFeatureRequirements(sl::Feature feature, sl::FeatureRequirements &requirements) {
+        return callCoreFunction(&StreamlineCore::getFeatureRequirements, feature, requirements);
+    }
+
+    sl::Result callGetFeatureVersion(sl::Feature feature, sl::FeatureVersion &version) {
+        return callCoreFunction(&StreamlineCore::getFeatureVersion, feature, version);
+    }
+
+    sl::Result callSetConstants(
+        const sl::Constants &values,
+        const sl::FrameToken &frame,
+        const sl::ViewportHandle &viewport
+    ) {
+        return callCoreFunction(&StreamlineCore::setConstants, values, frame, viewport);
+    }
+
+    sl::Result callGetFeatureFunction(sl::Feature feature, const char *functionName, void *&function) {
+        return callCoreFunction(&StreamlineCore::getFeatureFunction, feature, functionName, function);
+    }
+
+    sl::Result callGetNewFrameToken(sl::FrameToken *&token, const uint32_t *frameIndex) {
+        return callCoreFunction(&StreamlineCore::getNewFrameToken, token, frameIndex);
+    }
+
+    sl::Result callSetVulkanInfo(const sl::VulkanInfo &info) {
+        return callCoreFunction(&StreamlineCore::setVulkanInfo, info);
+    }
 
     void sendMessage(SRMessageType type, const wchar_t *message) {
         if (g_messageCallback && message) {
@@ -187,7 +368,7 @@ namespace {
     template<typename T>
     sl::Result resolveFeatureFunction(sl::Feature feature, const char *name, T *&outFunction) {
         void *address = nullptr;
-        sl::Result result = slGetFeatureFunction(feature, name, address);
+        sl::Result result = callGetFeatureFunction(feature, name, address);
         if (result != sl::Result::eOk) {
             outFunction = nullptr;
             return result;
@@ -280,22 +461,6 @@ namespace {
         PFun_slReflexGetPredictedCameraData *function = nullptr;
         sl::Result result = resolveFeatureFunction(sl::kFeatureReflex, "slReflexGetPredictedCameraData", function);
         return result == sl::Result::eOk ? function(viewport, frame, data) : result;
-    }
-
-    HMODULE loadStreamlineInterposer() {
-        HMODULE module = GetModuleHandleW(L"sl.interposer.dll");
-        if (module) {
-            return module;
-        }
-        if (!g_pluginPath.empty()) {
-            std::filesystem::path dllPath(g_pluginPath);
-            dllPath /= L"sl.interposer.dll";
-            module = LoadLibraryW(dllPath.c_str());
-            if (module) {
-                return module;
-            }
-        }
-        return LoadLibraryW(L"sl.interposer.dll");
     }
 
     PFN_vkGetInstanceProcAddrSl getStreamlineVkGetInstanceProcAddr() {
@@ -854,7 +1019,7 @@ namespace {
         preferences.projectId = kProjectId;
         preferences.renderAPI = sl::RenderAPI::eVulkan;
 
-        sl::Result result = slInit(preferences);
+        sl::Result result = callInit(preferences);
         if (result != sl::Result::eOk) {
             std::wstring message = L"slInit failed. Streamline result: ";
             message += utf8ToWide(sl::getResultAsStr(result));
@@ -976,7 +1141,7 @@ extern "C" {
         preferences.renderAPI = sl::RenderAPI::eVulkan;
 
         g_javaSession = std::move(session);
-        sl::Result result = slInit(preferences);
+        sl::Result result = callInit(preferences);
         if (result != sl::Result::eOk) {
             releaseJavaSessionRefs(env, g_javaSession.get());
             g_javaSession.reset();
@@ -1000,7 +1165,7 @@ extern "C" {
         if (!g_javaSession || reinterpret_cast<jlong>(g_javaSession.get()) != session) {
             return static_cast<jint>(sl::Result::eErrorInvalidParameter);
         }
-        sl::Result result = g_streamlineInitialized ? slShutdown() : sl::Result::eOk;
+        sl::Result result = g_streamlineInitialized ? callShutdown() : sl::Result::eOk;
         g_streamlineInitialized = false;
         g_dlssOptionsInitialized = false;
         releaseJavaSessionRefs(env, g_javaSession.get());
@@ -1028,7 +1193,7 @@ extern "C" {
         if (!g_streamlineInitialized) {
             return SR_RETURN_CODE_OK;
         }
-        sl::Result result = slShutdown();
+        sl::Result result = callShutdown();
         g_streamlineInitialized = false;
         g_dlssOptionsInitialized = false;
         if (result != sl::Result::eOk) {
@@ -1046,7 +1211,7 @@ extern "C" {
             return SR_RETURN_CODE_UNEXPECTED_ERROR;
         }
         sl::FeatureRequirements requirements{};
-        sl::Result result = slGetFeatureRequirements(sl::kFeatureDLSS_G, requirements);
+        sl::Result result = callGetFeatureRequirements(sl::kFeatureDLSS_G, requirements);
         if (result == sl::Result::eOk) {
             *outSupported = true;
             return SR_RETURN_CODE_OK;
@@ -1155,7 +1320,7 @@ extern "C" {
         }
         if (g_streamlineInitialized) {
             sl::ViewportHandle viewport(kViewportId);
-            slFreeResources(sl::kFeatureDLSS, viewport);
+            callFreeResources(sl::kFeatureDLSS, viewport);
         }
         delete reinterpret_cast<StreamlineDLSSPrivateData *>(context->userContext);
         context->userContext = nullptr;
@@ -1234,7 +1399,7 @@ extern "C" {
         }
 
         auto *commandBuffer = reinterpret_cast<sl::CommandBuffer *>(desc->commandList.apiCommandBuffer.vulkan.commandBuffer);
-        sl::Result result = slSetTagForFrame(*frameToken, viewport, tags.data(), static_cast<uint32_t>(tags.size()), commandBuffer);
+        sl::Result result = callSetTagForFrame(*frameToken, viewport, tags.data(), static_cast<uint32_t>(tags.size()), commandBuffer);
         if (result != sl::Result::eOk) {
             reportResult(privateData, L"slSetTagForFrame", result);
             return resultToReturnCode(result);
@@ -1268,7 +1433,7 @@ extern "C" {
         }
 
         const sl::BaseStructure *inputs[] = {&viewport};
-        result = slEvaluateFeature(sl::kFeatureDLSS, *frameToken, inputs, 1, commandBuffer);
+        result = callEvaluateFeature(sl::kFeatureDLSS, *frameToken, inputs, 1, commandBuffer);
         if (result != sl::Result::eOk) {
             reportResult(privateData, L"slEvaluateFeature(DLSS)", result);
             return resultToReturnCode(result);
@@ -1385,7 +1550,7 @@ extern "C" {
         info.computeQueueIndex = 0;
         info.opticalFlowQueueFamily = static_cast<uint32_t>(graphicsQueueFamilyIndex);
         info.opticalFlowQueueIndex = 0;
-        sl::Result result = slSetVulkanInfo(info);
+        sl::Result result = callSetVulkanInfo(info);
         return static_cast<jint>(result);
     }
 
@@ -1404,7 +1569,7 @@ extern "C" {
         }
         sl::AdapterInfo adapterInfo{};
         adapterInfo.vkPhysicalDevice = reinterpret_cast<void *>(vkPhysicalDeviceAddress);
-        sl::Result result = slIsFeatureSupported(static_cast<sl::Feature>(feature), adapterInfo);
+        sl::Result result = callIsFeatureSupported(static_cast<sl::Feature>(feature), adapterInfo);
         return result == sl::Result::eOk ? JNI_TRUE : JNI_FALSE;
     }
 
@@ -1493,7 +1658,7 @@ extern "C" {
         info.computeQueueCreateFlags = static_cast<uint32_t>(computeQueueCreateFlags);
         info.graphicsQueueCreateFlags = static_cast<uint32_t>(graphicsQueueCreateFlags);
         info.opticalFlowQueueCreateFlags = static_cast<uint32_t>(opticalFlowQueueCreateFlags);
-        return static_cast<jint>(slSetVulkanInfo(info));
+        return static_cast<jint>(callSetVulkanInfo(info));
     }
 
     JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_streamline_StreamlineNative_nIsFeatureSupported(
@@ -1509,7 +1674,7 @@ extern "C" {
         }
         sl::AdapterInfo adapter{};
         adapter.vkPhysicalDevice = reinterpret_cast<void *>(physicalDevice);
-        sl::Result result = slIsFeatureSupported(static_cast<sl::Feature>(feature), adapter);
+        sl::Result result = callIsFeatureSupported(static_cast<sl::Feature>(feature), adapter);
         setBooleanOut(env, outSupported, result == sl::Result::eOk);
         return static_cast<jint>(result);
     }
@@ -1525,7 +1690,7 @@ extern "C" {
             return static_cast<jint>(sl::Result::eErrorInvalidParameter);
         }
         bool loaded = false;
-        sl::Result result = slIsFeatureLoaded(static_cast<sl::Feature>(feature), loaded);
+        sl::Result result = callIsFeatureLoaded(static_cast<sl::Feature>(feature), loaded);
         setBooleanOut(env, outLoaded, loaded);
         return static_cast<jint>(result);
     }
@@ -1540,7 +1705,7 @@ extern "C" {
         if (!isActiveJavaSession(session)) {
             return static_cast<jint>(sl::Result::eErrorNotInitialized);
         }
-        return static_cast<jint>(slSetFeatureLoaded(static_cast<sl::Feature>(feature), loaded == JNI_TRUE));
+        return static_cast<jint>(callSetFeatureLoaded(static_cast<sl::Feature>(feature), loaded == JNI_TRUE));
     }
 
     JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_streamline_StreamlineNative_nGetFeatureRequirements(
@@ -1554,7 +1719,7 @@ extern "C" {
             return static_cast<jint>(sl::Result::eErrorInvalidParameter);
         }
         sl::FeatureRequirements requirements{};
-        sl::Result result = slGetFeatureRequirements(static_cast<sl::Feature>(feature), requirements);
+        sl::Result result = callGetFeatureRequirements(static_cast<sl::Feature>(feature), requirements);
         if (result != sl::Result::eOk) {
             return static_cast<jint>(result);
         }
@@ -1597,7 +1762,7 @@ extern "C" {
             return static_cast<jint>(sl::Result::eErrorInvalidParameter);
         }
         sl::FeatureVersion version{};
-        sl::Result result = slGetFeatureVersion(static_cast<sl::Feature>(feature), version);
+        sl::Result result = callGetFeatureVersion(static_cast<sl::Feature>(feature), version);
         if (result != sl::Result::eOk) {
             return static_cast<jint>(result);
         }
@@ -1625,7 +1790,7 @@ extern "C" {
         }
         uint32_t nativeFrameIndex = static_cast<uint32_t>(frameIndex);
         sl::FrameToken *token = nullptr;
-        sl::Result result = slGetNewFrameToken(token, hasFrameIndex == JNI_TRUE ? &nativeFrameIndex : nullptr);
+        sl::Result result = callGetNewFrameToken(token, hasFrameIndex == JNI_TRUE ? &nativeFrameIndex : nullptr);
         if (result != sl::Result::eOk || !token) {
             return static_cast<jint>(result);
         }
@@ -1655,7 +1820,7 @@ extern "C" {
             tags.push_back(*owned.tag);
         }
         sl::ViewportHandle handle(static_cast<uint32_t>(viewport));
-        return static_cast<jint>(slSetTag(
+        return static_cast<jint>(callSetTag(
             handle,
             tags.data(),
             static_cast<uint32_t>(tags.size()),
@@ -1685,7 +1850,7 @@ extern "C" {
             tags.push_back(*owned.tag);
         }
         sl::ViewportHandle handle(static_cast<uint32_t>(viewport));
-        return static_cast<jint>(slSetTagForFrame(
+        return static_cast<jint>(callSetTagForFrame(
             *reinterpret_cast<sl::FrameToken *>(frameToken),
             handle,
             tags.data(),
@@ -1710,7 +1875,7 @@ extern "C" {
             return static_cast<jint>(sl::Result::eErrorInvalidParameter);
         }
         sl::ViewportHandle handle(static_cast<uint32_t>(viewport));
-        return static_cast<jint>(slSetConstants(
+        return static_cast<jint>(callSetConstants(
             constants,
             *reinterpret_cast<sl::FrameToken *>(frameToken),
             handle
@@ -1729,7 +1894,7 @@ extern "C" {
             return static_cast<jint>(sl::Result::eErrorNotInitialized);
         }
         sl::ViewportHandle handle(static_cast<uint32_t>(viewport));
-        return static_cast<jint>(slAllocateResources(
+        return static_cast<jint>(callAllocateResources(
             reinterpret_cast<sl::CommandBuffer *>(commandBuffer),
             static_cast<sl::Feature>(feature),
             handle
@@ -1747,7 +1912,7 @@ extern "C" {
             return static_cast<jint>(sl::Result::eErrorNotInitialized);
         }
         sl::ViewportHandle handle(static_cast<uint32_t>(viewport));
-        return static_cast<jint>(slFreeResources(static_cast<sl::Feature>(feature), handle));
+        return static_cast<jint>(callFreeResources(static_cast<sl::Feature>(feature), handle));
     }
 
     JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_streamline_StreamlineNative_nEvaluateFeature(
@@ -1836,7 +2001,7 @@ extern "C" {
             }
             env->DeleteLocalRef(input);
         }
-        return static_cast<jint>(slEvaluateFeature(
+        return static_cast<jint>(callEvaluateFeature(
             static_cast<sl::Feature>(feature),
             *reinterpret_cast<sl::FrameToken *>(frameToken),
             inputs.data(),
@@ -1861,7 +2026,7 @@ extern "C" {
             return static_cast<jint>(sl::Result::eErrorInvalidParameter);
         }
         void *address = nullptr;
-        sl::Result result = slGetFeatureFunction(static_cast<sl::Feature>(feature), functionName.c_str(), address);
+        sl::Result result = callGetFeatureFunction(static_cast<sl::Feature>(feature), functionName.c_str(), address);
         if (result == sl::Result::eOk) {
             setLongOut(env, outAddress, reinterpret_cast<jlong>(address));
         }

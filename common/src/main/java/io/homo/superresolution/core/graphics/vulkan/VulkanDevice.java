@@ -46,6 +46,7 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkInstance;
+import org.lwjgl.vulkan.VkLatencySubmissionPresentIdNV;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkSubmitInfo;
 import org.slf4j.Logger;
@@ -56,6 +57,7 @@ import java.util.EnumSet;
 import java.util.List;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
+import static org.lwjgl.vulkan.NVLowLatency2.VK_STRUCTURE_TYPE_LATENCY_SUBMISSION_PRESENT_ID_NV;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_SUBMIT_INFO;
 import static org.lwjgl.vulkan.VK10.vkQueueSubmit;
 
@@ -65,7 +67,12 @@ public class VulkanDevice implements IDevice {
     private final VkPhysicalDevice physicalDevice;
     private final VkDevice device;
     private final VulkanQueue mainQueue;
+    private final VulkanQueue frameGenerationQueue;
+    private final VulkanQueue presentQueue;
     private final VulkanCommandPool defaultCommandPool;
+    private final VulkanCommandPool frameGenerationCommandPool;
+    private final VulkanSubmissionTimeline presentSubmitTimeline;
+    private final VulkanAsyncDispatchCapabilities asyncDispatchCapabilities;
     private final VulkanCommandDecoder commandDecoder;
     private final ValidatedCommandDecoder validatedCommandDecoder;
     private final VulkanMemoryAllocator memoryAllocator;
@@ -79,16 +86,126 @@ public class VulkanDevice implements IDevice {
     }
 
     public VulkanDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, int graphicsQueueFamilyIndex, boolean ownsVkDevice) {
+        this(
+                instance,
+                physicalDevice,
+                device,
+                graphicsQueueFamilyIndex,
+                ownsVkDevice,
+                false,
+                VulkanAsyncDispatchCapabilities.evaluate(
+                        "",
+                        false,
+                        graphicsQueueFamilyIndex,
+                        1,
+                        false,
+                        false,
+                        false,
+                        false
+                )
+        );
+    }
+
+    public VulkanDevice(
+            VkInstance instance,
+            VkPhysicalDevice physicalDevice,
+            VkDevice device,
+            int graphicsQueueFamilyIndex,
+            boolean ownsVkDevice,
+            boolean createFrameGenerationQueue,
+            VulkanAsyncDispatchCapabilities requestedAsyncDispatchCapabilities
+    ) {
+        this(
+                instance,
+                physicalDevice,
+                device,
+                graphicsQueueFamilyIndex,
+                ownsVkDevice,
+                createFrameGenerationQueue,
+                false,
+                requestedAsyncDispatchCapabilities
+        );
+    }
+
+    public VulkanDevice(
+            VkInstance instance,
+            VkPhysicalDevice physicalDevice,
+            VkDevice device,
+            int graphicsQueueFamilyIndex,
+            boolean ownsVkDevice,
+            boolean createFrameGenerationQueue,
+            boolean createPresentQueue,
+            VulkanAsyncDispatchCapabilities requestedAsyncDispatchCapabilities
+    ) {
         this.instance = instance;
         this.physicalDevice = physicalDevice;
         this.device = device;
         this.ownsVkDevice = ownsVkDevice;
-        this.mainQueue = new VulkanQueue(this, graphicsQueueFamilyIndex);
-        this.defaultCommandPool= new VulkanCommandPool(this, EnumSet.of(CommandPoolFlags.Reset));
+        this.mainQueue = new VulkanQueue(
+                this,
+                graphicsQueueFamilyIndex,
+                0,
+                VulkanQueueRole.MAIN
+        );
+        this.frameGenerationQueue = createFrameGenerationQueue
+                ? new VulkanQueue(
+                        this,
+                        graphicsQueueFamilyIndex,
+                        1,
+                        VulkanQueueRole.FRAME_GENERATION
+                )
+                : null;
+        this.presentQueue = createPresentQueue
+                ? new VulkanQueue(
+                        this,
+                        graphicsQueueFamilyIndex,
+                        2,
+                        VulkanQueueRole.PRESENT
+                )
+                : null;
+        this.defaultCommandPool = new VulkanCommandPool(
+                this,
+                mainQueue,
+                EnumSet.of(CommandPoolFlags.Reset),
+                "MainCommandPool"
+        );
+        this.frameGenerationCommandPool = frameGenerationQueue == null
+                ? null
+                : new VulkanCommandPool(
+                        this,
+                        frameGenerationQueue,
+                        EnumSet.of(CommandPoolFlags.Reset, CommandPoolFlags.Transient),
+                        "FrameGenerationCommandPool"
+                );
         this.commandDecoder = new VulkanCommandDecoder(this);
         this.validatedCommandDecoder = new ValidatedCommandDecoder(commandDecoder);
         this.memoryAllocator = new VulkanMemoryAllocator(this);
         defaultCommandPool.init();
+        if (frameGenerationCommandPool != null) {
+            frameGenerationCommandPool.init();
+        }
+        VulkanAsyncDispatchCapabilities capabilities = requestedAsyncDispatchCapabilities;
+        VulkanSubmissionTimeline submissionTimeline = null;
+        if (capabilities.available()) {
+            try {
+                submissionTimeline = new VulkanSubmissionTimeline(
+                        this,
+                        "PresentSubmitTimeline HostSignaled"
+                );
+            } catch (Throwable throwable) {
+                capabilities = capabilities.withRuntimeFailure(
+                        "Failed to create host-signaled present submission timeline: "
+                                + throwable.getMessage()
+                );
+                LOGGER.warn(
+                        "Disabling application-managed async dispatch for provider '{}'",
+                        capabilities.providerId(),
+                        throwable
+                );
+            }
+        }
+        this.presentSubmitTimeline = submissionTimeline;
+        this.asyncDispatchCapabilities = capabilities;
     }
 
     @Override
@@ -172,11 +289,25 @@ public class VulkanDevice implements IDevice {
 
     @Override
     public VulkanCommandPool createCommandPool(CommandPoolFlags... flags) {
+        return createCommandPool(mainQueue, "MainCommandPool", flags);
+    }
+
+    public VulkanCommandPool createCommandPool(
+            VulkanQueue queue,
+            String debugLabel,
+            CommandPoolFlags... flags
+    ) {
+        if (queue == null) {
+            throw new IllegalArgumentException("queue cannot be null");
+        }
+        if (queue != mainQueue && queue != frameGenerationQueue) {
+            throw new IllegalArgumentException("queue is not owned by this Vulkan device");
+        }
         java.util.EnumSet<CommandPoolFlags> poolFlags = java.util.EnumSet.noneOf(CommandPoolFlags.class);
         if (flags != null) {
             java.util.Collections.addAll(poolFlags, flags);
         }
-        VulkanCommandPool pool = new VulkanCommandPool(this, poolFlags);
+        VulkanCommandPool pool = new VulkanCommandPool(this, queue, poolFlags, debugLabel);
         pool.init();
         return pool;
     }
@@ -245,6 +376,23 @@ public class VulkanDevice implements IDevice {
             int[] waitDstStageMask,
             long[] signalSemaphores
     ) {
+        return submitCommandBuffer(
+                mainQueue,
+                commandBuffer,
+                waitSemaphores,
+                waitDstStageMask,
+                signalSemaphores
+        );
+    }
+
+    public long submitCommandBuffer(
+            VulkanQueue queue,
+            VulkanCommandBuffer commandBuffer,
+            long[] waitSemaphores,
+            int[] waitDstStageMask,
+            long[] signalSemaphores
+    ) {
+        validateQueueSubmission(queue, commandBuffer);
         if ((waitSemaphores == null) != (waitDstStageMask == null)) {
             throw new IllegalArgumentException(
                     "waitSemaphores and waitDstStageMask must both be null or both be non-null"
@@ -254,50 +402,183 @@ public class VulkanDevice implements IDevice {
             throw new IllegalArgumentException("waitSemaphores and waitDstStageMask length mismatch");
         }
 
-        long fence = commandBuffer.prepareFenceForSubmit();
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
-                    .pCommandBuffers(stack.pointers(commandBuffer.getNativeCommandBuffer().address()));
+        long fence;
+        synchronized (commandBuffer) {
+            fence = commandBuffer.prepareFenceForSubmit();
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
+                        .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
+                        .pCommandBuffers(stack.pointers(commandBuffer.getNativeCommandBuffer().address()));
 
-            if (waitSemaphores != null && waitSemaphores.length > 0) {
-                submitInfo.waitSemaphoreCount(waitSemaphores.length);
-                submitInfo.pWaitSemaphores(stack.longs(waitSemaphores));
-                submitInfo.pWaitDstStageMask(stack.ints(waitDstStageMask));
-            }
-            if (signalSemaphores != null && signalSemaphores.length > 0) {
-                submitInfo.pSignalSemaphores(stack.longs(signalSemaphores));
-            }
+                if (waitSemaphores != null && waitSemaphores.length > 0) {
+                    submitInfo.waitSemaphoreCount(waitSemaphores.length);
+                    submitInfo.pWaitSemaphores(stack.longs(waitSemaphores));
+                    submitInfo.pWaitDstStageMask(stack.ints(waitDstStageMask));
+                }
+                if (signalSemaphores != null && signalSemaphores.length > 0) {
+                    submitInfo.pSignalSemaphores(stack.longs(signalSemaphores));
+                }
 
-            VK_CHECK(vkQueueSubmit(mainQueue.getQueue(), submitInfo, fence));
-            commandBuffer.markSubmitted();
+                try {
+                    synchronized (queue.submitLock()) {
+                        VK_CHECK(vkQueueSubmit(queue.getQueue(), submitInfo, fence));
+                    }
+                } catch (Throwable throwable) {
+                    commandBuffer.markSubmissionFailed();
+                    throw throwable;
+                }
+                commandBuffer.markSubmitted();
+            }
         }
         reapCompletedTransientResources();
         return fence;
     }
 
     public void submitCommandBuffer(VulkanCommandBuffer commandBuffer) {
-        long fence = commandBuffer.prepareFenceForSubmit();
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
-                    .pCommandBuffers(
-                            stack.pointers(
-                                    commandBuffer
-                                            .getNativeCommandBuffer()
-                                            .address()
-                            )
-                    );
-            VK_CHECK(vkQueueSubmit(mainQueue.getQueue(), submitInfo, fence));
-            commandBuffer.markSubmitted();
+        submitCommandBuffer(mainQueue, commandBuffer);
+    }
+
+    public void submitCommandBuffer(VulkanQueue queue, VulkanCommandBuffer commandBuffer) {
+        validateQueueSubmission(queue, commandBuffer);
+        synchronized (commandBuffer) {
+            long fence = commandBuffer.prepareFenceForSubmit();
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
+                        .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
+                        .pCommandBuffers(
+                                stack.pointers(
+                                        commandBuffer
+                                                .getNativeCommandBuffer()
+                                                .address()
+                                )
+                        );
+                try {
+                    synchronized (queue.submitLock()) {
+                        VK_CHECK(vkQueueSubmit(queue.getQueue(), submitInfo, fence));
+                    }
+                } catch (Throwable throwable) {
+                    commandBuffer.markSubmissionFailed();
+                    throw throwable;
+                }
+                commandBuffer.markSubmitted();
+            }
         }
         reapCompletedTransientResources();
     }
 
+    public IssuedSubmission submitCommandBufferIssued(
+            VulkanQueue queue,
+            VulkanCommandBuffer commandBuffer,
+            long[] waitSemaphores,
+            int[] waitDstStageMask,
+            long[] signalSemaphores
+    ) {
+        return submitCommandBufferIssued(
+                queue,
+                commandBuffer,
+                waitSemaphores,
+                waitDstStageMask,
+                signalSemaphores,
+                0L
+        );
+    }
+
+    public IssuedSubmission submitCommandBufferIssued(
+            VulkanQueue queue,
+            VulkanCommandBuffer commandBuffer,
+            long[] waitSemaphores,
+            int[] waitDstStageMask,
+            long[] signalSemaphores,
+            long latencyPresentId
+    ) {
+        VulkanSubmissionTimeline timeline = requirePresentSubmitTimeline();
+        long fence = submitCommandBuffer(
+                queue,
+                commandBuffer,
+                waitSemaphores,
+                waitDstStageMask,
+                signalSemaphores,
+                latencyPresentId
+        );
+        long submissionTicket;
+        try {
+            submissionTicket = timeline.publishSubmissionIssued();
+        } catch (Throwable throwable) {
+            throw new SubmissionTicketPublicationException(
+                    fence,
+                    commandBuffer.submissionGeneration(),
+                    throwable
+            );
+        }
+        return new IssuedSubmission(fence, submissionTicket);
+    }
+
+    private long submitCommandBuffer(
+            VulkanQueue queue,
+            VulkanCommandBuffer commandBuffer,
+            long[] waitSemaphores,
+            int[] waitDstStageMask,
+            long[] signalSemaphores,
+            long latencyPresentId
+    ) {
+        validateQueueSubmission(queue, commandBuffer);
+        if ((waitSemaphores == null) != (waitDstStageMask == null)) {
+            throw new IllegalArgumentException(
+                    "waitSemaphores and waitDstStageMask must both be null or both be non-null"
+            );
+        }
+        if (waitSemaphores != null && waitSemaphores.length != waitDstStageMask.length) {
+            throw new IllegalArgumentException("waitSemaphores and waitDstStageMask length mismatch");
+        }
+
+        long fence;
+        synchronized (commandBuffer) {
+            fence = commandBuffer.prepareFenceForSubmit();
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                VkSubmitInfo submitInfo = VkSubmitInfo.calloc(stack)
+                        .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
+                        .pCommandBuffers(stack.pointers(commandBuffer.getNativeCommandBuffer().address()));
+                if (latencyPresentId != 0L) {
+                    VkLatencySubmissionPresentIdNV latencyInfo =
+                            VkLatencySubmissionPresentIdNV.calloc(stack)
+                                    .sType(VK_STRUCTURE_TYPE_LATENCY_SUBMISSION_PRESENT_ID_NV)
+                                    .presentID(latencyPresentId);
+                    submitInfo.pNext(latencyInfo.address());
+                }
+                if (waitSemaphores != null && waitSemaphores.length > 0) {
+                    submitInfo.waitSemaphoreCount(waitSemaphores.length);
+                    submitInfo.pWaitSemaphores(stack.longs(waitSemaphores));
+                    submitInfo.pWaitDstStageMask(stack.ints(waitDstStageMask));
+                }
+                if (signalSemaphores != null && signalSemaphores.length > 0) {
+                    submitInfo.pSignalSemaphores(stack.longs(signalSemaphores));
+                }
+                try {
+                    synchronized (queue.submitLock()) {
+                        VK_CHECK(vkQueueSubmit(queue.getQueue(), submitInfo, fence));
+                    }
+                } catch (Throwable throwable) {
+                    commandBuffer.markSubmissionFailed();
+                    throw throwable;
+                }
+                commandBuffer.markSubmitted();
+            }
+        }
+        reapCompletedTransientResources();
+        return fence;
+    }
+
     public void destroy() {
+        VulkanLowLatency.onDeviceDestroyed();
         waitForAllCommandBuffers();
         reapCompletedTransientResources();
         flushDeferredDestroys();
+        if (presentSubmitTimeline != null) {
+            presentSubmitTimeline.close();
+        }
+        if (frameGenerationCommandPool != null) {
+            frameGenerationCommandPool.destroy();
+        }
         if (defaultCommandPool != null) {
             defaultCommandPool.destroy();
         }
@@ -343,6 +624,83 @@ public class VulkanDevice implements IDevice {
         return mainQueue;
     }
 
+    public VulkanQueue getFrameGenerationQueue() {
+        return frameGenerationQueue;
+    }
+
+    public VulkanQueue getFgQueue() {
+        return frameGenerationQueue;
+    }
+
+    public VulkanQueue getDedicatedPresentQueue() {
+        return presentQueue;
+    }
+
+    public boolean hasDedicatedPresentQueue() {
+        return presentQueue != null;
+    }
+
+    public VulkanQueue getApplicationManagedPresentQueue() {
+        return presentQueue != null ? presentQueue : mainQueue;
+    }
+
+    public VulkanQueue requireFrameGenerationQueue() {
+        if (!asyncDispatchCapabilities.available() || frameGenerationQueue == null) {
+            throw new IllegalStateException(
+                    "Application-managed async dispatch is unavailable: "
+                            + asyncDispatchCapabilities.unavailableReason()
+            );
+        }
+        return frameGenerationQueue;
+    }
+
+    public VulkanQueue requireFgQueue() {
+        return requireFrameGenerationQueue();
+    }
+
+    public VulkanCommandPool getFrameGenerationCommandPool() {
+        return frameGenerationCommandPool;
+    }
+
+    public VulkanCommandPool getFgCommandPool() {
+        return frameGenerationCommandPool;
+    }
+
+    public VulkanCommandPool requireFrameGenerationCommandPool() {
+        requireFrameGenerationQueue();
+        if (frameGenerationCommandPool == null) {
+            throw new IllegalStateException("Frame-generation command pool was not created");
+        }
+        return frameGenerationCommandPool;
+    }
+
+    public VulkanCommandPool requireFgCommandPool() {
+        return requireFrameGenerationCommandPool();
+    }
+
+    public VulkanSubmissionTimeline getPresentSubmitTimeline() {
+        return presentSubmitTimeline;
+    }
+
+    public VulkanSubmissionTimeline requirePresentSubmitTimeline() {
+        requireFrameGenerationQueue();
+        if (presentSubmitTimeline == null) {
+            throw new IllegalStateException("Present submission timeline was not created");
+        }
+        return presentSubmitTimeline;
+    }
+
+    public VulkanAsyncDispatchCapabilities asyncDispatchCapabilities() {
+        return asyncDispatchCapabilities;
+    }
+
+    public VulkanBinarySemaphorePool createBinarySemaphorePool(
+            String debugLabel,
+            int capacity
+    ) {
+        return new VulkanBinarySemaphorePool(this, debugLabel, capacity);
+    }
+
     public VulkanMemoryAllocator getMemoryAllocator() {
         return memoryAllocator;
     }
@@ -352,7 +710,7 @@ public class VulkanDevice implements IDevice {
             return;
         }
         List<VulkanCommandBuffer> blockers = new ArrayList<>();
-        for (VulkanCommandBuffer buffer : new ArrayList<>(defaultCommandPool.getAllocatedBuffers())) {
+        for (VulkanCommandBuffer buffer : allManagedCommandBuffers()) {
             if (buffer.isInFlight()) {
                 blockers.add(buffer);
             }
@@ -365,7 +723,7 @@ public class VulkanDevice implements IDevice {
     }
 
     private void reapCompletedTransientResources() {
-        for (VulkanCommandBuffer buffer : new ArrayList<>(defaultCommandPool.getAllocatedBuffers())) {
+        for (VulkanCommandBuffer buffer : allManagedCommandBuffers()) {
             buffer.destroyTransientResourcesIfComplete();
         }
         drainingDeferredDestroys = true;
@@ -387,9 +745,36 @@ public class VulkanDevice implements IDevice {
     }
 
     private void waitForAllCommandBuffers() {
-        for (VulkanCommandBuffer buffer : new ArrayList<>(defaultCommandPool.getAllocatedBuffers())) {
+        for (VulkanCommandBuffer buffer : allManagedCommandBuffers()) {
             buffer.waitForFence();
         }
+    }
+
+    private void validateQueueSubmission(
+            VulkanQueue queue,
+            VulkanCommandBuffer commandBuffer
+    ) {
+        if (queue == null || commandBuffer == null) {
+            throw new IllegalArgumentException("queue and commandBuffer cannot be null");
+        }
+        if (queue != mainQueue && queue != frameGenerationQueue) {
+            throw new IllegalArgumentException("queue is not owned by this Vulkan device");
+        }
+        if (!(commandBuffer.ownerPool() instanceof VulkanCommandPool ownerPool)
+                || ownerPool.getQueue().getQueueFamilyIndex() != queue.getQueueFamilyIndex()) {
+            throw new IllegalArgumentException(
+                    "Command buffer belongs to a command pool for a different queue family"
+            );
+        }
+    }
+
+    private List<VulkanCommandBuffer> allManagedCommandBuffers() {
+        List<VulkanCommandBuffer> buffers =
+                new ArrayList<>(defaultCommandPool.getAllocatedBuffers());
+        if (frameGenerationCommandPool != null) {
+            buffers.addAll(frameGenerationCommandPool.getAllocatedBuffers());
+        }
+        return buffers;
     }
 
     private void flushDeferredDestroys() {
@@ -415,6 +800,40 @@ public class VulkanDevice implements IDevice {
                 }
             }
             return true;
+        }
+    }
+
+    public static final class SubmissionTicketPublicationException extends RuntimeException {
+        private final long fence;
+        private final long submissionGeneration;
+
+        private SubmissionTicketPublicationException(
+                long fence,
+                long submissionGeneration,
+                Throwable cause
+        ) {
+            super("Queue submission succeeded but its host submission ticket could not be published", cause);
+            this.fence = fence;
+            this.submissionGeneration = submissionGeneration;
+        }
+
+        public long fence() {
+            return fence;
+        }
+
+        public long submissionGeneration() {
+            return submissionGeneration;
+        }
+    }
+
+    public record IssuedSubmission(long fence, long submissionTicket) {
+        public IssuedSubmission {
+            if (fence == 0L) {
+                throw new IllegalArgumentException("fence cannot be zero");
+            }
+            if (submissionTicket <= 0L) {
+                throw new IllegalArgumentException("submissionTicket must be positive");
+            }
         }
     }
 }

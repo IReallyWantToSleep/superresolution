@@ -26,6 +26,7 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.backends.render.RenderLayer;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.core.input.KeyInput;
 import io.homo.superresolution.core.gui.core.layout.ILayoutContainer;
 import io.homo.superresolution.core.gui.core.layout.ILayoutElement;
 import io.homo.superresolution.core.utils.Color;
@@ -300,20 +301,28 @@ public class Frame implements IFrame {
 
     @Override
     public void dispatchKeyPress(int keyCode, int scancode, int modifiers) {
+        dispatchKeyPress(KeyInput.fromRaw(keyCode, scancode, modifiers));
+    }
+
+    public void dispatchKeyPress(KeyInput input) {
         if (root == null || !root.isVisible()) {
             return;
         }
 
-        dispatchKeyPressRecursive(root, keyCode, scancode, modifiers);
+        dispatchKeyPressRecursive(root, input);
     }
 
     @Override
     public void dispatchKeyRelease(int keyCode, int scancode, int modifiers) {
+        dispatchKeyRelease(KeyInput.fromRaw(keyCode, scancode, modifiers));
+    }
+
+    public void dispatchKeyRelease(KeyInput input) {
         if (root == null || !root.isVisible()) {
             return;
         }
 
-        dispatchKeyReleaseRecursive(root, keyCode, scancode, modifiers);
+        dispatchKeyReleaseRecursive(root, input);
     }
 
     @Override
@@ -472,33 +481,33 @@ public class Frame implements IFrame {
         return new Vector2f(delta.x - origin.x, delta.y - origin.y);
     }
 
-    private void dispatchKeyPressRecursive(AbstractWidget<?> widget, int keyCode, int scancode, int modifiers) {
+    private void dispatchKeyPressRecursive(AbstractWidget<?> widget, KeyInput input) {
         if (!widget.isVisible() || widget.isDisabled()) {
             return;
         }
 
-        widget.keyPress(keyCode, scancode, modifiers);
+        widget.keyPress(input);
 
         if (widget instanceof ILayoutContainer container) {
             for (ILayoutElement child : container.getChildren()) {
                 if (child instanceof AbstractWidget<?> childWidget) {
-                    dispatchKeyPressRecursive(childWidget, keyCode, scancode, modifiers);
+                    dispatchKeyPressRecursive(childWidget, input);
                 }
             }
         }
     }
 
-    private void dispatchKeyReleaseRecursive(AbstractWidget<?> widget, int keyCode, int scancode, int modifiers) {
+    private void dispatchKeyReleaseRecursive(AbstractWidget<?> widget, KeyInput input) {
         if (!widget.isVisible() || widget.isDisabled()) {
             return;
         }
 
-        widget.keyRelease(keyCode, scancode, modifiers);
+        widget.keyRelease(input);
 
         if (widget instanceof ILayoutContainer container) {
             for (ILayoutElement child : container.getChildren()) {
                 if (child instanceof AbstractWidget<?> childWidget) {
-                    dispatchKeyReleaseRecursive(childWidget, keyCode, scancode, modifiers);
+                    dispatchKeyReleaseRecursive(childWidget, input);
                 }
             }
         }

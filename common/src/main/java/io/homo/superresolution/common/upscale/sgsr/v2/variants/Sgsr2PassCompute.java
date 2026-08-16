@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.common.upscale.sgsr.v2.variants;
 
+import io.homo.superresolution.api.InputResourceType;
+
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -61,9 +63,9 @@ public class Sgsr2PassCompute extends AbstractSgsrVariant {
     public void dispatch(DispatchResource resource, Sgsr2 sgsr) {
         swapHistoryOutput();
         Vector3i wg = getWorkGroupSize();
-        convertPipeline.descriptorSet().samplerTexture("InputColor", sgsr.getInputResourceSet().colorTexture());
-        convertPipeline.descriptorSet().samplerTexture("InputDepth", sgsr.getInputResourceSet().depthTexture());
-        convertPipeline.descriptorSet().samplerTexture("InputVelocity", sgsr.getInputResourceSet().motionVectorsTexture());
+        convertPipeline.descriptorSet().samplerTexture("InputColor", sgsr.getInputResourceSet().get(InputResourceType.Color));
+        convertPipeline.descriptorSet().samplerTexture("InputDepth", sgsr.getInputResourceSet().get(InputResourceType.Depth));
+        convertPipeline.descriptorSet().samplerTexture("InputVelocity", sgsr.getInputResourceSet().get(InputResourceType.MotionVectors));
         convertPipeline.descriptorSet().storageImage("MotionDepthClipAlphaBuffer", MotionDepthClipAlphaBuffer);
         convertPipeline.descriptorSet().storageImage("YCoCgColor", YCoCgColor);
         convertPipeline.descriptorSet().uniformBuffer("Params", sgsr.getParams());

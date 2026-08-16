@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
+import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
@@ -38,7 +39,10 @@ public final class VulkanPresentationWindow {
 		if (context != null) {
 			return;
 		}
-		FrameCaptureManager.initialize(presentationContext.device());
+		FrameCaptureManager.initialize(
+				presentationContext.device(),
+				presentationContext.framePacingTiming()
+		);
 		presentationContext.setVsync(requestedVsync);
 		context = presentationContext;
 		surface = presentationSurface;
@@ -51,15 +55,18 @@ public final class VulkanPresentationWindow {
 			return;
 		}
 		PresentationWindowState.requireOwnerThread();
-		presentationContext.tickWindow();
 
 		FrameResources frameResources = FrameCaptureManager.finishFrame();
+		LowLatency.endRenderSubmission();
+
+		presentationContext.tickWindow();
+
 		if (frameResources == null) {
 			return;
 		}
 		presentationContext.setVsync(requestedVsync);
 		if (!frameResources.hasFinalColor()) {
-			presentationContext.consumeWithoutPresent(frameResources);
+			consumeRenderedFrame(presentationContext, frameResources);
 			throw new IllegalStateException("Vulkan presentation frame is missing final color");
 		}
 		// MINIMIZE GUARD: Consume captured resources without acquiring or presenting a swapchain image.
@@ -71,8 +78,15 @@ public final class VulkanPresentationWindow {
 				shown = true;
 			}
 		} else {
-			presentationContext.consumeWithoutPresent(frameResources);
+			consumeRenderedFrame(presentationContext, frameResources);
 		}
+	}
+
+	private static void consumeRenderedFrame(
+		VulkanPresentationContext presentationContext,
+		FrameResources frameResources
+	) {
+		presentationContext.consumeWithoutPresent(frameResources);
 	}
 
 	public static synchronized void setVsync(boolean enabled) {
@@ -91,6 +105,15 @@ public final class VulkanPresentationWindow {
 		if (pending != null) {
 			presentationContext.consumeWithoutPresent(pending);
 		}
+	}
+
+	public static boolean shutdownApplicationManagedProvider(
+			String providerId,
+			Runnable teardown
+	) {
+		VulkanPresentationContext presentationContext = context;
+		return presentationContext != null
+				&& presentationContext.shutdownApplicationManagedProvider(providerId, teardown);
 	}
 
 	public static synchronized void shutdown() {

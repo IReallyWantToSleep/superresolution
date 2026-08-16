@@ -22,6 +22,7 @@ import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.backends.interfaces.IPaint;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.event.events.MouseEvent;
+import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.gui.core.animator.BezierInterpolator;
 import io.homo.superresolution.core.gui.core.animator.Animator;
@@ -61,6 +62,10 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
 
     protected abstract void drawShape(RenderContext ctx, T widget, IPaint paint);
 
+    protected Rectangle getOverlayBounds() {
+        return widget.getRawBounds();
+    }
+
     public void render(RenderContext ctx, Color hoverColor, Color rippleColor) {
         renderHoverOverlay(ctx, hoverColor);
         renderRippleOverlay(ctx, rippleColor);
@@ -84,11 +89,12 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
 
     public void renderRippleOverlay(RenderContext ctx, Color rippleColor) {
         if (shouldRenderRipple()) {
+            Rectangle overlayBounds = getOverlayBounds();
             IPaint[] ripplePaints = ripple.getPaints(
                     rippleColor,
                     ctx,
-                    widget.getRawBounds().getPosition(),
-                    widget.getRawBounds().getSize()
+                    overlayBounds.getPosition(),
+                    overlayBounds.getSize()
             );
             for (IPaint paint : ripplePaints) {
                 if (paint != null) {
@@ -99,7 +105,7 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
     }
 
     public void onMouseMove(MouseEvent.MouseMoveEvent event) {
-        boolean isHovering = widget.getRawBounds().in(event.getMousePosition());
+        boolean isHovering = getOverlayBounds().in(event.getMousePosition());
         if (isHovering != this.isHovered) {
             if (isHovering) {
                 onMouseEnter();
@@ -110,12 +116,20 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
     }
 
     public void onMousePress(MouseEvent.MousePressEvent event) {
+        Rectangle overlayBounds = getOverlayBounds();
+        if (!overlayBounds.in(event.getMousePosition())) {
+            return;
+        }
         lastPressPosition = new Vector2f(event.getMousePosition());
         animateHoverTo(1.25f, hoverEnterDuration);
-        ripple.setPressed(true, lastPressPosition, widget.getRawBounds());
+        ripple.setPressed(true, lastPressPosition, overlayBounds);
     }
 
     public void onMouseRelease(MouseEvent.MouseReleaseEvent event) {
+        if (lastPressPosition == null) {
+            return;
+        }
+
         if (ripple.shouldRender() && !isHovered) {
             shouldFadeOutAfterRipple = true;
         } else {
@@ -124,7 +138,8 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
             shouldFadeOutAfterRipple = false;
         }
 
-        ripple.setPressed(false, lastPressPosition, widget.getRawBounds());
+        ripple.setPressed(false, lastPressPosition, getOverlayBounds());
+        lastPressPosition = null;
     }
 
     public void onMouseEnter() {
@@ -197,6 +212,11 @@ public abstract class MaterialWidgetOverlay<T extends AbstractWidget<?>> {
 
     public MaterialWidgetOverlay setHoverPressedAlpha(float alpha) {
         this.hoverPressedAlpha = alpha;
+        return this;
+    }
+
+    public MaterialWidgetOverlay<T> setRippleAlpha(float alpha) {
+        ripple.setPressedAlpha(alpha);
         return this;
     }
 

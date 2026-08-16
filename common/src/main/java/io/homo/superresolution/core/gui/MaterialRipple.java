@@ -46,6 +46,7 @@ public class MaterialRipple {
 
     private final List<SingleRipple> activeRipples = new ArrayList<>();
     private final int maxConcurrentRipples;
+    private float pressedAlpha = 0.08f;
     private boolean pressed = false;
 
     public MaterialRipple() {
@@ -101,7 +102,7 @@ public class MaterialRipple {
             }
         }
 
-        SingleRipple newRipple = new SingleRipple(center, region);
+        SingleRipple newRipple = new SingleRipple(center, region, pressedAlpha);
         activeRipples.add(newRipple);
     }
 
@@ -161,6 +162,11 @@ public class MaterialRipple {
         return pressed;
     }
 
+    public MaterialRipple setPressedAlpha(float pressedAlpha) {
+        this.pressedAlpha = Math.max(0f, Math.min(1f, pressedAlpha));
+        return this;
+    }
+
     public void clearAllRipples() {
         for (SingleRipple ripple : activeRipples) {
             ripple.destroy();
@@ -173,11 +179,11 @@ public class MaterialRipple {
     }
 
     public static class SingleRipple {
-        private static final float PRESSED_ALPHA = 0.08f;
         private final Vector2f rippleStartCenter;
         private final Vector2f rippleTargetCenter;
         private final Vector2f currentCenter;
         private final Rectangle region;
+        private final float pressedAlpha;
         private final long creationTime;
         private final long enterStartedAtMillis;
         private final float maxRippleRadius;
@@ -194,11 +200,16 @@ public class MaterialRipple {
         private boolean isDestroy = false;
 
         public SingleRipple(Vector2f center, Rectangle region) {
+            this(center, region, 0.08f);
+        }
+
+        public SingleRipple(Vector2f center, Rectangle region, float pressedAlpha) {
             if (center == null || region == null) {
                 throw new IllegalArgumentException("Center and region cannot be null");
             }
 
             this.region = region;
+            this.pressedAlpha = pressedAlpha;
             this.rippleStartCenter = new Vector2f(center);
             this.rippleTargetCenter = new Vector2f(
                     region.x + region.width / 2f,
@@ -391,7 +402,7 @@ public class MaterialRipple {
             float alphaProgress = alphaAnimator.get();
 
             float currentRadius = lerp(startRippleRadius, maxRippleRadius, radiusProgress);
-            float currentAlpha = PRESSED_ALPHA * alphaProgress;
+            float currentAlpha = pressedAlpha * alphaProgress;
             if (true) {
                 float maxGradientRadius = currentRadius / (1 - RIPPLE_SMOOTHNESS);
                 float innerRadius = currentRadius * RIPPLE_SMOOTHNESS;

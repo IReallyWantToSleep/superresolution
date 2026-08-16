@@ -19,11 +19,7 @@
 package io.homo.superresolution.fabric.mixin.compat;
 
 import io.homo.superresolution.api.platform.Platform;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.core.graphics.renderdoc.RenderDoc;
-import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.fabric.platform.FabricPlatform;
-import net.fabricmc.loader.api.FabricLoader;
 import org.objectweb.asm.tree.ClassNode;
 import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;

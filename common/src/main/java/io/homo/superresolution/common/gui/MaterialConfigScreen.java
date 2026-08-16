@@ -23,6 +23,8 @@ import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.registry.AlgorithmRegistry;
+import io.homo.superresolution.api.registry.BackendGroup;
+import io.homo.superresolution.api.registry.LowLatencyGroups;
 import io.homo.superresolution.api.registry.ExtraResource;
 import io.homo.superresolution.api.registry.ExtraResources;
 import io.homo.superresolution.common.SuperResolution;
@@ -31,10 +33,16 @@ import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfig;
+import io.homo.superresolution.common.framegeneration.FrameGeneration;
+import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
+import io.homo.superresolution.api.registry.FrameGenerationDescription;
+import io.homo.superresolution.api.registry.FrameGenerationRegistry;
+import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.lowlatency.LowLatency;
-import io.homo.superresolution.common.lowlatency.LowLatencyMode;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 import io.homo.superresolution.core.streamline.Streamline;
+import io.homo.superresolution.api.registry.LowLatencyDescription;
+import io.homo.superresolution.api.registry.LowLatencyRegistry;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
 import io.homo.superresolution.common.gui.download.MaterialResourcesList;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
@@ -75,9 +83,12 @@ import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChart;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartDataSeries;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartType;
+import io.homo.superresolution.common.gui.widgets.SponsorChip;
 import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.navigation.drawer.MaterialNavigationDrawer;
+import io.homo.superresolution.core.gui.widgets.progress.MaterialCircularProgressIndicator;
+import io.homo.superresolution.core.gui.widgets.progress.MaterialProgressShape;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.impl.Pair;
 import io.homo.superresolution.core.utils.Color;
@@ -87,11 +98,14 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
+import org.jetbrains.annotations.Nullable;
 import org.joml.Vector2f;
+import org.lwjgl.glfw.GLFW;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 import java.util.function.Function;
 
@@ -100,8 +114,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private static final String ABOUT_GITHUB_URL = "https://github.com/187J3X1-114514/superresolution";
     private static final String ABOUT_WEBSITE_URL = "https://sr.187j3x1-114514.org/";
     private static final String ABOUT_WIKI_URL = "https://sr.187j3x1-114514.org/docs";
-    private static final long CONTENT_TRANSITION_FADE_OUT_DURATION_MS = 150L;
-    private static final long CONTENT_TRANSITION_FADE_IN_DURATION_MS = 150L;
+    private static final long CONTENT_TRANSITION_FADE_OUT_DURATION_MS = 120L;
+    private static final long CONTENT_TRANSITION_FADE_IN_DURATION_MS = 120L;
     private static final long CONTENT_TRANSITION_TOTAL_DURATION_MS =
             CONTENT_TRANSITION_FADE_OUT_DURATION_MS + CONTENT_TRANSITION_FADE_IN_DURATION_MS;
     private static final float CONTENT_TRANSITION_OFFSET_RATIO = 0.06f;
@@ -113,6 +127,11 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private static final float GROUP_TITLE_PILL_MIN_HEIGHT = 30f;
     private static final float FRAME_TITLE_PILL_HORIZONTAL_PADDING = 16f;
     private static final float GROUP_TITLE_PILL_HORIZONTAL_PADDING = 9f;
+    #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1
+    private static final boolean CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION = true;
+    #else
+    private static final boolean CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION = false;
+    #endif
 
     private final Screen parentScreen;
     private MaterialScheme materialScheme;
@@ -124,10 +143,14 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private MaterialNavigationDrawer drawer;
     private List<Destroyable> destroyables = new ArrayList<>();
     private Map<String, List<QualityPresetOption>> qualityPresetOptionsCache;
+    private SelectionListOptionEntry<FrameGenerationMode> frameGenerationEntry;
     private boolean contentTransitionRunning;
     private Frame outgoingContentFrame;
     private long contentTransitionStartMs;
     private float contentTransitionOffsetY;
+    private boolean sponsorRequestStarted;
+    private long sponsorRequestGeneration;
+    private CompletableFuture<SponsorService.Result> sponsorRequest;
 
     public MaterialConfigScreen(Screen parentScreen) {
         super(Component.translatable("superresolution.screen.config.name"));
@@ -145,6 +168,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
         materialScheme = MaterialUI.Scheme;
         contentFrames = new HashMap<>();
+        frameGenerationEntry = null;
         currentContentKey = "general";
 
         getView().removeFrame(getDefaultFrame());
@@ -164,11 +188,35 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
     @Override
     public void onClose() {
+        sponsorRequestGeneration++;
+        if (sponsorRequest != null) {
+            sponsorRequest.cancel(true);
+        }
         clearContentTransitionState();
         destroyables.forEach(Destroyable::destroy);
         MinecraftUtils.setScreen(parentScreen);
         MouseCursor.ARROW.use();
     }
+
+    #if MC_VER > MC_1_21_8
+    @Override
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        if (event.key() == GLFW.GLFW_KEY_INSERT) {
+            MinecraftUtils.setScreen(new WidgetShowcaseScreen(this));
+            return true;
+        }
+        return super.keyPressed(event);
+    }
+    #else
+    @Override
+    public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
+        if (keyCode == GLFW.GLFW_KEY_INSERT) {
+            MinecraftUtils.setScreen(new WidgetShowcaseScreen(this));
+            return true;
+        }
+        return super.keyPressed(keyCode, scanCode, modifiers);
+    }
+    #endif
 
     @Override
     public void draw(RenderContext ctx, UIInputState inputState) {
@@ -403,7 +451,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 })
                 .setSelectedByValue("general");
         drawer.layout().setWidthPercent(100);
-        drawer.layout().setHeightPercent(100);
+        drawer.layout().setHeightPercent(100f);
         container.addChild(drawer);
 
         frame.setRoot(container);
@@ -484,6 +532,27 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return frame;
     }
 
+    private void openUnstableIncompatibleShaderSupportDialog(BooleanSwitchOptionEntry entry) {
+        MaterialDialog dialog = MaterialDialog.create()
+                .icon(MaterialSymbols.iconWarning())
+                .scrimDismiss(false)
+                .headline(Text.translatable("superresolution.screen.config.dialog.unstable_incompatible_shader_support.title").getString())
+                .supportingText(Text.translatable("superresolution.screen.config.dialog.unstable_incompatible_shader_support.message").getString())
+                .addAction(Text.translatable("superresolution.screen.config.dialog.unstable_incompatible_shader_support.action.cancel").getString(), MaterialButtonVariant.Filled, dialog1->{
+                    SuperResolutionConfig.setEnableUnstableIncompatibleShaderSupport(false);
+                    SuperResolutionConfig.SPEC.save();
+                    entry.setCurrentValue(false);
+                    dialog1.dismiss();
+                })
+                .addAction(Text.translatable("superresolution.screen.config.dialog.unstable_incompatible_shader_support.action.confirm").getString(), MaterialButtonVariant.Text, dialog1 -> {
+                    SuperResolutionConfig.setEnableUnstableIncompatibleShaderSupport(true);
+                    SuperResolutionConfig.SPEC.save();
+                    entry.setCurrentValue(true);
+                    dialog1.dismiss();
+                });
+        getView().showDialog(dialog);
+    }
+
     private void openCreateAlgorithmFailedDialog(AlgorithmDescription<?> description) {
         MaterialDialog dialog = MaterialDialog.create()
                 .icon(MaterialSymbols.iconError())
@@ -493,19 +562,143 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         getView().showDialog(dialog);
     }
 
+    private void openRestartRequiredDialog() {
+        MaterialDialog dialog = MaterialDialog.create()
+                .icon(MaterialSymbols.iconRestartAlt())
+                .headline(Text.translatable("superresolution.screen.config.dialog.restart_required.title").getString())
+                .supportingText(Text.translatable("superresolution.screen.config.dialog.restart_required.message").getString())
+                .addAction(Text.translatable("superresolution.screen.config.dialog.restart_required.action.confirm").getString(), MaterialButtonVariant.Tonal, MaterialDialog::dismiss);
+        getView().showDialog(dialog);
+    }
+
     private boolean isExperimentalAlgorithm(AlgorithmDescription<?> algorithmDescription){
         return algorithmDescription.equals(AlgorithmDescriptions.DLSS) ||
                 algorithmDescription.equals(AlgorithmDescriptions.XESS) ||
                 algorithmDescription.equals(AlgorithmDescriptions.ANIME4K);
     }
 
-    private OptionRequirement getLowLatencyModeItemRequirement(LowLatencyMode mode) {
-        return switch (mode) {
-            case None -> OptionRequirement.all();
-            case NVReflex -> () -> LowLatency.isAvailable()
-                    && Streamline.isSupportedPlatform()
-                    && Streamline.isNativeAvailable();
-        };
+    /**
+     * The selectable low latency entries: the "none" sentinel plus every group that at least
+     * one registered backend belongs to. Concrete backends are never listed; the negotiator
+     * picks one inside the selected group at runtime.
+     */
+    private List<BackendGroup> lowLatencyGroups() {
+        List<BackendGroup> groups = new ArrayList<>();
+        groups.add(LowLatencyGroups.NONE);
+        for (LowLatencyDescription description : LowLatencyRegistry.getDescriptions().values()) {
+            BackendGroup group = description.getGroup();
+            if (group != null && !groups.contains(group)) {
+                groups.add(group);
+            }
+        }
+        return groups;
+    }
+
+    private BackendGroup lowLatencyGroupById(String id) {
+        for (BackendGroup group : lowLatencyGroups()) {
+            if (group.getId().equals(id)) {
+                return group;
+            }
+        }
+        return LowLatencyGroups.NONE;
+    }
+
+    private OptionRequirement lowLatencyOptionDisplayRequirement(LowLatencyDescription description) {
+        return () -> SuperResolutionConfig.getLowLatencyMode().equals(description.getId())
+                || FrameGeneration.activeLowLatencyBackendId().equals(description.getId());
+    }
+
+    private OptionRequirement frameGenerationOptionDisplayRequirement(FrameGenerationDescription description) {
+        return () -> FrameGeneration.isFrameGenerationEnabled()
+                && (SuperResolutionConfig.getFrameGenerationProvider().equals(description.getId())
+                || FrameGeneration.activeId().equals(description.getId()));
+    }
+
+    private OptionRequirement getLowLatencyGroupItemRequirement(BackendGroup group) {
+        if (group == null) {
+            return OptionRequirement.all();
+        }
+        if (group.equals(LowLatencyGroups.NONE)) {
+            return () -> !FrameGeneration.isFrameGenerationEnabled();
+        }
+        return () -> LowLatency.isAvailable() && lowLatencyGroupHasUsableBackend(group);
+    }
+
+    private boolean lowLatencyGroupHasUsableBackend(BackendGroup group) {
+        for (LowLatencyDescription description : LowLatencyRegistry.getDescriptions().values()) {
+            if (group.equals(description.getGroup())
+                    && LowLatencyRegistry.isSupported(description)
+                    && description.isAvailable()
+                    && description.dependenciesSatisfied()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean isReflexConfigured() {
+        return "superresolution:nv_reflex".equals(SuperResolutionConfig.getLowLatencyMode())
+                && SuperResolutionConfig.getNVIDIAReflexMode() != NVIDIAReflexMode.OFF;
+    }
+
+    /**
+     * Frame generation entries shown to the user: the automatic entry plus one entry per
+     * algorithm group. Concrete backends registered inside a group stay hidden.
+     */
+    private List<FrameGenerationDescription> frameGenerationProviderEntries() {
+        List<FrameGenerationDescription> entries = new ArrayList<>();
+        for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
+            if (description.isAutomatic()
+                    && (description.getGroup() == null || frameGenerationGroupHasUsableBackend(description.getGroup()))) {
+                entries.add(description);
+            }
+        }
+        return entries;
+    }
+
+    private OptionRequirement getFrameGenerationProviderItemRequirement(FrameGenerationDescription description) {
+        if (description == null) {
+            return OptionRequirement.all();
+        }
+        BackendGroup group = description.getGroup();
+        // The "any group" entry is always selectable; it resolves to whatever came up.
+        if (group == null) {
+            return OptionRequirement.all();
+        }
+        return () -> frameGenerationGroupHasUsableBackend(group);
+    }
+
+    private boolean frameGenerationGroupHasUsableBackend(BackendGroup group) {
+        for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
+            if (!description.isAutomatic()
+                    && group.equals(description.getGroup())
+                    && description.getRequirement().check().support()) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean hasAvailableFrameGenerationBackend() {
+        FrameGeneration.mode();
+        return FrameGenerationRegistry.getDescriptions().values().stream()
+                .anyMatch(description -> !description.isAutomatic()
+                        && FrameGenerationRegistry.isSupported(description));
+    }
+
+    private OptionRequirement getInteropSyncModeItemRequirement(InteropSyncMode mode) {
+        if (mode == InteropSyncMode.HighPerformance) {
+            return () -> !isReflexConfigured();
+        }
+        return OptionRequirement.all();
+    }
+
+    private void refreshFrameGenerationOptions() {
+        if (frameGenerationEntry == null) {
+            return;
+        }
+        frameGenerationEntry.refreshDynamicValues();
+        frameGenerationEntry.setSelectedValue(FrameGeneration.displayedMode());
     }
 
     private Frame createGeneralFrame() {
@@ -530,35 +723,48 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     .setText(Text.translatable("superresolution.screen.config.hint.b3d_vulkan_unavailable.text").getString())
                     .setDisplayRequirement(OptionRequirement.isTrue(B3DVulkanBridge::isB3DVulkanBackend))
                     .build();
+            if (!CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION) {
+                builder.hintOption(Text.literal("vulkan_presentation_unavailable"))
+                        .setIcon(MaterialSymbols.iconWarning())
+                        .setTitle(Text.translatable("superresolution.screen.config.hint.vulkan_presentation_unavailable.title").getString())
+                        .setText(Text.translatable("superresolution.screen.config.hint.vulkan_presentation_unavailable.text").getString())
+                        .build();
+            }
             builder.hintOption(Text.literal("tip114514"))
                     .setIcon(MaterialSymbols.iconWarning())
                     .setTitle(Text.translatable("superresolution.screen.config.hint.performance_warning.title").getString())
                     .setText(Text.translatable("superresolution.screen.config.hint.performance_warning.text").getString())
-                    .setDisplayRequirement(OptionRequirement.isTrue(() -> SuperResolutionConfig.isEnableUpscaleOriginal() && !SRWorkModeManager.getCurrentState().shaderPackInUse() && !SuperResolutionConfig.isDisableUpscaleOnVanilla()))
+                    .setDisplayRequirement(OptionRequirement.isTrue(() -> !SRWorkModeManager.getCurrentState().shaderPackInUse()))
+                    .build();
+            builder.hintOption(Text.literal("frame_generation_only_warning"))
+                    .setIcon(MaterialSymbols.iconWarning())
+                    .setTitle(Text.translatable("superresolution.screen.config.hint.frame_generation_only_warning.title").getString())
+                    .setText(Text.translatable("superresolution.screen.config.hint.frame_generation_only_warning.text").getString())
+                    .setDisplayRequirement(OptionRequirement.isTrue(() ->
+                            SRWorkModeManager.getCurrentState().supportsFrameGeneration()
+                                    && AlgorithmDescriptions.NONE.equals(SuperResolutionConfig.getUpscaleAlgorithm())))
                     .build();
             builder.hintOption(Text.literal("shader_compat_warning"))
                     .setIcon(MaterialSymbols.iconWarning())
                     .setTitle(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.title").getString())
-                    .setText(Text.translatable("superresolution.screen.config.hint.shader_compat_warning.text").getString())
-                    .setDisplayRequirement(OptionRequirement.isTrue(() -> !SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT) &&
-                            SuperResolutionConfig.isEnableUpscaleOriginal() &&
-                            SRWorkModeManager.getCurrentState().shaderPackInUse()))
+                    .setText(Text.translatable(
+                            SuperResolutionConfig.isUnstableIncompatibleShaderSupportEnabledAtStartup()
+                                    ? "superresolution.screen.config.hint.shader_compat_warning.text.compat"
+                                    : "superresolution.screen.config.hint.shader_compat_warning.text.disabled"
+                    ).getString())
+                    .setDisplayRequirement(OptionRequirement.isTrue(() ->
+                            !SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT) &&
+                            SRWorkModeManager.getCurrentState().shaderPackInUse()
+                    ))
                     .build();
 
             builder.booleanOption(
                             Text.translatable("superresolution.screen.config.options.label.enable_upscale"),
-                            SuperResolutionConfig.isEnableUpscaleOriginal())
+                            SuperResolutionConfig.isEnableUpscale())
                     .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_upscale"))
                     .setDefaultValue(() -> true)
+                    .setEnableRequirement(SRWorkModeManager::hasAvailableWorkMode)
                     .setSaveConsumer(SuperResolutionConfig::setEnableUpscale)
-                    .build();
-
-            builder.booleanOption(
-                            Text.translatable("superresolution.screen.config.options.label.disable_upscale_on_vanilla"),
-                            SuperResolutionConfig.isDisableUpscaleOnVanilla())
-                    .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.disable_upscale_on_vanilla"))
-                    .setDefaultValue(() -> false)
-                    .setSaveConsumer(SuperResolutionConfig::setDisableUpscaleOnVanilla)
                     .build();
 
             algoSelectRef[0] = builder.selectorOption(
@@ -566,7 +772,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             SuperResolutionConfig.getUpscaleAlgorithm(),
                             AlgorithmRegistry.getAlgorithmMap().values().toArray())
                     .setNameProvider(algo -> ((AlgorithmDescription<?>) algo).getBriefName())
-                    .setDefaultValue(() -> AlgorithmDescriptions.FSR1)
+                    .setDefaultValue(SuperResolutionConfig::getDefaultAlgorithm)
                     .setSaveConsumer((obj) -> {
                         AlgorithmDescription<?> algo = (AlgorithmDescription<?>) obj;
                         List<ExtraResource> lostResources = algo.getExtraResources().checkAll(SuperResolutionConstants.NATIVE_LIBRARIES_DIR);
@@ -613,7 +819,10 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                     if (isExperimentalAlgorithm(algorithmDescription)) return SuperResolutionConfig.isEnableExperimentalFeatures();
                                     return true;
 
-                                }
+                                },
+                                () -> !SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algorithmDescription.getCodeName()),
+                                () -> !AlgorithmDescriptions.NONE.equals(algorithmDescription)
+                                        || SRWorkModeManager.getCurrentState().supportsFrameGeneration()
                         );
                     })
                     .setMenuItemTooltipSupplier((algo)->{
@@ -621,6 +830,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         var result = algorithmDescription.getRequirement().check();
                         StringBuilder sb = new StringBuilder();
                         sb.append(algorithmDescription.getDisplayName());
+                        if (SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algorithmDescription.getCodeName())) {
+                            sb.append("\n");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.disabled_by_shaderpack").getString());
+                        }
+                        if (AlgorithmDescriptions.NONE.equals(algorithmDescription)
+                                && !SRWorkModeManager.getCurrentState().supportsFrameGeneration()) {
+                            sb.append("\n");
+                            sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.none_requires_frame_generation_only").getString());
+                        }
                         if (isExperimentalAlgorithm(algorithmDescription) && SuperResolutionConfig.isEnableExperimentalFeatures()){
                             sb.append("\n");
                             sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.experimental_warning").getString());
@@ -686,6 +904,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             initialPresetOptions.toArray(new QualityPresetOption[0]))
                     .setNameProvider(QualityPresetOption::displayName)
                     .setValuesSupplier(() -> getQualityPresetOptions(SuperResolutionConfig.getUpscaleAlgorithm()))
+                    .setEnableRequirement(() -> !AlgorithmDescriptions.NONE.equals(SuperResolutionConfig.getUpscaleAlgorithm()))
                     .setSaveConsumer((presetOption) -> {
                         if (presetOption == null || presetOption.custom() || syncingQualityPreset[0]) {
                             return true;
@@ -730,8 +949,12 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                     }
                             ))
                     )
-                    .setEnableRequirement(() -> isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm()))
+                    .setEnableRequirement(() -> isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm())
+                            && !AlgorithmDescriptions.NONE.equals(SuperResolutionConfig.getUpscaleAlgorithm()))
                     .setTooltipSupplier((t)->{
+                        if (AlgorithmDescriptions.NONE.equals(SuperResolutionConfig.getUpscaleAlgorithm())){
+                            return Optional.of(Tooltip.withContext(Text.translatable("superresolution.screen.config.options.tooltip.upscale_ratio.frame_generation_only").getString()));
+                        }
                         if (!isAlgorithmSupportsCustomUpscaleRatio(SuperResolutionConfig.getUpscaleAlgorithm())){
                             return Optional.of(Tooltip.withContext(Text.translatable("superresolution.screen.config.options.tooltip.upscale_ratio.custom_unsupported").getString()));
                         }else {
@@ -771,12 +994,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 }
         );
 
-        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2
-        final boolean supportsVulkanPresentation = true;
-        #else
-        final boolean supportsVulkanPresentation = false;
-        #endif
-        addLabeledOptionGroup(
+        if (CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION) {
+            addLabeledOptionGroup(
                 container,
                 Text.translatable("superresolution.screen.config.category.presentation"),
                 builder -> builder.booleanOption(
@@ -787,7 +1006,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         .setDescription(Text.translatable(
                                 "superresolution.screen.config.options.tooltip.enable_vulkan_presentation"
                         ))
-                        .setEnableRequirement(() -> !SuperResolutionConfig.isSkipInitVulkan())
+                        .setEnableRequirement(OptionRequirement.all(
+                                () -> !SuperResolutionConfig.isSkipInitVulkan()
+                        ))
                         .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
                                 Text.translatable(
                                         SuperResolutionConfig.isSkipInitVulkan()
@@ -795,7 +1016,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                                 : "superresolution.screen.config.options.tooltip.enable_vulkan_presentation"
                                 ).getString()
                         )))
-                        .setEnableRequirement(OptionRequirement.isTrue(()->supportsVulkanPresentation))
                         .setSaveConsumer(SuperResolutionConfig::setEnableVulkanPresentation)
                         .build()
         );
@@ -805,14 +1025,18 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 container,
                 Text.translatable("superresolution.screen.config.category.low_latency"),
                 builder -> {
-                    builder.enumSelectorOption(
+                    BackendGroup currentGroup = lowLatencyGroupById(SuperResolutionConfig.getLowLatencyMode());
+                    List<BackendGroup> groups = lowLatencyGroups();
+
+                    builder.selectorOption(
                                     Text.translatable("superresolution.screen.config.options.label.low_latency_mode"),
-                                    LowLatencyMode.class,
-                                    SuperResolutionConfig.getLowLatencyMode())
-                            .setDefaultValue(LowLatencyMode.None)
-                            .setEnumNameProvider(mode -> Text.translatable("superresolution.enum.lowlatencymode." + mode.name().toLowerCase()).getString())
+                                    currentGroup,
+                                    groups.toArray(new BackendGroup[0]))
+                            .setDefaultValue(() -> LowLatencyGroups.NONE)
+                            .setNameProvider(g -> g.getDisplayName().getString())
+                            .setValuesSupplier(this::lowLatencyGroups)
                             .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.low_latency_mode"))
-                            .setEnableRequirement(() -> SuperResolutionConfig.isEnableVulkanPresentation())
+                            .setEnableRequirement(SuperResolutionConfig::isEnableVulkanPresentation)
                             .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
                                     Text.translatable(
                                             SuperResolutionConfig.isEnableVulkanPresentation()
@@ -820,32 +1044,79 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                                     : "superresolution.screen.config.options.tooltip.low_latency_mode.vulkan_presentation_required"
                                     ).getString()
                             )))
-                            .setItemEnableRequirement(this::getLowLatencyModeItemRequirement)
-                            .setSaveConsumer(SuperResolutionConfig::setLowLatencyMode)
-                            .setEnableRequirement(OptionRequirement.isTrue(()->supportsVulkanPresentation))
+                            .setItemEnableRequirement(this::getLowLatencyGroupItemRequirement)
+                            .setSaveConsumer((Consumer<BackendGroup>) group -> {
+                                SuperResolutionConfig.setLowLatencyMode(group.getId());
+                                LowLatency.setMode(group.getId());
+                                refreshFrameGenerationOptions();
+                            })
                             .build();
-                    builder.enumSelectorOption(
-                                    Text.translatable("superresolution.screen.config.options.label.nv_reflex_mode"),
-                                    NVIDIAReflexMode.class,
-                                    SuperResolutionConfig.getNVIDIAReflexMode())
-                            .setDefaultValue(NVIDIAReflexMode.OFF)
-                            .setEnumNameProvider(mode -> Text.translatable("superresolution.enum.nvreflexmode." + mode.name().toLowerCase()).getString())
-                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.nv_reflex_mode"))
-                            .setEnableRequirement(() -> SuperResolutionConfig.isEnableVulkanPresentation() && SuperResolutionConfig.getLowLatencyMode() == LowLatencyMode.NVReflex)
-                            .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
-                                    Text.translatable(
-                                            !SuperResolutionConfig.isEnableVulkanPresentation()
-                                                    ? "superresolution.screen.config.options.tooltip.low_latency_mode.vulkan_presentation_required"
-                                                    : SuperResolutionConfig.getLowLatencyMode() != LowLatencyMode.NVReflex
-                                                    ? "superresolution.screen.config.options.tooltip.nv_reflex_mode.low_latency_required"
-                                                    : "superresolution.screen.config.options.tooltip.nv_reflex_mode"
-                                    ).getString()
-                            )))
-                            .setSaveConsumer(SuperResolutionConfig::setNVIDIAReflexMode)
-                            .setEnableRequirement(OptionRequirement.isTrue(()->supportsVulkanPresentation))
-                            .build();
+
+                    for (LowLatencyDescription description : LowLatencyRegistry.getDescriptions().values()) {
+                        for (SpecialConfigDescription<?> option : description.getOptionDescriptions()) {
+                            buildSpecialConfigOption(
+                                    builder,
+                                    option,
+                                    null,
+                                    lowLatencyOptionDisplayRequirement(description),
+                                    this::refreshFrameGenerationOptions
+                            );
+                        }
+                    }
                 }
         );
+
+        if (hasAvailableFrameGenerationBackend()) {
+            addLabeledOptionGroup(
+                    container,
+                    Text.translatable("superresolution.screen.config.category.frame_generation"), builder -> {
+                        // Via FrameGeneration so its static initializer has populated the
+                        // registry before the list below is read.
+                        FrameGenerationDescription currentProvider = FrameGeneration.mode();
+                        List<FrameGenerationDescription> providerEntries = frameGenerationProviderEntries();
+
+                        builder.selectorOption(
+                                        Text.translatable("superresolution.screen.config.options.label.frame_generation_provider"),
+                                        currentProvider,
+                                        providerEntries.toArray(new FrameGenerationDescription[0]))
+                                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.frame_generation_provider"))
+                                .setDefaultValue(() -> FrameGenerationRegistry.getDescriptionById(FrameGenerationDescriptions.AUTO_ID))
+                                .setNameProvider(d -> d.getDisplayName().getString())
+                                .setValuesSupplier(this::frameGenerationProviderEntries)
+                                .setItemEnableRequirement(this::getFrameGenerationProviderItemRequirement)
+                                .setSaveConsumer((Consumer<FrameGenerationDescription>) description ->
+                                        SuperResolutionConfig.setFrameGenerationProvider(description.getId()))
+                                .build();
+
+                        FrameGenerationMode[] modes = FrameGeneration.availableModes();
+                        frameGenerationEntry = builder.selectorOption(
+                                        Text.translatable("superresolution.screen.config.options.frame_generation"),
+                                        FrameGeneration.displayedMode(),
+                                        modes
+                                )
+                                .setDefaultValue(() -> FrameGenerationMode.OFF)
+                                .setNameProvider(mode -> Text.translatable(mode.translationKey()).getString())
+                                .setDescription(Text.translatable("superresolution.screen.config.options.frame_generation.tooltip"))
+                                .setEnableRequirement(FrameGeneration::isSupported)
+                                .setValuesSupplier(() -> Arrays.asList(FrameGeneration.availableModes()))
+                                .setSaveConsumer(FrameGeneration::setFrameGenerationMode)
+                                .build();
+
+                        for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
+                            for (SpecialConfigDescription<?> option : description.getOptionDescriptions()) {
+                                buildSpecialConfigOption(
+                                        builder,
+                                        option,
+                                        null,
+                                        frameGenerationOptionDisplayRequirement(description),
+                                        null
+                                );
+                            }
+                        }
+                    }
+            );
+        }
+        }
 
 
         addLabeledOptionGroup(
@@ -1115,11 +1386,13 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.interop_sync_mode"))
                             .setDefaultValue(() -> InteropSyncMode.LowLatency)
                             .setEnumNameProvider(mode -> ((InteropSyncMode) mode).toString())
+                            .setItemEnableRequirement(this::getInteropSyncModeItemRequirement)
                             .setSaveConsumer((value) -> {
                                 SuperResolutionConfig.setInteropSyncMode(value);
                                 if (SuperResolution.currentAlgorithm instanceof VulkanInteropAlgorithm) {
                                     SuperResolution.recreateAlgorithm();
                                 }
+                                refreshFrameGenerationOptions();
                             })
                             .build();
 
@@ -1132,19 +1405,31 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setEnumNameProvider(format -> format.name())
                             .setSaveConsumer(SuperResolutionConfig::setInternalTextureFormat)
                             .build();
+
                 }
         );
 
         addLabeledOptionGroup(
                 container,
                 Text.translatable("superresolution.screen.config.group.advanced.shader_compatibility"),
-                builder -> builder.booleanOption(
-                                Text.translatable("superresolution.screen.config.options.label.force_disable_shader_compat"),
-                                SuperResolutionConfig.isForceDisableShaderCompat())
-                        .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.force_disable_shader_compat"))
-                        .setDefaultValue(() -> false)
-                        .setSaveConsumer(SuperResolutionConfig::setForceDisableShaderCompat)
-                        .build()
+                builder -> {
+                    final BooleanSwitchOptionEntry[] entryRef = new BooleanSwitchOptionEntry[1];
+                    entryRef[0] = builder.booleanOption(
+                                    Text.translatable("superresolution.screen.config.options.label.enable_unstable_incompatible_shader_support"),
+                                    SuperResolutionConfig.isEnableUnstableIncompatibleShaderSupport())
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_unstable_incompatible_shader_support"))
+                            .setDefaultValue(() -> false)
+                            //.setRequireRestartGame(true)
+                            .setSaveConsumer(value -> {
+                                if (value) {
+                                    openUnstableIncompatibleShaderSupportDialog(entryRef[0]);
+                                    return false;
+                                }
+                                SuperResolutionConfig.setEnableUnstableIncompatibleShaderSupport(false);
+                                return true;
+                            })
+                            .build();
+                }
         );
 
         addLabeledOptionGroup(
@@ -1207,14 +1492,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setSaveConsumer(SuperResolutionConfig::setEnableExperimentalFeatures)
                 .build();
 
-        builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.generate_motion_vectors"),
-                        SuperResolutionConfig.isGenerateMotionVectors())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.generate_motion_vectors"))
-                .setDefaultValue(() -> false)
-                .setSaveConsumer(SuperResolutionConfig::setGenerateMotionVectors)
-                .setEnableRequirement(() -> false)
-                .build();
         addOptionGroupToContainer(container, builder);
         finalizeFrame(frame, container);
         return frame;
@@ -1254,6 +1531,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         OptionCategory category = new OptionCategory(categoryName);
         OptionBuilder builder = new OptionBuilder(category);
         builder.setSaveRunnable(SuperResolutionConfig.SPEC::save);
+        builder.setRestartRequiredCallback(this::openRestartRequiredDialog);
         return builder;
     }
 
@@ -1333,8 +1611,18 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         return frame;
     }
 
-    @SuppressWarnings({"unchecked", "rawtypes"})
     private void buildSpecialConfigOption(OptionBuilder builder, SpecialConfigDescription<?> desc) {
+        buildSpecialConfigOption(builder, desc, null, null, null);
+    }
+
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    private void buildSpecialConfigOption(
+            OptionBuilder builder,
+            SpecialConfigDescription<?> desc,
+            @Nullable OptionRequirement enableRequirement,
+            @Nullable OptionRequirement displayRequirement,
+            @Nullable Runnable afterSave
+    ) {
         Text optionName = Text.literal(desc.getName().getString());
         Optional<Component> tooltip = desc.getTooltip();
 
@@ -1343,10 +1631,20 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 SpecialConfigDescription<Boolean> boolDesc = (SpecialConfigDescription<Boolean>) desc;
                 var opt = builder.booleanOption(optionName, boolDesc.getValue())
                         .setDefaultValue(() -> boolDesc.getDefaultValue())
-                        .setSaveConsumer(boolDesc.getSaveConsumer());
+                        .setSaveConsumer(value -> {
+                            boolDesc.getSaveConsumer().accept(value);
+                            runAfterSave(afterSave);
+                        });
                 if (tooltip.isPresent()) {
                     opt.setDescription(Text.literal(tooltip.get().getString()));
                 }
+                if (enableRequirement != null) {
+                    opt.setEnableRequirement(enableRequirement);
+                }
+                if (displayRequirement != null) {
+                    opt.setDisplayRequirement(displayRequirement);
+                }
+                opt.setRequireRestartGame(boolDesc.isRequiresRestartGame());
                 opt.build();
                 break;
             }
@@ -1355,18 +1653,31 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 Class enumClass = enumDesc.getClazz();
                 Enum enumValue = (Enum) enumDesc.getValue();
                 Enum defaultEnumValue = (Enum) enumDesc.getDefaultValue();
+                Consumer<Object> enumSaveConsumer = value -> {
+                    enumDesc.getSaveConsumerAsObject().accept(value);
+                    runAfterSave(afterSave);
+                };
                 EnumSelectorBuilder<?> opt = (EnumSelectorBuilder<?>) builder.enumSelectorOption(optionName, enumClass, enumValue)
                         .setDefaultValue(defaultEnumValue)
-                        .setSaveConsumer(enumDesc.getSaveConsumer());
+                        .setSaveConsumer(enumSaveConsumer);
                 if (enumDesc.isValueNameIsSupplier()) {
                     opt.setEnumNameProvider(e ->
                             ((Function<Object, Optional<Component>>) enumDesc.getValueNameSupplierAsObject())
                                     .apply(e).orElse(Component.empty()).getString()
                     );
                 }
+                opt.setItemEnableRequirement(item ->
+                        () -> enumDesc.getItemEnableRequirementAsObject().test(item));
                 if (tooltip.isPresent()) {
                     opt.setDescription(Text.literal(tooltip.get().getString()));
                 }
+                if (enableRequirement != null) {
+                    opt.setEnableRequirement(enableRequirement);
+                }
+                if (displayRequirement != null) {
+                    opt.setDisplayRequirement(displayRequirement);
+                }
+                opt.setRequireRestartGame(enumDesc.isRequiresRestartGame());
                 opt.build();
                 break;
             }
@@ -1382,6 +1693,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                         .setDefaultValue(() -> floatDesc.getDefaultValue())
                         .setSaveConsumer((v) -> {
                             floatDesc.getSaveConsumer().accept(v.floatValue());
+                            runAfterSave(afterSave);
                             return true;
                         });
                 if (floatDesc.isValueNameIsSupplier()) {
@@ -1396,11 +1708,24 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 if (tooltip.isPresent()) {
                     opt.setDescription(Text.literal(tooltip.get().getString()));
                 }
+                if (enableRequirement != null) {
+                    opt.setEnableRequirement(enableRequirement);
+                }
+                if (displayRequirement != null) {
+                    opt.setDisplayRequirement(displayRequirement);
+                }
+                opt.setRequireRestartGame(floatDesc.isRequiresRestartGame());
                 opt.build();
                 break;
             }
             default:
                 break;
+        }
+    }
+
+    private static void runAfterSave(@Nullable Runnable afterSave) {
+        if (afterSave != null) {
+            afterSave.run();
         }
     }
 
@@ -1413,6 +1738,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         Pair<String, Text>[] operations = new Pair[]{
                 Pair.of("Frame", Text.translatable("superresolution.screen.config.section.performance.chart.frame")),
+                Pair.of("Reflex Sleep", Text.translatable("superresolution.screen.config.section.performance.chart.reflex_sleep")),
                 Pair.of("Main Render", Text.translatable("superresolution.screen.config.section.performance.chart.main_render")),
                 Pair.of("Level Render", Text.translatable("superresolution.screen.config.section.performance.chart.level_render")),
                 Pair.of("Upscale", Text.translatable("superresolution.screen.config.section.performance.chart.upscale")),
@@ -1477,18 +1803,18 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 .setSaveConsumer(SuperResolutionConfig::setDebugDumpShader)
                 .build();
         builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.enable_renderdoc"),
-                        SuperResolutionConfig.isEnableRenderDoc())
-                .setDefaultValue(() -> true)
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_renderdoc"))
-                .setSaveConsumer(SuperResolutionConfig::setEnableRenderDoc)
-                .build();
-        builder.booleanOption(
                         Text.translatable("superresolution.screen.config.options.label.enable_imgui"),
                         SuperResolutionConfig.isEnableImgui())
                 .setDefaultValue(() -> true)
                 .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_imgui"))
                 .setSaveConsumer(SuperResolutionConfig::setEnableImgui)
+                .build();
+        builder.booleanOption(
+                        Text.translatable("superresolution.screen.config.options.label.enable_present_indicator"),
+                        SuperResolutionConfig.isEnablePresentIndicator())
+                .setDefaultValue(() -> false)
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_present_indicator"))
+                .setSaveConsumer(SuperResolutionConfig::setEnablePresentIndicator)
                 .build();
         addOptionGroupToContainer(container, builder);
         finalizeFrame(frame, container);
@@ -1631,6 +1957,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 new ContributorInfo("Enaium", Text.translatable("superresolution.screen.config.info.about.contributor.enaium.desc").getString(), "https://github.com/Enaium", "/assets/super_resolution/textures/gui/contributors/Enaium.png"),
                 new ContributorInfo("rrtt217", Text.translatable("superresolution.screen.config.info.about.contributor.rrtt217.desc").getString(), "https://github.com/rrtt217", "/assets/super_resolution/textures/gui/contributors/rrtt217.png"),
                 new ContributorInfo("筱烷", Text.translatable("superresolution.screen.config.info.about.contributor.shiroiame.desc").getString(), "https://github.com/Shiroiame-Kusu", "/assets/super_resolution/textures/gui/contributors/Shiroiame-Kusu.png"),
+                new ContributorInfo("shiromizu", Text.translatable("superresolution.screen.config.info.about.contributor.shiromizu.desc").getString(), "https://github.com/shiromizu-hui", "/assets/super_resolution/textures/gui/contributors/shiromizu.png"),
+                new ContributorInfo("eastear2333", Text.translatable("superresolution.screen.config.info.about.contributor.eastear2333.desc").getString(), "https://github.com/eastear23333", "/assets/super_resolution/textures/gui/contributors/eastear2333.png"),
                 new ContributorInfo("ChloePrime", Text.translatable("superresolution.screen.config.info.about.contributor.chloeprime.desc").getString(), "https://github.com/ChloePrime", "/assets/super_resolution/textures/gui/contributors/ChloePrime.png"),
                 new ContributorInfo("EnderPhantomWing", Text.translatable("superresolution.screen.config.info.about.contributor.enderphantomwing.desc").getString(), "https://github.com/EnderPhantomWing", "/assets/super_resolution/textures/gui/contributors/EnderPhantomWing.png"),
                 new ContributorInfo("索德列斯", Text.translatable("superresolution.screen.config.info.about.contributor.suodeliesi.desc").getString(), "", "/assets/super_resolution/textures/gui/contributors/suodeliesi.png"),
@@ -1649,6 +1977,22 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             contributorsCard.addChild(createContributorRow(contributor));
         }
         container.addChild(contributorsCard);
+
+        TitlePill sponsorSection = createSectionPill(
+                Text.translatable("superresolution.screen.config.info.about.sponsors").getString()
+        );
+        sponsorSection.layout().setMargin(YogaEdge.TOP, 12);
+        sponsorSection.layout().setMargin(YogaEdge.BOTTOM, 6);
+        container.addChild(sponsorSection);
+
+        InfoCard sponsorsCard = new InfoCard();
+        ContainerWidget sponsorsContainer = new SponsorWrappingRow();
+        sponsorsContainer.layout().setWidthPercent(100);
+        sponsorsContainer.layout().setMinHeight(100);
+        sponsorsCard.addChild(sponsorsContainer);
+        container.addChild(sponsorsCard);
+        showSponsorLoadingState(sponsorsContainer);
+        loadSponsors(sponsorsContainer);
 
         TitlePill librarySection = createSectionPill(
                 Text.translatable("superresolution.screen.config.info.about.libraries").getString()
@@ -1729,6 +2073,128 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         finalizeFrame(frame, container);
         return frame;
+    }
+
+    private MaterialLabel createSponsorStateLabel(String key) {
+        MaterialLabel label = MaterialLabel.create()
+                .text(Text.translatable(key).getString())
+                .fontSize(13)
+                .color(MaterialScheme::onSurfaceVariant);
+        label.style().sizeToContent(true);
+        return label;
+    }
+
+    private void loadSponsors(ContainerWidget container) {
+        if (sponsorRequestStarted) {
+            return;
+        }
+        sponsorRequestStarted = true;
+        long generation = ++sponsorRequestGeneration;
+        sponsorRequest = SponsorService.fetchAsync();
+        sponsorRequest.thenAccept(result -> Minecraft.getInstance().execute(() -> {
+            if (generation != sponsorRequestGeneration || MinecraftUtils.getScreen() != this) {
+                return;
+            }
+            if (!result.success()) {
+                showSponsorErrorState(container);
+            } else if (result.sponsors().isEmpty()) {
+                showSponsorMessageState(container, "superresolution.screen.config.info.about.sponsors.empty");
+            } else {
+                for (var child : new ArrayList<>(container.getChildren())) {
+                    container.removeChild(child);
+                }
+                container.layout().setFlexDirection(YogaFlexDirection.ROW);
+                container.layout().setWrap(YogaWrap.WRAP);
+                container.layout().setGap(YogaGutter.ALL, 8);
+                container.layout().setAlignItems(YogaAlign.CENTER);
+                container.layout().setJustifyContent(YogaJustify.SPACE_BETWEEN);
+                for (SponsorService.Sponsor sponsor : result.sponsors()) {
+                    container.addChild(new SponsorChip(sponsor));
+                }
+                view.markLayoutDirty();
+            }
+        }));
+    }
+
+    private void applySponsorMessageStateLayout(ContainerWidget container) {
+        for (var child : new ArrayList<>(container.getChildren())) {
+            container.removeChild(child);
+        }
+        container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
+        container.layout().setWrap(YogaWrap.NO_WRAP);
+        container.layout().setGap(YogaGutter.ALL, 8);
+        container.layout().setAlignItems(YogaAlign.CENTER);
+        container.layout().setJustifyContent(YogaJustify.CENTER);
+    }
+
+    private void showSponsorLoadingState(ContainerWidget container) {
+        applySponsorMessageStateLayout(container);
+        MaterialCircularProgressIndicator indicator = new MaterialCircularProgressIndicator()
+                .setIndeterminate(true)
+                .setShape(MaterialProgressShape.FLAT);
+        indicator.setElementWidth(MaterialCircularProgressIndicator.SIZE_FLAT_DEFAULT);
+        indicator.setElementHeight(MaterialCircularProgressIndicator.SIZE_FLAT_DEFAULT);
+        container.addChild(indicator);
+        container.addChild(createSponsorStateLabel("superresolution.screen.config.info.about.sponsors.loading"));
+        view.markLayoutDirty();
+    }
+
+    private void showSponsorMessageState(ContainerWidget container, String key) {
+        applySponsorMessageStateLayout(container);
+        container.addChild(createSponsorStateLabel(key));
+        view.markLayoutDirty();
+    }
+
+    private void showSponsorErrorState(ContainerWidget container) {
+        applySponsorMessageStateLayout(container);
+        container.addChild(createSponsorStateLabel("superresolution.screen.config.info.about.sponsors.error"));
+        MaterialButton retryButton = MaterialButton.tonal(
+                        Text.translatable("superresolution.screen.config.info.about.sponsors.retry").getString())
+                .icon(MaterialSymbols.iconRefresh())
+                .size(MaterialButtonSize.Small);
+        retryButton.onClick(e -> {
+            sponsorRequestStarted = false;
+            showSponsorLoadingState(container);
+            loadSponsors(container);
+        });
+        container.addChild(retryButton);
+        view.markLayoutDirty();
+    }
+
+    private static class SponsorWrappingRow extends ContainerWidget {
+        private static final float CHIP_GAP = 8f;
+
+        @Override
+        public void layouting(RenderContext ctx) {
+            super.layouting(ctx);
+            if (layout().getFlexDirection() != YogaFlexDirection.ROW) {
+                return;
+            }
+            int lastLine = -1;
+            for (var child : getChildren()) {
+                lastLine = Math.max(lastLine, child.getLayoutNode().getLineIndex());
+            }
+            if (lastLine < 0) {
+                return;
+            }
+            float cursor = Float.POSITIVE_INFINITY;
+            for (var child : getChildren()) {
+                var node = child.getLayoutNode();
+                if (node.getLineIndex() == lastLine) {
+                    cursor = Math.min(cursor, node.getLayoutX());
+                }
+            }
+            if (!Float.isFinite(cursor)) {
+                return;
+            }
+            for (var child : getChildren()) {
+                var node = child.getLayoutNode();
+                if (node.getLineIndex() == lastLine) {
+                    node.setLayoutPosition(cursor, YogaPhysicalEdge.LEFT);
+                    cursor += node.getLayoutWidth() + CHIP_GAP;
+                }
+            }
+        }
     }
 
     private InfoCard createAboutBrandCard() {

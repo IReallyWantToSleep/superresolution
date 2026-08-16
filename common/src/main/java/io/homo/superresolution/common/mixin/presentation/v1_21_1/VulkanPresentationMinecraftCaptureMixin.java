@@ -25,6 +25,8 @@ import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeat
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.DeltaTracker;
+import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -42,7 +44,9 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
                     shift = At.Shift.AFTER
             )
     )
-    private void super_resolution$presentCapturedFrame(boolean advanceGameTime, CallbackInfo ci) {
+    private void super_resolution$renderAndPresent(
+            boolean renderLevel, CallbackInfo ci
+    ) {
         if (VulkanPresentationFeature.isRequested()) {
             VulkanPresentationWindow.endMinecraftFrame();
         }
@@ -58,7 +62,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             ),
             require = 1
     )
-    private void beginReflexFrame(CallbackInfo ci) {
+    private void super_resolution$pollEvents(CallbackInfo ci) {
         if (VulkanPresentationFeature.isRequested()) {
             RenderSystemAccessor.invokePollEvents();
         }

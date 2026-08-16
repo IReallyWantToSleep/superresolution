@@ -37,7 +37,14 @@ public abstract class VulkanPresentationGlDeviceMixin {
         }
     }
 
-    @Inject(method = "close", at = @At("TAIL"))
+    @Inject(
+            method = "close",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lorg/lwjgl/glfw/GLFW;glfwTerminate()V",
+                    shift = At.Shift.BEFORE
+            )
+    )
     private void super_resolution$destroyRenderWindow(CallbackInfo ci) {
         if (VulkanPresentationFeature.isRequested()) {
             PresentationWindowState.destroyRenderWindow();

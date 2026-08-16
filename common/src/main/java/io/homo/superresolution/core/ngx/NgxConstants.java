@@ -88,6 +88,47 @@ public final class NgxConstants {
     public static final String DLSS_INDICATOR_INVERT_Y = "DLSS.Indicator.Invert.Y.Axis";
     public static final String FRAME_TIME_DELTA_MS = "FrameTimeDeltaInMsec";
 
+    public static final int DLSS_DENOISE_MODE_OFF = 0;
+    public static final int DLSS_DENOISE_MODE_DL_UNIFIED = 1;
+    public static final int DLSS_ROUGHNESS_MODE_UNPACKED = 0;
+    public static final int DLSS_ROUGHNESS_MODE_PACKED = 1;
+    public static final int DLSS_DEPTH_TYPE_LINEAR = 0;
+    public static final int DLSS_DEPTH_TYPE_HARDWARE = 1;
+    public static final int RAY_RECONSTRUCTION_PRESET_DEFAULT = 0;
+    public static final int RAY_RECONSTRUCTION_PRESET_D = 4;
+    public static final int RAY_RECONSTRUCTION_PRESET_E = 5;
+
+    public static final String DLSS_DENOISE_MODE = "DLSS.Denoise.Mode";
+    public static final String DLSS_ROUGHNESS_MODE = "DLSS.Roughness.Mode";
+    public static final String DLSS_USE_HARDWARE_DEPTH = "DLSS.Use.HW.Depth";
+    public static final String DLSS_DIFFUSE_ALBEDO = "DLSS.Input.DiffuseAlbedo";
+    public static final String DLSS_SPECULAR_ALBEDO = "DLSS.Input.SpecularAlbedo";
+    public static final String DLSS_GBUFFER_SPECULAR_MVEC = "GBuffer.SpecularMvec";
+    public static final String DLSSD_ALPHA = "DLSSD.Alpha";
+    public static final String DLSSD_OUTPUT_ALPHA = "DLSSD.OutputAlpha";
+    public static final String DLSSD_RESPONSIVITY_MASK = "DLSSD.ResponsivityMask";
+    public static final String SUPER_SAMPLING_DENOISING_AVAILABLE = "SuperSamplingDenoising.Available";
+    public static final String SUPER_SAMPLING_DENOISING_NEEDS_UPDATED_DRIVER =
+            "SuperSamplingDenoising.NeedsUpdatedDriver";
+    public static final String SUPER_SAMPLING_DENOISING_MIN_DRIVER_VERSION_MAJOR =
+            "SuperSamplingDenoising.MinDriverVersionMajor";
+    public static final String SUPER_SAMPLING_DENOISING_MIN_DRIVER_VERSION_MINOR =
+            "SuperSamplingDenoising.MinDriverVersionMinor";
+    public static final String SUPER_SAMPLING_DENOISING_FEATURE_INIT_RESULT =
+            "SuperSamplingDenoising.FeatureInitResult";
+    public static final String RAY_RECONSTRUCTION_PRESET_DLAA =
+            "RayReconstruction.Hint.Render.Preset.DLAA";
+    public static final String RAY_RECONSTRUCTION_PRESET_QUALITY =
+            "RayReconstruction.Hint.Render.Preset.Quality";
+    public static final String RAY_RECONSTRUCTION_PRESET_BALANCED =
+            "RayReconstruction.Hint.Render.Preset.Balanced";
+    public static final String RAY_RECONSTRUCTION_PRESET_PERFORMANCE =
+            "RayReconstruction.Hint.Render.Preset.Performance";
+    public static final String RAY_RECONSTRUCTION_PRESET_ULTRA_PERFORMANCE =
+            "RayReconstruction.Hint.Render.Preset.UltraPerformance";
+    public static final String RAY_RECONSTRUCTION_PRESET_ULTRA_QUALITY =
+            "RayReconstruction.Hint.Render.Preset.UltraQuality";
+
     public static final String[] DLSS_GBUFFER = {
             "GBuffer.Albedo",
             "GBuffer.Roughness",
@@ -120,6 +161,17 @@ public final class NgxConstants {
     public static final String DLSSFG_OUTPUT_DISABLE_INTERPOLATION = "DLSSG.OutputDisableInterpolation";
     public static final String DLSSFG_MULTI_FRAME_COUNT = "DLSSG.MultiFrameCount";
     public static final String DLSSFG_MULTI_FRAME_INDEX = "DLSSG.MultiFrameIndex";
+    public static final String DLSSFG_MULTI_FRAME_COUNT_MAX = "DLSSG.MultiFrameCountMax";
+    public static final String DLSSFG_INTERNAL_WIDTH = "DLSSG.InternalWidth";
+    public static final String DLSSFG_INTERNAL_HEIGHT = "DLSSG.InternalHeight";
+    public static final String DLSSFG_DYNAMIC_RESOLUTION = "DLSSG.DynamicResolution";
+    public static final String DLSSFG_MVEC_JITTERED = "DLSSG.MvecJittered";
+
+    public static final String FRAME_GENERATION_AVAILABLE = "FrameGeneration.Available";
+    public static final String FRAME_GENERATION_FEATURE_INIT_RESULT = "FrameGeneration.FeatureInitResult";
+    public static final String FRAME_GENERATION_NEEDS_UPDATED_DRIVER = "FrameGeneration.NeedsUpdatedDriver";
+    public static final String FRAME_GENERATION_MIN_DRIVER_VERSION_MAJOR = "FrameGeneration.MinDriverVersionMajor";
+    public static final String FRAME_GENERATION_MIN_DRIVER_VERSION_MINOR = "FrameGeneration.MinDriverVersionMinor";
 
     private NgxConstants() {
     }

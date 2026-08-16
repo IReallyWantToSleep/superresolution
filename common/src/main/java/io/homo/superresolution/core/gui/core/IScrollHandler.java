@@ -22,6 +22,34 @@ package io.homo.superresolution.core.gui.core;
 import org.joml.Vector2f;
 
 public interface IScrollHandler {
+    record ScrollMetrics(
+            float contentWidth,
+            float contentHeight,
+            float viewportWidth,
+            float viewportHeight,
+            boolean horizontalEnabled,
+            boolean verticalEnabled
+    ) {
+        public ScrollMetrics {
+            if (!Float.isFinite(contentWidth) || contentWidth < 0.0f) {
+                throw new IllegalArgumentException("contentWidth must be finite and non-negative");
+            }
+            if (!Float.isFinite(contentHeight) || contentHeight < 0.0f) {
+                throw new IllegalArgumentException("contentHeight must be finite and non-negative");
+            }
+            if (!Float.isFinite(viewportWidth) || viewportWidth < 0.0f) {
+                throw new IllegalArgumentException("viewportWidth must be finite and non-negative");
+            }
+            if (!Float.isFinite(viewportHeight) || viewportHeight < 0.0f) {
+                throw new IllegalArgumentException("viewportHeight must be finite and non-negative");
+            }
+        }
+
+        public static ScrollMetrics empty() {
+            return new ScrollMetrics(0.0f, 0.0f, 0.0f, 0.0f, false, false);
+        }
+    }
+
     void onDragStart(Vector2f position);
 
     void onDragMove(Vector2f position, Vector2f delta);
@@ -44,9 +72,7 @@ public interface IScrollHandler {
 
     void setOnOffsetChanged(OnOffsetChangedListener listener);
 
-    void setScrollBounds(Vector2f min, Vector2f max);
-
-    void clearScrollBounds();
+    void setScrollMetrics(ScrollMetrics metrics);
 
     interface OnOffsetChangedListener {
         void onOffsetChanged(Vector2f newOffset);

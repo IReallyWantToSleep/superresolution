@@ -36,7 +36,7 @@ final class FrameTextureResource {
     private GlImportableTexture2D glTexture;
     private VkGlInteropSemaphore ready;
     private VkGlInteropSemaphore release;
-    private boolean ownsResources;
+    private boolean ownsResources = true;
     private boolean valid;
     private boolean releasePending;
 

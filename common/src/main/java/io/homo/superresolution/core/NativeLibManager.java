@@ -21,6 +21,8 @@ package io.homo.superresolution.core;
 import io.homo.superresolution.api.platform.OperatingSystem;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.SystemArchitecture;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.utils.MessageBox;
 import org.slf4j.Logger;
@@ -33,7 +35,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.HexFormat;
 import java.util.List;
 
 public class NativeLibManager {
@@ -53,12 +58,7 @@ public class NativeLibManager {
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_NGX = null;
     public static NativeLib LIB_SUPER_RESOLUTION_STREAMLINE = null;
-    public static NativeLib LIB_STREAMLINE_INTERPOSER = null;
-    public static NativeLib LIB_STREAMLINE_COMMON = null;
-    public static NativeLib LIB_STREAMLINE_DLSS_G = null;
-    public static NativeLib LIB_STREAMLINE_REFLEX = null;
-    public static NativeLib LIB_STREAMLINE_NVNGX_REFLEX = null;
-    public static NativeLib LIB_STREAMLINE_PCL = null;
+    public static NativeLib LIB_NGX_DLSSG_SNIPPET = null;
     private static boolean nativeApiAvailable;
     private static boolean librariesExtracted;
     private static boolean librariesLoaded;
@@ -66,34 +66,47 @@ public class NativeLibManager {
     static {
         OperatingSystem operatingSystem = new OperatingSystem();
         if (operatingSystem.type == OperatingSystemType.WINDOWS && operatingSystem.arch == SystemArchitecture.X86_64) {
-            boolean presentation = VulkanPresentationFeature.shouldInitializeStreamline();
-            LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
-            LIB_SUPER_RESOLUTION_D3D12_INTEROP =
-                    new NativeLib("SuperResolutionD3D12Interop", true, false);
-            LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
-            LIB_SUPER_RESOLUTION_FSR4 = new NativeLib("SuperResolutionFSR4", false, false);
-            LIB_SUPER_RESOLUTION_XESS = new NativeLib("SuperResolutionXeSS", false, false);
-            LIB_SUPER_RESOLUTION_NGX = new NativeLib("SuperResolutionNGX", false, false);
-            LIB_SUPER_RESOLUTION_STREAMLINE = new NativeLib("SuperResolutionStreamline", presentation, presentation);
-            LIB_STREAMLINE_COMMON = new NativeLib("sl.common", presentation, presentation, true);
-            LIB_STREAMLINE_INTERPOSER = new NativeLib("sl.interposer", presentation, presentation, true);
-            LIB_STREAMLINE_DLSS_G = new NativeLib("sl.dlss_g", false, presentation, true);
-            LIB_STREAMLINE_REFLEX = new NativeLib("sl.reflex", false, presentation, true);
-            LIB_STREAMLINE_PCL = new NativeLib("sl.pcl", false, presentation, true);
-            LIB_STREAMLINE_NVNGX_REFLEX = new NativeLib("NvLowLatencyVk", false, presentation, true);
+            boolean shouldExtract = VulkanPresentationFeature.isRequested() && SuperResolutionConfig.CURRENT_OS_TYPE == OperatingSystemType.WINDOWS;
+            boolean shouldLoad = FrameGenerationDescriptions.mayUseStreamline(
+                    SuperResolutionConfig.getFrameGenerationProvider());
+            LIB_SUPER_RESOLUTION = new NativeLib(
+                    "SuperResolution",
+                    true,
+                    true
+            );
+            LIB_SUPER_RESOLUTION_FSR = new NativeLib(
+                    "SuperResolutionFSR",
+                    false,
+                    false
+            );
+            LIB_SUPER_RESOLUTION_FSR4 = new NativeLib(
+                    "SuperResolutionFSR4",
+                    false,
+                    false
+            );
+            LIB_SUPER_RESOLUTION_XESS = new NativeLib(
+                    "SuperResolutionXeSS",
+                    false,
+                    false
+            );
+            LIB_SUPER_RESOLUTION_NGX = new NativeLib(
+                    "SuperResolutionNGX",
+                    false,
+                    false
+            );
+            LIB_SUPER_RESOLUTION_STREAMLINE = new NativeLib(
+                    "SuperResolutionStreamline",
+                    shouldLoad,
+                    shouldExtract
+            );
+
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_D3D12_INTEROP);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_FSR4);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
             libs.add(LIB_SUPER_RESOLUTION_NGX);
-            libs.add(LIB_STREAMLINE_COMMON);
-            libs.add(LIB_STREAMLINE_INTERPOSER);
             libs.add(LIB_SUPER_RESOLUTION_STREAMLINE);
-            libs.add(LIB_STREAMLINE_DLSS_G);
-            libs.add(LIB_STREAMLINE_REFLEX);
-            libs.add(LIB_STREAMLINE_PCL);
-            libs.add(LIB_STREAMLINE_NVNGX_REFLEX);
         } else if (operatingSystem.type == OperatingSystemType.ANDROID && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             libs.add(LIB_SUPER_RESOLUTION);
@@ -102,9 +115,11 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             LIB_SUPER_RESOLUTION_FSR = new NativeLib("SuperResolutionFSR", false, false);
             LIB_SUPER_RESOLUTION_NGX = new NativeLib("SuperResolutionNGX", true, false);
+            LIB_NGX_DLSSG_SNIPPET = new NativeLib("libnvidia-ngx-dlssg", false, false, true);
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_NGX);
+            libs.add(LIB_NGX_DLSSG_SNIPPET);
 
         } else if (operatingSystem.type == OperatingSystemType.MACOS && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
@@ -150,7 +165,7 @@ public class NativeLibManager {
                 }
             } catch (Exception e) {
                 if (lib.required) {
-                    requiredFailures.add(lib.fileName);
+                    requiredFailures.add("%s: %s".formatted(lib.fileName, e.getMessage()));
                     LOGGER.error("必要依赖库 {} 提取失败: {}", lib.fileName, e.getMessage());
                     LOGGER.error("原生库提取错误详情", e);
                 } else {
@@ -216,23 +231,109 @@ public class NativeLibManager {
         nativeApiAvailable = true;
     }
 
-    private static boolean _writeFile(InputStream in, String path) throws IOException {
+    private static boolean _writeFile(
+            InputStream in,
+            Path filePath,
+            String embeddedChecksum,
+            String existingChecksum
+    ) throws IOException {
         if (in == null) {
             return false;
         }
-        Path filePath = Path.of(path);
-        Files.copy(in, filePath, StandardCopyOption.REPLACE_EXISTING);
-        return true;
+
+        Path parent = filePath.getParent();
+        Files.createDirectories(parent);
+        Path temporaryFile = Files.createTempFile(parent, filePath.getFileName().toString() + ".", ".tmp");
+        try {
+            Files.copy(in, temporaryFile, StandardCopyOption.REPLACE_EXISTING);
+            try {
+                replaceFile(temporaryFile, filePath);
+            } catch (IOException replacementFailure) {
+                String currentChecksum = getExistingChecksum(filePath);
+                if (embeddedChecksum.equals(currentChecksum)) {
+                    LOGGER.info("依赖库 {} 已由另一个 Minecraft 实例写入，checksum 一致，直接复用", filePath);
+                    return true;
+                }
+                throw createReplacementException(
+                        filePath,
+                        embeddedChecksum,
+                        existingChecksum,
+                        currentChecksum,
+                        replacementFailure
+                );
+            }
+            return true;
+        } finally {
+            Files.deleteIfExists(temporaryFile);
+        }
+    }
+
+    private static void replaceFile(Path source, Path target) throws IOException {
+        Files.move(source, target, StandardCopyOption.REPLACE_EXISTING);
+    }
+
+    private static String calculateChecksum(InputStream in) throws IOException {
+        MessageDigest digest = createSha256Digest();
+        byte[] buffer = new byte[8192];
+        int length;
+        while ((length = in.read(buffer)) != -1) {
+            digest.update(buffer, 0, length);
+        }
+        return HexFormat.of().formatHex(digest.digest());
+    }
+
+    private static String getExistingChecksum(Path filePath) {
+        if (!Files.exists(filePath)) {
+            return "<不存在>";
+        }
+        if (!Files.isRegularFile(filePath)) {
+            return "<不是普通文件>";
+        }
+        try (InputStream in = Files.newInputStream(filePath)) {
+            return calculateChecksum(in);
+        } catch (IOException e) {
+            return "<无法读取: %s>".formatted(e.getMessage());
+        }
+    }
+
+    private static MessageDigest createSha256Digest() {
+        try {
+            return MessageDigest.getInstance("SHA-256");
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 digest is unavailable", e);
+        }
+    }
+
+    private static IOException createReplacementException(
+            Path filePath,
+            String embeddedChecksum,
+            String previousChecksum,
+            String currentChecksum,
+            IOException cause
+    ) {
+        StringBuilder message = new StringBuilder()
+                .append("无法替换 checksum 不一致的依赖库 ")
+                .append(filePath.toAbsolutePath())
+                .append("；内置 SHA-256: ")
+                .append(embeddedChecksum)
+                .append("；替换前 SHA-256: ")
+                .append(previousChecksum)
+                .append("；当前 SHA-256: ")
+                .append(currentChecksum);
+        if (new OperatingSystem().type == OperatingSystemType.WINDOWS) {
+            message.append("。目标 DLL 可能正被另一个 Minecraft 实例加载并锁定，请关闭使用旧 DLL 的实例后重试");
+        }
+        message.append("。原始错误: ").append(cause);
+        return new IOException(message.toString(), cause);
     }
 
     private static boolean extractLibrary(Path path, NativeLib library) throws IOException {
         Path sourcePath = Paths.get(BASE_PATH, library.fileName);
         Path targetPath = library.getTargetPath(path);
+        String resourceName = sourcePath.toString().replace("\\", "/");
+        ClassLoader classLoader = NativeLibManager.class.getClassLoader();
 
-        try (
-                InputStream in = NativeLibManager.class.getClassLoader()
-                        .getResourceAsStream(sourcePath.toString().replace("\\", "/"))
-        ) {
+        try (InputStream in = classLoader.getResourceAsStream(resourceName)) {
             if (in == null) {
                 if (library.required) {
                     LOGGER.error("必要依赖库 {} 提取失败：资源未找到", sourcePath);
@@ -241,17 +342,38 @@ public class NativeLibManager {
                 }
                 return false;
             }
-            if (_writeFile(in, targetPath.toString())) {
+
+            String embeddedChecksum = calculateChecksum(in);
+            String existingChecksum = getExistingChecksum(targetPath);
+            if (embeddedChecksum.equals(existingChecksum)) {
                 library.extractedPath = targetPath;
-                LOGGER.info("{} 提取成功", library.fileName);
+                LOGGER.info("{} 已存在且 checksum 一致，跳过提取", library.fileName);
                 return true;
-            } else {
-                if (library.required) {
-                    throw new IOException("必要依赖库 " + library.fileName + " 提取失败");
-                } else {
-                    LOGGER.warn("可选依赖库 {} 提取失败", library.fileName);
-                    return false;
+            }
+
+            if (Files.exists(targetPath)) {
+                LOGGER.warn(
+                        "{} checksum 不一致，将尝试替换；内置 SHA-256: {}；现有 SHA-256: {}；路径: {}",
+                        library.fileName,
+                        embeddedChecksum,
+                        existingChecksum,
+                        targetPath.toAbsolutePath()
+                );
+            }
+
+            try (InputStream copyInput = classLoader.getResourceAsStream(resourceName)) {
+                if (_writeFile(copyInput, targetPath, embeddedChecksum, existingChecksum)) {
+                    library.extractedPath = targetPath;
+                    LOGGER.info("{} 提取成功", library.fileName);
+                    return true;
                 }
+            }
+
+            if (library.required) {
+                throw new IOException("必要依赖库 " + library.fileName + " 提取失败");
+            } else {
+                LOGGER.warn("可选依赖库 {} 提取失败", library.fileName);
+                return false;
             }
         } catch (IOException e) {
             if (library.required) {

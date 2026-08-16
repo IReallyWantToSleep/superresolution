@@ -23,6 +23,7 @@ extern "C"
 {
 #endif
 
+#include <stddef.h>
 #include <stdio.h>
 #include "gl_funcs.h"
 
@@ -78,7 +79,11 @@ extern "C"
         int blendDstRGB;
         int blendSrcAlpha;
         int blendDstAlpha;
+        int fontImage;
     } NVGRHICall;
+
+    static_assert(sizeof(NVGRHICall) == 52, "NVGRHICall ABI changed");
+    static_assert(offsetof(NVGRHICall, fontImage) == 48, "NVGRHICall fontImage offset changed");
 
     typedef struct NVGRHICallbacks
     {
@@ -101,7 +106,8 @@ extern "C"
                       int ncalls,
                       const unsigned char *uniforms,
                       int uniformBytes,
-                      int fragSize);
+                      int fragSize,
+                      int callStride);
         void (*destroy)(void *userPtr);
     } NVGRHICallbacks;
 
@@ -152,7 +158,9 @@ enum GLNVGshaderType
     NSVG_SHADER_FILLGRAD,
     NSVG_SHADER_FILLIMG,
     NSVG_SHADER_SIMPLE,
-    NSVG_SHADER_IMG
+    NSVG_SHADER_IMG,
+    NSVG_SHADER_TEXTGRAD,
+    NSVG_SHADER_TEXTIMG
 };
 
 #if NANOVG_GL_USE_UNIFORMBUFFER
@@ -210,8 +218,12 @@ struct GLNVGcall
     int uniformOffset;
     int uniformCount;
     GLNVGblend blendFunc;
+    int fontImage;
 };
 typedef struct GLNVGcall GLNVGcall;
+
+static_assert(sizeof(GLNVGcall) == sizeof(NVGRHICall), "GLNVGcall and NVGRHICall must share an ABI");
+static_assert(offsetof(GLNVGcall, fontImage) == offsetof(NVGRHICall, fontImage), "GLNVGcall fontImage offset changed");
 
 struct GLNVGpath
 {
@@ -1261,7 +1273,8 @@ static void glnvg__renderFlush(void *uptr)
                 gl->ncalls,
                 gl->uniforms,
                 gl->nuniforms * gl->fragSize,
-                gl->fragSize);
+                gl->fragSize,
+                sizeof(GLNVGcall));
         }
 
         gl->nverts = 0;
@@ -1625,7 +1638,7 @@ error:
 
 static void glnvg__renderTriangles(void *uptr, NVGpaint *paint, NVGcompositeOperationState compositeOperation,
                                    NVGscissor *scissor,
-                                   const NVGvertex *verts, int nverts, float fringe)
+                                   const NVGvertex *verts, int nverts, float fringe, int fontImage)
 {
     GLNVGcontext *gl = (GLNVGcontext *)uptr;
     GLNVGcall *call = glnvg__allocCall(gl);
@@ -1635,7 +1648,7 @@ static void glnvg__renderTriangles(void *uptr, NVGpaint *paint, NVGcompositeOper
         return;
 
     call->type = GLNVG_TRIANGLES;
-    call->image = paint->image;
+    call->fontImage = fontImage;
     call->blendFunc = glnvg__blendCompositeOperation(compositeOperation);
 
     // Allocate vertices for all the paths.
@@ -1652,8 +1665,33 @@ static void glnvg__renderTriangles(void *uptr, NVGpaint *paint, NVGcompositeOper
         goto error;
     call->uniformCount = 1;
     frag = nvg__fragUniformPtr(gl, call->uniformOffset);
-    glnvg__convertPaint(gl, frag, paint, scissor, 1.0f, fringe, -1.0f);
-    frag->type = NSVG_SHADER_IMG;
+
+    if (gl->backendMode == NVG_BACKEND_RHI_DIRECT)
+    {
+        call->image = paint->image;
+        glnvg__convertPaint(gl, frag, paint, scissor, 1.0f, fringe, -1.0f);
+        if (paint->image != 0)
+        {
+            frag->type = NSVG_SHADER_TEXTIMG;
+        }
+        else if (paint->innerColor.r == paint->outerColor.r && paint->innerColor.g == paint->outerColor.g &&
+                 paint->innerColor.b == paint->outerColor.b && paint->innerColor.a == paint->outerColor.a)
+        {
+            call->image = fontImage;
+            frag->texType = 2;
+            frag->type = NSVG_SHADER_IMG;
+        }
+        else
+        {
+            frag->type = NSVG_SHADER_TEXTGRAD;
+        }
+    }
+    else
+    {
+        call->image = fontImage;
+        glnvg__convertPaint(gl, frag, paint, scissor, 1.0f, fringe, -1.0f);
+        frag->type = NSVG_SHADER_IMG;
+    }
 
     return;
 

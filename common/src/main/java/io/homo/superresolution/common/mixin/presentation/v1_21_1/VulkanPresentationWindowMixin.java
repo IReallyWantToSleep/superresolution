@@ -42,14 +42,15 @@ import static org.lwjgl.glfw.GLFW.*;
 public abstract class VulkanPresentationWindowMixin {
     @Unique
     private static final String HELPER_TITLE = "Super Resolution OpenGL Context";
-
-
     @Shadow
     @Final
     private long window;
 
-    @Redirect(method = "<init>",at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwMakeContextCurrent(J)V"))
-    private void wtf(long window){
+    @Redirect(
+            method = "<init>",
+            at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwMakeContextCurrent(J)V")
+    )
+    private void super_resolution$skipPresentationContextBinding(long window) {
     }
 
     @Inject(method = "close", at = @At("TAIL"))
@@ -59,19 +60,39 @@ public abstract class VulkanPresentationWindowMixin {
         }
     }
 
-    @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V", unsafe = true,ordinal = 5,shift = At.Shift.AFTER))
+    @Inject(
+            method = "<init>",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V",
+                    unsafe = true,
+                    ordinal = 5,
+                    shift = At.Shift.AFTER
+            )
+    )
     private void super_resolution$redirectWindow(WindowEventHandler eventHandler, ScreenManager screenManager, DisplayData displayData, String preferredFullscreenVideoMode, String title, CallbackInfo ci) {
         if (VulkanPresentationFeature.isRequested()) {
             GLFW.glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             GLFW.glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         }
     }
-    @Inject(method = "<init>", at = @At(value = "INVOKE", target = "Lorg/lwjgl/glfw/GLFW;glfwMakeContextCurrent(J)V", unsafe = true))
-    private void super_resolution$a(WindowEventHandler eventHandler, ScreenManager screenManager, DisplayData displayData, String preferredFullscreenVideoMode, String title, CallbackInfo ci) {
-        if (VulkanPresentationFeature.isRequested()) {
-            long vulkanWindow = this.window;
-            long openglWindow;
-            PresentationWindowState.attachPresentation(vulkanWindow);
+    @Inject(
+            method = "<init>",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lorg/lwjgl/glfw/GLFW;glfwMakeContextCurrent(J)V",
+                    unsafe = true
+            )
+    )
+    private void super_resolution$createRenderContext(WindowEventHandler eventHandler, ScreenManager screenManager, DisplayData displayData, String preferredFullscreenVideoMode, String title, CallbackInfo ci) {
+        if (!VulkanPresentationFeature.isRequested()) {
+            GLFW.glfwMakeContextCurrent(window);
+            return;
+        }
+
+        long openglWindow = 0L;
+        try {
+            PresentationWindowState.attachPresentation(this.window);
             GLFW.glfwDefaultWindowHints();
             GLFW.glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
             GLFW.glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
@@ -86,12 +107,22 @@ public abstract class VulkanPresentationWindowMixin {
                 throw new IllegalStateException("Failed to create the hidden OpenGL helper window");
             }
             PresentationWindowState.attachRender(openglWindow);
-        }
-
-        if (VulkanPresentationFeature.isRequested()){
             GLFW.glfwMakeContextCurrent(PresentationWindowState.renderHandle());
-        } else {
-            GLFW.glfwMakeContextCurrent(window);
+        } catch (Throwable throwable) {
+            if (openglWindow != 0L && !PresentationWindowState.isRender(openglWindow)) {
+                GLFW.glfwDestroyWindow(openglWindow);
+            }
+            PresentationWindowState.resetAfterStartupFailure();
+            VulkanPresentationFeature.disableAfterFailure(throwable);
+            if (throwable instanceof RuntimeException runtimeException) {
+                throw runtimeException;
+            }
+            if (throwable instanceof Error error) {
+                throw error;
+            }
+            throw new RuntimeException(throwable);
+        } finally {
+            GLFW.glfwDefaultWindowHints();
         }
     }
 }

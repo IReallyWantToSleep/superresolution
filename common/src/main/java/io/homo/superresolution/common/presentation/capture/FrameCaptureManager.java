@@ -11,9 +11,13 @@
 package io.homo.superresolution.common.presentation.capture;
 
 import io.homo.superresolution.api.InputResourceSet;
+import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.presentation.vulkan.FramePacingTiming;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.VulkanInteropAlgorithm;
@@ -24,36 +28,39 @@ import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2
 import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
-import net.minecraft.client.Camera;
 import net.minecraft.client.Minecraft;
 
 public final class FrameCaptureManager {
     private static final CaptureFrameRing FRAME_RING = new CaptureFrameRing();
-    private static FrameResources lastFinishedFrame;
+    private static volatile FrameResources lastFinishedFrame;
     private static boolean registered;
 
     private FrameCaptureManager() {
     }
 
-    public static synchronized void initialize(VulkanDevice device) {
+    public static synchronized void initialize(
+            VulkanDevice device,
+            FramePacingTiming framePacingTiming
+    ) {
         if (!registered) {
             SuperResolutionAPI.EVENT_BUS.addListener(FrameCaptureManager::onAlgorithmDispatch);
             registered = true;
         }
-        FRAME_RING.initialize(device);
+        FRAME_RING.initialize(device, framePacingTiming);
     }
 
     public static boolean isInitialized() {
         return FRAME_RING.isInitialized();
     }
 
-    public static void captureWorldColor() {
+    public static void captureHudlessColor() {
         if (!isInitialized() || !isWorldFrame()) {
             return;
         }
+        FrameResources frame = FRAME_RING.activeFrameOrNull();
         ITexture color = originColorTexture();
-        if (color != null) {
-            beginFrame(RenderHandlerManager.getFrameCount()).copyWorldColor(color);
+        if (frame != null && color != null) {
+            frame.copyHudlessColor(color);
         }
     }
 
@@ -65,10 +72,10 @@ public final class FrameCaptureManager {
         if (color == null) {
             throw new IllegalStateException("Vulkan presentation final color is unavailable");
         }
-        beginFrame(RenderHandlerManager.getFrameCount()).copyFinalColor(color);
+        beginFrame(GameFrameIndex.current()).copyFinalColor(color);
     }
 
-    public static boolean captureVulkanInputs(
+    public static FrameResources captureVulkanInputs(
             int logicalFrameIndex,
             VulkanTexture depthVk,
             GlImportableTexture2D depthGl,
@@ -80,12 +87,12 @@ public final class FrameCaptureManager {
             VkGlInteropSemaphore motionRelease
     ) {
         if (!isInitialized() || !isWorldFrame()) {
-            return false;
+            return null;
         }
         FrameResources frame = beginFrame(logicalFrameIndex);
         frame.borrowDepth(depthVk, depthGl, depthReady, depthRelease);
         frame.borrowMotionVector(motionVk, motionGl, motionReady, motionRelease);
-        return true;
+        return frame;
     }
 
     public static FrameResources finishFrame() {
@@ -125,11 +132,11 @@ public final class FrameCaptureManager {
         }
         FrameResources frame = beginFrame(dispatch.frameCount());
         InputResourceSet resources = dispatch.resources();
-        if (resources.depthTexture() != null) {
-            frame.copyDepth(resources.depthTexture());
+        if (resources.has(InputResourceType.Depth)) {
+            frame.copyDepth(resources.get(InputResourceType.Depth));
         }
-        if (resources.motionVectorsTexture() != null) {
-            frame.copyMotionVector(resources.motionVectorsTexture());
+        if (resources.has(InputResourceType.MotionVectors)) {
+            frame.copyMotionVector(resources.get(InputResourceType.MotionVectors));
         }
     }
 
@@ -144,16 +151,22 @@ public final class FrameCaptureManager {
     }
 
     private static boolean isWorldFrame() {
-        #if MC_VER >= MC_26_1 && MC_VER < MC_26_2
+        #if MC_VER >= MC_26_1 && MC_VER < MC_26_2 || MC_VER >= MC_1_21_11 && MC_VER < MC_26_1 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2  || MC_VER == MC_1_20_1
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft == null
-                || !minecraft.isGameLoadFinished()
-                || minecraft.level == null
-                || minecraft.screen != null) {
+                || !SuperResolution.gameIsLoaded
+                || minecraft.level == null) {
             return false;
         }
-        Camera camera = minecraft.gameRenderer.getMainCamera();
-        return camera != null && camera.isInitialized() && !camera.isPanoramicMode();
+        if (minecraft.gameRenderer.getMainCamera() == null
+                || !minecraft.gameRenderer.getMainCamera().isInitialized()) {
+            return false;
+        }
+        #if MC_VER >= MC_26_1
+        return !minecraft.gameRenderer.getMainCamera().isPanoramicMode();
+        #else
+        return true;
+        #endif
         #else
         return false;
         #endif

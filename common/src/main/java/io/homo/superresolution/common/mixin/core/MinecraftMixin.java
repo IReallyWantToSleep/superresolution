@@ -20,13 +20,13 @@ package io.homo.superresolution.common.mixin.core;
 
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.debug.PerformanceInfo;
+import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
-import io.homo.superresolution.core.streamline.Streamline;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -57,7 +57,7 @@ public abstract class MinecraftMixin {
     private boolean super_resolution$b3dVulkanFrame = false;
 
     #if MC_VER <= MC_1_20_1
-    @Inject(at = @At(value = "TAIL"), method = "<init>")
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setOverlay(Lnet/minecraft/client/gui/screens/Overlay;)V", unsafe = true), method = "<init>")
     #elif MC_VER > MC_26_1_2
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/Gui;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V", unsafe = true), method = "<init>")
     #else
@@ -86,8 +86,20 @@ public abstract class MinecraftMixin {
 
     @Inject(at = @At(value = "HEAD"), method = "runTick")
     private void onRenderBegin(CallbackInfo ci) {
-        Streamline.nextFrame();
-
+        // Include Reflex pacing in the CPU frame delta used by GUI animations.
+        PerformanceTracker.beginFrame();
+        if (SuperResolution.gameIsLoaded) {
+            int frameIndex = GameFrameIndex.beginFrame();
+            LowLatency.beginFrame(frameIndex);
+            // Tracked on its own so the Frame chart's variance can be attributed. The
+            // sleep stays inside the Frame sample by design (see above), but it is a
+            // latency control loop rather than render cost, and when the GPU is
+            // saturated it dominates the frame and hunts.
+            PerformanceTracker.push("Reflex Sleep");
+            LowLatency.sleep();
+            PerformanceTracker.pop("Reflex Sleep");
+            LowLatency.beginSimulation();
+        }
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
             super_resolution$b3dVulkanFrame = true;
             PerformanceTracker.push("Frame");
@@ -99,8 +111,6 @@ public abstract class MinecraftMixin {
             super_resolution$cacheHeight = RenderHandlerManager.getScreenHeight();
             MinecraftUtils.resize();
         }
-        // 窗口 resize 去抖——尺寸稳定后触发一次算法重建。
-        SuperResolution.tickResize();
         GL11.glViewport(0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
         PerformanceTracker.push("Frame");
         RenderHandlerManager.onFrameBegin();
@@ -146,12 +156,22 @@ public abstract class MinecraftMixin {
     @Inject(method = "stop",at = @At(value = "TAIL"))
     public void onDestroy(CallbackInfo ci) {
         SuperResolution.onClientStopping();
+        SuperResolution.onClientStopped();
     }
     #else
-    //just like fabric`s invoke point
+    // Resource cleanup runs early (at the "Stopping!" log) while the interop OpenGL
+    // context is still current. The OpenGL context and Vulkan device are torn down at
+    // destroy() TAIL, after Minecraft has finished its own shutdown rendering (disconnect
+    // progress screen) and GL cleanup. Tearing them down early left that rendering
+    // without a current GL context and aborted the JVM on exit.
     @Inject(method = "destroy",at = @At(value = "INVOKE", target = "Lorg/slf4j/Logger;info(Ljava/lang/String;)V"))
     public void onDestroy(CallbackInfo ci) {
         SuperResolution.onClientStopping();
+    }
+
+    @Inject(method = "destroy",at = @At(value = "TAIL"))
+    public void super_resolution$onDestroyTail(CallbackInfo ci) {
+        SuperResolution.onClientStopped();
     }
     #endif
 

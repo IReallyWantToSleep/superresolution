@@ -30,6 +30,7 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Collections;
 import java.util.Set;
+import java.util.function.BiConsumer;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -74,28 +75,83 @@ public class VulkanValidationLayers implements Destroyable {
                     public int invoke(int messageSeverity, int messageTypes, long pCallbackData, long pUserData) {
                         VkDebugUtilsMessengerCallbackDataEXT callbackData = VkDebugUtilsMessengerCallbackDataEXT.create(pCallbackData);
                         String message = callbackData.pMessageString();
-                        StackTraceElement[] elements = SuperResolution.renderThread.getStackTrace();
+                        Thread callbackThread = Thread.currentThread();
+                        Thread renderThread = SuperResolution.renderThread;
+                        StackTraceElement[] callbackStack = callbackThread.getStackTrace();
+                        StackTraceElement[] renderThreadSnapshot = renderThread == null || renderThread == callbackThread
+                                ? null
+                                : renderThread.getStackTrace();
 
                         if ((messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) != 0) {
-                            LOGGER.error("[Vulkan Validation Error] {}", message);
-                            for (StackTraceElement element : elements) {
-                                LOGGER.error("    {}", element.toString());
-                            }
+                            LOGGER.error(
+                                    "[Vulkan Validation Error] [callback thread={}] {}",
+                                    callbackThread.getName(),
+                                    message
+                            );
+                            logThreadStacks(
+                                    (format, argument) -> LOGGER.error(format, argument),
+                                    callbackThread,
+                                    callbackStack,
+                                    renderThread,
+                                    renderThreadSnapshot
+                            );
                         } else if ((messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT) != 0) {
-                            LOGGER.warn("[Vulkan Validation Warn] {}", message);
-                            for (StackTraceElement element : elements) {
-                                LOGGER.warn("    {}", element.toString());
-                            }
+                            LOGGER.warn(
+                                    "[Vulkan Validation Warn] [callback thread={}] {}",
+                                    callbackThread.getName(),
+                                    message
+                            );
+                            logThreadStacks(
+                                    (format, argument) -> LOGGER.warn(format, argument),
+                                    callbackThread,
+                                    callbackStack,
+                                    renderThread,
+                                    renderThreadSnapshot
+                            );
                         } else {
-                            LOGGER.info("[Vulkan Validation Debug] {}", message);
-                            for (StackTraceElement element : elements) {
-                                LOGGER.info("    {}", element.toString());
-                            }
+                            LOGGER.info(
+                                    "[Vulkan Validation Debug] [callback thread={}] {}",
+                                    callbackThread.getName(),
+                                    message
+                            );
+                            logThreadStacks(
+                                    (format, argument) -> LOGGER.info(format, argument),
+                                    callbackThread,
+                                    callbackStack,
+                                    renderThread,
+                                    renderThreadSnapshot
+                            );
                         }
 
                         return VK_FALSE;
                     }
                 });
+    }
+
+    private static void logThreadStacks(
+            BiConsumer<String, Object> logger,
+            Thread callbackThread,
+            StackTraceElement[] callbackStack,
+            Thread renderThread,
+            StackTraceElement[] renderThreadSnapshot
+    ) {
+        logger.accept(
+                "    Vulkan validation callback stack [thread={}]:",
+                callbackThread.getName()
+        );
+        for (StackTraceElement element : callbackStack) {
+            logger.accept("    {}", element.toString());
+        }
+        if (renderThreadSnapshot == null) {
+            return;
+        }
+        logger.accept(
+                "    Render-thread snapshot [thread={}, not the Vulkan caller]:",
+                renderThread.getName()
+        );
+        for (StackTraceElement element : renderThreadSnapshot) {
+            logger.accept("    {}", element.toString());
+        }
     }
 
     public static PointerBuffer getValidationLayersPointerBuffer(MemoryStack stack) {

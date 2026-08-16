@@ -1,5 +1,5 @@
 /*
- * Anemone Mod
+ * Super Resolution
  * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
@@ -35,8 +35,8 @@ public abstract class KeyboardHandlerReflexMixin {
 		cancellable = true,
 		require = 1
 	)
-	private void handleLatencyPing(long windowPointer, int key, int scanCode, int action, int modifiers, CallbackInfo ci) {
-		if (!LowLatency.isAvailable()) {
+	private void super_resolution$handleLatencyPing(long windowPointer, int key, int scanCode, int action, int modifiers, CallbackInfo ci) {
+		if (!LowLatency.isPclAvailable()) {
 			return;
 		}
 
@@ -55,4 +55,3 @@ import org.spongepowered.asm.mixin.Mixin;
 public abstract class KeyboardHandlerReflexMixin {
 }
 #endif
-

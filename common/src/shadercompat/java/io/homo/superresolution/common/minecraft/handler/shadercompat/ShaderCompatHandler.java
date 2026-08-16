@@ -27,6 +27,7 @@ import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.v2.SRCompatV2Processor;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.v3.SRCompatV3Processor;
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
 import io.homo.superresolution.common.upscale.InteropResourcesConverter;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
@@ -430,6 +431,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         renderTargets.clear();
         InteropResourcesConverter.destroy();
         SRCompatV2Processor.destroyPipelineCache();
+        SRCompatV3Processor.destroyPipelineCache();
     }
 
     @Override

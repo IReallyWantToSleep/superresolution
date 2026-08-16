@@ -391,6 +391,11 @@ void NanoVGContext::FontFace(const std::string &font)
     nvgFontFace(ctx, font.c_str());
 }
 
+unsigned long long NanoVGContext::TextMeasureStateVersion()
+{
+    return nvgTextMeasureStateVersion(ctx);
+}
+
 float NanoVGContext::Text(float x, float y, const std::string &string, const std::string *end)
 {
     return nvgText(ctx, x, y, string.c_str(), end ? end->c_str() : nullptr);

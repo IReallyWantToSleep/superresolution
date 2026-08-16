@@ -20,7 +20,7 @@ package io.homo.superresolution.common.mixin.core.parts;
 
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.workmode.SRWorkModeManager;
+import io.homo.superresolution.common.compat.iris.IrisCompatHelper;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.LevelRenderer;
 import net.minecraft.client.renderer.PostChain;
@@ -39,8 +39,8 @@ public class LevelRendererMixinCommon {
     #if MC_VER < MC_1_21_4
     @Redirect(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/PostChain;resize(II)V"), method = "resize")
     private void onResizePostChain(PostChain instance, int w, int h) {
-        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
-            instance.resize(w,h);
+        if (!IrisCompatHelper.isHackSelected()) {
+            instance.resize(w, h);
             return;
         }
         instance.resize(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight());
@@ -50,6 +50,9 @@ public class LevelRendererMixinCommon {
     #if MC_VER > MC_26_1_2
     @Inject(at = @At(value = "HEAD"), method = "render", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
+        if (!IrisCompatHelper.isHackSelected()) {
+            return;
+        }
         if (Minecraft.getInstance().level != null) {
             RenderHandlerManager.onRenderWorldBegin(CallType.LEVEL_RENDERER);
         }
@@ -57,6 +60,9 @@ public class LevelRendererMixinCommon {
 
     @Inject(at = @At(value = "RETURN"), method = "render")
     private void onRenderWorldEnd(CallbackInfo ci) {
+        if (!IrisCompatHelper.isHackSelected()) {
+            return;
+        }
         if (Minecraft.getInstance().level != null) {
             RenderHandlerManager.onRenderWorldEnd(CallType.LEVEL_RENDERER);
         }
@@ -64,6 +70,9 @@ public class LevelRendererMixinCommon {
     #else
     @Inject(at = @At(value = "HEAD"), method = "renderLevel", cancellable = true)
     private void onRenderWorldBegin(CallbackInfo ci) {
+        if (!IrisCompatHelper.isHackSelected()) {
+            return;
+        }
         if (Minecraft.getInstance().level != null) {
             RenderHandlerManager.onRenderWorldBegin(CallType.LEVEL_RENDERER);
         }
@@ -71,6 +80,9 @@ public class LevelRendererMixinCommon {
 
     @Inject(at = @At(value = "RETURN"), method = "renderLevel")
     private void onRenderWorldEnd(CallbackInfo ci) {
+        if (!IrisCompatHelper.isHackSelected()) {
+            return;
+        }
         if (Minecraft.getInstance().level != null) {
             RenderHandlerManager.onRenderWorldEnd(CallType.LEVEL_RENDERER);
         }

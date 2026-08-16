@@ -11,6 +11,7 @@
 package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.api.platform.OperatingSystemType;
+import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
@@ -30,8 +31,10 @@ import org.lwjgl.vulkan.VkQueueFamilyProperties;
 
 import java.nio.IntBuffer;
 
+import static org.lwjgl.vulkan.KHRPresentId.VK_KHR_PRESENT_ID_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
+import static org.lwjgl.vulkan.NVLowLatency2.VK_NV_LOW_LATENCY_2_EXTENSION_NAME;
 import static org.lwjgl.vulkan.VK10.VK_QUEUE_GRAPHICS_BIT;
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceQueueFamilyProperties;
@@ -52,7 +55,7 @@ public final class VulkanPresentationFeature {
     }
 
     public static boolean isRequested() {
-        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2
+        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1
         ensureConfigLoaded();
         if (startupRequested == null) {
             startupRequested = SuperResolutionConfig.isEnableVulkanPresentation()
@@ -72,7 +75,14 @@ public final class VulkanPresentationFeature {
     }
 
     public static boolean shouldInitializeStreamline() {
-        return isRequested() && SuperResolutionConfig.CURRENT_OS_TYPE == OperatingSystemType.WINDOWS;
+        // Streamline is Windows-only, and it must not be initialized when a backend that
+        // does not use it is selected (those drive Reflex through Vulkan instead). This
+        // is read once at startup, so switching the provider needs a restart. The
+        // automatic entry keeps Streamline on Windows.
+        return isRequested()
+                && SuperResolutionConfig.CURRENT_OS_TYPE == OperatingSystemType.WINDOWS
+                && FrameGenerationDescriptions.mayUseStreamline(
+                        SuperResolutionConfig.getFrameGenerationProvider());
     }
 
     public static synchronized void prepare(VkRenderSystem target) {
@@ -90,6 +100,10 @@ public final class VulkanPresentationFeature {
             target.addInstanceExtension(MemoryUtil.memUTF8(extensions.get(i)));
         }
         target.addDeviceExtension(VK_KHR_SWAPCHAIN_EXTENSION_NAME);
+        // Native Reflex (VK_NV_low_latency2) rides on the presentation swapchain
+        // and needs present ids to correlate latency markers with presents.
+        target.addDeviceExtension(VK_KHR_PRESENT_ID_EXTENSION_NAME);
+        target.addDeviceExtension(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
         renderSystem = target;
     }
 
@@ -173,6 +187,13 @@ public final class VulkanPresentationFeature {
             throw new IllegalStateException("Vulkan presentation initialization did not produce a usable device");
         }
         VulkanPresentationWindow.initialize(VulkanPresentationContext.initialize(SURFACE), SURFACE);
+    }
+
+    public static boolean shutdownApplicationManagedProvider(
+            String providerId,
+            Runnable teardown
+    ) {
+        return VulkanPresentationWindow.shutdownApplicationManagedProvider(providerId, teardown);
     }
 
     public static synchronized void shutdown() {

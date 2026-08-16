@@ -24,8 +24,6 @@ pluginManagement {
         mavenCentral()
         maven(url = "https://maven.neoforged.net")
         maven(url = "https://maven.fabricmc.net/")
-        maven(url = "https://maven.aliyun.com/repository/central")
-        maven(url = "https://maven.aliyun.com/repository/gradle-plugin")
         maven(url = "https://maven.shedaniel.me/")
         maven(url = "https://libraries.minecraft.net")
         maven(url = "https://maven.parchmentmc.org/")

@@ -31,6 +31,7 @@ import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
@@ -162,7 +163,7 @@ public class ImGuiLayer {
         ImGui.text("Screen Size: %dx%d".formatted(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()));
         ImGui.text("Render Size: %dx%d".formatted(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()));
         ImGui.text("Scale Factor: %.3f".formatted(RenderHandlerManager.getScaleFactor()));
-        ImGui.text("Frame Count: " + RenderHandlerManager.getFrameCount());
+        ImGui.text("Frame Count: " + GameFrameIndex.current());
         if (!SuperResolution.gameIsLoaded || Minecraft.getInstance().level == null) {
             ImGui.separator();
             ImGui.text("Game world not ready.");
@@ -315,7 +316,7 @@ public class ImGuiLayer {
         ImGui.separator();
 
         drawFrameCaptureResource("Final Color", frame.hasFinalColor(), frame.finalColorGlTexture(), frame.finalColorVulkanTexture());
-        drawFrameCaptureResource("World Color", frame.hasWorldColor(), frame.worldColorGlTexture(), frame.worldColorVulkanTexture());
+        drawFrameCaptureResource("HUD-less Color", frame.hasHudlessColor(), frame.hudlessColorGlTexture(), frame.hudlessColorVulkanTexture());
         drawFrameCaptureResource("Depth", frame.hasDepth(), frame.depthGlTexture(), frame.depthVulkanTexture());
         drawFrameCaptureResource("Motion Vector", frame.hasMotionVector(), frame.motionVectorGlTexture(), frame.motionVectorVulkanTexture());
 
@@ -433,7 +434,7 @@ public class ImGuiLayer {
         }
         ImGuiDebugContext ctx = new ImGuiDebugContext("capture", textures::add, this::openViewer);
         addFrameCaptureTexture(ctx, "final_color", "Captured Final Color", frame.finalColorGlTexture(), frame.finalColorVulkanTexture());
-        addFrameCaptureTexture(ctx, "world_color", "Captured World Color", frame.worldColorGlTexture(), frame.worldColorVulkanTexture());
+        addFrameCaptureTexture(ctx, "hudless_color", "Captured HUD-less Color", frame.hudlessColorGlTexture(), frame.hudlessColorVulkanTexture());
         addFrameCaptureTexture(ctx, "depth", "Captured Depth", frame.depthGlTexture(), frame.depthVulkanTexture());
         addFrameCaptureTexture(ctx, "motion_vector", "Captured Motion Vector", frame.motionVectorGlTexture(), frame.motionVectorVulkanTexture());
     }
@@ -447,21 +448,6 @@ public class ImGuiLayer {
     }
 
     private void drawCaptureButtons() {
-        if (ImGui.button("Capture")) {
-            SuperResolutionAPI.debugRenderdocCapture();
-        }
-        ImGui.sameLine();
-        if (ImGui.button("CaptureUpscale")) {
-            SuperResolutionAPI.debugRenderdocCaptureUpscale();
-        }
-        ImGui.sameLine();
-        if (ImGui.button("CaptureVulkan")) {
-            SuperResolutionAPI.debugRenderdocCaptureVulkan();
-        }
-        ImGui.sameLine();
-        if (ImGui.button("TriggerCapture")) {
-            SuperResolutionAPI.debugRenderdocTriggerCapture();
-        }
     }
 
     private void drawTextureCard(DebugTextureEntry entry) {
@@ -695,11 +681,7 @@ public class ImGuiLayer {
     }
 
     private SRWorkModeProvider safeGetCurrentProvider() {
-        try {
-            return SRWorkModeManager.getCurrentProvider();
-        } catch (IllegalStateException ignored) {
-            return null;
-        }
+        return SRWorkModeManager.getCurrentProvider();
     }
 
     private static float nanosToMillis(long nanos) {
@@ -731,4 +713,3 @@ public class ImGuiLayer {
         }
     }
 }
-

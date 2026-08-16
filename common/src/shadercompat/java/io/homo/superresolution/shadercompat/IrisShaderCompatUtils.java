@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.shadercompat;
 
-import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
@@ -34,13 +33,9 @@ import java.util.Optional;
 
 public class IrisShaderCompatUtils {
     public static @Nullable SRShaderCompatData.WorldProfile getProfileForWorld(SRShaderCompatData data, NamespacedId worldName) {
-        String key = Optional.ofNullable(
-                ((ShaderPackAccessor) Iris.getCurrentPack().orElseThrow())
-                        .getDimensionMap().get(worldName)).orElseGet(() -> {
-                    //SuperResolution.LOGGER.warn("无法在当前光影包 {} 的维度映射中找到维度 {} 的名称映射，使用默认名称", Iris.getCurrentPackName(), worldName.getName());
-                    return null;
-                }
-        );
+        String key = Iris.getCurrentPack().isPresent() ?
+                ((ShaderPackAccessor) Iris.getCurrentPack().get()).getDimensionMap().get(worldName) :
+                null;
         if (key != null)key = key.replace("world","");
         return data.getProfileForWorld(key);
     }
@@ -52,6 +47,18 @@ public class IrisShaderCompatUtils {
                         Iris.getCurrentDimension()
                 )
         );
+    }
+
+    public static boolean isFrameGenerationOnlySupported() {
+        try {
+            return getCurrentConfig()
+                    .map(profile -> profile.enabled
+                            && profile.upscale != null
+                            && profile.upscale.supportsFrameGenerationOnly)
+                    .orElse(false);
+        } catch (Throwable ignored) {
+            return false;
+        }
     }
 
     public static Optional<SRShaderCompatData> getCurrentShaderPackConfig() {
@@ -68,7 +75,7 @@ public class IrisShaderCompatUtils {
     }
 
     public static boolean shouldApplySuperResolutionChanges() {
-        return !SuperResolutionConfig.isForceDisableShaderCompat() && (IrisApi.getInstance().isShaderPackInUse() || ShaderCompatHandler.irisHasShaderPack()) && getCurrentShaderPack().isPresent() &&
+        return (IrisApi.getInstance().isShaderPackInUse() || ShaderCompatHandler.irisHasShaderPack()) && getCurrentShaderPack().isPresent() &&
                 ((IrisSRCompatShaderPack) getCurrentShaderPack().get()).superresolution$isSupportsSuperResolution()
                 && getCurrentConfig().isPresent()
                 && getCurrentConfig().get().enabled
@@ -77,7 +84,6 @@ public class IrisShaderCompatUtils {
 
     public static TextureFormat getInternalTextureFormat() {
         if (
-                !SuperResolutionConfig.isForceDisableShaderCompat() &&
                         IrisApi.getInstance().isShaderPackInUse() &&
                         getCurrentShaderPack().isPresent() &&
                         ((IrisSRCompatShaderPack) getCurrentShaderPack().get()).superresolution$isSupportsSuperResolution() &&

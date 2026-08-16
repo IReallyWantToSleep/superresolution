@@ -37,9 +37,14 @@ import io.homo.superresolution.core.ngx.NgxResourceVK;
 import io.homo.superresolution.core.ngx.NgxVKDLSSEvalParams;
 import io.homo.superresolution.core.ngx.NgxVulkan;
 
+import java.util.IdentityHashMap;
+import java.util.Map;
+
 public class DLSS extends VulkanInteropAlgorithm {
     private NgxFeature ngxDlssFeature;
     private NgxParameters ngxParameters;
+    private final Map<InFlightFrameResourcesSet, NgxDispatchResources> ngxDispatchResources =
+            new IdentityHashMap<>();
 
     @Override
     protected boolean isVulkanInteropReady() {
@@ -52,10 +57,12 @@ public class DLSS extends VulkanInteropAlgorithm {
     @Override
     protected void onInteropResourcesCreated() {
         recreateNgxContext(initDesc);
+        createNgxDispatchResources();
     }
 
     @Override
     protected void onBeforeInteropResourcesDestroyed() {
+        destroyNgxDispatchResources();
         destroyNgxContext();
     }
 
@@ -70,7 +77,10 @@ public class DLSS extends VulkanInteropAlgorithm {
     private void recreateNgxContext(InitializationDescription desc) {
         VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
         if (!NgxInitializer.initializeIfSupported()) {
-            throw new IllegalStateException("NGX is unavailable for the current GPU");
+            NgxInitializer.shutdown();
+            if (!NgxInitializer.initializeIfSupported()) {
+                throw new IllegalStateException("NGX is unavailable for the current GPU");
+            }
         }
 
         NgxParameters parameters = new NgxParameters();
@@ -160,50 +170,105 @@ public class DLSS extends VulkanInteropAlgorithm {
             VulkanCommandBuffer commandBuffer,
             InFlightFrameResourcesSet inFlightFrameResourcesSet
     ) {
-        if (!NgxInitializer.initializeIfSupported()) {
-            return;
-        }
         if (ngxDlssFeature == null || ngxParameters == null) {
             return;
         }
 
-        try (
-                NgxResourceVK color = createNgxTextureResource(inFlightFrameResourcesSet.inputColorVkTexture, true);
-                NgxResourceVK depth = createNgxTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture, false);
-                NgxResourceVK motionVectors = createNgxTextureResource(
-                        inFlightFrameResourcesSet.inputMotionVectorsVkTexture,
-                        true
-                );
-                NgxResourceVK exposure = createNgxTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture, false);
-                NgxResourceVK output = createNgxTextureResource(inFlightFrameResourcesSet.outputColorVkTexture, true)
-        ) {
-            NgxVKDLSSEvalParams evalParams = new NgxVKDLSSEvalParams();
-            evalParams.feature.inputColor = color;
-            evalParams.feature.output = output;
-            evalParams.feature.sharpness = SuperResolutionConfig.getSharpness();
-            evalParams.depth = depth;
-            evalParams.motionVectors = motionVectors;
-            evalParams.exposureTexture = exposure;
-            evalParams.jitterOffsetX = inFlightFrameResourcesSet.frameData.jitterOffset().x;
-            evalParams.jitterOffsetY = inFlightFrameResourcesSet.frameData.jitterOffset().y;
-            evalParams.renderSubrectDimensions.width = inFlightFrameResourcesSet.frameData.renderWidth();
-            evalParams.renderSubrectDimensions.height = inFlightFrameResourcesSet.frameData.renderHeight();
-            evalParams.motionVectorScaleX = inFlightFrameResourcesSet.frameData.renderSize().x;
-            evalParams.motionVectorScaleY = inFlightFrameResourcesSet.frameData.renderSize().y;
-            evalParams.reset = consumeHistoryReset() ? 1 : 0;
-            evalParams.preExposure = inFlightFrameResourcesSet.frameData.preExposure();
-            evalParams.exposureScale = 1.0f;
-            evalParams.frameTimeDeltaInMsec = inFlightFrameResourcesSet.frameData.frameTimeDelta();
+        NgxDispatchResources dispatchResources = ngxDispatchResources.get(inFlightFrameResourcesSet);
+        if (dispatchResources == null) {
+            return;
+        }
 
-            int evaluateResult = NgxVulkan.evaluateDLSS(
-                    commandBuffer.getNativeCommandBuffer().address(),
-                    ngxDlssFeature,
-                    ngxParameters,
-                    evalParams
-            );
-            if (!NgxConstants.succeeded(evaluateResult)) {
-                SuperResolution.LOGGER.error("NGX DLSS evaluation failed. Result: {}", evaluateResult);
+        NgxVKDLSSEvalParams evalParams = dispatchResources.evalParams;
+        evalParams.feature.sharpness = SuperResolutionConfig.getSharpness();
+        evalParams.jitterOffsetX = inFlightFrameResourcesSet.frameData.jitterOffset().x;
+        evalParams.jitterOffsetY = inFlightFrameResourcesSet.frameData.jitterOffset().y;
+        evalParams.renderSubrectDimensions.width = inFlightFrameResourcesSet.frameData.renderWidth();
+        evalParams.renderSubrectDimensions.height = inFlightFrameResourcesSet.frameData.renderHeight();
+        evalParams.motionVectorScaleX = inFlightFrameResourcesSet.frameData.renderSize().x;
+        evalParams.motionVectorScaleY = inFlightFrameResourcesSet.frameData.renderSize().y;
+        evalParams.reset = consumeHistoryReset() ? 1 : 0;
+        evalParams.preExposure = inFlightFrameResourcesSet.frameData.preExposure();
+        evalParams.exposureScale = 1.0f;
+        evalParams.frameTimeDeltaInMsec = inFlightFrameResourcesSet.frameData.frameTimeDelta();
+
+        int evaluateResult = NgxVulkan.evaluateDLSS(
+                commandBuffer.getNativeCommandBuffer().address(),
+                ngxDlssFeature,
+                ngxParameters,
+                evalParams
+        );
+        if (!NgxConstants.succeeded(evaluateResult)) {
+            SuperResolution.LOGGER.error("NGX DLSS evaluation failed. Result: {}", evaluateResult);
+        }
+    }
+
+    private void createNgxDispatchResources() {
+        destroyNgxDispatchResources();
+        try {
+            for (InFlightFrameResourcesSet inFlightFrame : inFlightFrames) {
+                if (inFlightFrame != null) {
+                    ngxDispatchResources.put(inFlightFrame, new NgxDispatchResources(inFlightFrame));
+                }
             }
+        } catch (RuntimeException | Error e) {
+            destroyNgxDispatchResources();
+            throw e;
+        }
+    }
+
+    private void destroyNgxDispatchResources() {
+        for (NgxDispatchResources dispatchResources : ngxDispatchResources.values()) {
+            dispatchResources.close();
+        }
+        ngxDispatchResources.clear();
+    }
+
+    private final class NgxDispatchResources implements AutoCloseable {
+        private NgxResourceVK color;
+        private NgxResourceVK depth;
+        private NgxResourceVK motionVectors;
+        private NgxResourceVK exposure;
+        private NgxResourceVK output;
+        private final NgxVKDLSSEvalParams evalParams = new NgxVKDLSSEvalParams();
+
+        private NgxDispatchResources(InFlightFrameResourcesSet inFlightFrame) {
+            try {
+                color = createNgxTextureResource(inFlightFrame.inputColorVkTexture, true);
+                depth = createNgxTextureResource(inFlightFrame.inputDepthVkTexture, false);
+                motionVectors = createNgxTextureResource(inFlightFrame.inputMotionVectorsVkTexture, true);
+                exposure = createNgxTextureResource(inFlightFrame.inputExposureVkTexture, false);
+                output = createNgxTextureResource(inFlightFrame.outputColorVkTexture, true);
+
+                evalParams.feature.inputColor = color;
+                evalParams.feature.output = output;
+                evalParams.depth = depth;
+                evalParams.motionVectors = motionVectors;
+                evalParams.exposureTexture = exposure;
+            } catch (RuntimeException | Error e) {
+                close();
+                throw e;
+            }
+        }
+
+        @Override
+        public void close() {
+            closeResource(output);
+            closeResource(exposure);
+            closeResource(motionVectors);
+            closeResource(depth);
+            closeResource(color);
+            output = null;
+            exposure = null;
+            motionVectors = null;
+            depth = null;
+            color = null;
+        }
+    }
+
+    private static void closeResource(NgxResourceVK resource) {
+        if (resource != null) {
+            resource.close();
         }
     }
 

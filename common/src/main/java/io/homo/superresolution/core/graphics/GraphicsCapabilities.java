@@ -23,6 +23,7 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.impl.Pair;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK11;
 import org.slf4j.Logger;
@@ -110,7 +111,6 @@ public class GraphicsCapabilities {
             GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, major);
             GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, minor);
-
             long testWindow = GLFW.glfwCreateWindow(1, 1, "", 0, 0);
             if (testWindow != 0) {
                 GLFW.glfwMakeContextCurrent(testWindow);
