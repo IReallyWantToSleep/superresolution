@@ -12,6 +12,7 @@ package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -322,13 +323,13 @@ public abstract class D3D12InteropAlgorithm<U> extends AbstractAlgorithm {
         lifecycleState = LifecycleState.READY;
 
         InteropResourcesConverter.processInputTextures(
-                dispatchResource.resources().colorTexture(),
+                dispatchResource.resources().get(InputResourceType.Color),
                 resources.inputColor,
-                dispatchResource.resources().depthTexture(),
+                dispatchResource.resources().get(InputResourceType.Depth),
                 resources.inputDepth,
-                dispatchResource.resources().motionVectorsTexture(),
+                dispatchResource.resources().get(InputResourceType.MotionVectors),
                 resources.inputMotionVectors,
-                dispatchResource.resources().exposureTexture(),
+                dispatchResource.resources().get(InputResourceType.Exposure),
                 resources.inputExposure,
                 SRWorkModeManager.getCurrentState()
                         .motionVectorPreprocessingFunction());

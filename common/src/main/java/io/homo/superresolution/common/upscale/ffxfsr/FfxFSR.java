@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.upscale.ffxfsr;
 
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -145,13 +146,10 @@ public class FfxFSR extends SRApiAlgorithm {
             desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
             desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
             desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
-            if (!initDesc.isAutoExposure() &&
-                    inFlightFrameResourcesSet.hasInputExposure) {
-                desc.setExposure(new SRTextureResource(
-                        inFlightFrameResourcesSet.inputExposureVkTexture));
+            if (resources.has(InputResourceType.Exposure)) {
+                desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
             }
             desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
-
             desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
             desc.setMotionVectorScale(
                     new Vector2f(

@@ -28,7 +28,7 @@ public class InitializationDescription {
     }
 
     public static InitializationDescription defaults() {
-        return new InitializationDescription().setAutoExposure(true);
+        return new InitializationDescription();
     }
 
     public boolean isMotionJittered() {

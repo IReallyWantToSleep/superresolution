@@ -14,6 +14,12 @@ if (MSVC)
 endif ()
 set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>")
 
+include_directories(
+        ${CMAKE_CURRENT_SOURCE_DIR}/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/../SRNativeMain/include
+        ${CMAKE_CURRENT_SOURCE_DIR}/src
+)
+
 aux_source_directory(${PROJECT_SOURCE_DIR}/src ALL_SRC)
 add_library(SR_D3D12_INTEROP_LIB SHARED ${ALL_SRC})
 

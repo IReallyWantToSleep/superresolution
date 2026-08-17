@@ -184,9 +184,9 @@ public class AlgorithmDescriptions {
 
     public static final AlgorithmDescription<FfxFSR4D3D12> FSR4_D3D12 =
             AlgorithmDescription.builder(FfxFSR4D3D12.class)
-                    .briefName("AMD FSR 4.1 (D3D12)")
+                    .briefName("AMD FSR 4 (D3D12)")
                     .codeName("fsr4_d3d12")
-                    .displayName("AMD FSR 4.1 (Direct3D 12)")
+                    .displayName("AMD FSR 4 (Direct3D 12)")
                     .requirement(
                             Requirement.nothing()
                                     .addSupportedOS(new OperatingSystem(

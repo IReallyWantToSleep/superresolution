@@ -647,7 +647,7 @@ public abstract class VulkanInteropAlgorithm extends AbstractAlgorithm {
             this.inputExposureVkTexture = vkDevice.createTextureExportable(
                     TextureDescription.create()
                             .usages(TextureUsages.create().sampler().storage().transferSource())
-                            .format(TextureFormat.R16F)
+                            .format(TextureFormat.R32F)
                             .type(TextureType.Texture2D)
                             .width(1)
                             .height(1)

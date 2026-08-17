@@ -13,7 +13,6 @@
 #include <ffx_upscale.h>
 
 #include <cwchar>
-#include <cstring>
 #include <new>
 #include <string>
 
@@ -92,17 +91,75 @@ namespace {
         return result;
     }
 
-    uint32_t toFfxSurfaceFormat(SRTextureFormat format) {
-        // SRAPI and FFX API share values through R32_TYPELESS.
-        if (format >= SR_TEXTURE_FORMAT_UNKNOWN &&
-            format <= SR_TEXTURE_FORMAT_R32_TYPELESS) {
-            return static_cast<uint32_t>(format);
+    FfxApiSurfaceFormat toFfxSurfaceFormat(SRTextureFormat format) {
+        switch (format) {
+            case (SR_TEXTURE_FORMAT_UNKNOWN):
+                return FFX_API_SURFACE_FORMAT_UNKNOWN;
+            case (SR_TEXTURE_FORMAT_R32G32B32A32_TYPELESS):
+                return FFX_API_SURFACE_FORMAT_R32G32B32A32_TYPELESS;
+            case (SR_TEXTURE_FORMAT_R32G32B32A32_UINT):
+                return FFX_API_SURFACE_FORMAT_R32G32B32A32_UINT;
+            case (SR_TEXTURE_FORMAT_R32G32B32A32_FLOAT):
+                return FFX_API_SURFACE_FORMAT_R32G32B32A32_FLOAT;
+            case (SR_TEXTURE_FORMAT_R16G16B16A16_FLOAT):
+                return FFX_API_SURFACE_FORMAT_R16G16B16A16_FLOAT;
+            case (SR_TEXTURE_FORMAT_R32G32B32_FLOAT):
+                return FFX_API_SURFACE_FORMAT_R32G32B32_FLOAT;
+            case (SR_TEXTURE_FORMAT_R32G32_FLOAT):
+                return FFX_API_SURFACE_FORMAT_R32G32_FLOAT;
+            case (SR_TEXTURE_FORMAT_R8_UINT):
+                return FFX_API_SURFACE_FORMAT_R8_UINT;
+            case (SR_TEXTURE_FORMAT_R32_UINT):
+                return FFX_API_SURFACE_FORMAT_R32_UINT;
+            case (SR_TEXTURE_FORMAT_R8G8B8A8_TYPELESS):
+                return FFX_API_SURFACE_FORMAT_R8G8B8A8_UNORM;
+            case (SR_TEXTURE_FORMAT_R8G8B8A8_UNORM):
+                return FFX_API_SURFACE_FORMAT_R8G8B8A8_UNORM;
+            case (SR_TEXTURE_FORMAT_R8G8B8A8_SNORM):
+                return FFX_API_SURFACE_FORMAT_R8G8B8A8_SNORM;
+            case (SR_TEXTURE_FORMAT_R8G8B8A8_SRGB):
+                return FFX_API_SURFACE_FORMAT_R8G8B8A8_SRGB;
+            case (SR_TEXTURE_FORMAT_B8G8R8A8_TYPELESS):
+                return FFX_API_SURFACE_FORMAT_B8G8R8A8_UNORM;
+            case (SR_TEXTURE_FORMAT_B8G8R8A8_UNORM):
+                return FFX_API_SURFACE_FORMAT_B8G8R8A8_UNORM;
+            case (SR_TEXTURE_FORMAT_B8G8R8A8_SRGB):
+                return FFX_API_SURFACE_FORMAT_B8G8R8A8_SRGB;
+            case (SR_TEXTURE_FORMAT_R11G11B10_FLOAT):
+                return FFX_API_SURFACE_FORMAT_R11G11B10_FLOAT;
+            case (SR_TEXTURE_FORMAT_R10G10B10A2_UNORM):
+                return FFX_API_SURFACE_FORMAT_R10G10B10A2_UNORM;
+            case (SR_TEXTURE_FORMAT_R16G16_FLOAT):
+                return FFX_API_SURFACE_FORMAT_R16G16_FLOAT;
+            case (SR_TEXTURE_FORMAT_R16G16_UINT):
+                return FFX_API_SURFACE_FORMAT_R16G16_UINT;
+            case (SR_TEXTURE_FORMAT_R16G16_SINT):
+                return FFX_API_SURFACE_FORMAT_R16G16_SINT;
+            case (SR_TEXTURE_FORMAT_R16_FLOAT):
+                return FFX_API_SURFACE_FORMAT_R16_FLOAT;
+            case (SR_TEXTURE_FORMAT_R16_UINT):
+                return FFX_API_SURFACE_FORMAT_R16_UINT;
+            case (SR_TEXTURE_FORMAT_R16_UNORM):
+                return FFX_API_SURFACE_FORMAT_R16_UNORM;
+            case (SR_TEXTURE_FORMAT_R16_SNORM):
+                return FFX_API_SURFACE_FORMAT_R16_SNORM;
+            case (SR_TEXTURE_FORMAT_R8_UNORM):
+                return FFX_API_SURFACE_FORMAT_R8_UNORM;
+            case (SR_TEXTURE_FORMAT_R8G8_UNORM):
+                return FFX_API_SURFACE_FORMAT_R8G8_UNORM;
+            case (SR_TEXTURE_FORMAT_R8G8_UINT):
+                return FFX_API_SURFACE_FORMAT_R8G8_UINT;
+            case (SR_TEXTURE_FORMAT_R32_FLOAT):
+                return FFX_API_SURFACE_FORMAT_R32_FLOAT;
+            case (SR_TEXTURE_FORMAT_R9G9B9E5_SHAREDEXP):
+                return FFX_API_SURFACE_FORMAT_R9G9B9E5_SHAREDEXP;
+            case (SR_TEXTURE_FORMAT_D32_SFLOAT):
+                return FFX_API_SURFACE_FORMAT_R32_FLOAT;
+            default:
+                return FFX_API_SURFACE_FORMAT_UNKNOWN;
         }
-        if (format == SR_TEXTURE_FORMAT_D32_SFLOAT) {
-            return FFX_API_SURFACE_FORMAT_R32_FLOAT;
-        }
-        return FFX_API_SURFACE_FORMAT_UNKNOWN;
     }
+
 
     FfxApiResource toFfxResource(
         const SRTextureResource &resource,
@@ -187,7 +244,7 @@ extern "C" {
             return SR_RETURN_CODE_CANNOT_FIND_LIBRARY;
         }
 
-        auto *privateData = new (std::nothrow) SRFfxApiPrivateData();
+        auto *privateData = new(std::nothrow) SRFfxApiPrivateData();
         if (!privateData) {
             FreeLibrary(module);
             return SR_RETURN_CODE_ERROR;
@@ -223,8 +280,8 @@ extern "C" {
             nullptr);
         if (code != FFX_API_RETURN_OK) {
             const std::wstring message =
-                L"FFX API failed to create an upscaling context. Code=" +
-                std::to_wstring(code);
+                    L"FFX API failed to create an upscaling context. Code=" +
+                    std::to_wstring(code);
             report(desc, SR_MESSAGE_TYPE_ERROR, message.c_str());
             FreeLibrary(module);
             delete privateData;
@@ -289,7 +346,7 @@ extern "C" {
                 FfxApiEffectMemoryUsage usage = {};
                 ffxQueryDescUpscaleGetGPUMemoryUsage query = {};
                 query.header.type =
-                    FFX_API_QUERY_DESC_TYPE_UPSCALE_GPU_MEMORY_USAGE;
+                        FFX_API_QUERY_DESC_TYPE_UPSCALE_GPU_MEMORY_USAGE;
                 query.gpuMemoryUsageUpscaler = &usage;
                 const ffxReturnCode_t code = privateData->functions.query(
                     &privateData->context,

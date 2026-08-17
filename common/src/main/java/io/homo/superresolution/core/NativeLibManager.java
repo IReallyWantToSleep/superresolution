@@ -74,6 +74,11 @@ public class NativeLibManager {
                     true,
                     true
             );
+            LIB_SUPER_RESOLUTION_D3D12_INTEROP = new NativeLib(
+                    "SuperResolutionD3D12Interop",
+                    true,
+                    false
+            );
             LIB_SUPER_RESOLUTION_FSR = new NativeLib(
                     "SuperResolutionFSR",
                     false,
