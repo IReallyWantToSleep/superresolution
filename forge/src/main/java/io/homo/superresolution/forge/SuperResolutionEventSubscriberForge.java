@@ -18,11 +18,12 @@
 
 package io.homo.superresolution.forge;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.SuperResolutionKeyMapping;
+import net.minecraftforge.client.event.RegisterClientReloadListenersEvent;
 import net.minecraftforge.client.event.RegisterKeyMappingsEvent;
 import net.minecraftforge.eventbus.api.SubscribeEvent;
 import net.minecraftforge.fml.common.Mod;
-import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 @Mod.EventBusSubscriber(bus = Mod.EventBusSubscriber.Bus.MOD)
 public class SuperResolutionEventSubscriberForge {
@@ -31,10 +32,7 @@ public class SuperResolutionEventSubscriberForge {
         event.register(SuperResolutionKeyMapping.OPENGUI_KEYMAPPING);
     }
     @SubscribeEvent
-    public static void onClientSetup(FMLClientSetupEvent event) {
-        //oculus load shaderpack too early,we need register event at IMixinConfigPlugin.load
-        //fuck you oculus
-        /*
-        */
+    public static void onClientSetup(RegisterClientReloadListenersEvent event) {
+        SuperResolution.onClientStarted();
     }
 }

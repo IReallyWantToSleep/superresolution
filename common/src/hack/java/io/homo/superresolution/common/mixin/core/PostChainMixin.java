@@ -88,7 +88,7 @@ public abstract class PostChainMixin {
         ((PostChainAccessor) this).setScreenTarget(RenderHandlerManager.getRenderTarget().asMcRenderTarget());
         this.updateOrthoMatrix();
         this.load(textureManager, resourceLocation);
-        SuperResolution.LOGGER.info("已注入PostChain {}", this.name);
+        SuperResolution.LOGGER.info("Injected PostChain {}", this.name);
     }
 
     #else
@@ -117,7 +117,7 @@ public abstract class PostChainMixin {
         ((PostChainAccessor) this).setScreenTarget(RenderHandlerManager.getRenderTarget().asMcRenderTarget());
         this.updateOrthoMatrix();
         this.load(textureManager, name);
-        SuperResolution.LOGGER.info("已注入PostChain {}", this.name);
+        SuperResolution.LOGGER.info("Injected PostChain {}", this.name);
     }
     #endif
 

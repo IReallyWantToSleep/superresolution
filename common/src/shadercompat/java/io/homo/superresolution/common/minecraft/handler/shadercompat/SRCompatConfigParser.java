@@ -55,7 +55,7 @@ public class SRCompatConfigParser {
             JsonObject rootObj = GSON.fromJson(jsonContent, JsonObject.class);
 
             if (!rootObj.has("schema_version")) {
-                SuperResolution.LOGGER.error("无效的光影接口配置：缺少 schema_version 字段。");
+                SuperResolution.LOGGER.error("Invalid shader-pack interface configuration: missing schema_version.");
                 return null;
             }
 
@@ -68,12 +68,12 @@ public class SRCompatConfigParser {
             } else if (version == 3) {
                 return SRCompatConfigV3Parser.parse(rootObj);
             } else {
-                SuperResolution.LOGGER.error("不支持的光影接口配置版本: " + version);
+                SuperResolution.LOGGER.error("Unsupported shader-pack interface configuration version: " + version);
                 return null;
             }
 
         } catch (Exception e) {
-            SuperResolution.LOGGER.error("解析光影接口配置文件失败", e);
+            SuperResolution.LOGGER.error("Failed to parse shader-pack interface configuration", e);
             return null;
         }
     }
@@ -100,10 +100,10 @@ public class SRCompatConfigParser {
             if (matcher.find()) {
                 return Integer.parseInt(matcher.group(1));
             }
-            SuperResolution.LOGGER.error("无效的光影接口配置：缺少 schema_version 字段。");
+            SuperResolution.LOGGER.error("Invalid shader-pack interface configuration: missing schema_version.");
             return -1;
         } catch (Exception e) {
-            SuperResolution.LOGGER.error("读取光影接口配置版本失败", e);
+            SuperResolution.LOGGER.error("Failed to read shader-pack interface configuration version", e);
             return -1;
         }
     }
@@ -112,7 +112,7 @@ public class SRCompatConfigParser {
         if (version == 1) return new SRCompatV1Processor();
         if (version == 2) return new SRCompatV2Processor();
         if (version == 3) return new SRCompatV3Processor();
-        SuperResolution.LOGGER.error("不支持的光影接口配置版本: " + version);
+        SuperResolution.LOGGER.error("Unsupported shader-pack interface configuration version: " + version);
         return null;
     }
 

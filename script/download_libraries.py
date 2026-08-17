@@ -396,10 +396,10 @@ def update_progress():
         speed = total_downloaded / elapsed if elapsed > 0 else 0
         progress = int((completed_files / total_files) * 100)
 
-        print(f"\r进度: {progress}% ({completed_files}/{total_files}) | "
-              f"速度: {speed/1024/1024:.2f} MB/s | "
-              f"已下载: {total_downloaded/1024/1024:.2f} MB | "
-              f"失败: {failed_files}", end="", flush=True)
+        print(f"\rProgress: {progress}% ({completed_files}/{total_files}) | "
+              f"Speed: {speed/1024/1024:.2f} MB/s | "
+              f"Downloaded: {total_downloaded/1024/1024:.2f} MB | "
+              f"Failed: {failed_files}", end="", flush=True)
         time.sleep(0.25)
 
 progress_thread = threading.Thread(target=update_progress, daemon=True)
@@ -411,7 +411,7 @@ with ThreadPoolExecutor(max_workers=8) as executor:
     for future in as_completed(futures):
         success, lib_path, error = future.result()
         if not success:
-            print(f"\n下载失败: {lib_path} 错误: {error}")
+            print(f"\nDownload failed: {lib_path}. Error: {error}")
             pass
 
 progress_thread.join(timeout=1)

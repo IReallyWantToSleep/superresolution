@@ -53,7 +53,7 @@ public class ShaderSource {
 
     public static String addCustomDefines(String source, Map<String, String> defines) {
         if (Gl.isLegacy()) {
-            ShaderCompiler.LOGGER.debug("添加SR_GL41_COMPAT定义");
+            ShaderCompiler.LOGGER.debug("Adding SR_GL41_COMPAT definition");
             defines.put("SR_GL41_COMPAT", "1");
         }
 
@@ -130,10 +130,10 @@ public class ShaderSource {
 
                     if (Files.exists(shaderPath)) {
                         shaderSource = Files.readString(shaderPath);
-                        SuperResolution.LOGGER.info("加载Shader (Dev): {}", shaderPath);
+                        SuperResolution.LOGGER.info("Loading shader in development environment: {}", shaderPath);
                     }
                 } catch (Throwable e) {
-                    SuperResolution.LOGGER.warn("开发环境Shader热加载失败: {}", e.getMessage());
+                    SuperResolution.LOGGER.warn("Shader hot reload failed in development environment: {}", e.getMessage());
                 }
             }
 

@@ -25,8 +25,8 @@ fun getCurrentNeoFormVersion(): String {
         e.printStackTrace()
     }
 
-    println("无法获取NeoForm版本")
-    throw GradleException("无法获取NeoForm版本")
+    println("Unable to retrieve NeoForm version")
+    throw GradleException("Unable to retrieve NeoForm version")
 }
 
 extra["getCurrentNeoFormVersion"] = ::getCurrentNeoFormVersion

@@ -206,7 +206,7 @@ tasks.register<JavaCompile>("genJNIHeader") {
     }
 
     doLast {
-        println("JNI 头文件已生成到: ${outputDir.absolutePath}")
+        println("JNI headers generated at: ${outputDir.absolutePath}")
         delete("$buildDir/jni-temp")
     }
 }
@@ -309,15 +309,15 @@ apply(plugin = "maven-publish")
 
 val srIsDevBuild = (gradle.extensions.extraProperties.properties["isDev"] as? Boolean) == true
 val minecraftVersionConfig = providers.gradleProperty("minecraft_version_config").orNull
-    ?: throw GradleException("缺少属性 minecraft_version_config")
+    ?: throw GradleException("Missing minecraft_version_config property")
 val publishingApiToShnexus = gradle.startParameter.taskNames.any { taskName ->
     taskName.substringAfterLast(':') == "publishApiPublicationToShnexusRepository"
 }
 
 if (publishingApiToShnexus && minecraftVersionConfig != "1.20.1") {
     throw GradleException(
-        "远程 Super Resolution API 发布必须使用 minecraft_version_config=1.20.1；"
-            + "请执行 :publishApiToShnexus。"
+        "Remote Super Resolution API publishing must use minecraft_version_config=1.20.1; "
+            + "run :publishApiToShnexus."
     )
 }
 

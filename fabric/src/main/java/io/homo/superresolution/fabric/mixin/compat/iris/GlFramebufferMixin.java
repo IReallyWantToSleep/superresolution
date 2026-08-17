@@ -66,7 +66,7 @@ public abstract class GlFramebufferMixin extends GlResource {
                 GL_FRAMEBUFFER
         );
         if (status != GL_FRAMEBUFFER_COMPLETE) {
-            SuperResolution.LOGGER.error("FBO不完整 CODE:{}", status);
+            SuperResolution.LOGGER.error("Incomplete FBO, code: {}", status);
         }
         */
     }

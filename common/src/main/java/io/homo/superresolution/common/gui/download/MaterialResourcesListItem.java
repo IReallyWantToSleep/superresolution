@@ -219,7 +219,7 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
             this.selectedPath = sourcePath;
             this.state = DownloadState.SELECTED;
         } catch (Exception e) {
-            SuperResolution.LOGGER.error("选择资源文件失败", e);
+            SuperResolution.LOGGER.error("Failed to select resource file", e);
             this.state = DownloadState.ERROR;
             this.errorCode = ExtraResource.ErrorCode.PermissionDenied;
         }

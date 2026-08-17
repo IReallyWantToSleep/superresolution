@@ -19,10 +19,7 @@
 package io.homo.superresolution.common.mixin.presentation.v1_20_1;
 
 #if MC_VER == MC_1_20_1
-import com.mojang.blaze3d.platform.DisplayData;
-import com.mojang.blaze3d.platform.ScreenManager;
 import com.mojang.blaze3d.platform.Window;
-import com.mojang.blaze3d.platform.WindowEventHandler;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
@@ -33,6 +30,7 @@ import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
@@ -60,34 +58,32 @@ public abstract class VulkanPresentationWindowMixin {
         }
     }
 
-    @Inject(
+    @org.spongepowered.asm.mixin.injection.ModifyConstant(
             method = "<init>",
-            at = @At(
-                    value = "INVOKE",
-                    target = "Lorg/lwjgl/glfw/GLFW;glfwWindowHint(II)V",
-                    unsafe = true,
-                    ordinal = 5,
-                    shift = At.Shift.AFTER
+            constant = @org.spongepowered.asm.mixin.injection.Constant(
+                    intValue = 139270,
+                    ordinal = 0
             )
     )
-    private void super_resolution$redirectWindow(WindowEventHandler eventHandler, ScreenManager screenManager, DisplayData displayData, String preferredFullscreenVideoMode, String title, CallbackInfo ci) {
+    private int super_resolution$redirectWindow(int constant) {
         if (VulkanPresentationFeature.isRequested()) {
             GLFW.glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             GLFW.glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         }
+        return 139270;
     }
-    @Inject(
+    @ModifyArg(
             method = "<init>",
             at = @At(
                     value = "INVOKE",
                     target = "Lorg/lwjgl/glfw/GLFW;glfwMakeContextCurrent(J)V",
-                    unsafe = true
+                    ordinal = 0
             )
     )
-    private void super_resolution$createRenderContext(WindowEventHandler eventHandler, ScreenManager screenManager, DisplayData displayData, String preferredFullscreenVideoMode, String title, CallbackInfo ci) {
+    private long super_resolution$createRenderContext(long window) {
         if (!VulkanPresentationFeature.isRequested()) {
             GLFW.glfwMakeContextCurrent(window);
-            return;
+            return window;
         }
 
         long openglWindow = 0L;
@@ -124,6 +120,7 @@ public abstract class VulkanPresentationWindowMixin {
         } finally {
             GLFW.glfwDefaultWindowHints();
         }
+        return window;
     }
 }
 #else

@@ -104,10 +104,10 @@ public class ShaderCompiler {
                         clientVersion
                 );
 
-                LOGGER.debug("开始SPIR-V编译: 类型={}, API={}, 缓存路径={}", type.name(), apiTag, path);
+                LOGGER.debug("Starting SPIR-V compilation: type={}, API={}, cache path={}", type.name(), apiTag, path);
 
                 if (currentSourceResult.error() != GlslangCompileShaderError.OK) {
-                    LOGGER.error("着色器编译失败[{}]，错误类型={}，日志={}", type.name(), currentSourceResult.error().name(), currentSourceResult.log());
+                    LOGGER.error("Shader compilation failed [{}], error type={}, log={}", type.name(), currentSourceResult.error().name(), currentSourceResult.log());
                     throw new ShaderCompileException(currentSourceResult.log());
                 }
 
@@ -115,11 +115,11 @@ public class ShaderCompiler {
                 long size = currentSourceResult.spirVDataSize();
 
                 if (buffer == null || size <= 0) {
-                    LOGGER.error("SPIR-V缓冲区为空或大小非法，type={}, size={}", type.name(), size);
-                    throw new IOException("SPIR-V缓冲区为空或大小非法");
+                    LOGGER.error("SPIR-V buffer is empty or has an invalid size, type={}, size={}", type.name(), size);
+                    throw new IOException("SPIR-V buffer is empty or has an invalid size");
                 }
 
-                LOGGER.debug("保存SPIR-V，大小={} bytes, 路径={}", size, path);
+                LOGGER.debug("Saving SPIR-V: size={} bytes, path={}", size, path);
 
                 if (SuperResolutionConfig.isDebugDumpShader()) {
                     try {
@@ -127,11 +127,11 @@ public class ShaderCompiler {
                                 program.getDescription().shaderName() + "." + type.name().toLowerCase() + "." + apiTag + ".source.glsl");
                         Path prePath = Path.of(SuperResolutionConstants.DEBUG_DIR.getPath().toAbsolutePath().toString(),
                                 program.getDescription().shaderName() + "." + type.name().toLowerCase() + "." + apiTag + ".preprocessed.glsl");
-                        LOGGER.debug("写出GLSL源码调试文件: {}，{}", srcPath, prePath);
+                        LOGGER.debug("Writing GLSL source debug files: {}, {}", srcPath, prePath);
                         Files.writeString(srcPath, currentSourceResult.sourceCode());
                         Files.writeString(prePath, currentSourceResult.preprocessedCode());
                     } catch (IOException e0) {
-                        LOGGER.error("无法保存着色器源码文件: {}", e0.getMessage());
+                        LOGGER.error("Unable to save shader source file: {}", e0.getMessage());
                     }
                 }
 
@@ -140,20 +140,20 @@ public class ShaderCompiler {
                     buffer.position(0);
                     buffer.get(outBytes);
                     Files.write(path, outBytes);
-                    LOGGER.debug("SPIR-V保存成功: {}", path);
+                    LOGGER.debug("Saved SPIR-V: {}", path);
                 } catch (IOException e) {
-                    LOGGER.error("保存SPIR-V失败", e);
+                    LOGGER.error("Failed to save SPIR-V", e);
                 }
 
                 SuperResolutionNative.freeDirectBuffer(buffer);
-                LOGGER.debug("释放DirectBuffer完成");
+                LOGGER.debug("DirectBuffer released");
             }
             return true;
         } catch (ShaderCompileException | IOException e) {
             try {
                 if (currentSourceResult != null) {
-                    LOGGER.debug("着色器编译异常类型: {}", currentSourceResult.error().name());
-                    LOGGER.debug("编译日志: {}", currentSourceResult.log());
+                    LOGGER.debug("Shader compilation error type: {}", currentSourceResult.error().name());
+                    LOGGER.debug("Compilation log: {}", currentSourceResult.log());
 
                     Path errorSourcePath = Path.of(SuperResolutionConstants.ERROR_DIR.toString(),
                             program.getDescription().shaderName() + ".error." + apiTag + ".source.glsl");
@@ -165,12 +165,12 @@ public class ShaderCompiler {
                     Files.writeString(errorSourcePath, currentSourceResult.sourceCode());
                     Files.writeString(errorPrePath, currentSourceResult.preprocessedCode());
                     Files.writeString(errorLogPath, currentSourceResult.log());
-                    LOGGER.info("保存错误着色器源码至: {}, {}, {}", errorSourcePath, errorPrePath, errorLogPath);
+                    LOGGER.info("Saved failed shader source to: {}, {}, {}", errorSourcePath, errorPrePath, errorLogPath);
                 }
             } catch (IOException e0) {
-                LOGGER.error("无法保存着色器源码文件: {}", e0.getMessage());
+                LOGGER.error("Unable to save shader source file: {}", e0.getMessage());
             }
-            LOGGER.error("保存SPIR-V失败", e);
+            LOGGER.error("Failed to save SPIR-V", e);
             return false;
         }
     }
@@ -178,7 +178,7 @@ public class ShaderCompiler {
     public static void createCacheDir() {
         File cacheDir = SuperResolutionConstants.SHADER_CACHE_DIR.getFile();
         if (!cacheDir.exists() && !cacheDir.mkdirs()) {
-            LOGGER.error("无法创建着色器缓存目录: {}", SuperResolutionConstants.SHADER_CACHE_DIR);
+            LOGGER.error("Unable to create shader cache directory: {}", SuperResolutionConstants.SHADER_CACHE_DIR);
         }
     }
 
@@ -201,7 +201,7 @@ public class ShaderCompiler {
             EShTargetClientVersion clientVersion
     ) {
         createCacheDir();
-        LOGGER.debug("调用GlslangShaderCompiler编译SPIR-V");
+        LOGGER.debug("Invoking GlslangShaderCompiler to compile SPIR-V");
 
         GlslangCompileShaderResult result = GlslangShaderCompiler.compileShaderToSpirv(
                 src,
@@ -217,7 +217,7 @@ public class ShaderCompiler {
                 false
         );
 
-        LOGGER.debug("编译SPIR-V结束，错误码={}, 数据大小={}",
+        LOGGER.debug("SPIR-V compilation completed, error code={}, data size={}",
                 result.error(), result.spirVDataSize());
         return result;
     }
@@ -290,11 +290,11 @@ public class ShaderCompiler {
             );
 
             if (!Files.exists(path)) {
-                LOGGER.debug("未找到缓存文件: {}", path);
+                LOGGER.debug("Cache file not found: {}", path);
                 return false;
             }
         }
-        LOGGER.debug("着色器缓存文件存在。");
+        LOGGER.debug("Shader cache file exists.");
         return true;
     }
 
@@ -303,7 +303,7 @@ public class ShaderCompiler {
 
         String hash = getShaderProgramMd5(program, apiTag);
         String filename = program.getDescription().shaderName() + "." + hash + "." + type.name().toLowerCase() + "." + apiTag + ".spv";
-        LOGGER.debug("加载缓存二进制: {}", filename);
+        LOGGER.debug("Loading cached binary: {}", filename);
         return loadBinaryWithApi(filename, apiTag);
     }
 
@@ -314,19 +314,19 @@ public class ShaderCompiler {
         try {
             byte[] data = Files.readAllBytes(path);
             if (data.length == 0 || data.length > 1024 * 1024 * 2) { // 最大2mb
-                LOGGER.error("SPIR-V缓存大小异常: {}", data.length);
+                LOGGER.error("Invalid SPIR-V cache size: {}", data.length);
                 return null;
             }
 
             ByteBuffer buffer;
             buffer = MemoryUtil.memAlloc(data.length);
             buffer.put(data).flip();
-            LOGGER.debug("成功加载SPIR-V缓存文件: {}", filename);
+            LOGGER.debug("Loaded SPIR-V cache file: {}", filename);
             int format = isVulkan(apiTag) ? -1 : GL_SHADER_BINARY_FORMAT_SPIR_V_ARB;
             return new ShaderBinary(buffer, data.length, format);
 
         } catch (IOException e) {
-            LOGGER.error("加载SPIR-V失败: {}", filename, e);
+            LOGGER.error("Failed to load SPIR-V: {}", filename, e);
             return null;
         }
     }
@@ -360,7 +360,7 @@ public class ShaderCompiler {
             if (!closed) {
                 synchronized (this) {
                     if (!closed) {
-                        LOGGER.debug("释放着色器代码内存 {} bytes", size);
+                        LOGGER.debug("Released {} bytes of shader code memory", size);
                         MemoryUtil.memFree(binary);
                         closed = true;
                     }

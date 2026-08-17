@@ -301,7 +301,7 @@ public class Fsr2PipelineResources {
     public Fsr2ResourceEntry resource(Fsr2PipelineResourceType type) {
         Fsr2ResourceEntry entry = resources.get(type);
         if (entry == null) {
-            throw new RuntimeException("资源未找到: " + type);
+            throw new RuntimeException("Resource not found: " + type);
         }
         return entry;
     }

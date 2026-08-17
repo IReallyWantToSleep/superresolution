@@ -52,7 +52,7 @@ public class MaterialUI {
                             event.getClass(),
                             listeners[index]
                     );
-                    SuperResolution.LOGGER.error("事件处理错误", throwable);
+                    SuperResolution.LOGGER.error("Error while handling event", throwable);
                 })
                 .build();
     }

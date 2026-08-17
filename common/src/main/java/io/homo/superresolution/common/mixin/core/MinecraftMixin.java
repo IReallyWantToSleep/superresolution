@@ -56,6 +56,7 @@ public abstract class MinecraftMixin {
     @Unique
     private boolean super_resolution$b3dVulkanFrame = false;
 
+    #if !(MC_VER <= MC_1_20_1)
     #if MC_VER <= MC_1_20_1
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setOverlay(Lnet/minecraft/client/gui/screens/Overlay;)V", unsafe = true), method = "<init>")
     #elif MC_VER > MC_26_1_2
@@ -64,8 +65,11 @@ public abstract class MinecraftMixin {
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"), method = "<init>")
     #endif
     private void onClientStarted(net.minecraft.client.main.GameConfig data, CallbackInfo ci) {
+
         SuperResolution.onClientStarted();
+
     }
+    #endif
 
     /*
     @Inject(at = @At(value = "TAIL"), method = "doWorldLoad")

@@ -215,7 +215,7 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
                     .layerCount(1);
             var pView = stack.mallocLong(1);
             if (vkCreateImageView(device.getVkDevice(), viewInfo, null, pView) != VK_SUCCESS) {
-                throw new RuntimeException("VulkanExternalTexture: 创建 VkImageView 失败");
+                throw new RuntimeException("VulkanExternalTexture: failed to create VkImageView");
             }
             view = pView.get(0);
         }

@@ -20,7 +20,7 @@ fun fetchAllReleaseVersions(): List<String> {
         @Suppress("UNCHECKED_CAST")
         val manifest = JsonSlurper().parse(connection.getInputStream()) as Map<String, Any?>
 
-        println("Minecraft版本信息获取成功")
+        println("Successfully retrieved Minecraft version information")
 
         val versions = (manifest["versions"] as? List<*>)
             .orEmpty()
@@ -28,11 +28,11 @@ fun fetchAllReleaseVersions(): List<String> {
             .filter { it["type"] == "release" }
             .mapNotNull { it["id"]?.toString() }
 
-        println("最新的Minecraft ${versions.firstOrNull().orEmpty()}")
+        println("Latest Minecraft version: ${versions.firstOrNull().orEmpty()}")
         versions
     } catch (e: Exception) {
         e.printStackTrace()
-        println("Minecraft版本信息获取失败，使用默认版本列表")
+        println("Failed to retrieve Minecraft version information; using the default version list")
         getDefaultReleaseVersions()
     }
 }
@@ -79,7 +79,7 @@ fun toVersionCode(verStr: String): Int {
 fun getVersionConfigPath(): Path {
     val configName = providers.gradleProperty("minecraft_version_config").orNull
         ?: project.findProperty("minecraft_version_config")?.toString()
-        ?: throw GradleException("缺少属性 minecraft_version_config")
+        ?: throw GradleException("Missing minecraft_version_config property")
 
     return Paths.get(rootDir.toString(), "configs", "$configName.json")
 }
@@ -87,9 +87,9 @@ fun getVersionConfigPath(): Path {
 val versionConfigVar = try {
     VersionConfig.loadFromFile(getVersionConfigPath().toFile())
 } catch (e: Exception) {
-    println("无法解析版本配置")
+    println("Unable to parse version configuration")
     e.printStackTrace()
-    throw GradleException("无法解析版本配置 ${getVersionConfigPath()}")
+    throw GradleException("Unable to parse version configuration ${getVersionConfigPath()}")
 }
 
 extra["allMinecraftVersions"] = if (providers.gradleProperty("sr.refreshVersions").orNull?.toBoolean() == true) {
@@ -121,7 +121,7 @@ fun writeDefines() {
 
     if (!outputFile.exists() || outputFile.readText() != newText) {
         outputFile.writeText(newText)
-        println("成功写入定义文件")
+        println("Successfully wrote definition file")
     }
 }
 

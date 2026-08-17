@@ -130,7 +130,7 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
         try {
             String sourceCode = source.getSource();
             if (compat) {
-                ShaderCompiler.LOGGER.info("使用兼容性着色器编译器编译着色器 {}", description.shaderName());
+                ShaderCompiler.LOGGER.info("Compiling shader {} with the compatibility shader compiler", description.shaderName());
                 GlslangCompileShaderResult result = GlslangShaderCompiler.compileShaderToSpirv(
                         source.getSource(),
                         switch (source.getType()) {
@@ -209,9 +209,9 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
         try {
             Files.writeString(sourcePath, sourceCode);
             Files.writeString(logPath, log);
-            LOGGER.info("保存错误着色器源码至: {}, 日志至: {}", sourcePath, logPath);
+            LOGGER.info("Saved failed shader source to: {}, log to: {}", sourcePath, logPath);
         } catch (IOException e) {
-            LOGGER.error("无法保存着色器源码或日志文件: {}", e.getMessage());
+            LOGGER.error("Unable to save shader source or log file: {}", e.getMessage());
         }
     }
 
@@ -243,9 +243,9 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
             });
 
             Files.writeString(infoPath, info.toString());
-            LOGGER.info("保存链接错误日志至: {}, 程序信息至: {}", logPath, infoPath);
+            LOGGER.info("Saved link error log to: {}, program information to: {}", logPath, infoPath);
         } catch (IOException e) {
-            LOGGER.error("无法保存链接错误信息: {}", e.getMessage());
+            LOGGER.error("Unable to save link error information: {}", e.getMessage());
         }
     }
 
@@ -253,14 +253,14 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
         Set<ShaderType> types = description.sourceMap().keySet();
         if (types.contains(ShaderType.Vertex) || types.contains(ShaderType.Fragment)) {
             if (!types.contains(ShaderType.Vertex) || !types.contains(ShaderType.Fragment)) {
-                throw new IllegalStateException("通用着色器必须同时拥有VERTEX与FRAGMENT类型的ShaderSource");
+                throw new IllegalStateException("General shaders must include both VERTEX and FRAGMENT ShaderSource types");
             }
             if (types.stream().anyMatch(t -> t != ShaderType.Vertex && t != ShaderType.Fragment)) {
-                throw new IllegalStateException("通用着色器仅支持VERTEX与FRAGMENT类型的ShaderSource");
+                throw new IllegalStateException("General shaders support only VERTEX and FRAGMENT ShaderSource types");
             }
         } else {
             if (types.size() != 1 || !types.contains(ShaderType.Compute)) {
-                throw new IllegalStateException("计算着色器只需要一个着色器源码且类型必须为COMPUTE");
+                throw new IllegalStateException("Compute shaders require exactly one shader source of type COMPUTE");
             }
         }
 
@@ -321,8 +321,8 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
         } catch (ShaderCompileException e) {
             throw e;
         } catch (Exception e) {
-            LOGGER.error("着色器程序 '%s' 编译过程中发生未预期的错误".formatted(description.shaderName()), e);
-            throw new ShaderCompileException("着色器程序编译失败: " + e.getMessage());
+            LOGGER.error("Unexpected error while compiling shader program '%s'".formatted(description.shaderName()), e);
+            throw new ShaderCompileException("Shader program compilation failed: " + e.getMessage());
         } finally {
             shaders.forEach(GlShader::destroy);
         }

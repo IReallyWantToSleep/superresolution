@@ -148,7 +148,7 @@ public class VulkanFramebuffer implements IFrameBuffer {
 
     @Override
     public void clearFrameBuffer() {
-        throw new UnsupportedOperationException("典型的OpenGL思维");
+        throw new UnsupportedOperationException("This OpenGL-style operation is unsupported for Vulkan framebuffers");
     }
 
     @Override
@@ -188,7 +188,7 @@ public class VulkanFramebuffer implements IFrameBuffer {
 
     @Override
     public void setClearColorRGBA(float red, float green, float blue, float alpha) {
-        throw new UnsupportedOperationException("典型的OpenGL思维");
+        throw new UnsupportedOperationException("This OpenGL-style operation is unsupported for Vulkan framebuffers");
     }
 
     @Override

@@ -2666,7 +2666,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 inputStream
                         );
                     } catch (Throwable ignored) {
-                        SuperResolution.LOGGER.error("加载配置界面图像失败", ignored);
+                        SuperResolution.LOGGER.error("Failed to load configuration screen image", ignored);
                         loaded = true;
                         return;
                     }

@@ -585,7 +585,7 @@ public class VulkanDevice implements IDevice {
         if (memoryAllocator != null) {
             memoryAllocator.destroy();
         }
-        LOGGER.debug("VulkanDevice 资源已清理");
+        LOGGER.debug("VulkanDevice resources released");
     }
 
     public boolean ownsVkDevice() {

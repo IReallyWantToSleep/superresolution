@@ -782,7 +782,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .addOption("native", "原生渲染")
                 .setValue("dlss")
                 .onSelectionChanged(value -> {
-                    System.out.println("选择了: " + value);
+                    System.out.println("Selected: " + value);
                 });
         supportSelect.layout().setMargin(YogaEdge.TOP, 8);
         container.addChild(supportSelect);

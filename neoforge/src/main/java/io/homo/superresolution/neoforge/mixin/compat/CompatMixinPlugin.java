@@ -60,9 +60,9 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
     public boolean shouldApplyMixin(String s, String s1) {
         boolean b = _shouldApplyMixin(s, s1);
         if (!b) {
-            LOGGER.info("已禁用Mixin {}", s1);
+            LOGGER.info("Disabled mixin {}", s1);
         } else {
-            LOGGER.info("已启用Mixin {}", s1);
+            LOGGER.info("Enabled mixin {}", s1);
         }
         return b;
     }

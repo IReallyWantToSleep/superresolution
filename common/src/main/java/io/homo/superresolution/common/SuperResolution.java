@@ -166,7 +166,7 @@ public final class SuperResolution implements Destroyable {
 
     public static void onClientStarted() {
         if (gameIsStarted) {
-            SuperResolution.LOGGER.warn("似乎有什么东西在重复初始化SR");
+            SuperResolution.LOGGER.warn("Super Resolution appears to be initialized more than once");
             return;
         }
         SuperResolutionConfig.SPEC.load();
@@ -222,7 +222,7 @@ public final class SuperResolution implements Destroyable {
             minecraft = Minecraft.getInstance();
         }
         if (Platform.currentPlatform.getEnv() == EnvironmentType.SERVER) {
-            throw new RuntimeException("SuperResolution不支持安装在服务器上！");
+            throw new RuntimeException("SuperResolution does not support installation on a dedicated server!");
         }
         NativeLibManager.extract(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         NativeLibManager.load(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
@@ -289,7 +289,7 @@ public final class SuperResolution implements Destroyable {
                 return;
             }
             if (!RenderSystems.initBorrowedB3DVulkanIfAvailable()) {
-                throw new RuntimeException("初始化失败");
+                throw new RuntimeException("Initialization failed");
             }
             SRWorkModeManager.bootstrapProviders();
             RenderHandlerManager.initialize();
@@ -307,8 +307,8 @@ public final class SuperResolution implements Destroyable {
                 return;
             }
 
-            LOGGER.info("显卡供应商 {}", GraphicsCapabilities.detectGpuVendor().name());
-            LOGGER.info("OpenGL版本 {}", GraphicsCapabilities.getGLVersionString());
+            LOGGER.info("GPU vendor: {}", GraphicsCapabilities.detectGpuVendor().name());
+            LOGGER.info("OpenGL version: {}", GraphicsCapabilities.getGLVersionString());
 
             SRWorkModeManager.bootstrapProviders();
             RenderHandlerManager.initialize();
@@ -343,11 +343,11 @@ public final class SuperResolution implements Destroyable {
                 // 算法创建时已按当前尺寸初始化，同步尺寸缓存避免渲染路径上重复重建。
                 cachedWidth = RenderHandlerManager.getScreenWidth();
                 cachedHeight = RenderHandlerManager.getScreenHeight();
-                SuperResolution.LOGGER.info("初始化算法 {}", algorithmDescription.getDisplayName());
+                SuperResolution.LOGGER.info("Initializing algorithm {}", algorithmDescription.getDisplayName());
                 return true;
             } catch (Exception e) {
-                SuperResolution.LOGGER.info("初始化算法 {} 时失败 错误:", algorithmDescription.getDisplayName());
-                LOGGER.error("初始化算法失败详情", e);
+                SuperResolution.LOGGER.info("Failed to initialize algorithm {}:", algorithmDescription.getDisplayName());
+                LOGGER.error("Algorithm initialization failure details", e);
                 if (currentAlgorithm != null) {
                     try { currentAlgorithm.destroy(); } catch (Exception ignored2) { }
                 }
@@ -418,7 +418,7 @@ public final class SuperResolution implements Destroyable {
                 lastAppliedAlgorithm = algorithmDescription;
                 return true;
             } catch (Exception e) {
-                LOGGER.error("初始化算法 {} 时失败：", algorithmDescription.getDisplayName(), e);
+                LOGGER.error("Failed to initialize algorithm {}:", algorithmDescription.getDisplayName(), e);
                 if (currentAlgorithm != null) {
                     try { currentAlgorithm.destroy(); } catch (Exception ignored2) { }
                 }

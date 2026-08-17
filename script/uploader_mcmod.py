@@ -24,13 +24,13 @@ class MCMODModUploader:
 
     def upload_file(self, file_path, mc_version, platform_ids, api_ids, tag_names):
         if not os.path.exists(file_path):
-            raise ValueError(f"文件不存在: {file_path}")
+            raise ValueError(f"File does not exist: {file_path}")
         if os.path.getsize(file_path) > 78643200:
-            raise ValueError(f"文件过大: {os.path.basename(file_path)}")
+            raise ValueError(f"File is too large: {os.path.basename(file_path)}")
 
         ext = os.path.splitext(file_path)[1][1:].lower()
         if ext not in {"jar", "rar", "zip", "litemod", "mcpack", "mcaddon"}:
-            raise ValueError(f"不支持的文件类型: {ext}")
+            raise ValueError(f"Unsupported file type: {ext}")
 
         files = [
             (

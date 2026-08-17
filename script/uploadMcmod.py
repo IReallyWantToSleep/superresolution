@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Dict, List, Optional
 
 if len(sys.argv) < 3:
-    print("使用: python upload.py <MCMOD_UUID> <MCMOD_PHPSESSID>")
+    print("Usage: python upload.py <MCMOD_UUID> <MCMOD_PHPSESSID>")
     sys.exit(1)
 #################
 INPUT_DIR = "build_jars"

@@ -20,9 +20,9 @@ def parse_mc_version_range(mc_version_str):
             idx1 = ALL_VERSIONS.index(start)
             idx2 = ALL_VERSIONS.index(end)
         except ValueError:
-            raise ValueError(f"未知版本号: {mc_version_str}")
+            raise ValueError(f"Unknown version: {mc_version_str}")
         if idx1 > idx2:
-            raise ValueError(f"版本范围顺序错误: {mc_version_str}")
+            raise ValueError(f"Invalid version range order: {mc_version_str}")
         return ALL_VERSIONS[idx1:idx2+1]
     elif ".." in mc_version_str:
         start, end = mc_version_str.split("..")
@@ -30,13 +30,13 @@ def parse_mc_version_range(mc_version_str):
             idx1 = ALL_VERSIONS.index(start)
             idx2 = ALL_VERSIONS.index(end)
         except ValueError:
-            raise ValueError(f"未知版本号: {mc_version_str}")
+            raise ValueError(f"Unknown version: {mc_version_str}")
         if idx1 > idx2:
-            raise ValueError(f"版本范围顺序错误: {mc_version_str}")
+            raise ValueError(f"Invalid version range order: {mc_version_str}")
         return ALL_VERSIONS[idx1:idx2+1]
     else:
         if mc_version_str not in ALL_VERSIONS:
-            raise ValueError(f"未知版本号: {mc_version_str}")
+            raise ValueError(f"Unknown version: {mc_version_str}")
         return [mc_version_str]
 
 def parse_version_string(version_string: str):
@@ -67,11 +67,11 @@ def to_mcmod_api_string(loader: str):
 def mc_version_to_id(version: str):
     """把版本号转成唯一id（1.0-1, 1.1-2, ...）"""
     if version not in ALL_VERSIONS:
-        raise ValueError(f"未知版本号: {version}")
+        raise ValueError(f"Unknown version: {version}")
     return ALL_VERSIONS.index(version) + 1
 
 if __name__ == "__main__":
     s = "super_resolution-fabric-1.21.6~1.21.8-0.8.0-alpha.1.jar"
     info = parse_version_string(s)
     print(info)
-    print([mc_version_to_id(v) for v in info['mc_versions']]) 
+    print([mc_version_to_id(v) for v in info['mc_versions']])
