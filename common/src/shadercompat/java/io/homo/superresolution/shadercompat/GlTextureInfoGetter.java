@@ -29,6 +29,7 @@ class GlTextureInfoGetter {
         int[] params = new int[1];
         //GL42.glGetInternalformativ()
         GL11.glGetTexLevelParameteriv(target, 0, GL11.GL_TEXTURE_INTERNAL_FORMAT, params);
+        
         glBindTexture(target, prevTex);
         return params[0];
     }
