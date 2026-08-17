@@ -41,6 +41,7 @@ extern "C" {
     typedef enum SRRenderApiType {
         SR_RENDER_API_TYPE_VULKAN = 0,
         SR_RENDER_API_TYPE_OPENGL = 1,
+        SR_RENDER_API_TYPE_D3D12 = 2,
     } SRRenderApiType;
 
     typedef enum SRParamValueType {

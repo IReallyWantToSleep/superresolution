@@ -17,7 +17,7 @@ layout(binding = 5, rg16f) uniform writeonly image2D outputMotionVectors;
 
 #ifdef HAS_EXPOSURE
 layout(binding = 6) uniform sampler2D inputExposure;
-layout(binding = 7, r16f) uniform writeonly image2D outputExposure;
+layout(binding = 7, r32f) uniform writeonly image2D outputExposure;
 #endif
 
 void main() {

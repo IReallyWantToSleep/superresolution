@@ -11,6 +11,7 @@ class CommonConfig(config: Map<*, *>) {
         ?: emptyList()
 
     val lwjglVersion: String = config["lwjgl_version"]?.toString().orEmpty()
+    val lwjglStbVersion: String = config["lwjgl_stb_version"]?.toString()?.takeIf { it.isNotBlank() } ?: lwjglVersion
     val architecturyApiVersion: String? = config["architectury_api_version"]?.toString()
     val clothConfigVersion: String? = config["cloth_config_version"]?.toString()
     val modArtifactMinecraftVer: String = config["mod_artifact_minecraft_ver"]?.toString().orEmpty()

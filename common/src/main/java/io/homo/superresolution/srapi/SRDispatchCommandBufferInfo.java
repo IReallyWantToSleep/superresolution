@@ -24,6 +24,7 @@ public class SRDispatchCommandBufferInfo {
     public SRRenderApiType renderApiType;
     private OpenGLCommandBuffer openglCommandBuffer;
     private VulkanCommandBuffer vulkanCommandBuffer;
+    private D3D12CommandList d3d12CommandList;
 
     private SRDispatchCommandBufferInfo() {
     }
@@ -49,6 +50,13 @@ public class SRDispatchCommandBufferInfo {
         return info;
     }
 
+    public static SRDispatchCommandBufferInfo createD3D12(long commandList) {
+        SRDispatchCommandBufferInfo info = new SRDispatchCommandBufferInfo();
+        info.renderApiType = SRRenderApiType.D3D12;
+        info.d3d12CommandList = new D3D12CommandList(commandList);
+        return info;
+    }
+
     public SRRenderApiType getRenderApiType() {
         return renderApiType;
     }
@@ -61,11 +69,26 @@ public class SRDispatchCommandBufferInfo {
         return vulkanCommandBuffer;
     }
 
-    public long getVulkanCommandBufferAddress() {
+    public D3D12CommandList getD3D12CommandList() {
+        return d3d12CommandList;
+    }
+
+    public long getNativeCommandBufferAddress() {
         if (renderApiType == SRRenderApiType.VULKAN && vulkanCommandBuffer != null) {
             return vulkanCommandBuffer.commandBuffer;
         }
+        if (renderApiType == SRRenderApiType.D3D12 && d3d12CommandList != null) {
+            return d3d12CommandList.commandList;
+        }
         return 0;
+    }
+
+    /**
+     * @deprecated use {@link #getNativeCommandBufferAddress()}.
+     */
+    @Deprecated
+    public long getVulkanCommandBufferAddress() {
+        return getNativeCommandBufferAddress();
     }
 
     public static class OpenGLCommandBuffer {
@@ -92,6 +115,26 @@ public class SRDispatchCommandBufferInfo {
 
         public void setCommandBuffer(long commandBuffer) {
             this.commandBuffer = commandBuffer;
+        }
+    }
+
+    public static class D3D12CommandList {
+        public long commandList;
+
+        public D3D12CommandList() {
+            this.commandList = 0;
+        }
+
+        public D3D12CommandList(long commandList) {
+            this.commandList = commandList;
+        }
+
+        public long getCommandList() {
+            return commandList;
+        }
+
+        public void setCommandList(long commandList) {
+            this.commandList = commandList;
         }
     }
 }

@@ -52,7 +52,9 @@ public class NativeLibManager {
     #endif
     private static final List<NativeLib> libs = new ArrayList<>();
     public static NativeLib LIB_SUPER_RESOLUTION = null;
+    public static NativeLib LIB_SUPER_RESOLUTION_D3D12_INTEROP = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
+    public static NativeLib LIB_SUPER_RESOLUTION_FSR4 = null;
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_NGX = null;
     public static NativeLib LIB_SUPER_RESOLUTION_STREAMLINE = null;
@@ -72,8 +74,18 @@ public class NativeLibManager {
                     true,
                     true
             );
+            LIB_SUPER_RESOLUTION_D3D12_INTEROP = new NativeLib(
+                    "SuperResolutionD3D12Interop",
+                    true,
+                    false
+            );
             LIB_SUPER_RESOLUTION_FSR = new NativeLib(
                     "SuperResolutionFSR",
+                    false,
+                    false
+            );
+            LIB_SUPER_RESOLUTION_FSR4 = new NativeLib(
+                    "SuperResolutionFSR4",
                     false,
                     false
             );
@@ -94,7 +106,9 @@ public class NativeLibManager {
             );
 
             libs.add(LIB_SUPER_RESOLUTION);
+            libs.add(LIB_SUPER_RESOLUTION_D3D12_INTEROP);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
+            libs.add(LIB_SUPER_RESOLUTION_FSR4);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
             libs.add(LIB_SUPER_RESOLUTION_NGX);
             libs.add(LIB_SUPER_RESOLUTION_STREAMLINE);
@@ -120,6 +134,11 @@ public class NativeLibManager {
 
     public static boolean nativeApiAvailable() {
         return nativeApiAvailable;
+    }
+
+    public static boolean d3d12InteropAvailable() {
+        return LIB_SUPER_RESOLUTION_D3D12_INTEROP != null
+                && LIB_SUPER_RESOLUTION_D3D12_INTEROP.available;
     }
 
     public static void createLibraryDir(Path path) {

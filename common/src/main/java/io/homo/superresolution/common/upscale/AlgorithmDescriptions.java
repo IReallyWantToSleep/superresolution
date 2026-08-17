@@ -33,12 +33,14 @@ import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.upscale.anime4k.Anime4K;
 import io.homo.superresolution.common.upscale.dlss.DLSS;
 import io.homo.superresolution.common.upscale.ffxfsr.FfxFSR;
+import io.homo.superresolution.common.upscale.ffxfsr.FfxFSR4D3D12;
 import io.homo.superresolution.common.upscale.fsr1.FSR1;
 import io.homo.superresolution.common.upscale.fsr2.FSR2;
 import io.homo.superresolution.common.upscale.none.None;
 import io.homo.superresolution.common.upscale.sgsr.v1.Sgsr1;
 import io.homo.superresolution.common.upscale.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.xess.XeSS;
+import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import net.minecraft.network.chat.Component;
 
@@ -180,6 +182,40 @@ public class AlgorithmDescriptions {
             .customUpscaleRatio(true)
             .build();
 
+    public static final AlgorithmDescription<FfxFSR4D3D12> FSR4_D3D12 =
+            AlgorithmDescription.builder(FfxFSR4D3D12.class)
+                    .briefName("AMD FSR 4 (D3D12)")
+                    .codeName("fsr4_d3d12")
+                    .displayName("AMD FSR 4 (Direct3D 12)")
+                    .requirement(
+                            Requirement.nothing()
+                                    .addSupportedOS(new OperatingSystem(
+                                            SystemArchitecture.X86_64,
+                                            OperatingSystemType.WINDOWS))
+                                    .requiredGlExtension("GL_EXT_memory_object")
+                                    .requiredGlExtension("GL_EXT_memory_object_win32")
+                                    .requiredGlExtension("GL_EXT_semaphore")
+                                    .requiredGlExtension("GL_EXT_semaphore_win32")
+                                    .glMajorVersion(4)
+                                    .glMinorVersion(6)
+                                    .isTrue(NativeLibManager::d3d12InteropAvailable)
+                    )
+                    .extraResources(
+                            ExtraResources.builder()
+                                    .add(ExtraResource.builder(
+                                                    FfxFSR4D3D12.UPSCALER_DLL_NAME)
+                                            .addRemote(
+                                                    "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/v2.3.0/Kits/FidelityFX/signedbin/amd_fidelityfx_upscaler_dx12.dll",
+                                                    "AMD FidelityFX SDK v2.3.0"
+                                            )
+                                            .build())
+                                    .build()
+                    )
+                    .supportJitter(true)
+                    .qualityPresets(FSR_QUALITY_PRESETS)
+                    .customUpscaleRatio(true)
+                    .build();
+
     public static final AlgorithmDescription<XeSS> XESS = AlgorithmDescription.builder(XeSS.class)
             .briefName("Intel XeSS")
             .codeName("xess")
@@ -285,6 +321,7 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(FSR1);
         AlgorithmRegistry.registry(FSR2);
         AlgorithmRegistry.registry(FSR);
+        AlgorithmRegistry.registry(FSR4_D3D12);
         AlgorithmRegistry.registry(XESS);
         AlgorithmRegistry.registry(DLSS);
         AlgorithmRegistry.registry(SGSR1);

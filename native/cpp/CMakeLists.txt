@@ -2,6 +2,8 @@ cmake_minimum_required(VERSION 3.15)
 project(SuperResolution)
 
 option(SR_FSR "启用以支持FSR" ON)
+option(SR_FSR4 "启用以支持FSR4（FFX API，仅Windows D3D12）" ON)
+option(SR_D3D12_INTEROP "启用OpenGL与D3D12互操作（仅Windows）" ON)
 option(SR_XESS "启用以支持XESS" ON)
 option(SR_NGX "启用以支持NGX绑定" ON)
 option(SR_STREAMLINE "启用以支持Streamline" ON)
@@ -77,6 +79,9 @@ include_directories(
 )
 
 add_subdirectory("SRNativeMain")
+if(SR_D3D12_INTEROP AND ON_WINDOWS)
+    add_subdirectory("SRNativeD3D12Interop")
+endif()
 if(SR_FSR)
     add_subdirectory("SRNativeFSR")
 endif()
@@ -86,6 +91,10 @@ endif()
 
 if(SR_NGX)
     add_subdirectory("SRNativeNGX")
+endif()
+
+if(SR_FSR4 AND ON_WINDOWS)
+    add_subdirectory("SRNativeFSR4")
 endif()
 
 if(SR_STREAMLINE AND ON_WINDOWS)
