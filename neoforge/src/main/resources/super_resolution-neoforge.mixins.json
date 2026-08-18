@@ -4,7 +4,6 @@
     "compatibilityLevel": "JAVA_21",
     "minVersion": "0.8",
     "client": [
-        "core.MinecraftMixin",
         "neoforge.FuckingValidation1218Mixin",
         "neoforge.FuckingValidationMixin"
     ],

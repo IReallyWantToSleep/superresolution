@@ -2,7 +2,7 @@
 
 FfxResource srTextureResourceToFfxResource(const SRTextureResource *srTex) {
     FfxResource resource = {};
-    resource.resource = (void *) (srTex->handle);
+    resource.resource = static_cast<void *>(srTex->handle);
     resource.state = FFX_RESOURCE_STATE_COMPUTE_READ;
     resource.description.format = srTextureFormatToFfxSurfaceFormat(srTex->desc.format);
     resource.description.width = srTex->desc.width;
@@ -98,18 +98,18 @@ FfxSurfaceFormat srTextureFormatToFfxSurfaceFormat(SRTextureFormat format) {
 FfxResourceUsage srTextureResourceUsageToFfx(SRResourceUsage usage) {
     FfxResourceUsage ffxUsage = FFX_RESOURCE_USAGE_READ_ONLY;
     if (usage & SR_RESOURCE_USAGE_RENDERTARGET)
-        ffxUsage = (FfxResourceUsage) (ffxUsage | FFX_RESOURCE_USAGE_RENDERTARGET);
+        ffxUsage = static_cast<FfxResourceUsage>(ffxUsage | FFX_RESOURCE_USAGE_RENDERTARGET);
     if (usage & SR_RESOURCE_USAGE_UAV)
-        ffxUsage = (FfxResourceUsage) (ffxUsage | FFX_RESOURCE_USAGE_UAV);
+        ffxUsage = static_cast<FfxResourceUsage>(ffxUsage | FFX_RESOURCE_USAGE_UAV);
     if (usage & SR_RESOURCE_USAGE_DEPTHTARGET)
-        ffxUsage = (FfxResourceUsage) (ffxUsage | FFX_RESOURCE_USAGE_DEPTHTARGET);
+        ffxUsage = static_cast<FfxResourceUsage>(ffxUsage | FFX_RESOURCE_USAGE_DEPTHTARGET);
     if (usage & SR_RESOURCE_USAGE_INDIRECT)
-        ffxUsage = (FfxResourceUsage) (ffxUsage | FFX_RESOURCE_USAGE_INDIRECT);
+        ffxUsage = static_cast<FfxResourceUsage>(ffxUsage | FFX_RESOURCE_USAGE_INDIRECT);
     if (usage & SR_RESOURCE_USAGE_ARRAYVIEW)
-        ffxUsage = (FfxResourceUsage) (ffxUsage | FFX_RESOURCE_USAGE_ARRAYVIEW);
+        ffxUsage = static_cast<FfxResourceUsage>(ffxUsage | FFX_RESOURCE_USAGE_ARRAYVIEW);
     if (usage & SR_RESOURCE_USAGE_STENCILTARGET)
-        ffxUsage = (FfxResourceUsage) (ffxUsage | FFX_RESOURCE_USAGE_STENCILTARGET);
+        ffxUsage = static_cast<FfxResourceUsage>(ffxUsage | FFX_RESOURCE_USAGE_STENCILTARGET);
     if (usage & SR_RESOURCE_USAGE_DCC_RENDERTARGET)
-        ffxUsage = (FfxResourceUsage) (ffxUsage | FFX_RESOURCE_USAGE_DCC_RENDERTARGET);
+        ffxUsage = static_cast<FfxResourceUsage>(ffxUsage | FFX_RESOURCE_USAGE_DCC_RENDERTARGET);
     return ffxUsage;
 }

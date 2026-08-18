@@ -1,10 +1,5 @@
 import multiversion.VersionConfig
-import org.gradle.api.tasks.SourceSetContainer
-import org.gradle.language.jvm.tasks.ProcessResources
 import org.gradle.jvm.tasks.Jar
-import org.gradle.kotlin.dsl.add
-import org.gradle.kotlin.dsl.create
-import org.gradle.kotlin.dsl.dependencies
 import utils.MinecraftVersion
 
 plugins {
@@ -15,8 +10,17 @@ plugins {
 @Suppress("UNCHECKED_CAST")
 val versionConfig = rootProject.extra["versionConfig"] as VersionConfig
 val isDevBuild = gradle.extensions.extraProperties["isDev"] as? Boolean ?: false
-val imguiVersion = if (MinecraftVersion.of(versionConfig.common.minecraftVersion) >= MinecraftVersion.of("26.1")) "1.92.0" else "1.90.0"
-
+val imguiVersion =
+    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) >= MinecraftVersion.of("26.1"))
+        "1.92.0" else "1.90.0"
+val mixinConfigs = arrayOf(
+    "super_resolution.mixins.json",
+    "super_resolution.hack.mixins.json",
+    "super_resolution-forge.mixins.json",
+    "super_resolution-forge-compat.mixins.json",
+    "super_resolution.shadercompat.mixins.json",
+    "super_resolution_irisapi.mixins.json"
+)
 base {
     archivesName.set("super_resolution-forge-${versionConfig.common.modArtifactMinecraftVer}")
 }
@@ -112,16 +116,10 @@ legacyForge {
     }
 }
 
-extensions.configure<Any>("mixin") {
-    val sourceSets = extensions.getByType(SourceSetContainer::class.java)
-    withGroovyBuilder {
-        "add"(sourceSets.getByName("main"), "super_resolution.refmap.json")
-        "config"("super_resolution.mixins.json")
-        "config"("super_resolution.hack.mixins.json")
-        "config"("super_resolution-forge.mixins.json")
-        "config"("super_resolution-forge-compat.mixins.json")
-        "config"("super_resolution.shadercompat.mixins.json")
-        "config"("super_resolution_irisapi.mixins.json")
+mixin {
+    add(sourceSets.getByName("main"), "super_resolution.refmap.json")
+    mixinConfigs.forEach { mixinConfig ->
+        config(mixinConfig)
     }
 }
 
@@ -129,10 +127,9 @@ val sourceSets = extensions.getByType(SourceSetContainer::class.java)
 sourceSets.getByName("main").resources.srcDir("src/generated/resources")
 
 dependencies {
-    //compileOnly("net.fabricmc:sponge-mixin:0.15.2+mixin.0.8.7")
-    //annotationProcessor("net.fabricmc:sponge-mixin:0.15.2+mixin.0.8.7")
     compileOnly("org.jetbrains:annotations:25.0.0")
     implementation("org.anarres:jcpp:1.4.14")
+
     val imguiAppDep = implementation("io.github.spair:imgui-java-app:$imguiVersion")
     if (isDevBuild && imguiAppDep != null) jarJar(imguiAppDep)
 
@@ -145,7 +142,7 @@ dependencies {
     implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { jarJar(it) }
     implementation(files(mergeVmaNatives.get().archiveFile))
     add("jarJar", files(mergeVmaNatives.get().archiveFile))
-    //modImplementation("dev.architectury:architectury-forge:${versionConfig.common.architecturyApiVersion}")
+
     // Sodium's Forge API exposes Fabric's Event type, but Fabric API is not a Forge runtime mod.
     compileOnly("net.fabricmc.fabric-api:fabric-api-base:0.4.39+80f8cf51bb")
 
@@ -153,7 +150,8 @@ dependencies {
     if (busDep != null) jarJar(busDep)
 
     for (lib in versionConfig.forge.dependencies.modrinth) {
-        val depName = "maven.modrinth:${lib.name}:${lib.version}-forge,${lib.minecraftVersion ?: versionConfig.common.minecraftVersion}"
+        val depName =
+            "maven.modrinth:${lib.name}:${lib.version}-forge,${lib.minecraftVersion ?: versionConfig.common.minecraftVersion}"
         if (lib.compileOnly) {
             modCompileOnly(depName)
         } else {
@@ -206,7 +204,7 @@ tasks.named<ProcessResources>("processResources") {
             line.replace("\"{versionRange}\"", "\"$forgeVersionRange\"")
         }
     }
-    if (gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true){
+    if (gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true) {
         exclude("**/libSuperResolution*+*+release.*")
     } else {
         exclude("**/libSuperResolution*+*+debug.*")
@@ -216,7 +214,7 @@ tasks.named<ProcessResources>("processResources") {
 tasks.named<Jar>("jar") {
     manifest.attributes(
         mapOf(
-            "MixinConfigs" to "super_resolution.mixins.json,super_resolution.hack.mixins.json,super_resolution-forge.mixins.json,super_resolution-forge-compat.mixins.json,super_resolution.shadercompat.mixins.json,super_resolution_irisapi.mixins.json"
+            "MixinConfigs" to mixinConfigs.joinToString(separator = ",")
         )
     )
 }

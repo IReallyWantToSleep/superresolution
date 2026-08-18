@@ -44,7 +44,7 @@ private:
         jstring jHeader = env->NewStringUTF(headerName);
         jstring jIncluder = env->NewStringUTF(includerName);
 
-        jstring result = static_cast<jstring>(env->CallStaticObjectMethod(
+        auto result = static_cast<jstring>(env->CallStaticObjectMethod(
             helperClass, method, jHeader, jIncluder, static_cast<jint>(inclusionDepth)));
 
         const char *content = env->GetStringUTFChars(result, nullptr);

@@ -1,7 +1,6 @@
-# 虽然我可以直接写一个gradle任务，但是我闲，所以我拿python写
 ############################### 设置 ###############################
 ENABLE_GRADLE_OUTPUT = True  # 是否显示gradle的输出
-ENABLE_GRADLE_OUTPUT_INFO = False  # 是否在gradle的命令行加入--info <-显示致死量日志
+ENABLE_GRADLE_OUTPUT_INFO = False  # 是否在gradle的命令行加入--info
 OUTPUT_DIR = "build_jars"  # 输出目录
 VERSION_CONFIGS_DIR = "configs"  # 版本配置目录
 #################################################################

@@ -18,15 +18,12 @@
 
 package io.homo.superresolution.neoforge.compat.sodium;
 
-#if MC_VER > MC_1_21_10 || 1
-
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import net.caffeinemc.mods.sodium.api.config.ConfigEntryPoint;
 import net.caffeinemc.mods.sodium.api.config.ConfigEntryPointForge;
 import net.caffeinemc.mods.sodium.api.config.structure.ConfigBuilder;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 @ConfigEntryPointForge(SuperResolution.MOD_ID)
@@ -52,8 +49,3 @@ public class SodiumConfigBuilder implements ConfigEntryPoint {
         #endif
     }
 }
-
-#else
-public class SodiumConfigBuilder {
-}
-#endif

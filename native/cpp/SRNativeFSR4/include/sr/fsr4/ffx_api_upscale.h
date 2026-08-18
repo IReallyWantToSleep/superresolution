@@ -4,7 +4,7 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+    #endif
 
     /**
      * Extra string parameter containing the absolute path to AMD's signed
@@ -15,6 +15,6 @@ extern "C" {
 
     SR_API SRUpscaleContextCallbacks srGetFfxApiUpscaleCallbacks();
 
-#ifdef __cplusplus
+    #ifdef __cplusplus
 }
 #endif

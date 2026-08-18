@@ -1,6 +1,4 @@
 import multiversion.VersionConfig
-import org.gradle.api.tasks.SourceSetContainer
-import org.gradle.language.jvm.tasks.ProcessResources
 import utils.MinecraftVersion
 
 plugins {
@@ -11,7 +9,8 @@ plugins {
 @Suppress("UNCHECKED_CAST")
 val versionConfig = rootProject.extra["versionConfig"] as VersionConfig
 val isDevBuild = gradle.extensions.extraProperties["isDev"] as? Boolean ?: false
-val imguiVersion = if (MinecraftVersion.of(versionConfig.common.minecraftVersion) >= MinecraftVersion.of("26.1")) "1.92.0" else "1.90.0"
+val imguiVersion =
+    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) >= MinecraftVersion.of("26.1")) "1.92.0" else "1.90.0"
 
 repositories {
     maven {
@@ -103,11 +102,16 @@ neoForge {
         configureEach {
             jvmArguments.add("-XX:+CreateMinidumpOnCrash")
             jvmArguments.add("-Dmixin.debug.export=true")
-            //shut up!
+
+            // We force set the lwjgl version to versionConfig.common.lwjglVersion
+            // Sodium will check the lwjgl version,ensure it equals the lwjgl version of corresponding Minecraft version
+            // We must disable the check,otherwise sodium will crash the game.
             jvmArguments.add("-Dsodium.checks.issue2561=false")
             systemProperty("neoforge.enabledGameTestNamespaces", rootProject.property("mod_id").toString())
-            ideName = "NeoForge ${name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }} (${project.path})"
+            ideName =
+                "NeoForge ${name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }} (${project.path})"
 
+            // ModDevGradle needs manual add non-mod dependencies to runtime classpath
             if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.9")) {
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-app:$imguiVersion"))
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-binding:$imguiVersion"))
@@ -116,7 +120,6 @@ neoForge {
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}"))
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma::natives-windows"))
                 additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma::natives-linux"))
-
             }
         }
         create("client") {
@@ -148,7 +151,7 @@ dependencies {
 
 
     if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("26.2")) {
-        implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { jarJar(it);libraries(it) }
+        implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { jarJar(it); libraries(it) }
         implementation(files(mergeVmaNatives.get().archiveFile))
         add("jarJar", files(mergeVmaNatives.get().archiveFile))
         add("libraries", files(mergeVmaNatives.get().archiveFile))
@@ -162,7 +165,8 @@ dependencies {
     compileOnly("net.fabricmc.fabric-api:fabric-api-base:0.4.64+9ec45cd8e8")
 
     for (lib in versionConfig.neoforge.dependencies.modrinth) {
-        var depName = "maven.modrinth:${lib.name}:${lib.version}-neoforge,${lib.minecraftVersion ?: versionConfig.common.minecraftVersion}"
+        var depName =
+            "maven.modrinth:${lib.name}:${lib.version}-neoforge,${lib.minecraftVersion ?: versionConfig.common.minecraftVersion}"
         if ((lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10")) || lib.name == "sodium.maven") {
             depName = "net.caffeinemc:sodium-neoforge-mod:${lib.version}"
             if (lib.compileOnly) {
@@ -252,10 +256,7 @@ tasks.named<ProcessResources>("processResources") {
         )
     }
 
-    //if (MinecraftVersion.of(versionConfig.common.minecraftVersion) != MinecraftVersion.of("1.21.1")) {
-        exclude("META-INF/services/net.neoforged.neoforgespi.earlywindow.*")
-    //}
-    if (gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true){
+    if (gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true) {
         exclude("**/libSuperResolution*+*+release.*")
     } else {
         exclude("**/libSuperResolution*+*+debug.*")

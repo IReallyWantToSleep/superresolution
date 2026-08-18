@@ -54,12 +54,13 @@ extern "C" {
                 desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR3 Context init failed");
                 desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(code).c_str());
             }
-            return (SRReturnCode) SR_RETURN_CODE_ERROR;
+            return SR_RETURN_CODE_ERROR;
         }
-        return (SRReturnCode) SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode
+
     srFfxFsr3CreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc) {
         if (desc->renderApiType != SR_RENDER_API_TYPE_VULKAN) {
             if (desc->messageCallback) {
@@ -69,16 +70,16 @@ extern "C" {
         }
 
         VkDeviceContext deviceContext = {
-            (VkDevice)(desc->renderDeviceInfo.vulkan.device),
-            (VkPhysicalDevice)(desc->renderDeviceInfo.vulkan.physicalDevice),
-            (PFN_vkGetDeviceProcAddr)(desc->renderDeviceInfo.vulkan.deviceProcAddr),
+            static_cast<VkDevice>(desc->renderDeviceInfo.vulkan.device),
+            static_cast<VkPhysicalDevice>(desc->renderDeviceInfo.vulkan.physicalDevice),
+            reinterpret_cast<PFN_vkGetDeviceProcAddr>(desc->renderDeviceInfo.vulkan.deviceProcAddr),
         };
         FfxDevice device = ffxGetDeviceVK(&deviceContext);
         size_t scratchBufferSize = ffxGetScratchMemorySizeVK(
-            (VkPhysicalDevice)(desc->renderDeviceInfo.vulkan.physicalDevice), 1);
+            desc->renderDeviceInfo.vulkan.physicalDevice, 1);
         void *scratchBuffer = malloc(scratchBufferSize);
         memset(scratchBuffer, 0, scratchBufferSize);
-        FfxInterface *ffxInterface = new FfxInterface();
+        auto *ffxInterface = new FfxInterface();
         if (FfxErrorCode _rc = ffxGetInterfaceVK(ffxInterface, device, scratchBuffer, scratchBufferSize, 1);
             _rc != FFX_OK) {
             free(scratchBuffer);
@@ -86,9 +87,9 @@ extern "C" {
             return (SRReturnCode) SR_RETURN_CODE_ERROR;
         }
 
-        FfxFsr3Context *fsr3Context = new FfxFsr3Context();
+        auto *fsr3Context = new FfxFsr3Context();
 
-        SRFsr3PrivateData *privateData = new SRFsr3PrivateData();
+        auto *privateData = new SRFsr3PrivateData();
         privateData->context = fsr3Context;
         privateData->ffxInterface = ffxInterface;
         privateData->scratchBuffer = scratchBuffer;
@@ -96,7 +97,7 @@ extern "C" {
 
         context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
         context->userContext = privateData;
-        return (SRReturnCode) SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srFfxFsr3DestroyUpscaleContext(SRUpscaleContext *context) {
@@ -104,7 +105,7 @@ extern "C" {
             return SR_RETURN_CODE_NULL_POINTER;
         }
 
-        SRFsr3PrivateData *privateData = (SRFsr3PrivateData *) context->userContext;
+        auto *privateData = static_cast<SRFsr3PrivateData *>(context->userContext);
 
         if (!privateData->context) {
             if (privateData->scratchBuffer) {
@@ -140,7 +141,7 @@ extern "C" {
         delete privateData;
         context->userContext = nullptr;
 
-        return (errorCode != FFX_OK) ? (SRReturnCode) SR_RETURN_CODE_ERROR : (SRReturnCode) SR_RETURN_CODE_OK;
+        return (errorCode != FFX_OK) ? SR_RETURN_CODE_ERROR : SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srFfxFsr3QueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result,
@@ -174,11 +175,11 @@ extern "C" {
             default:
                 break;
         }
-        return (SRReturnCode) SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srFfxFsr3DispatchUpscale(SRUpscaleContext *context, const SRDispatchUpscaleDesc *desc) {
-        FfxFsr3Context *fsr3Context = ((SRFsr3PrivateData *) context->userContext)->context;
+        FfxFsr3Context *fsr3Context = static_cast<SRFsr3PrivateData *>(context->userContext)->context;
 
         FfxFsr3DispatchUpscaleDescription dispatchDesc = {};
         dispatchDesc.commandList = ffxGetCommandListVK(desc->commandList.apiCommandBuffer.vulkan.commandBuffer);
@@ -211,23 +212,23 @@ extern "C" {
         dispatchDesc.cameraFovAngleVertical = desc->cameraFovAngleVertical;
         dispatchDesc.viewSpaceToMetersFactor = desc->viewSpaceToMetersFactor;
         dispatchDesc.flags = desc->flags;
-        dispatchDesc.frameID = ((SRFsr3PrivateData *) context->userContext)->frameIndex++;
+        dispatchDesc.frameID = static_cast<SRFsr3PrivateData *>(context->userContext)->frameIndex++;
         SRFSR_CHECK(ffxFsr3ContextDispatchUpscale(fsr3Context, &dispatchDesc));
-        return (SRReturnCode) SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srFfxFsr3Shutdown() {
-        return (SRReturnCode) SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRUpscaleContextCallbacks srGetFfxFSR3UpscaleCallbacks() {
         static SRUpscaleContextCallbacks callbacks = {
-            .pCreate = (SRCreateFunc) srFfxFsr3CreateUpscaleContext,
-            .pInit = (SRInitFunc) srFfxFsr3InitUpscaleContext,
-            .pDestroy = (SRDestroyFunc) srFfxFsr3DestroyUpscaleContext,
-            .pQuery = (SRQueryFunc) srFfxFsr3QueryUpscale,
-            .pDispatchUpscale = (SRDispatchUpscaleFunc) srFfxFsr3DispatchUpscale,
-            .pShutdown = (SRShutdownFunc) srFfxFsr3Shutdown,
+            .pCreate = static_cast<SRCreateFunc>(srFfxFsr3CreateUpscaleContext),
+            .pInit = static_cast<SRInitFunc>(srFfxFsr3InitUpscaleContext),
+            .pDestroy = static_cast<SRDestroyFunc>(srFfxFsr3DestroyUpscaleContext),
+            .pQuery = reinterpret_cast<SRQueryFunc>(srFfxFsr3QueryUpscale),
+            .pDispatchUpscale = static_cast<SRDispatchUpscaleFunc>(srFfxFsr3DispatchUpscale),
+            .pShutdown = static_cast<SRShutdownFunc>(srFfxFsr3Shutdown),
         };
         return callbacks;
     }

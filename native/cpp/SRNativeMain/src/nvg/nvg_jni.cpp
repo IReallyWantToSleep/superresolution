@@ -37,6 +37,7 @@ JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGCo
 }
 
 JNIEXPORT void JNICALL
+
 Java_io_homo_superresolution_thirdparty_nanovg_NanoVGColor_nDelete(JNIEnv *, jobject, jlong ptr) {
     NanoVGColor *color = (NanoVGColor *) ptr;
     if (color) {
@@ -45,6 +46,7 @@ Java_io_homo_superresolution_thirdparty_nanovg_NanoVGColor_nDelete(JNIEnv *, job
 }
 
 JNIEXPORT void JNICALL
+
 Java_io_homo_superresolution_thirdparty_nanovg_NanoVGPaint_nDelete(JNIEnv *, jobject, jlong ptr) {
     NanoVGPaint *paint = (NanoVGPaint *) ptr;
     if (paint) {
@@ -75,7 +77,7 @@ void *java_glfwGetProcAddress(const char *name) {
     return reinterpret_cast<void *>(jlongValue);
 }
 
-void loadGlFunctions(void *(getGLFunctionAddress)(const char *), GlFunctionTable * table) {
+void loadGlFunctions(void *(getGLFunctionAddress)(const char *), GlFunctionTable *table) {
     table->glActiveTexture = (void (*)(GLenum)) getGLFunctionAddress("glActiveTexture");
     table->glAttachShader = (void (*)(GLuint, GLuint)) getGLFunctionAddress("glAttachShader");
     table->glBindAttribLocation = (void (*)(GLuint, GLuint, const GLchar *)) getGLFunctionAddress(
@@ -161,24 +163,24 @@ static int rhiCreateTextureCallback(void *, int imageId, int type, int w, int h,
         return 0;
     }
     jmethodID method = env->GetStaticMethodID(
-            bridgeClass,
-            "nCreateTexture",
-            "(IIIIILjava/nio/ByteBuffer;I)Z");
+        bridgeClass,
+        "nCreateTexture",
+        "(IIIIILjava/nio/ByteBuffer;I)Z");
     if (!method) {
         return 0;
     }
 
     jobject dataBuffer = makeDirectBuffer(env, data, dataSize);
     jboolean ok = env->CallStaticBooleanMethod(
-            bridgeClass,
-            method,
-            imageId,
-            type,
-            w,
-            h,
-            imageFlags,
-            dataBuffer,
-            dataSize);
+        bridgeClass,
+        method,
+        imageId,
+        type,
+        w,
+        h,
+        imageFlags,
+        dataBuffer,
+        dataSize);
     if (dataBuffer) {
         env->DeleteLocalRef(dataBuffer);
     }
@@ -196,20 +198,20 @@ static int rhiRegisterExternalTextureCallback(void *, int imageId, unsigned int 
         return 0;
     }
     jmethodID method = env->GetStaticMethodID(
-            bridgeClass,
-            "nRegisterExternalTexture",
-            "(IIIII)Z");
+        bridgeClass,
+        "nRegisterExternalTexture",
+        "(IIIII)Z");
     if (!method) {
         return 0;
     }
     jboolean ok = env->CallStaticBooleanMethod(
-            bridgeClass,
-            method,
-            imageId,
-            (jint) externalTextureHandle,
-            w,
-            h,
-            imageFlags);
+        bridgeClass,
+        method,
+        imageId,
+        (jint) externalTextureHandle,
+        w,
+        h,
+        imageFlags);
     return ok == JNI_TRUE ? 1 : 0;
 }
 
@@ -224,24 +226,24 @@ static int rhiUpdateTextureCallback(void *, int imageId, int x, int y, int w, in
         return 0;
     }
     jmethodID method = env->GetStaticMethodID(
-            bridgeClass,
-            "nUpdateTexture",
-            "(IIIIILjava/nio/ByteBuffer;I)Z");
+        bridgeClass,
+        "nUpdateTexture",
+        "(IIIIILjava/nio/ByteBuffer;I)Z");
     if (!method) {
         return 0;
     }
 
     jobject dataBuffer = makeDirectBuffer(env, data, dataSize);
     jboolean ok = env->CallStaticBooleanMethod(
-            bridgeClass,
-            method,
-            imageId,
-            x,
-            y,
-            w,
-            h,
-            dataBuffer,
-            dataSize);
+        bridgeClass,
+        method,
+        imageId,
+        x,
+        y,
+        w,
+        h,
+        dataBuffer,
+        dataSize);
     if (dataBuffer) {
         env->DeleteLocalRef(dataBuffer);
     }
@@ -258,9 +260,9 @@ static int rhiDeleteTextureCallback(void *, int imageId) {
         return 0;
     }
     jmethodID method = env->GetStaticMethodID(
-            bridgeClass,
-            "nDeleteTexture",
-            "(I)V");
+        bridgeClass,
+        "nDeleteTexture",
+        "(I)V");
     if (!method) {
         return 0;
     }
@@ -278,9 +280,9 @@ static void rhiViewportCallback(void *, float width, float height, float deviceP
         return;
     }
     jmethodID method = env->GetStaticMethodID(
-            bridgeClass,
-            "nViewport",
-            "(FFF)V");
+        bridgeClass,
+        "nViewport",
+        "(FFF)V");
     if (!method) {
         return;
     }
@@ -303,9 +305,9 @@ static void rhiFlushCallback(void *, float viewWidth, float viewHeight,
     }
 
     jmethodID method = env->GetStaticMethodID(
-            bridgeClass,
-            "nFlush",
-            "(FFLjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;III)V");
+        bridgeClass,
+        "nFlush",
+        "(FFLjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;ILjava/nio/ByteBuffer;III)V");
     if (!method) {
         return;
     }
@@ -320,20 +322,20 @@ static void rhiFlushCallback(void *, float viewWidth, float viewHeight,
     jobject uniformsBuffer = makeDirectBuffer(env, uniforms, uniformBytes);
 
     env->CallStaticVoidMethod(
-            bridgeClass,
-            method,
-            viewWidth,
-            viewHeight,
-            vertsBuffer,
-            nverts,
-            pathsBuffer,
-            npaths,
-            callsBuffer,
-            ncalls,
-            uniformsBuffer,
-            uniformBytes,
-            fragSize,
-            callStride);
+        bridgeClass,
+        method,
+        viewWidth,
+        viewHeight,
+        vertsBuffer,
+        nverts,
+        pathsBuffer,
+        npaths,
+        callsBuffer,
+        ncalls,
+        uniformsBuffer,
+        uniformBytes,
+        fragSize,
+        callStride);
 
     if (vertsBuffer) env->DeleteLocalRef(vertsBuffer);
     if (pathsBuffer) env->DeleteLocalRef(pathsBuffer);
@@ -351,9 +353,9 @@ static void rhiDestroyCallback(void *) {
         return;
     }
     jmethodID method = env->GetStaticMethodID(
-            bridgeClass,
-            "nDestroy",
-            "()V");
+        bridgeClass,
+        "nDestroy",
+        "()V");
     if (!method) {
         return;
     }
@@ -361,13 +363,13 @@ static void rhiDestroyCallback(void *) {
 }
 
 static NVGRHICallbacks g_rhiCallbacks = {
-        rhiCreateTextureCallback,
-        rhiRegisterExternalTextureCallback,
-        rhiUpdateTextureCallback,
-        rhiDeleteTextureCallback,
-        rhiViewportCallback,
-        rhiFlushCallback,
-        rhiDestroyCallback
+    rhiCreateTextureCallback,
+    rhiRegisterExternalTextureCallback,
+    rhiUpdateTextureCallback,
+    rhiDeleteTextureCallback,
+    rhiViewportCallback,
+    rhiFlushCallback,
+    rhiDestroyCallback
 };
 
 static jlong createContextInternal(JNIEnv *env, jint flags, jint backendMode) {
@@ -478,6 +480,7 @@ JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGCont
 }
 
 JNIEXPORT void JNICALL
+
 Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nReset(JNIEnv *, jclass, jlong ptr) {
     NanoVGContext *ctx = (NanoVGContext *) ptr;
     ctx->Reset();
@@ -606,7 +609,7 @@ JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGCont
 JNIEXPORT jfloatArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nCurrentTransform(
     JNIEnv *env, jclass, jlong ptr) {
     NanoVGContext *ctx = (NanoVGContext *) ptr;
-    std::array < float, 6 > xform = ctx->CurrentTransform();
+    std::array<float, 6> xform = ctx->CurrentTransform();
 
     jfloatArray result = env->NewFloatArray(6);
     env->SetFloatArrayRegion(result, 0, 6, xform.data());
@@ -783,6 +786,7 @@ JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGCont
 }
 
 JNIEXPORT void JNICALL
+
 Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nStroke(JNIEnv *, jclass, jlong ptr) {
     NanoVGContext *ctx = (NanoVGContext *) ptr;
     ctx->Stroke();
@@ -992,7 +996,7 @@ JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGCont
         axisTagStr = env->GetStringUTFChars(axisTag, nullptr);
     }
 
-    ctx->FontSetVariationAxis((int)font, axisTagStr, (float)value);
+    ctx->FontSetVariationAxis((int) font, axisTagStr, (float) value);
 
     if (axisTagStr != nullptr) {
         env->ReleaseStringUTFChars(axisTag, axisTagStr);
@@ -1002,12 +1006,12 @@ JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGCont
 JNIEXPORT jobjectArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nFontGetVariationAxis(
     JNIEnv *env, jclass, jlong ptr, jint font) {
     NanoVGContext *ctx = (NanoVGContext *) ptr;
-    std::vector<std::string> axes = ctx->FontGetVariationAxis((int)font);
+    std::vector<std::string> axes = ctx->FontGetVariationAxis((int) font);
 
     jclass stringClass = env->FindClass("java/lang/String");
-    jobjectArray result = env->NewObjectArray((jsize)axes.size(), stringClass, nullptr);
-    for (jsize i = 0; i < (jsize)axes.size(); ++i) {
-        jstring s = env->NewStringUTF(axes[(size_t)i].c_str());
+    jobjectArray result = env->NewObjectArray((jsize) axes.size(), stringClass, nullptr);
+    for (jsize i = 0; i < (jsize) axes.size(); ++i) {
+        jstring s = env->NewStringUTF(axes[(size_t) i].c_str());
         env->SetObjectArrayElement(result, i, s);
         env->DeleteLocalRef(s);
     }
@@ -1081,7 +1085,7 @@ JNIEXPORT jfloatArray JNICALL Java_io_homo_superresolution_thirdparty_nanovg_Nan
     NanoVGContext *ctx = (NanoVGContext *) ptr;
     const char *stringStr = env->GetStringUTFChars(string, nullptr);
 
-    std::array < float, 4 > bounds = ctx->TextBoxBounds(x, y, breakRowWidth, stringStr, nullptr);
+    std::array<float, 4> bounds = ctx->TextBoxBounds(x, y, breakRowWidth, stringStr, nullptr);
 
     env->ReleaseStringUTFChars(string, stringStr);
 

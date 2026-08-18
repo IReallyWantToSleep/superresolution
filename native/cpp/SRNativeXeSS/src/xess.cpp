@@ -175,9 +175,8 @@ extern "C" {
             desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS Context init failed");
             desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
             return SR_RETURN_CODE_ERROR;
-        } else {
-            desc->messageCallback(SR_MESSAGE_TYPE_INFO, L"XeSS Context init successful");
         }
+        desc->messageCallback(SR_MESSAGE_TYPE_INFO, L"XeSS Context init successful");
         return (SRReturnCode) SR_RETURN_CODE_OK;
     }
 
@@ -211,9 +210,8 @@ extern "C" {
             desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
             delete privateData;
             return SR_RETURN_CODE_ERROR;
-        } else {
-            desc->messageCallback(SR_MESSAGE_TYPE_INFO, L"XeSS Context create successful");
         }
+        desc->messageCallback(SR_MESSAGE_TYPE_INFO, L"XeSS Context create successful");
         if (status == XESS_RESULT_SUCCESS) {
             privateData->isAvailable = true;
         } else {
@@ -227,25 +225,25 @@ extern "C" {
         privateData->messageCallback = desc->messageCallback;
         context->userContext = privateData;
 
-        g_xessFunctions.xessSetLoggingCallback(
-            privateData->xessContext,
-            XESS_LOGGING_LEVEL_DEBUG,
-            [](const char *msg, xess_logging_level_t level) {
-                printf("[XeSS %d]: %s\n", level, msg);
-            });
+        //g_xessFunctions.xessSetLoggingCallback(
+        //    privateData->xessContext,
+        //    XESS_LOGGING_LEVEL_DEBUG,
+        //    [](const char *msg, xess_logging_level_t level) {
+        //        printf("[XeSS %d]: %s\n", level, msg);
+        //    });
         ///////////////
-        return (SRReturnCode) SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srXeSSDestroyUpscaleContext(SRUpscaleContext *context) {
         if (!context || !context->userContext) {
             return SR_RETURN_CODE_NULL_POINTER;
         }
-        SRXeSSPrivateData *privateData = (SRXeSSPrivateData *) context->userContext;
+        auto *privateData = static_cast<SRXeSSPrivateData *>(context->userContext);
         g_xessFunctions.xessDestroyContext(privateData->xessContext);
         delete privateData;
         context->userContext = nullptr;
-        return (SRReturnCode) SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srXeSSQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result,
@@ -264,7 +262,7 @@ extern "C" {
                 xess_2d_t pOutputResolution = {};
                 xess_properties_t pBindingProperties = {};
                 g_xessFunctions.xessGetProperties(
-                    ((SRXeSSPrivateData *) (context->userContext))->xessContext,
+                    static_cast<SRXeSSPrivateData *>(context->userContext)->xessContext,
                     &pOutputResolution,
                     &pBindingProperties);
                 static SRQueryGpuMemoryResult outResult = {};
@@ -274,20 +272,20 @@ extern "C" {
             }
             case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE: {
                 static SRQueryAvailabilityResult outResult = {};
-                outResult.isAvailable = ((SRXeSSPrivateData *) (context->userContext))->isAvailable;
+                outResult.isAvailable = static_cast<SRXeSSPrivateData *>(context->userContext)->isAvailable;
                 result->data = &outResult;
                 break;
             }
             default:
                 break;
         }
-        return (SRReturnCode) SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
 
     xess_vk_image_view_info srTextureResourceToXeSSResource(const SRTextureResource *resource) {
         xess_vk_image_view_info info = {};
-        info.imageView = (VkImageView)(resource->imageView);
-        info.image = (VkImage) resource->handle;
+        info.imageView = static_cast<VkImageView>(resource->imageView);
+        info.image = static_cast<VkImage>(resource->handle);
         info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         info.subresourceRange.baseMipLevel = 0;
         info.subresourceRange.levelCount = 1;
@@ -300,30 +298,31 @@ extern "C" {
     }
 
     SR_API SRReturnCode srXeSSDispatchUpscale(SRUpscaleContext *context, const SRDispatchUpscaleDesc *desc) {
-        xess_context_handle_t xessContext = ((SRXeSSPrivateData *) context->userContext)->xessContext;
-        xess_coord_t renderSize = ((SRXeSSPrivateData *) context->userContext)->renderSize;
+        xess_context_handle_t xessContext = static_cast<SRXeSSPrivateData *>(context->userContext)->xessContext;
 
         xess_vk_execute_params_t executeParams = {};
         if (desc->color.exist) {
             executeParams.colorTexture = srTextureResourceToXeSSResource(&desc->color);
-            // execute_params.inputColorBase = {0,0};
+            executeParams.inputColorBase = {0, 0};
         }
         if (desc->depth.exist) {
             executeParams.depthTexture = srTextureResourceToXeSSResource(&desc->depth);
-            // execute_params.inputDepthBase = {renderSize.x,renderSize.y};
+            executeParams.inputDepthBase = {0, 0};
         }
         if (desc->motionVectors.exist) {
             executeParams.velocityTexture = srTextureResourceToXeSSResource(&desc->motionVectors);
-            // execute_params.inputMotionVectorBase = {renderSize.x,renderSize.y};
+            executeParams.inputMotionVectorBase = {0, 0};
         }
         if (desc->exposure.exist) {
             executeParams.exposureScaleTexture = srTextureResourceToXeSSResource(&desc->exposure);
         }
         if (desc->reactive.exist) {
             executeParams.responsivePixelMaskTexture = srTextureResourceToXeSSResource(&desc->reactive);
+            executeParams.inputResponsiveMaskBase = {0, 0};
         }
         if (desc->output.exist) {
             executeParams.outputTexture = srTextureResourceToXeSSResource(&desc->output);
+            executeParams.outputColorBase = {0, 0};
         }
         executeParams.jitterOffsetX = desc->jitterOffset.x;
         executeParams.jitterOffsetY = desc->jitterOffset.y;
@@ -336,13 +335,13 @@ extern "C" {
                                                     desc->commandList.apiCommandBuffer.vulkan.commandBuffer,
                                                     &executeParams);
         if (status != XESS_RESULT_SUCCESS) {
-            ((SRXeSSPrivateData *) context->userContext)->
+            static_cast<SRXeSSPrivateData *>(context->userContext)->
                     messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS execute failed");
-            ((SRXeSSPrivateData *) context->userContext)->messageCallback(
+            static_cast<SRXeSSPrivateData *>(context->userContext)->messageCallback(
                 SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
             return SR_RETURN_CODE_ERROR;
         }
-        return (SRReturnCode) SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srXeSSShutdown() {
@@ -352,17 +351,17 @@ extern "C" {
         }
         g_xessFunctions = {};
         g_xessFunctionsLoaded = false;
-        return (SRReturnCode) SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRUpscaleContextCallbacks srGetXeSSUpscaleCallbacks() {
         static SRUpscaleContextCallbacks callbacks = {
-            .pCreate = (SRCreateFunc) srXeSSCreateUpscaleContext,
-            .pInit = (SRInitFunc) srXeSSInitUpscaleContext,
-            .pDestroy = (SRDestroyFunc) srXeSSDestroyUpscaleContext,
-            .pQuery = (SRQueryFunc) srXeSSQueryUpscale,
-            .pDispatchUpscale = (SRDispatchUpscaleFunc) srXeSSDispatchUpscale,
-            .pShutdown = (SRShutdownFunc) srXeSSShutdown,
+            .pCreate = static_cast<SRCreateFunc>(srXeSSCreateUpscaleContext),
+            .pInit = static_cast<SRInitFunc>(srXeSSInitUpscaleContext),
+            .pDestroy = static_cast<SRDestroyFunc>(srXeSSDestroyUpscaleContext),
+            .pQuery = reinterpret_cast<SRQueryFunc>(srXeSSQueryUpscale),
+            .pDispatchUpscale = static_cast<SRDispatchUpscaleFunc>(srXeSSDispatchUpscale),
+            .pShutdown = static_cast<SRShutdownFunc>(srXeSSShutdown),
 
         };
         return callbacks;

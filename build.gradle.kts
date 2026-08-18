@@ -80,11 +80,6 @@ allprojects {
             }
         }
 
-        //apply(plugin = "systems.manifold.manifold-gradle-plugin")
-        //extensions.findByName("manifold")?.withGroovyBuilder {
-        //    setProperty("manifoldVersion", rootProject.property("manifold_version"))
-        //}
-
         tasks.withType(JavaCompile::class.java).configureEach {
             inputs.file(rootProject.layout.projectDirectory.file("build.properties"))
                 .withPropertyName("manifoldDefines")
@@ -392,10 +387,10 @@ tasks.register("uploadToCurseForge") {
         uploadPlan.artifacts.forEachIndexed { index, artifact ->
             println(
                 "${index + 1}. ${artifact.file.name} | "
-                    + "${artifact.loaderName} | "
-                    + "${artifact.gameVersions.joinToString(", ")} | "
-                    + "Client | "
-                    + artifact.releaseType
+                        + "${artifact.loaderName} | "
+                        + "${artifact.gameVersions.joinToString(", ")} | "
+                        + "Client | "
+                        + artifact.releaseType
             )
         }
         println("==========================\n")

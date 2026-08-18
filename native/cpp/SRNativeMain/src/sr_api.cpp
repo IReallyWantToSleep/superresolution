@@ -19,11 +19,11 @@
 
 struct SRLoadedProviderLibrary {
     std::string path;
-#ifdef ON_WIN64
+    #ifdef ON_WIN64
     HMODULE handle = nullptr;
-#elif defined(ON_LINUX64)
+    #elif defined(ON_LINUX64)
     void *handle = nullptr;
-#endif
+    #endif
     uint64_t id = 0;
     bool unloading = false;
 };
@@ -40,20 +40,20 @@ static std::condition_variable g_providerCondition;
 static uint64_t g_nextLibraryId = 1;
 
 static void srCloseProviderLibrary(
-#ifdef ON_WIN64
+    #ifdef ON_WIN64
     HMODULE handle
-#elif defined(ON_LINUX64)
+    #elif defined(ON_LINUX64)
     void *handle
-#endif
+    #endif
 ) {
     if (!handle) {
         return;
     }
-#ifdef ON_WIN64
+    #ifdef ON_WIN64
     FreeLibrary(handle);
-#elif defined(ON_LINUX64)
+    #elif defined(ON_LINUX64)
     dlclose(handle);
-#endif
+    #endif
 }
 
 static auto srFindLoadedLibrary(const std::string &path) {
@@ -156,7 +156,7 @@ SR_API SRReturnCode srCreateUpscaleContext(
     SRUpscaleProvider *provider,
     const SRCreateUpscaleContextDesc *desc) {
     if (!outContext || !provider || !desc) {
-        return (SRReturnCode) SR_RETURN_CODE_NULL_POINTER;
+        return SR_RETURN_CODE_NULL_POINTER;
     }
     // memset(outContext, 0, sizeof(SRUpscaleContext));
     outContext->callbacks = provider->callbacks;
@@ -178,7 +178,7 @@ SR_API SRReturnCode srCreateUpscaleContext(
 SR_API SRReturnCode srInitUpscaleContext(
     SRUpscaleContext *context) {
     if (!context || !context->callbacks.pInit) {
-        return (SRReturnCode) SR_RETURN_CODE_NULL_POINTER;
+        return SR_RETURN_CODE_NULL_POINTER;
     }
     SRReturnCode code = context->callbacks.pInit(context);
     return code;
@@ -186,7 +186,7 @@ SR_API SRReturnCode srInitUpscaleContext(
 
 SR_API SRReturnCode srDestroyUpscaleContext(SRUpscaleContext *context) {
     if (!context || !context->callbacks.pDestroy) {
-        return (SRReturnCode) SR_RETURN_CODE_NULL_POINTER;
+        return SR_RETURN_CODE_NULL_POINTER;
     }
     SRReturnCode code = context->callbacks.pDestroy(context);
     srDestroyExtraParams(&context->desc.extraParams);
@@ -198,7 +198,7 @@ SR_API SRReturnCode srQueryUpscaleContext(
     SRUpscaleContextQueryResult *outResult,
     SRUpscaleContextQueryType queryType) {
     if (!context || !outResult || !context->callbacks.pQuery) {
-        return (SRReturnCode) SR_RETURN_CODE_NULL_POINTER;
+        return SR_RETURN_CODE_NULL_POINTER;
     }
     outResult->type = queryType;
     return context->callbacks.pQuery(context, outResult, queryType);
@@ -208,7 +208,7 @@ SR_API SRReturnCode srDispatchUpscale(
     SRUpscaleContext *context,
     const SRDispatchUpscaleDesc *desc) {
     if (!context || !desc || !context->callbacks.pDispatchUpscale) {
-        return (SRReturnCode) SR_RETURN_CODE_NULL_POINTER;
+        return SR_RETURN_CODE_NULL_POINTER;
     }
     SRReturnCode code = context->callbacks.pDispatchUpscale(context, desc);
     return code;
@@ -289,11 +289,11 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
             messageCallback(SR_MESSAGE_TYPE_ERROR, L"Failed to resolve provider functions.");
         }
         srCloseProviderLibrary(
-#ifdef ON_WIN64
+            #ifdef ON_WIN64
             dll
-#elif defined(ON_LINUX64)
+            #elif defined(ON_LINUX64)
             handle
-#endif
+            #endif
         );
         return SR_RETURN_CODE_INVALID_PROVIDER_LIBRARY;
     }
@@ -304,11 +304,11 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
             messageCallback(SR_MESSAGE_TYPE_WARNING, L"No upscale providers found.");
         }
         srCloseProviderLibrary(
-#ifdef ON_WIN64
+            #ifdef ON_WIN64
             dll
-#elif defined(ON_LINUX64)
+            #elif defined(ON_LINUX64)
             handle
-#endif
+            #endif
         );
         return SR_RETURN_CODE_INVALID_PROVIDER_LIBRARY;
     }
@@ -319,11 +319,11 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
             messageCallback(SR_MESSAGE_TYPE_ERROR, L"Failed to get providers.");
         }
         srCloseProviderLibrary(
-#ifdef ON_WIN64
+            #ifdef ON_WIN64
             dll
-#elif defined(ON_LINUX64)
+            #elif defined(ON_LINUX64)
             handle
-#endif
+            #endif
         );
         return SR_RETURN_CODE_UNEXPECTED_ERROR;
     }
@@ -338,11 +338,11 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
         if (library != g_loadedLibraries.end()) {
             lock.unlock();
             srCloseProviderLibrary(
-#ifdef ON_WIN64
+                #ifdef ON_WIN64
                 dll
-#elif defined(ON_LINUX64)
+                #elif defined(ON_LINUX64)
                 handle
-#endif
+                #endif
             );
             if (messageCallback) {
                 messageCallback(SR_MESSAGE_TYPE_INFO, L"Library already loaded, skipping.");
@@ -353,11 +353,11 @@ SR_API SRReturnCode srLoadUpscaleProvidersFromLibrary(
         const uint64_t libraryId = g_nextLibraryId++;
         g_loadedLibraries.push_back({
             .path = libPath,
-#ifdef ON_WIN64
+            #ifdef ON_WIN64
             .handle = dll,
-#elif defined(ON_LINUX64)
+            #elif defined(ON_LINUX64)
             .handle = handle,
-#endif
+            #endif
             .id = libraryId,
         });
         for (const SRUpscaleProvider &provider: providers) {

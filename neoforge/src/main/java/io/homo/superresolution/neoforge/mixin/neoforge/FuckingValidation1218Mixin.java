@@ -33,7 +33,9 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 
 import java.util.function.BiFunction;
 
-//坏狐狸在高版本引入了ValidationLayer，iris恰好跟这玩意冲突
+/*
+In 1.21.5+,Neoforge added the Blaze3D Validation Layer,it causes some bugs in development environment,so we disable it.
+*/
 #if MC_VER > MC_1_21_5 && MC_VER < MC_1_21_10
 @Mixin(RenderSystem.class)
 public class FuckingValidation1218Mixin {
