@@ -116,15 +116,16 @@ legacyForge {
     }
 }
 
+
+val sourceSets = extensions.getByType(SourceSetContainer::class.java)
+sourceSets.getByName("main").resources.srcDir("src/generated/resources")
+
 mixin {
     add(sourceSets.getByName("main"), "super_resolution.refmap.json")
     mixinConfigs.forEach { mixinConfig ->
         config(mixinConfig)
     }
 }
-
-val sourceSets = extensions.getByType(SourceSetContainer::class.java)
-sourceSets.getByName("main").resources.srcDir("src/generated/resources")
 
 dependencies {
     compileOnly("org.jetbrains:annotations:25.0.0")
