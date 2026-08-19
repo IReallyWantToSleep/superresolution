@@ -20,7 +20,6 @@ package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.InputResourceType;
-import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
@@ -30,11 +29,10 @@ import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
+import io.homo.superresolution.thirdparty.fsr2.Fsr2Utils;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import org.joml.Matrix4f;
 
 public class AlgorithmManager {

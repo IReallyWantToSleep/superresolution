@@ -40,7 +40,6 @@ import io.homo.superresolution.api.registry.FrameGenerationRegistry;
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
-import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.api.registry.LowLatencyDescription;
 import io.homo.superresolution.api.registry.LowLatencyRegistry;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
@@ -54,7 +53,7 @@ import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
-import io.homo.superresolution.common.upscale.VulkanInteropAlgorithm;
+import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
@@ -1389,7 +1388,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setItemEnableRequirement(this::getInteropSyncModeItemRequirement)
                             .setSaveConsumer((value) -> {
                                 SuperResolutionConfig.setInteropSyncMode(value);
-                                if (SuperResolution.currentAlgorithm instanceof VulkanInteropAlgorithm) {
+                                if (SuperResolution.currentAlgorithm instanceof GlVulkanInteropAlgorithm) {
                                     SuperResolution.recreateAlgorithm();
                                 }
                                 refreshFrameGenerationOptions();

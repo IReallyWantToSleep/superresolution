@@ -37,7 +37,33 @@ public final class NgxVKDLSSDEvalParams {
     public final NgxCoordinates translucencySubrectBase = new NgxCoordinates();
     public final NgxCoordinates biasCurrentColorSubrectBase = new NgxCoordinates();
     public final NgxCoordinates outputSubrectBase = new NgxCoordinates();
-
+    public final NgxCoordinates reflectedAlbedoSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates colorBeforeParticlesSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates colorAfterParticlesSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates colorBeforeTransparencySubrectBase = new NgxCoordinates();
+    public final NgxCoordinates colorAfterTransparencySubrectBase = new NgxCoordinates();
+    public final NgxCoordinates colorBeforeFogSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates colorAfterFogSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates screenSpaceSubsurfaceScatteringGuideSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates colorBeforeScreenSpaceSubsurfaceScatteringSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates colorAfterScreenSpaceSubsurfaceScatteringSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates screenSpaceRefractionGuideSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates colorBeforeScreenSpaceRefractionSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates colorAfterScreenSpaceRefractionSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates depthOfFieldGuideSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates colorBeforeDepthOfFieldSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates colorAfterDepthOfFieldSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates diffuseHitDistanceSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates specularHitDistanceSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates diffuseRayDirectionSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates specularRayDirectionSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates diffuseRayDirectionHitDistanceSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates specularRayDirectionHitDistanceSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates transparencyLayerSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates transparencyLayerOpacitySubrectBase = new NgxCoordinates();
+    public final NgxCoordinates transparencyLayerMotionVectorsSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates disocclusionMaskSubrectBase = new NgxCoordinates();
+    public final NgxCoordinates responsivityMaskSubrectBase = new NgxCoordinates();
     public NgxResourceVK diffuseAlbedo;
     public NgxResourceVK specularAlbedo;
     public NgxResourceVK normals;
@@ -67,30 +93,6 @@ public final class NgxVKDLSSDEvalParams {
     public float frameTimeDeltaInMsec;
     public NgxResourceVK rayTracingHitDistance;
     public NgxResourceVK motionVectorsReflections;
-
-    public final NgxCoordinates reflectedAlbedoSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates colorBeforeParticlesSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates colorAfterParticlesSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates colorBeforeTransparencySubrectBase = new NgxCoordinates();
-    public final NgxCoordinates colorAfterTransparencySubrectBase = new NgxCoordinates();
-    public final NgxCoordinates colorBeforeFogSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates colorAfterFogSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates screenSpaceSubsurfaceScatteringGuideSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates colorBeforeScreenSpaceSubsurfaceScatteringSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates colorAfterScreenSpaceSubsurfaceScatteringSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates screenSpaceRefractionGuideSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates colorBeforeScreenSpaceRefractionSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates colorAfterScreenSpaceRefractionSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates depthOfFieldGuideSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates colorBeforeDepthOfFieldSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates colorAfterDepthOfFieldSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates diffuseHitDistanceSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates specularHitDistanceSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates diffuseRayDirectionSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates specularRayDirectionSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates diffuseRayDirectionHitDistanceSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates specularRayDirectionHitDistanceSubrectBase = new NgxCoordinates();
-
     public NgxResourceVK reflectedAlbedo;
     public NgxResourceVK colorBeforeParticles;
     public NgxResourceVK colorAfterParticles;
@@ -115,13 +117,6 @@ public final class NgxVKDLSSDEvalParams {
     public NgxResourceVK specularRayDirectionHitDistance;
     public FloatBuffer worldToViewMatrix;
     public FloatBuffer viewToClipMatrix;
-
-    public final NgxCoordinates transparencyLayerSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates transparencyLayerOpacitySubrectBase = new NgxCoordinates();
-    public final NgxCoordinates transparencyLayerMotionVectorsSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates disocclusionMaskSubrectBase = new NgxCoordinates();
-    public final NgxCoordinates responsivityMaskSubrectBase = new NgxCoordinates();
-
     public NgxResourceVK transparencyLayer;
     public NgxResourceVK transparencyLayerOpacity;
     public NgxResourceVK transparencyLayerMotionVectors;

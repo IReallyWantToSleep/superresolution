@@ -11,9 +11,7 @@
 package io.homo.superresolution.core.graphics.d3d12;
 
 import static org.lwjgl.opengl.EXTSemaphore.*;
-import static org.lwjgl.opengl.EXTSemaphoreWin32.GL_D3D12_FENCE_VALUE_EXT;
-import static org.lwjgl.opengl.EXTSemaphoreWin32.GL_HANDLE_TYPE_D3D12_FENCE_EXT;
-import static org.lwjgl.opengl.EXTSemaphoreWin32.glImportSemaphoreWin32HandleEXT;
+import static org.lwjgl.opengl.EXTSemaphoreWin32.*;
 import static org.lwjgl.opengl.GL11.GL_NO_ERROR;
 import static org.lwjgl.opengl.GL11.glGetError;
 
@@ -47,6 +45,21 @@ public final class D3D12InteropSemaphore implements AutoCloseable {
         }
     }
 
+    private static void validate(int[] textures, int[] layouts) {
+        if (textures == null || layouts == null ||
+                textures.length != layouts.length) {
+            throw new IllegalArgumentException(
+                    "Texture and layout arrays must be non-null and have equal length.");
+        }
+    }
+
+    private static void clearGlErrors() {
+        while (glGetError() != GL_NO_ERROR) {
+            // Discard errors left by unrelated work so the import check below
+            // reports only this operation.
+        }
+    }
+
     public void signal(long fenceValue, int[] textures, int[] layouts) {
         validate(textures, layouts);
         glSemaphoreParameterui64EXT(
@@ -71,21 +84,6 @@ public final class D3D12InteropSemaphore implements AutoCloseable {
                 new int[0],
                 textures,
                 layouts);
-    }
-
-    private static void validate(int[] textures, int[] layouts) {
-        if (textures == null || layouts == null ||
-                textures.length != layouts.length) {
-            throw new IllegalArgumentException(
-                    "Texture and layout arrays must be non-null and have equal length.");
-        }
-    }
-
-    private static void clearGlErrors() {
-        while (glGetError() != GL_NO_ERROR) {
-            // Discard errors left by unrelated work so the import check below
-            // reports only this operation.
-        }
     }
 
     @Override

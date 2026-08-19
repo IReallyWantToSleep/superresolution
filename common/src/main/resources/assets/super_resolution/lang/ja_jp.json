@@ -248,7 +248,7 @@
     "superresolution.screen.config.special.fsr2.version.name": "バージョン",
     "superresolution.screen.config.special.fsr2.version.tooltip": "FSR2 のバージョンです。バージョンによっていくつか違いがあります。\n既定は 2.3.3 です",
     "superresolution.screen.config.special.sgsr2.variant.name": "アルゴリズムのバリエーション",
-    "superresolution.screen.config.special.sgsr2.variant.tooltip": "CS_2（計算シェーダー/後処理パス2）：性能は中程度、画質も中程度\nCS_3（計算シェーダー/後処理パス3）：性能は低め、画質は最高\nFS_2（通常シェーダー/後処理パス2）：性能は最高、画質は低め",
+    "superresolution.screen.config.special.sgsr2.variant.tooltip": "CS_2（計算シェーダー/後処理パス2）：性能は中程度、画質も中程度\nCS_3（計算シェーダー/後処理パス3）：性能は低め、画質は最高",
     "superresolution.screen.info.link.official_website": "公式サイト",
     "superresolution.screen.info.link.wiki": "Wiki",
     "superresolution.screen.info.text.author": "作者",

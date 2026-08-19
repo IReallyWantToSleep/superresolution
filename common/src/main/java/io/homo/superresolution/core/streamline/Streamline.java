@@ -38,6 +38,9 @@ public final class Streamline {
     private static StreamlineSession defaultSession;
     private static StreamlineTypes.FrameToken currentFrame;
 
+    private Streamline() {
+    }
+
     public static StreamlineTypes.FrameToken currentFrame() {
         return currentFrame;
     }
@@ -54,9 +57,6 @@ public final class Streamline {
         );
         currentFrame = result == 0 && next.nativeHandle != 0L ? next : null;
         return currentFrame;
-    }
-
-    private Streamline() {
     }
 
     public static StreamlineSession session() {

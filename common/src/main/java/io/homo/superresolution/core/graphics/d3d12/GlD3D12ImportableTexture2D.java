@@ -16,11 +16,7 @@ import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import static org.lwjgl.opengl.EXTMemoryObject.*;
 import static org.lwjgl.opengl.EXTMemoryObjectWin32.GL_HANDLE_TYPE_D3D12_RESOURCE_EXT;
 import static org.lwjgl.opengl.EXTMemoryObjectWin32.glImportMemoryWin32HandleEXT;
-import static org.lwjgl.opengl.GL11.GL_NO_ERROR;
-import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
-import static org.lwjgl.opengl.GL11.GL_TRUE;
-import static org.lwjgl.opengl.GL11.glBindTexture;
-import static org.lwjgl.opengl.GL11.glGetError;
+import static org.lwjgl.opengl.GL11.*;
 
 /**
  * OpenGL texture view over a D3D12 shared committed resource.
@@ -41,12 +37,21 @@ public final class GlD3D12ImportableTexture2D extends GlTexture2D {
         }
     }
 
+    private static void clearGlErrors() {
+        while (glGetError() != GL_NO_ERROR) {
+            // Discard errors left by unrelated work so the import check below
+            // reports only this operation.
+        }
+    }
+
     @Override
     protected void initializeTexture() {
-        try (GlState ignored = new GlState(
-                GlState.STATE_TEXTURE |
-                        GlState.STATE_ACTIVE_TEXTURE |
-                        GlState.STATE_TEXTURES)) {
+        try (
+                GlState ignored = new GlState(
+                        GlState.STATE_TEXTURE |
+                                GlState.STATE_ACTIVE_TEXTURE |
+                                GlState.STATE_TEXTURES)
+        ) {
             clearGlErrors();
             configureTextureParameters();
             memoryObject = glCreateMemoryObjectsEXT();
@@ -77,13 +82,6 @@ public final class GlD3D12ImportableTexture2D extends GlTexture2D {
                                 Integer.toHexString(error) + ").");
             }
             updateDebugLabel(source.textureDescription().getLabel());
-        }
-    }
-
-    private static void clearGlErrors() {
-        while (glGetError() != GL_NO_ERROR) {
-            // Discard errors left by unrelated work so the import check below
-            // reports only this operation.
         }
     }
 

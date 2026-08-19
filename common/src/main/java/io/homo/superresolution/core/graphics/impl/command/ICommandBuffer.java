@@ -139,8 +139,8 @@ public interface ICommandBuffer {
         decoder().dispatch(this, groupCountX, groupCountY, groupCountZ);
     }
 
-    default void writeToTexture(ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel){
-        decoder().writeToTexture(this,texture, data, x, y, width, height, mipLevel);
+    default void writeToTexture(ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel) {
+        decoder().writeToTexture(this, texture, data, x, y, width, height, mipLevel);
     }
 
     default void writeToTexture(ITexture texture, ByteBuffer data, int x, int y, int width, int height) {

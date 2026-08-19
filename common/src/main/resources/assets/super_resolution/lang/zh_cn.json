@@ -246,7 +246,7 @@
     "superresolution.screen.config.special.fsr2.version.name": "版本",
     "superresolution.screen.config.special.fsr2.version.tooltip": "FSR2 的版本，不同版本间存在一些区别。\n默认为 2.3.3。",
     "superresolution.screen.config.special.sgsr2.variant.name": "算法变体",
-    "superresolution.screen.config.special.sgsr2.variant.tooltip": "CS_2（计算着色器/2 个后处理通道）：性能适中，效果适中\nCS_3（计算着色器/3 个后处理通道）：性能较差，效果最好\nFS_2（普通着色器/2 个后处理通道）：性能最好，效果较差",
+    "superresolution.screen.config.special.sgsr2.variant.tooltip": "CS_2（计算着色器/2 个后处理通道）：性能适中，效果适中\nCS_3（计算着色器/3 个后处理通道）：性能较差，效果最好",
     "superresolution.screen.info.link.official_website": "官方网站",
     "superresolution.screen.info.link.wiki": "Wiki",
     "superresolution.screen.info.text.author": "作者",

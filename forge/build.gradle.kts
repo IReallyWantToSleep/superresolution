@@ -131,6 +131,14 @@ dependencies {
     compileOnly("org.jetbrains:annotations:25.0.0")
     implementation("org.anarres:jcpp:1.4.14")
 
+    // Mixin AP 必须在 annotationProcessor 路径上，否则 -AoutTsrgFile/-AoutRefMapFile 无人消费，
+    // reobfJar 需要的 build/mixin/*.mappings.tsrg 不会生成。
+    // mixin 主 jar 的传递依赖是 provided 作用域，AP 运行所需的 gson/guava/asm 需显式带上。
+    annotationProcessor("org.spongepowered:mixin:0.8.5")
+    annotationProcessor("com.google.code.gson:gson:2.10")
+    annotationProcessor("com.google.guava:guava:31.1-jre")
+    annotationProcessor("org.ow2.asm:asm-tree:9.7")
+
     val imguiAppDep = implementation("io.github.spair:imgui-java-app:$imguiVersion")
     if (isDevBuild && imguiAppDep != null) jarJar(imguiAppDep)
 

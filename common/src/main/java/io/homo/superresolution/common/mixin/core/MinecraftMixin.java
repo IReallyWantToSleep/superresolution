@@ -65,23 +65,10 @@ public abstract class MinecraftMixin {
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setScreen(Lnet/minecraft/client/gui/screens/Screen;)V"), method = "<init>")
     #endif
     private void onClientStarted(net.minecraft.client.main.GameConfig data, CallbackInfo ci) {
-
         SuperResolution.onClientStarted();
-
     }
     #endif
 
-    /*
-    @Inject(at = @At(value = "TAIL"), method = "doWorldLoad")
-    private void onJoinLevel(CallbackInfo ci) {
-        SuperResolution.onJoinLevel();
-    }
-
-    @Inject(at = @At(value = "TAIL"), method = "setLevel")
-    private void onLevelChanged(CallbackInfo ci) {
-        SuperResolution.onLevelChanged();
-    }
-    */
     @Inject(at = @At(value = "RETURN"), method = "onGameLoadFinished")
     private void onLoadDone(CallbackInfo ci) {
         SuperResolution.gameIsLoaded = true;
@@ -124,10 +111,6 @@ public abstract class MinecraftMixin {
     private void onRenderEnd(CallbackInfo ci) {
         if (super_resolution$b3dVulkanFrame) {
             super_resolution$b3dVulkanFrame = false;
-            RenderHandlerManager.onFrameEnd();
-            PerformanceTracker.pop("Frame");
-            SuperResolution.onClientTickEnd();
-            return;
         }
         RenderHandlerManager.onFrameEnd();
         PerformanceTracker.pop("Frame");
@@ -156,13 +139,14 @@ public abstract class MinecraftMixin {
     }
     #endif
     #if MC_VER > MC_26_1_2
-    //just like fabric`s invoke point
+    //just like fabric's invoke point
     @Inject(method = "stop",at = @At(value = "TAIL"))
     public void onDestroy(CallbackInfo ci) {
         SuperResolution.onClientStopping();
         SuperResolution.onClientStopped();
     }
     #else
+
     // Resource cleanup runs early (at the "Stopping!" log) while the interop OpenGL
     // context is still current. The OpenGL context and Vulkan device are torn down at
     // destroy() TAIL, after Minecraft has finished its own shutdown rendering (disconnect

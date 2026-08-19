@@ -33,13 +33,13 @@ public class BufferUsages {
         this.usages = new ArrayList<>();
     }
 
+    public static BufferUsages create() {
+        return new BufferUsages();
+    }
+
     protected BufferUsages add(BufferUsage... usage) {
         this.usages.addAll(List.of(usage));
         return this;
-    }
-
-    public static BufferUsages create() {
-        return new BufferUsages();
     }
 
     public List<BufferUsage> getUsages() {

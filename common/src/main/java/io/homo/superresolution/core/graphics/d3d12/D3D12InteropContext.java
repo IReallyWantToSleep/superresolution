@@ -28,14 +28,13 @@ import java.nio.ByteOrder;
  * and shared timeline fence used by OpenGL/Direct3D interop.
  */
 public final class D3D12InteropContext implements AutoCloseable {
-    private long nativePtr;
-    private long nextFenceValue = 1;
-
     private final Resource inputColor;
     private final Resource inputDepth;
     private final Resource inputMotionVectors;
     private final Resource inputExposure;
     private final Resource outputColor;
+    private long nativePtr;
+    private long nextFenceValue = 1;
 
     private D3D12InteropContext(
             long nativePtr,
@@ -148,6 +147,15 @@ public final class D3D12InteropContext implements AutoCloseable {
         };
     }
 
+    private static void check(int code, String operation) {
+        if (code != 0) {
+            throw new IllegalStateException(
+                    "Could not " + operation + " (0x" +
+                            Integer.toHexString(code) + "): " +
+                            D3D12InteropNative.Nd3d12GetLastError());
+        }
+    }
+
     private Resource readResource(
             int index,
             TextureDescription description,
@@ -214,15 +222,6 @@ public final class D3D12InteropContext implements AutoCloseable {
                 "wait for D3D12 interop");
     }
 
-    private static void check(int code, String operation) {
-        if (code != 0) {
-            throw new IllegalStateException(
-                    "Could not " + operation + " (0x" +
-                            Integer.toHexString(code) + "): " +
-                            D3D12InteropNative.Nd3d12GetLastError());
-        }
-    }
-
     private void ensureOpen() {
         if (nativePtr == 0) {
             throw new IllegalStateException("D3D12 interop context is closed.");
@@ -259,10 +258,15 @@ public final class D3D12InteropContext implements AutoCloseable {
 
     public record Resource(
             int index,
+
             long nativeResource,
+
             long sharedHandle,
+
             long allocationSize,
+
             TextureDescription textureDescription,
+
             SRSurfaceFormat srFormat) {
     }
 }

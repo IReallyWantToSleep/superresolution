@@ -19,13 +19,14 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.srapi.SRUpscaleContext;
 
 /**
  * Vulkan/GL interop algorithm backed by an SR API upscale context.
  */
-public abstract class SRApiAlgorithm extends VulkanInteropAlgorithm {
+public abstract class SRApiAlgorithm extends GlVulkanInteropAlgorithm {
     protected SRUpscaleContext context;
 
     protected abstract void recreateSRApiContext(InitializationDescription desc);

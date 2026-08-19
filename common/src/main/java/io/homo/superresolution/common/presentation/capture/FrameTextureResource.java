@@ -11,7 +11,7 @@
 package io.homo.superresolution.common.presentation.capture;
 
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
-import io.homo.superresolution.common.upscale.InteropResourcesConverter;
+import io.homo.superresolution.common.upscale.InteropResourcesPreprocessor;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
@@ -58,9 +58,9 @@ final class FrameTextureResource {
         awaitOwnedRelease();
         try (GlState ignored = new GlState()) {
             if (motionVector) {
-                InteropResourcesConverter.flipMotionVectorY(source, glTexture);
+                InteropResourcesPreprocessor.flipMotionVectorY(source, glTexture);
             } else {
-                InteropResourcesConverter.flipY(source, glTexture);
+                InteropResourcesPreprocessor.flipY(source, glTexture);
             }
         }
         ready.signalVulkan(

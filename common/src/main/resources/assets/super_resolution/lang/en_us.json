@@ -246,7 +246,7 @@
     "superresolution.screen.config.special.fsr2.version.name": "Version",
     "superresolution.screen.config.special.fsr2.version.tooltip": "FSR2 version, there are some differences between versions.\nDefault is 2.3.3",
     "superresolution.screen.config.special.sgsr2.variant.name": "Algorithm Variant",
-    "superresolution.screen.config.special.sgsr2.variant.tooltip": "CS_2 (Compute Shader/2 Post-Process Passes): moderate performance, moderate quality\nCS_3 (Compute Shader/3 Post-Process Passes): worse performance, best quality\nFS_2 (Fragment Shader/2 Post-Process Passes): best performance, worse quality",
+    "superresolution.screen.config.special.sgsr2.variant.tooltip": "CS_2 (Compute Shader/2 Post-Process Passes): moderate performance, moderate quality\nCS_3 (Compute Shader/3 Post-Process Passes): worse performance, best quality",
     "superresolution.screen.info.link.official_website": "Official Website",
     "superresolution.screen.info.link.wiki": "Wiki",
     "superresolution.screen.info.text.author": "Author",

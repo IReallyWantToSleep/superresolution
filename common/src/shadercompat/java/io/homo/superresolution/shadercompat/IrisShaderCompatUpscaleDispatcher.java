@@ -42,7 +42,7 @@ import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.InteropResourcesConverter;
+import io.homo.superresolution.common.upscale.InteropResourcesPreprocessor;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
@@ -239,7 +239,7 @@ public class IrisShaderCompatUpscaleDispatcher {
         cachedNamedCompositePass = null;
         cachedOutputTargetTextures.clear();
         IrisShaderCompatEventHandler.failedToDispatchUpscale = false;
-        InteropResourcesConverter.destroy();
+        InteropResourcesPreprocessor.destroy();
         SRCompatV2Processor.destroyPipelineCache();
         SRCompatV3Processor.destroyPipelineCache();
     }

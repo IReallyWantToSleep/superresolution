@@ -16,11 +16,10 @@ import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
-import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.presentation.vulkan.FramePacingTiming;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.VulkanInteropAlgorithm;
+import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -122,7 +121,7 @@ public final class FrameCaptureManager {
         if (!VulkanPresentationFeature.isRequested()
                 || !isInitialized()
                 || event == null
-                || event.getAlgorithm() instanceof VulkanInteropAlgorithm
+                || event.getAlgorithm() instanceof GlVulkanInteropAlgorithm
                 || !isWorldFrame()) {
             return;
         }

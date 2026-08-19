@@ -247,7 +247,7 @@
     "superresolution.screen.config.special.fsr2.version.name": "版本",
     "superresolution.screen.config.special.fsr2.version.tooltip": "FSR2 的版本。不同版本之間會有一些差異。\n預設為 2.3.3。",
     "superresolution.screen.config.special.sgsr2.variant.name": "變體",
-    "superresolution.screen.config.special.sgsr2.variant.tooltip": "CS_2 計算著色器 (Compute Shader) / 雙通道 - 效能與品質平衡\nCS_3 計算著色器 (Compute Shader) / 三通道 - 效能較低，品質最佳\nFS_2 片段著色器 (Fragment Shader) / 雙通道 - 效能最佳，品質較低",
+    "superresolution.screen.config.special.sgsr2.variant.tooltip": "CS_2 計算著色器 (Compute Shader) / 雙通道 - 效能與品質平衡\nCS_3 計算著色器 (Compute Shader) / 三通道 - 效能較低，品質最佳",
     "superresolution.screen.info.link.official_website": "官方網站",
     "superresolution.screen.info.link.wiki": "Wiki",
     "superresolution.screen.info.text.author": "作者",

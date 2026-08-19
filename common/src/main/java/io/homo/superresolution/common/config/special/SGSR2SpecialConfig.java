@@ -48,7 +48,6 @@ public class SGSR2SpecialConfig extends SpecialConfig {
                         .setValueNameSupplier((variant) -> switch ((SgsrVariant) variant) {
                             case CS_2 -> Optional.of(Component.translatable("superresolution.enum.sgsrvariant.cs_2"));
                             case CS_3 -> Optional.of(Component.translatable("superresolution.enum.sgsrvariant.cs_3"));
-                            case FS_2 -> Optional.of(Component.translatable("superresolution.enum.sgsrvariant.fs_2"));
                         })
                         .setName(Component.translatable("superresolution.screen.config.special.sgsr2.variant.name"))
                         .setTooltip(Component.translatable("superresolution.screen.config.special.sgsr2.variant.tooltip"))
