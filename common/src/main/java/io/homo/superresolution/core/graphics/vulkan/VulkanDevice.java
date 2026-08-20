@@ -55,6 +55,7 @@ import org.slf4j.LoggerFactory;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.function.Consumer;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.vulkan.NVLowLatency2.VK_STRUCTURE_TYPE_LATENCY_SUBMISSION_PRESENT_ID_NV;
@@ -710,11 +711,11 @@ public class VulkanDevice implements IDevice {
             return;
         }
         List<VulkanCommandBuffer> blockers = new ArrayList<>();
-        for (VulkanCommandBuffer buffer : allManagedCommandBuffers()) {
+        forEachManagedCommandBuffer(buffer -> {
             if (buffer.isInFlight()) {
                 blockers.add(buffer);
             }
-        }
+        });
         if (blockers.isEmpty() && !drainingDeferredDestroys) {
             destroyAction.run();
             return;
@@ -722,9 +723,17 @@ public class VulkanDevice implements IDevice {
         deferredDestroys.add(new DeferredDestroy(destroyAction, blockers));
     }
 
+    /**
+     * Runs after every queue submission, so it must not allocate on the common path.
+     * The pools hold their buffers in copy-on-write lists, so iterating them directly is
+     * safe even though the action can destroy a buffer, and costs nothing per submit —
+     * this used to copy every managed command buffer into a fresh list first. An empty
+     * deferred-destroy list now skips the drain loop instead of snapshotting it.
+     */
     private void reapCompletedTransientResources() {
-        for (VulkanCommandBuffer buffer : allManagedCommandBuffers()) {
-            buffer.destroyTransientResourcesIfComplete();
+        forEachManagedCommandBuffer(VulkanCommandBuffer::destroyTransientResourcesIfComplete);
+        if (deferredDestroys.isEmpty()) {
+            return;
         }
         drainingDeferredDestroys = true;
         try {
@@ -745,8 +754,17 @@ public class VulkanDevice implements IDevice {
     }
 
     private void waitForAllCommandBuffers() {
-        for (VulkanCommandBuffer buffer : allManagedCommandBuffers()) {
-            buffer.waitForFence();
+        forEachManagedCommandBuffer(VulkanCommandBuffer::waitForFence);
+    }
+
+    private void forEachManagedCommandBuffer(Consumer<VulkanCommandBuffer> action) {
+        for (VulkanCommandBuffer buffer : defaultCommandPool.getAllocatedBuffers()) {
+            action.accept(buffer);
+        }
+        if (frameGenerationCommandPool != null) {
+            for (VulkanCommandBuffer buffer : frameGenerationCommandPool.getAllocatedBuffers()) {
+                action.accept(buffer);
+            }
         }
     }
 
@@ -766,15 +784,6 @@ public class VulkanDevice implements IDevice {
                     "Command buffer belongs to a command pool for a different queue family"
             );
         }
-    }
-
-    private List<VulkanCommandBuffer> allManagedCommandBuffers() {
-        List<VulkanCommandBuffer> buffers =
-                new ArrayList<>(defaultCommandPool.getAllocatedBuffers());
-        if (frameGenerationCommandPool != null) {
-            buffers.addAll(frameGenerationCommandPool.getAllocatedBuffers());
-        }
-        return buffers;
     }
 
     private void flushDeferredDestroys() {

@@ -288,7 +288,14 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                 // load, where resize() fires repeatedly). A later recreateAlgorithm (new instance,
                 // interopFrameSequence = 0) re-primes and briefly unblocks it -- hence the freeze/render/freeze cycle.
                 if (inFlight.commandBuffer != null) {
-                    inFlight.commandBuffer.waitForFence();
+                    // No CPU fence wait here. waitVulkanSignal below is a GL-queue-side
+                    // GPU wait that already orders the flip after the upscale, and the
+                    // matching signal was submitted during the previous dispatch, so the
+                    // glWaitSemaphoreEXT is legal. Blocking on the fence as well stalled
+                    // the render thread on GPU work submitted one frame earlier and capped
+                    // the pipeline at a single frame of overlap. The commandBuffer != null
+                    // guard is what keeps a never-signaled semaphore from being waited on
+                    // after a resize.
 
                     //GL Queue等待第N-2帧的Upscale结果
                     upscaleFinishSemaphore.waitVulkanSignal(

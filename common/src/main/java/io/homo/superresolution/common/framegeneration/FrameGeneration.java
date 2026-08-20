@@ -148,10 +148,13 @@ public final class FrameGeneration {
             int backBufferCount,
             long commandBuffer
     ) {
-        FrameGenerationMode mode = displayedMode();
+        if (!initialized || !frameGenerationConfigured()) {
+            disableFrameGeneration();
+            return FramePresentPlan.none();
+        }
         FrameGenerationProvider provider = activeProvider();
-        if (!initialized
-                || provider == null
+        FrameGenerationMode mode = displayedModeWith(provider);
+        if (provider == null
                 || provider.executionModel() != FrameGenerationExecutionModel.EXTERNAL_INTERPOSER
                 || !mode.isEnabled()
                 || frameResources == null
@@ -207,10 +210,13 @@ public final class FrameGeneration {
         if (expectedProviderId.isBlank()) {
             throw new IllegalArgumentException("expectedProviderId cannot be blank");
         }
-        FrameGenerationMode mode = displayedMode();
+        if (!initialized || !frameGenerationConfigured()) {
+            return null;
+        }
         ProviderSelection selection = activeProviderSelection();
-        if (!initialized
-                || selection == null
+        FrameGenerationMode mode =
+                displayedModeWith(selection == null ? null : selection.provider());
+        if (selection == null
                 || !selection.id().equals(expectedProviderId)
                 || selection.executionModel() != FrameGenerationExecutionModel.APPLICATION_MANAGED_ASYNC
                 || !mode.isEnabled()
@@ -314,46 +320,54 @@ public final class FrameGeneration {
      * next frame. Zero when disabled or when the active backend presents them.
      */
     public static synchronized int plannedGeneratedFrameCount() {
-        if (!initialized) {
-            return 0;
-        }
-        FrameGenerationMode mode = displayedMode();
-        if (!mode.isEnabled()) {
+        if (!initialized || !frameGenerationConfigured()) {
             return 0;
         }
         FrameGenerationProvider provider = activeProvider();
+        FrameGenerationMode mode = displayedModeWith(provider);
+        if (!mode.isEnabled()) {
+            return 0;
+        }
         return provider == null ? 0 : provider.presentationManagedGeneratedFrameCount(mode);
     }
 
-    public static boolean isSupported() {
-        return dependenciesSatisfied() && backendAvailable();
+    public static synchronized boolean isSupported() {
+        return presentationDependenciesSatisfied() && isSupportedWith(activeProvider());
     }
 
     public static boolean isFrameGenerationEnabled() {
         return displayedMode().isEnabled();
     }
 
-    public static void setFrameGenerationMode(FrameGenerationMode mode) {
+    public static synchronized void setFrameGenerationMode(FrameGenerationMode mode) {
+        FrameGenerationProvider provider = activeProvider();
         FrameGenerationMode selected = mode;
-        if (selected == null || !isHardwareModeSupported(selected)) {
+        if (selected == null || !isHardwareModeSupportedWith(provider, selected)) {
             selected = FrameGenerationMode.OFF;
         }
         SuperResolutionConfig.setFrameGenerationMode(selected);
-        if (!displayedMode().isEnabled()) {
+        if (!displayedModeWith(provider).isEnabled()) {
             disableFrameGeneration();
         }
     }
 
-    public static FrameGenerationMode displayedMode() {
-        FrameGenerationMode mode = SuperResolutionConfig.getFrameGenerationMode();
-        return isModeSupported(mode) ? mode : FrameGenerationMode.OFF;
+    /**
+     * Resolves the negotiated provider once and derives the mode from it. Every
+     * predicate below used to call {@link #activeProvider()} itself, so one
+     * {@code displayedMode()} used to run {@link BackendNegotiator#resolve} three times.
+     */
+    public static synchronized FrameGenerationMode displayedMode() {
+        return frameGenerationConfigured()
+                ? displayedModeWith(activeProvider())
+                : FrameGenerationMode.OFF;
     }
 
-    public static FrameGenerationMode[] availableModes() {
-        if (!isSupported()) {
+    public static synchronized FrameGenerationMode[] availableModes() {
+        FrameGenerationProvider provider = activeProvider();
+        if (!isSupportedWith(provider)) {
             return new FrameGenerationMode[]{FrameGenerationMode.OFF};
         }
-        return availableModesForMaximum(supportedGeneratedFrameCount());
+        return availableModesForMaximum(supportedGeneratedFrameCountWith(provider));
     }
 
     static FrameGenerationMode[] availableModesForMaximum(int maximumGeneratedFrames) {
@@ -594,23 +608,41 @@ public final class FrameGeneration {
         return group != null ? group.getId() : null;
     }
 
-    private static boolean backendAvailable() {
-        FrameGenerationProvider provider = activeProvider();
-        return provider != null && provider.isAvailable();
+    /**
+     * Cheap gates that make provider negotiation pointless. Checking these before
+     * {@link #activeProvider()} keeps a disabled or incompatible setup at zero
+     * {@link BackendNegotiator#resolve} calls per frame, which is what the predicates
+     * used to achieve by short-circuiting before they reached the negotiator.
+     */
+    private static boolean frameGenerationConfigured() {
+        FrameGenerationMode configured = SuperResolutionConfig.getFrameGenerationMode();
+        return configured != null
+                && configured != FrameGenerationMode.OFF
+                && presentationDependenciesSatisfied()
+                && isShaderEnvironmentCompatible();
     }
 
-    private static int supportedGeneratedFrameCount() {
-        FrameGenerationProvider provider = activeProvider();
+    private static boolean presentationDependenciesSatisfied() {
+        return SuperResolutionConfig.isEnableVulkanPresentation()
+                && SuperResolutionConfig.getInteropSyncMode() == InteropSyncMode.LowLatency;
+    }
+
+    private static boolean isSupportedWith(@Nullable FrameGenerationProvider provider) {
+        return dependenciesSatisfiedWith(provider) && provider != null && provider.isAvailable();
+    }
+
+    private static int supportedGeneratedFrameCountWith(@Nullable FrameGenerationProvider provider) {
         return provider == null ? 0 : provider.supportedGeneratedFrameCount();
     }
 
-    static boolean dependenciesSatisfied() {
-        if (!SuperResolutionConfig.isEnableVulkanPresentation()
-                || SuperResolutionConfig.getInteropSyncMode() != InteropSyncMode.LowLatency) {
-            return false;
-        }
-        FrameGenerationProvider provider = activeProvider();
-        return provider != null && provider.dependenciesSatisfied();
+    static synchronized boolean dependenciesSatisfied() {
+        return dependenciesSatisfiedWith(activeProvider());
+    }
+
+    private static boolean dependenciesSatisfiedWith(@Nullable FrameGenerationProvider provider) {
+        return presentationDependenciesSatisfied()
+                && provider != null
+                && provider.dependenciesSatisfied();
     }
 
     // FG only under shader_compat + loaded pack; vanilla/hack breaks UI presentation
@@ -622,16 +654,28 @@ public final class FrameGeneration {
         return state.shaderPackInUse() && !state.shaderPackLoading();
     }
 
-    private static boolean isModeSupported(FrameGenerationMode mode) {
-        return isHardwareModeSupported(mode) && (mode == FrameGenerationMode.OFF || isShaderEnvironmentCompatible());
+    private static FrameGenerationMode displayedModeWith(@Nullable FrameGenerationProvider provider) {
+        FrameGenerationMode mode = SuperResolutionConfig.getFrameGenerationMode();
+        return isModeSupportedWith(provider, mode) ? mode : FrameGenerationMode.OFF;
     }
 
-    private static boolean isHardwareModeSupported(FrameGenerationMode mode) {
+    private static boolean isModeSupportedWith(
+            @Nullable FrameGenerationProvider provider,
+            FrameGenerationMode mode
+    ) {
+        return isHardwareModeSupportedWith(provider, mode)
+                && (mode == FrameGenerationMode.OFF || isShaderEnvironmentCompatible());
+    }
+
+    private static boolean isHardwareModeSupportedWith(
+            @Nullable FrameGenerationProvider provider,
+            FrameGenerationMode mode
+    ) {
         if (mode == null || mode == FrameGenerationMode.OFF) {
             return mode == FrameGenerationMode.OFF;
         }
-        return isSupported()
-                && mode.generatedFrameCount() <= supportedGeneratedFrameCount();
+        return isSupportedWith(provider)
+                && mode.generatedFrameCount() <= supportedGeneratedFrameCountWith(provider);
     }
 
     private record ApplicationManagedShutdown(

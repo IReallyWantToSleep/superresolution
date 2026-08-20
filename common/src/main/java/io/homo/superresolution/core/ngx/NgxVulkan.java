@@ -21,8 +21,16 @@ package io.homo.superresolution.core.ngx;
 import org.lwjgl.system.MemoryUtil;
 
 import java.nio.FloatBuffer;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Function;
 
 public final class NgxVulkan {
+    private static final Map<String, CoordinateKeys> COORDINATE_KEYS = new ConcurrentHashMap<>();
+    private static final Map<String, CoordinateKeys> SUBRECT_BASE_KEYS = new ConcurrentHashMap<>();
+    private static final Map<String, SubrectKeys> SUBRECT_KEYS = new ConcurrentHashMap<>();
+    private static final Map<String, Float3Keys> COMPONENT_KEYS = new ConcurrentHashMap<>();
+
     private NgxVulkan() {
     }
 
@@ -121,6 +129,7 @@ public final class NgxVulkan {
         resource.imageViewInfo.width = width;
         resource.imageViewInfo.height = height;
         resource.readWrite = readWrite;
+        resource.markDirty();
         return resource;
     }
 
@@ -450,12 +459,16 @@ public final class NgxVulkan {
             NgxCoordinates subrectBase
     ) {
         parameters.setPointer(key, address(resource));
-        setCoordinates(parameters, key + ".Subrect.Base", subrectBase);
+        setCoordinates(parameters, cachedKeys(SUBRECT_BASE_KEYS, key, NgxVulkan::dlssdSubrectBaseKeys), subrectBase);
     }
 
     private static void setCoordinates(NgxParameters parameters, String prefix, NgxCoordinates value) {
-        parameters.setUnsignedInt(prefix + ".X", value.x);
-        parameters.setUnsignedInt(prefix + ".Y", value.y);
+        setCoordinates(parameters, cachedKeys(COORDINATE_KEYS, prefix, CoordinateKeys::of), value);
+    }
+
+    private static void setCoordinates(NgxParameters parameters, CoordinateKeys keys, NgxCoordinates value) {
+        parameters.setUnsignedInt(keys.x(), value.x);
+        parameters.setUnsignedInt(keys.y(), value.y);
     }
 
     private static void setSubrect(
@@ -464,21 +477,73 @@ public final class NgxVulkan {
             NgxCoordinates base,
             NgxDimensions size
     ) {
-        parameters.setUnsignedInt(prefix + "BaseX", base.x);
-        parameters.setUnsignedInt(prefix + "BaseY", base.y);
-        parameters.setUnsignedInt(prefix + "Width", size.width);
-        parameters.setUnsignedInt(prefix + "Height", size.height);
+        SubrectKeys keys = cachedKeys(SUBRECT_KEYS, prefix, SubrectKeys::of);
+        parameters.setUnsignedInt(keys.baseX(), base.x);
+        parameters.setUnsignedInt(keys.baseY(), base.y);
+        parameters.setUnsignedInt(keys.width(), size.width);
+        parameters.setUnsignedInt(keys.height(), size.height);
     }
 
     private static void setFloat2(NgxParameters parameters, String prefix, float[] value) {
-        parameters.setFloat(prefix + "X", value[0]);
-        parameters.setFloat(prefix + "Y", value[1]);
+        Float3Keys keys = cachedKeys(COMPONENT_KEYS, prefix, Float3Keys::of);
+        parameters.setFloat(keys.x(), value[0]);
+        parameters.setFloat(keys.y(), value[1]);
     }
 
     private static void setFloat3(NgxParameters parameters, String prefix, float[] value) {
-        parameters.setFloat(prefix + "X", value[0]);
-        parameters.setFloat(prefix + "Y", value[1]);
-        parameters.setFloat(prefix + "Z", value[2]);
+        Float3Keys keys = cachedKeys(COMPONENT_KEYS, prefix, Float3Keys::of);
+        parameters.setFloat(keys.x(), value[0]);
+        parameters.setFloat(keys.y(), value[1]);
+        parameters.setFloat(keys.z(), value[2]);
+    }
+
+    /**
+     * Derived NGX parameter keys are interned once per prefix instead of being rebuilt on
+     * every evaluate. One DLSS-FG evaluate used to concatenate ~60 key strings, and each
+     * one crossed JNI as a fresh UTF-8 copy. Lookups happen on both the render and the
+     * frame-generation thread, hence the concurrent maps.
+     */
+    private static <T> T cachedKeys(
+            Map<String, T> cache,
+            String prefix,
+            Function<String, T> factory
+    ) {
+        T keys = cache.get(prefix);
+        if (keys == null) {
+            keys = factory.apply(prefix);
+            T existing = cache.putIfAbsent(prefix, keys);
+            if (existing != null) {
+                keys = existing;
+            }
+        }
+        return keys;
+    }
+
+    private static CoordinateKeys dlssdSubrectBaseKeys(String resourceKey) {
+        return CoordinateKeys.of(resourceKey + ".Subrect.Base");
+    }
+
+    private record CoordinateKeys(String x, String y) {
+        static CoordinateKeys of(String prefix) {
+            return new CoordinateKeys(prefix + ".X", prefix + ".Y");
+        }
+    }
+
+    private record SubrectKeys(String baseX, String baseY, String width, String height) {
+        static SubrectKeys of(String prefix) {
+            return new SubrectKeys(
+                    prefix + "BaseX",
+                    prefix + "BaseY",
+                    prefix + "Width",
+                    prefix + "Height"
+            );
+        }
+    }
+
+    private record Float3Keys(String x, String y, String z) {
+        static Float3Keys of(String prefix) {
+            return new Float3Keys(prefix + "X", prefix + "Y", prefix + "Z");
+        }
     }
 
     private static int bool(boolean value) {

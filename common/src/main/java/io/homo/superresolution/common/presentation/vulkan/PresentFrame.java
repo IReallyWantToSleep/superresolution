@@ -43,6 +43,7 @@ public final class PresentFrame {
     private final boolean pacingEnabled;
     private final @Nullable ProviderOutputLease sourceLease;
     private final FrameGenerationDispatchCompletion sourceCompletion;
+    private final FrameGenerationDispatchCompletion acquireCompletion;
     private final VulkanBinarySemaphoreLease acquireLease;
     private final AtomicBoolean acquireLeaseReleased = new AtomicBoolean();
 
@@ -64,6 +65,7 @@ public final class PresentFrame {
             boolean pacingEnabled,
             @Nullable ProviderOutputLease sourceLease,
             FrameGenerationDispatchCompletion sourceCompletion,
+            @Nullable FrameGenerationDispatchCompletion acquireCompletion,
             @Nullable VulkanBinarySemaphoreLease acquireLease
     ) {
         if (displayIndex < 0L || realIndex < 0L) {
@@ -113,6 +115,7 @@ public final class PresentFrame {
         this.pacingEnabled = pacingEnabled;
         this.sourceLease = sourceLease;
         this.sourceCompletion = sourceCompletion;
+        this.acquireCompletion = acquireCompletion == null ? sourceCompletion : acquireCompletion;
         this.acquireLease = acquireLease;
     }
 
@@ -182,6 +185,16 @@ public final class PresentFrame {
 
     public FrameGenerationDispatchCompletion sourceCompletion() {
         return sourceCompletion;
+    }
+
+    /**
+     * Completion of the single submission that consumed this frame's acquire semaphore.
+     * Recycling that semaphore only requires its own submission to retire, so this is
+     * narrower than {@link #sourceCompletion()} — which spans every submission in the
+     * batch and would otherwise make one frame's release wait on its siblings.
+     */
+    public FrameGenerationDispatchCompletion acquireCompletion() {
+        return acquireCompletion;
     }
 
     void releaseAcquireLease() {

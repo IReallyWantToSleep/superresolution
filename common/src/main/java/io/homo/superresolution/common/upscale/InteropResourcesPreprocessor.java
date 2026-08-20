@@ -47,7 +47,7 @@ import java.util.Map;
 
 public class InteropResourcesPreprocessor {
     private static final Map<String, ComputePipeline> flipYPipelineCache = new HashMap<>();
-    private static final Map<String, ComputePipeline> processInputPipelineCache = new HashMap<>();
+    private static final Map<ProcessInputKey, ComputePipeline> processInputPipelineCache = new HashMap<>();
     private static ComputePipeline flipMotionVectorYPipeline;
     private static IShaderProgram flipMotionVectorYShader;
 
@@ -262,12 +262,16 @@ public class InteropResourcesPreprocessor {
             throw new IllegalArgumentException("Unsupported color format for processInputTextures: " + outputColor.getTextureFormat());
         }
 
-        String key = "processInput_" + outputColor.getTextureFormat().name()
-                + (hasDepth ? "_D" : "")
-                + (hasMV ? "_MV" : "")
-                + (hasExposure ? "_E" : "")
-                + (hasMVPreprocessing ? "_MVP" : "")
-                + (motionVectorPreprocessingFunction == null ? "" : motionVectorPreprocessingFunction.hashCode());
+        // Runs every frame, so the lookup key is a record rather than a rebuilt string.
+        // Holding the injected function itself also removes the hashCode() collision the
+        // old string key had, where two different functions could share a pipeline.
+        ProcessInputKey key = new ProcessInputKey(
+                outputColor.getTextureFormat(),
+                hasDepth,
+                hasMV,
+                hasExposure,
+                hasMVPreprocessing ? motionVectorPreprocessingFunction : null
+        );
 
         ComputePipeline pipeline = processInputPipelineCache.get(key);
         if (pipeline == null) {
@@ -284,7 +288,7 @@ public class InteropResourcesPreprocessor {
 
             ShaderDescription.Builder builder = ShaderDescription.create()
                     .compute(computeSource)
-                    .name("interop_" + key)
+                    .name("interop_" + key.shaderName())
                     .uniformSamplerTexture("inputColor", 0)
                     .uniformStorageTexture("outputColor", 1);
             builder.addDefine("COLOR_FORMAT", colorFormatQualifier);
@@ -346,6 +350,24 @@ public class InteropResourcesPreprocessor {
             commandBuffer.waitForFence();
         } finally {
             commandBuffer.destroy();
+        }
+    }
+
+    private record ProcessInputKey(
+            TextureFormat colorFormat,
+            boolean hasDepth,
+            boolean hasMotionVectors,
+            boolean hasExposure,
+            @Nullable String motionVectorPreprocessingFunction
+    ) {
+        private String shaderName() {
+            return "processInput_" + colorFormat.name()
+                    + (hasDepth ? "_D" : "")
+                    + (hasMotionVectors ? "_MV" : "")
+                    + (hasExposure ? "_E" : "")
+                    + (motionVectorPreprocessingFunction == null
+                            ? ""
+                            : "_MVP" + motionVectorPreprocessingFunction.hashCode());
         }
     }
 

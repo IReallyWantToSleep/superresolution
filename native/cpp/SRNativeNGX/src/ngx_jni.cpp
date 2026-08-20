@@ -46,6 +46,40 @@ namespace {
         return result;
     }
 
+    /**
+     * Borrowed UTF-8 view of a jstring. NVSDK_NGX_Parameter_Set* copies the key into the
+     * parameter map, so the characters only have to outlive the call. toUtf8() built a
+     * std::string for that, which is one heap allocation per parameter -- a single
+     * DLSS-FG evaluate sets well over a hundred of them.
+     */
+    class BorrowedUtf8 {
+    public:
+        BorrowedUtf8(JNIEnv *env, jstring value)
+            : env_(env),
+              value_(value),
+              chars_(env && value ? env->GetStringUTFChars(value, nullptr) : nullptr) {
+        }
+
+        ~BorrowedUtf8() {
+            if (chars_) {
+                env_->ReleaseStringUTFChars(value_, chars_);
+            }
+        }
+
+        BorrowedUtf8(const BorrowedUtf8 &) = delete;
+
+        BorrowedUtf8 &operator=(const BorrowedUtf8 &) = delete;
+
+        [[nodiscard]] const char *c_str() const {
+            return chars_ ? chars_ : "";
+        }
+
+    private:
+        JNIEnv *env_;
+        jstring value_;
+        const char *chars_;
+    };
+
     std::wstring toWide(JNIEnv *env, jstring value) {
         std::string utf8 = toUtf8(env, value);
         if (utf8.empty()) {
@@ -490,42 +524,42 @@ extern "C" {
     JNIEXPORT void JNICALL Java_io_homo_superresolution_core_ngx_NgxNative_nParametersSetUnsignedLong(
         JNIEnv *env, jclass, jlong parameters, jstring name, jlong value
     ) {
-        std::string key = toUtf8(env, name);
+        BorrowedUtf8 key(env, name);
         NVSDK_NGX_Parameter_SetULL(asParameters(parameters), key.c_str(), static_cast<unsigned long long>(value));
     }
 
     JNIEXPORT void JNICALL Java_io_homo_superresolution_core_ngx_NgxNative_nParametersSetFloat(
         JNIEnv *env, jclass, jlong parameters, jstring name, jfloat value
     ) {
-        std::string key = toUtf8(env, name);
+        BorrowedUtf8 key(env, name);
         NVSDK_NGX_Parameter_SetF(asParameters(parameters), key.c_str(), value);
     }
 
     JNIEXPORT void JNICALL Java_io_homo_superresolution_core_ngx_NgxNative_nParametersSetDouble(
         JNIEnv *env, jclass, jlong parameters, jstring name, jdouble value
     ) {
-        std::string key = toUtf8(env, name);
+        BorrowedUtf8 key(env, name);
         NVSDK_NGX_Parameter_SetD(asParameters(parameters), key.c_str(), value);
     }
 
     JNIEXPORT void JNICALL Java_io_homo_superresolution_core_ngx_NgxNative_nParametersSetUnsignedInt(
         JNIEnv *env, jclass, jlong parameters, jstring name, jlong value
     ) {
-        std::string key = toUtf8(env, name);
+        BorrowedUtf8 key(env, name);
         NVSDK_NGX_Parameter_SetUI(asParameters(parameters), key.c_str(), static_cast<unsigned int>(value));
     }
 
     JNIEXPORT void JNICALL Java_io_homo_superresolution_core_ngx_NgxNative_nParametersSetInt(
         JNIEnv *env, jclass, jlong parameters, jstring name, jint value
     ) {
-        std::string key = toUtf8(env, name);
+        BorrowedUtf8 key(env, name);
         NVSDK_NGX_Parameter_SetI(asParameters(parameters), key.c_str(), value);
     }
 
     JNIEXPORT void JNICALL Java_io_homo_superresolution_core_ngx_NgxNative_nParametersSetPointer(
         JNIEnv *env, jclass, jlong parameters, jstring name, jlong value
     ) {
-        std::string key = toUtf8(env, name);
+        BorrowedUtf8 key(env, name);
         NVSDK_NGX_Parameter_SetVoidPointer(asParameters(parameters), key.c_str(), reinterpret_cast<void *>(value));
     }
 
