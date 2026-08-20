@@ -1740,6 +1740,21 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 Pair.of("Level Render", Text.translatable("superresolution.screen.config.section.performance.chart.level_render")),
                 Pair.of("Upscale", Text.translatable("superresolution.screen.config.section.performance.chart.upscale")),
                 Pair.of("GUI", Text.translatable("superresolution.screen.config.section.performance.chart.gui")),
+                // GPU-side stages. The GL rows come from PerformanceTracker's own timer
+                // queries; the VK rows are fed by VulkanTimestampProfiler and only carry
+                // GPU numbers, since no CPU push/pop pair wraps them.
+                Pair.of(PerformanceTracker.GL_INPUT_CONVERT,
+                        Text.translatable("superresolution.screen.config.section.performance.chart.gl_input_convert")),
+                Pair.of(PerformanceTracker.GL_INTEROP_FLIP,
+                        Text.translatable("superresolution.screen.config.section.performance.chart.gl_interop_flip")),
+                Pair.of(PerformanceTracker.GL_CAPTURE_FLIP,
+                        Text.translatable("superresolution.screen.config.section.performance.chart.gl_capture_flip")),
+                Pair.of(PerformanceTracker.VK_UPSCALE,
+                        Text.translatable("superresolution.screen.config.section.performance.chart.vk_upscale")),
+                Pair.of(PerformanceTracker.VK_FRAME_GEN,
+                        Text.translatable("superresolution.screen.config.section.performance.chart.vk_frame_gen")),
+                Pair.of(PerformanceTracker.VK_PRESENT_BLIT,
+                        Text.translatable("superresolution.screen.config.section.performance.chart.vk_present_blit")),
         };
 
         for (Pair<String, Text> operation : operations) {
