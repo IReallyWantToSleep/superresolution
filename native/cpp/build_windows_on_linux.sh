@@ -20,6 +20,20 @@ SR_XESS="${SR_XESS:-ON}"
 SR_FSROGL="${SR_FSROGL:-OFF}"
 BUILD_TYPES="${1:-Debug Release}"
 
+# Same shader-compile budget as build_linux.sh: this is a Ninja build on a Linux host, so
+# ffx_sc's default hardware_concurrency() threads would multiply with Ninja's -j and spawn
+# far more glslangValidator processes than there are cores.
+JOBS="$(nproc)"
+FFX_SC_THREADS="${FFX_SC_THREADS:-1}"
+if [ "${FFX_SC_THREADS}" -le 0 ]; then
+    FFX_SC_POOL=1
+else
+    FFX_SC_POOL=$(( JOBS / FFX_SC_THREADS ))
+    if [ "${FFX_SC_POOL}" -lt 1 ]; then
+        FFX_SC_POOL=1
+    fi
+fi
+
 echo "=== SuperResolution Windows cross-build ==="
 echo "  SR_FSR=${SR_FSR}  SR_XESS=${SR_XESS}"
 echo "  Build types: ${BUILD_TYPES}"
@@ -39,9 +53,11 @@ for BUILD_TYPE in ${BUILD_TYPES}; do
         -DSR_XESS="${SR_XESS}" \
         -DSR_FSROGL="${SR_FSROGL}" \
         -DVulkan_INCLUDE_DIR="${SCRIPT_DIR}/third_party" \
-        -DVulkan_LIBRARY="/tmp/vulkan-stub/vulkan-1.lib"
+        -DVulkan_LIBRARY="/tmp/vulkan-stub/vulkan-1.lib" \
+        -DFFX_SC_NUM_THREADS="${FFX_SC_THREADS}" \
+        -DFFX_SC_JOB_POOL_SIZE="${FFX_SC_POOL}"
 
-    cmake --build buildWindowsOnLinux --config "${BUILD_TYPE}" -- -j"$(nproc)"
+    cmake --build buildWindowsOnLinux --config "${BUILD_TYPE}" -- -j"${JOBS}"
     echo "[${BUILD_TYPE}] Done."
     echo ""
 done
