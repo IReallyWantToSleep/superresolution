@@ -245,6 +245,18 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         super.draw(ctx, inputState);
     }
 
+    /**
+     * Forces {@code key}'s page to be rebuilt the next time it is displayed. A page that
+     * is currently on screen keeps rendering its existing instance until it is switched
+     * away from, at which point the view detaches it, so dropping the cache entry here
+     * cannot leave two instances attached.
+     */
+    private void invalidateContentFrame(String key) {
+        if (contentFrames != null) {
+            contentFrames.remove(key);
+        }
+    }
+
     private Frame getOrCreateContentFrame(String key) {
         if (contentFrames.containsKey(key)) {
             return contentFrames.get(key);
@@ -1437,7 +1449,17 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 SuperResolutionConfig.isEnableDetailedProfiling())
                         .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_detailed_profiling"))
                         .setDefaultValue(() -> false)
-                        .setSaveConsumer(SuperResolutionConfig::setEnableDetailedProfiling)
+                        .setSaveConsumer((Consumer<Boolean>) value -> {
+                            SuperResolutionConfig.setEnableDetailedProfiling(value);
+                            // The performance page decides which charts exist when it is
+                            // built, and getOrCreateContentFrame caches every page for the
+                            // life of the screen, so a page visited before this toggle
+                            // would keep its old row set until the screen was reopened.
+                            // Dropping it here makes the next visit rebuild. Switching
+                            // away already detaches the frame from the view, so the
+                            // replacement cannot end up double-attached.
+                            invalidateContentFrame("performance");
+                        })
                         .build()
         );
 
