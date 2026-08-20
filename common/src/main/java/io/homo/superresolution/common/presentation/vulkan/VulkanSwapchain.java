@@ -14,6 +14,7 @@ import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchRequest;
 import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchResult;
 import io.homo.superresolution.api.registry.FrameGenerationDispatchCompletion;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.framegeneration.FramePresentPlan;
@@ -32,6 +33,7 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 import io.homo.superresolution.core.graphics.vulkan.VulkanQueue;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -1784,6 +1786,10 @@ final class VulkanSwapchain {
             boolean generatedFrame
     ) {
         VkCommandBuffer nativeCommandBuffer = commandBuffer.getNativeCommandBuffer();
+        VulkanTimestampProfiler profiler = device.timestampProfiler();
+        int timestampSlot = profiler == null
+                ? -1
+                : profiler.beginRegion(nativeCommandBuffer, PerformanceTracker.VK_PRESENT_BLIT);
         try (MemoryStack stack = MemoryStack.stackPush()) {
             int oldSourceLayout = source.getCurrentLayout();
             int oldSwapchainLayout = imageLayouts[imageIndex];
@@ -1866,6 +1872,9 @@ final class VulkanSwapchain {
                     null,
                     presentBarrier
             );
+        }
+        if (timestampSlot >= 0) {
+            profiler.endRegion(nativeCommandBuffer, timestampSlot);
         }
         source.setCurrentLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         imageLayouts[imageIndex] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;

@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.graphics.vulkan;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
@@ -80,6 +81,8 @@ public class VulkanDevice implements IDevice {
     private final List<DeferredDestroy> deferredDestroys = new ArrayList<>();
     private final boolean ownsVkDevice;
     private boolean drainingDeferredDestroys;
+    private VulkanTimestampProfiler timestampProfiler;
+    private boolean timestampProfilerResolved;
 
 
     public VulkanDevice(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, int graphicsQueueFamilyIndex) {
@@ -571,6 +574,10 @@ public class VulkanDevice implements IDevice {
 
     public void destroy() {
         VulkanLowLatency.onDeviceDestroyed();
+        if (timestampProfiler != null) {
+            timestampProfiler.close();
+            timestampProfiler = null;
+        }
         waitForAllCommandBuffers();
         reapCompletedTransientResources();
         flushDeferredDestroys();
@@ -704,6 +711,25 @@ public class VulkanDevice implements IDevice {
 
     public VulkanMemoryAllocator getMemoryAllocator() {
         return memoryAllocator;
+    }
+
+    /**
+     * GPU timing for Vulkan-side work, or {@code null} when detailed profiling is off or
+     * the driver cannot write timestamps on this queue. Created lazily so a normal session
+     * never allocates the query pool.
+     */
+    public VulkanTimestampProfiler timestampProfiler() {
+        if (!SuperResolutionConfig.isEnableDetailedProfiling()) {
+            return null;
+        }
+        if (!timestampProfilerResolved) {
+            timestampProfilerResolved = true;
+            timestampProfiler = VulkanTimestampProfiler.createIfSupported(this, mainQueue);
+            if (timestampProfiler == null) {
+                LOGGER.info("Vulkan timestamp profiling is unavailable on this device/queue");
+            }
+        }
+        return timestampProfiler;
     }
 
     void queueForDestroy(Runnable destroyAction) {

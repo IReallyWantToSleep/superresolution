@@ -27,6 +27,7 @@ import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -79,6 +80,9 @@ public abstract class MinecraftMixin {
     private void onRenderBegin(CallbackInfo ci) {
         // Include Reflex pacing in the CPU frame delta used by GUI animations.
         PerformanceTracker.beginFrame();
+        // Vulkan timestamps land a few frames after the work was recorded, so drain
+        // whatever is ready once per frame on the render thread.
+        VulkanPresentationFeature.collectGpuTimestamps();
         if (SuperResolution.gameIsLoaded) {
             int frameIndex = GameFrameIndex.beginFrame();
             LowLatency.beginFrame(frameIndex);

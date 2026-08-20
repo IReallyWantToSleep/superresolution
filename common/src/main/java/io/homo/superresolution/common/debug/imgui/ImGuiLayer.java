@@ -61,7 +61,15 @@ public class ImGuiLayer {
 
     private static final float PREVIEW_WIDTH = 280.0f;
     private static final float TEXTURE_GRID_SPACING = 12.0f;
-    private static final String[] PERF_OPERATIONS = {"Frame", "Level Render", "Main Render", "Upscale", "GUI"};
+    private static final String[] PERF_OPERATIONS = {
+            "Frame", "Level Render", "Main Render", "Upscale", "GUI",
+            PerformanceTracker.GL_INPUT_CONVERT,
+            PerformanceTracker.GL_INTEROP_FLIP,
+            PerformanceTracker.GL_CAPTURE_FLIP,
+            PerformanceTracker.VK_UPSCALE,
+            PerformanceTracker.VK_FRAME_GEN,
+            PerformanceTracker.VK_PRESENT_BLIT
+    };
     private static final Map<String, ImBoolean> WINDOW_OPEN = new LinkedHashMap<>();
 
     static {

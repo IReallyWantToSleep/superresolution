@@ -27,6 +27,8 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.ngx.*;
 
 import java.util.IdentityHashMap;
@@ -196,12 +198,23 @@ public class DLSS extends GlVulkanInteropAlgorithm {
         evalParams.exposureScale = 1.0f;
         evalParams.frameTimeDeltaInMsec = inFlightFrameResourcesSet.frameData.frameTimeDelta();
 
+        VulkanTimestampProfiler profiler =
+                RenderSystems.vulkan().device().timestampProfiler();
+        int timestampSlot = profiler == null
+                ? -1
+                : profiler.beginRegion(
+                        commandBuffer.getNativeCommandBuffer(),
+                        PerformanceTracker.VK_UPSCALE
+                );
         int evaluateResult = NgxVulkan.evaluateDLSS(
                 commandBuffer.getNativeCommandBuffer().address(),
                 ngxDlssFeature,
                 ngxParameters,
                 evalParams
         );
+        if (timestampSlot >= 0) {
+            profiler.endRegion(commandBuffer.getNativeCommandBuffer(), timestampSlot);
+        }
         if (!NgxConstants.succeeded(evaluateResult)) {
             SuperResolution.LOGGER.error("NGX DLSS evaluation failed. Result: {}", evaluateResult);
         }

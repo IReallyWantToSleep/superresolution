@@ -10,6 +10,7 @@
 
 package io.homo.superresolution.common.presentation.capture;
 
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.common.upscale.InteropResourcesPreprocessor;
 import io.homo.superresolution.core.RenderSystems;
@@ -56,12 +57,15 @@ final class FrameTextureResource {
                 : source.getTextureFormat();
         ensureOwned(source.getWidth(), source.getHeight(), format);
         awaitOwnedRelease();
+        PerformanceTracker.push(PerformanceTracker.GL_CAPTURE_FLIP);
         try (GlState ignored = new GlState()) {
             if (motionVector) {
                 InteropResourcesPreprocessor.flipMotionVectorY(source, glTexture);
             } else {
                 InteropResourcesPreprocessor.flipY(source, glTexture);
             }
+        } finally {
+            PerformanceTracker.pop(PerformanceTracker.GL_CAPTURE_FLIP);
         }
         ready.signalVulkan(
                 new int[]{Math.toIntExact(glTexture.handle())},

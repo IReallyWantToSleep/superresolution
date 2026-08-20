@@ -25,6 +25,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
@@ -183,9 +184,14 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                     new int[]{},
                     new int[]{GL_LAYOUT_GENERAL_EXT}
             );
-            InteropResourcesPreprocessor.flipY(
-                    inFlight.outputColorGlTexture,
-                    inFlight.flippedOutputGlTexture);
+            PerformanceTracker.push(PerformanceTracker.GL_INTEROP_FLIP);
+            try {
+                InteropResourcesPreprocessor.flipY(
+                        inFlight.outputColorGlTexture,
+                        inFlight.flippedOutputGlTexture);
+            } finally {
+                PerformanceTracker.pop(PerformanceTracker.GL_INTEROP_FLIP);
+            }
         } else {
             int currentFrameIndex = interopFrameSequence;
             {
@@ -305,9 +311,14 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                     );
 
                     //把第N-2帧的Upscale结果从OpenGL共享纹理翻转到最终输出纹理
-                    InteropResourcesPreprocessor.flipY(
-                            inFlight.outputColorGlTexture,
-                            inFlight.flippedOutputGlTexture);
+                    PerformanceTracker.push(PerformanceTracker.GL_INTEROP_FLIP);
+                    try {
+                        InteropResourcesPreprocessor.flipY(
+                                inFlight.outputColorGlTexture,
+                                inFlight.flippedOutputGlTexture);
+                    } finally {
+                        PerformanceTracker.pop(PerformanceTracker.GL_INTEROP_FLIP);
+                    }
                 }
                 // =================================================================
             }
@@ -371,13 +382,18 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
         String motionVectorPreprocessingFunction =
                 SRWorkModeManager.getCurrentState().motionVectorPreprocessingFunction();
 
-        InteropResourcesPreprocessor.processInputTextures(
-                dispatchResource.resources().get(InputResourceType.Color), inFlight.inputColorGlTexture,
-                dispatchResource.resources().get(InputResourceType.Depth), inFlight.inputDepthGlTexture,
-                dispatchResource.resources().get(InputResourceType.MotionVectors), inFlight.inputMotionVectorsGlTexture,
-                dispatchResource.resources().get(InputResourceType.Exposure), inFlight.inputExposureGlTexture,
-                motionVectorPreprocessingFunction
-        );
+        PerformanceTracker.push(PerformanceTracker.GL_INPUT_CONVERT);
+        try {
+            InteropResourcesPreprocessor.processInputTextures(
+                    dispatchResource.resources().get(InputResourceType.Color), inFlight.inputColorGlTexture,
+                    dispatchResource.resources().get(InputResourceType.Depth), inFlight.inputDepthGlTexture,
+                    dispatchResource.resources().get(InputResourceType.MotionVectors), inFlight.inputMotionVectorsGlTexture,
+                    dispatchResource.resources().get(InputResourceType.Exposure), inFlight.inputExposureGlTexture,
+                    motionVectorPreprocessingFunction
+            );
+        } finally {
+            PerformanceTracker.pop(PerformanceTracker.GL_INPUT_CONVERT);
+        }
     }
 
     private void publishCaptureInputs(
