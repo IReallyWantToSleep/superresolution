@@ -738,7 +738,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 builder.hintOption(Text.literal("vulkan_presentation_unavailable"))
                         .setIcon(MaterialSymbols.iconWarning())
                         .setTitle(Text.translatable("superresolution.screen.config.hint.vulkan_presentation_unavailable.title").getString())
-                        .setText(Text.translatable("superresolution.screen.config.hint.vulkan_presentation_unavailable.text").getString())
+                        .setText(Text.translatable("superresolution.screen.config.hint.vulkan_presentation_unavailable.text").getString()
+                                .formatted(Platform.currentPlatform.getMinecraftVersion()))
                         .build();
             }
             builder.hintOption(Text.literal("tip114514"))
@@ -2010,7 +2011,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 new ContributorInfo("StarsShine11904", Text.translatable("superresolution.screen.config.info.about.contributor.starsshine11904.desc").getString(), "https://github.com/StarsShine11904", "/assets/super_resolution/textures/gui/contributors/StarsShine11904.png"),
                 new ContributorInfo("暇じゃない暇人", Text.translatable("superresolution.screen.config.info.about.contributor.nohimazin.desc").getString(), "https://github.com/nohimazin", "/assets/super_resolution/textures/gui/contributors/nohimazin.png"),
                 new ContributorInfo("HaringPro", Text.translatable("superresolution.screen.config.info.about.contributor.haringpro.desc").getString(), "https://github.com/HaringPro", "/assets/super_resolution/textures/gui/contributors/haringpro.png"),
-                new ContributorInfo("GeForceLegend", Text.translatable("superresolution.screen.config.info.about.contributor.geforcelegend.desc").getString(), "https://github.com/GeForceLegend", "/assets/super_resolution/textures/gui/contributors/geforcelegend.png")
+                new ContributorInfo("GeForceLegend", Text.translatable("superresolution.screen.config.info.about.contributor.geforcelegend.desc").getString(), "https://github.com/GeForceLegend", "/assets/super_resolution/textures/gui/contributors/geforcelegend.png"),
+                new ContributorInfo("sssxks", Text.translatable("superresolution.screen.config.info.about.contributor.sssxks.desc").getString(), "https://github.com/sssxks", "/assets/super_resolution/textures/gui/contributors/sssxks.png")
         ));
         Collections.shuffle(contributors);
         for (ContributorInfo contributor : contributors) {

@@ -61,6 +61,13 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
+#if MC_VER > MC_26_1_2
+import java.io.*;
+import com.google.common.io.Files;
+import com.google.common.base.*;
+import java.nio.charset.StandardCharsets;
+#endif
+
 public final class SuperResolution implements Destroyable {
     public static final String MOD_ID = "super_resolution";
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution");

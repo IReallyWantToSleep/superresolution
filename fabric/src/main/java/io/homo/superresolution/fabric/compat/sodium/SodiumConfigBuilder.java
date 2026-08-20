@@ -41,7 +41,7 @@ public class SodiumConfigBuilder implements ConfigEntryPoint {
                 .addPage(configBuilder
                         .createExternalPage()
                         .setName(Component.translatable("superresolution.config_gui"))
-                        .setScreenConsumer((screen -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildConfigScreen(screen))))
+                        .setScreenConsumer((screen -> MinecraftUtils.setScreen(ConfigScreenBuilder.create().buildConfigScreen(screen))))
                 );
         #endif
     }
