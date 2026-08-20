@@ -2012,6 +2012,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 new ContributorInfo("暇じゃない暇人", Text.translatable("superresolution.screen.config.info.about.contributor.nohimazin.desc").getString(), "https://github.com/nohimazin", "/assets/super_resolution/textures/gui/contributors/nohimazin.png"),
                 new ContributorInfo("HaringPro", Text.translatable("superresolution.screen.config.info.about.contributor.haringpro.desc").getString(), "https://github.com/HaringPro", "/assets/super_resolution/textures/gui/contributors/haringpro.png"),
                 new ContributorInfo("GeForceLegend", Text.translatable("superresolution.screen.config.info.about.contributor.geforcelegend.desc").getString(), "https://github.com/GeForceLegend", "/assets/super_resolution/textures/gui/contributors/geforcelegend.png"),
+                new ContributorInfo("Havesten", Text.translatable("superresolution.screen.config.info.about.contributor.havesten.desc").getString(), "", "/assets/super_resolution/textures/gui/contributors/Havesten.png"),
                 new ContributorInfo("sssxks", Text.translatable("superresolution.screen.config.info.about.contributor.sssxks.desc").getString(), "https://github.com/sssxks", "/assets/super_resolution/textures/gui/contributors/sssxks.png")
         ));
         Collections.shuffle(contributors);
