@@ -441,6 +441,18 @@ final class VulkanSwapchain {
                     commandBufferHandles[index] =
                             commandBuffer.getNativeCommandBuffer().address();
                 }
+                // Opened on the first FG command buffer and closed on the last one the
+                // provider actually filled. Submissions on the FG queue start in order, so
+                // the two timestamps bracket the whole provider dispatch. Closing before
+                // the blit loop below keeps this measuring generation only - those blits
+                // record their own present-blit regions.
+                VulkanTimestampProfiler fgProfiler = device.timestampProfiler();
+                int fgTimestampSlot = fgProfiler == null || commandBuffers.isEmpty()
+                        ? -1
+                        : fgProfiler.beginRegion(
+                                commandBuffers.get(0).getNativeCommandBuffer(),
+                                PerformanceTracker.VK_FRAME_GEN
+                        );
                 AsyncFrameGenerationDispatchRequest request =
                         new AsyncFrameGenerationDispatchRequest(
                                 job.frameResources(),
@@ -464,6 +476,7 @@ final class VulkanSwapchain {
                             throwable
                     );
                     resetCommandBuffers(commandBuffers, 0);
+                    cancelFgTimestamp(fgProfiler, fgTimestampSlot);
                     return null;
                 }
 
@@ -489,6 +502,7 @@ final class VulkanSwapchain {
                         );
                     }
                     resetCommandBuffers(commandBuffers, 0);
+                    cancelFgTimestamp(fgProfiler, fgTimestampSlot);
                     return null;
                 }
 
@@ -498,8 +512,22 @@ final class VulkanSwapchain {
                     abortProviderLease(outputLease);
                     outputLease = null;
                     resetCommandBuffers(commandBuffers, 0);
+                    cancelFgTimestamp(fgProfiler, fgTimestampSlot);
                     requestRecreate();
                     return null;
+                }
+
+                if (fgTimestampSlot >= 0) {
+                    // Land the closing write in the last buffer the provider used; the
+                    // tail buffers of an under-filled batch are reset, never submitted.
+                    int lastFgBuffer = Math.min(
+                            Math.max(generatedCount, 1),
+                            commandBuffers.size()
+                    ) - 1;
+                    fgProfiler.endRegion(
+                            commandBuffers.get(lastFgBuffer).getNativeCommandBuffer(),
+                            fgTimestampSlot
+                    );
                 }
 
                 acquireScheduledPresentTargets(generatedCount + 1, targets);
@@ -815,6 +843,12 @@ final class VulkanSwapchain {
             requestRecreate();
         }
         return null;
+    }
+
+    private static void cancelFgTimestamp(VulkanTimestampProfiler profiler, int slot) {
+        if (profiler != null && slot >= 0) {
+            profiler.cancelRegion(slot);
+        }
     }
 
     private PresentFrame submitRealOnly(

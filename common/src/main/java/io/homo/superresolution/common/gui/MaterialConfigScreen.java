@@ -1733,29 +1733,35 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         boolean detailedProfiling = SuperResolutionConfig.isEnableDetailedProfiling();
 
-        Pair<String, Text>[] operations = new Pair[]{
+        List<Pair<String, Text>> operationList = new ArrayList<>(List.of(
                 Pair.of("Frame", Text.translatable("superresolution.screen.config.section.performance.chart.frame")),
                 Pair.of("Reflex Sleep", Text.translatable("superresolution.screen.config.section.performance.chart.reflex_sleep")),
                 Pair.of("Main Render", Text.translatable("superresolution.screen.config.section.performance.chart.main_render")),
                 Pair.of("Level Render", Text.translatable("superresolution.screen.config.section.performance.chart.level_render")),
                 Pair.of("Upscale", Text.translatable("superresolution.screen.config.section.performance.chart.upscale")),
-                Pair.of("GUI", Text.translatable("superresolution.screen.config.section.performance.chart.gui")),
-                // GPU-side stages. The GL rows come from PerformanceTracker's own timer
-                // queries; the VK rows are fed by VulkanTimestampProfiler and only carry
-                // GPU numbers, since no CPU push/pop pair wraps them.
-                Pair.of(PerformanceTracker.GL_INPUT_CONVERT,
-                        Text.translatable("superresolution.screen.config.section.performance.chart.gl_input_convert")),
-                Pair.of(PerformanceTracker.GL_INTEROP_FLIP,
-                        Text.translatable("superresolution.screen.config.section.performance.chart.gl_interop_flip")),
-                Pair.of(PerformanceTracker.GL_CAPTURE_FLIP,
-                        Text.translatable("superresolution.screen.config.section.performance.chart.gl_capture_flip")),
-                Pair.of(PerformanceTracker.VK_UPSCALE,
-                        Text.translatable("superresolution.screen.config.section.performance.chart.vk_upscale")),
-                Pair.of(PerformanceTracker.VK_FRAME_GEN,
-                        Text.translatable("superresolution.screen.config.section.performance.chart.vk_frame_gen")),
-                Pair.of(PerformanceTracker.VK_PRESENT_BLIT,
-                        Text.translatable("superresolution.screen.config.section.performance.chart.vk_present_blit")),
-        };
+                Pair.of("GUI", Text.translatable("superresolution.screen.config.section.performance.chart.gui"))
+        ));
+        if (detailedProfiling) {
+            // Per-stage GPU rows. These carry no useful data without detailed profiling -
+            // the VK ones have no CPU series at all, since no push/pop pair wraps them -
+            // so they are left out entirely rather than drawn as flat lines.
+            operationList.addAll(List.of(
+                    Pair.of(PerformanceTracker.GL_INPUT_CONVERT,
+                            Text.translatable("superresolution.screen.config.section.performance.chart.gl_input_convert")),
+                    Pair.of(PerformanceTracker.GL_INTEROP_FLIP,
+                            Text.translatable("superresolution.screen.config.section.performance.chart.gl_interop_flip")),
+                    Pair.of(PerformanceTracker.GL_CAPTURE_FLIP,
+                            Text.translatable("superresolution.screen.config.section.performance.chart.gl_capture_flip")),
+                    Pair.of(PerformanceTracker.VK_UPSCALE,
+                            Text.translatable("superresolution.screen.config.section.performance.chart.vk_upscale")),
+                    Pair.of(PerformanceTracker.VK_FRAME_GEN,
+                            Text.translatable("superresolution.screen.config.section.performance.chart.vk_frame_gen")),
+                    Pair.of(PerformanceTracker.VK_PRESENT_BLIT,
+                            Text.translatable("superresolution.screen.config.section.performance.chart.vk_present_blit"))
+            ));
+        }
+        @SuppressWarnings("unchecked")
+        Pair<String, Text>[] operations = operationList.toArray(new Pair[0]);
 
         for (Pair<String, Text> operation : operations) {
             MaterialChart cpuChart = MaterialChart.create()

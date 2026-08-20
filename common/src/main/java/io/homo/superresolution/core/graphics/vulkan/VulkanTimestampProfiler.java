@@ -152,6 +152,19 @@ public final class VulkanTimestampProfiler implements AutoCloseable {
     }
 
     /**
+     * Abandons an open region without reading it. Use when the command buffer holding the
+     * timestamps is reset instead of submitted, so the queries will never execute; without
+     * this the slot would sit pending until the age-out, and a fallback that fires every
+     * frame would exhaust the pool exactly when the numbers are most wanted.
+     */
+    public void cancelRegion(int slot) {
+        if (destroyed || slot < 0 || slot >= MAX_REGIONS) {
+            return;
+        }
+        releaseSlot(slot);
+    }
+
+    /**
      * Publishes every region whose timestamps have landed. Call once per frame; regions
      * still in flight stay pending and are picked up on a later call.
      */

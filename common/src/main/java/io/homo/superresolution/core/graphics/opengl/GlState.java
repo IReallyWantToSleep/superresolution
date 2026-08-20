@@ -64,6 +64,7 @@ public class GlState implements AutoCloseable {
 
     private static final int MAX_TEXTURES = 16;
     private final long stateMask;
+    private final int textureUnitCount;
     public int program;
     public int vao;
     public int vbo;
@@ -115,7 +116,19 @@ public class GlState implements AutoCloseable {
     }
 
     public GlState(long stateMask) {
+        this(stateMask, MAX_TEXTURES);
+    }
+
+    /**
+     * @param textureUnitCount how many texture units {@link #STATE_TEXTURES} covers.
+     *                         Saving a unit costs three GL calls and restoring it up to
+     *                         three more, and {@code glGetInteger} is synchronous, so a
+     *                         caller that only touches the low units should say so rather
+     *                         than paying for all {@value #MAX_TEXTURES}.
+     */
+    public GlState(long stateMask, int textureUnitCount) {
         this.stateMask = stateMask;
+        this.textureUnitCount = Math.max(0, Math.min(textureUnitCount, MAX_TEXTURES));
         GlDebug.pushGroup(GlDebug.nextStateId(), "GlSaveState");
         this.saveState();
         GlDebug.popGroup();
@@ -147,9 +160,9 @@ public class GlState implements AutoCloseable {
         }
 
         if ((stateMask & STATE_TEXTURES) != 0) {
-            this.textures2D = new int[MAX_TEXTURES];
-            this.textures1D = new int[MAX_TEXTURES];
-            for (int i = 0; i < MAX_TEXTURES; i++) {
+            this.textures2D = new int[textureUnitCount];
+            this.textures1D = new int[textureUnitCount];
+            for (int i = 0; i < textureUnitCount; i++) {
                 glActiveTexture(GL_TEXTURE0 + i);
                 this.textures2D[i] = glGetInteger(GL_TEXTURE_BINDING_2D);
                 this.textures1D[i] = glGetInteger(GL_TEXTURE_BINDING_1D);
@@ -271,7 +284,7 @@ public class GlState implements AutoCloseable {
 
         if ((stateMask & STATE_TEXTURES) != 0 && this.textures2D != null && this.textures1D != null) {
             // int originalActiveTexture = glGetInteger(GL_ACTIVE_TEXTURE);
-            for (int i = 0; i < MAX_TEXTURES; i++) {
+            for (int i = 0; i < this.textures2D.length; i++) {
                 glActiveTexture(GL_TEXTURE0 + i);
                 if (this.textures2D[i] != 0) {
                     glBindTexture(GL_TEXTURE_2D, this.textures2D[i]);
