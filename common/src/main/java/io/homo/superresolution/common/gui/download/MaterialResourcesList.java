@@ -30,15 +30,15 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexD
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutter;
 
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class MaterialResourcesList extends MaterialContainerWidget<MaterialResourcesList> {
     private final ExtraResources extraResources;
     private final DirectoryEnsurer targetDirectory;
     private final Map<ExtraResource, MaterialResourcesListItem> itemMap = new LinkedHashMap<>();
+    private final Map<ExtraResource, Thread> activeDownloads = new ConcurrentHashMap<>();
     private final ContainerWidget listContainer;
     private final boolean enableDownload;
-    private volatile Thread downloadManagerThread;
-    private volatile boolean downloading = false;
 
     private MaterialResourcesList(
             ExtraResources extraResources,
@@ -53,7 +53,7 @@ public class MaterialResourcesList extends MaterialContainerWidget<MaterialResou
         listContainer = ContainerWidget.create();
 
         for (ExtraResource resource : extraResources.getResources()) {
-            MaterialResourcesListItem item = new MaterialResourcesListItem(resource, targetDirectory, enableDownload);
+            MaterialResourcesListItem item = new MaterialResourcesListItem(resource, targetDirectory, this, enableDownload);
             item.layout().setWidthPercent(100);
             itemMap.put(resource, item);
             listContainer.addChild(item);
@@ -84,85 +84,92 @@ public class MaterialResourcesList extends MaterialContainerWidget<MaterialResou
     }
 
     public boolean isDownloading() {
-        return downloading;
+        return !activeDownloads.isEmpty();
     }
 
-    public void startDownload() {
-        if (downloading) {
+    public void startDownload(ExtraResource resource, ExtraResource.ResourceSource source) {
+        MaterialResourcesListItem item = itemMap.get(resource);
+        if (item == null) {
             return;
         }
-        downloading = true;
-        extraResources.resetCancelState();
-
-        for (MaterialResourcesListItem item : itemMap.values()) {
-            if (item.getState() != MaterialResourcesListItem.DownloadState.COMPLETED) {
-                item.resetToPending();
-            }
+        if (source == null) {
+            item.markError(ExtraResource.ErrorCode.UnknownError);
+            return;
         }
-
-        downloadManagerThread = new Thread(() -> {
-            List<ExtraResource> toDownload = new ArrayList<>();
-            for (Map.Entry<ExtraResource, MaterialResourcesListItem> entry : itemMap.entrySet()) {
-                if (entry.getValue().getState() != MaterialResourcesListItem.DownloadState.COMPLETED) {
-                    toDownload.add(entry.getKey());
-                }
-            }
-
-            if (toDownload.isEmpty()) {
-                downloading = false;
-                return;
-            }
-
-            extraResources.getAll(
-                    toDownload,
-                    ExtraResource.ResourceSource.Type.Remote,
-                    targetDirectory,
-                    (resource, totalBytesOrDownloaded, progressOrSize) -> {
-                        MaterialResourcesListItem item = itemMap.get(resource);
-                        if (item != null) {
-                            long total = Math.max(0, totalBytesOrDownloaded);
-                            long downloaded = Math.max(0, (long) progressOrSize);
+        if (activeDownloads.containsKey(resource) || item.getState() == MaterialResourcesListItem.DownloadState.COMPLETED) {
+            return;
+        }
+        item.markDownloading();
+        Thread thread = new Thread(() -> {
+            Thread self = Thread.currentThread();
+            try {
+                resource.get(
+                        source,
+                        targetDirectory,
+                        (totalBytes, progress) -> {
+                            if (item.getState() != MaterialResourcesListItem.DownloadState.DOWNLOADING) {
+                                return;
+                            }
+                            long total = Math.max(0, totalBytes);
+                            long downloaded = Math.max(0, (long) progress);
                             if (total > 0 && downloaded > total) {
                                 downloaded = total;
                             }
                             item.updateProgress(downloaded, total);
-                        }
-                    },
-                    (resource, file) -> {
-                        MaterialResourcesListItem item = itemMap.get(resource);
-                        if (item != null) {
+                        },
+                        (file) -> {
+                            if (item.getState() != MaterialResourcesListItem.DownloadState.DOWNLOADING) {
+                                return;
+                            }
                             item.markCompleted();
-                        }
-                    },
-                    (resource, code) -> {
-                        MaterialResourcesListItem item = itemMap.get(resource);
-                        if (item != null) {
+                        },
+                        (code) -> {
+                            if (item.getState() != MaterialResourcesListItem.DownloadState.DOWNLOADING) {
+                                return;
+                            }
                             if (code == ExtraResource.ErrorCode.Cancelled) {
                                 item.markCancelled();
                             } else {
                                 item.markError(code);
                             }
                         }
-                    },
-                    true
-            );
+                );
+            } finally {
+                activeDownloads.remove(resource, self);
+            }
+        }, "SR-ExtraResource-Getter-" + resource.getName());
+        thread.setDaemon(true);
+        activeDownloads.put(resource, thread);
+        thread.start();
+    }
 
-            downloading = false;
-        }, "SR-DownloadList-Manager");
-        downloadManagerThread.setDaemon(true);
-        downloadManagerThread.start();
+    public void startDownload() {
+        for (Map.Entry<ExtraResource, MaterialResourcesListItem> entry : itemMap.entrySet()) {
+            if (entry.getValue().getState() != MaterialResourcesListItem.DownloadState.COMPLETED) {
+                startDownload(entry.getKey(), entry.getValue().getSelectedSource());
+            }
+        }
+    }
+
+    public void cancelDownload(ExtraResource resource) {
+        Thread thread = activeDownloads.get(resource);
+        MaterialResourcesListItem item = itemMap.get(resource);
+        if (thread != null && thread.isAlive()) {
+            thread.interrupt();
+        }
+        if (item != null && item.getState() == MaterialResourcesListItem.DownloadState.DOWNLOADING) {
+            item.markCancelled();
+        }
     }
 
     public void cancelDownload() {
-        extraResources.cancelAll();
-        if (downloadManagerThread != null && downloadManagerThread.isAlive()) {
-            downloadManagerThread.interrupt();
+        for (Thread thread : activeDownloads.values()) {
+            if (thread.isAlive()) {
+                thread.interrupt();
+            }
         }
-        downloading = false;
-
         for (MaterialResourcesListItem item : itemMap.values()) {
-            if (item.getState() == MaterialResourcesListItem.DownloadState.DOWNLOADING ||
-                    item.getState() == MaterialResourcesListItem.DownloadState.PENDING) {
+            if (item.getState() == MaterialResourcesListItem.DownloadState.DOWNLOADING) {
                 item.markCancelled();
             }
         }

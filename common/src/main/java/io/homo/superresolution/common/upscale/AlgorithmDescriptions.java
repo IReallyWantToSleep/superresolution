@@ -31,6 +31,7 @@ import io.homo.superresolution.api.registry.ExtraResource;
 import io.homo.superresolution.api.registry.ExtraResources;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.upscale.algo.dlss.DLSS;
+import io.homo.superresolution.common.upscale.algo.dlss.NgxDlssLatestProvider;
 import io.homo.superresolution.common.upscale.algo.ffxfsr.FfxFSR;
 import io.homo.superresolution.common.upscale.algo.ffxfsr.FfxFSR4D3D12;
 import io.homo.superresolution.common.upscale.algo.legacy.anime4k.Anime4K;
@@ -164,8 +165,12 @@ public class AlgorithmDescriptions {
                                     .add(ExtraResource.builder(
                                                     FfxFSR4D3D12.UPSCALER_DLL_NAME)
                                             .addRemote(
-                                                    "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/v2.3.0/Kits/FidelityFX/signedbin/amd_fidelityfx_upscaler_dx12.dll",
-                                                    "AMD FidelityFX SDK v2.3.0"
+                                                    () -> "https://raw.githubusercontent.com/GPUOpen-LibrariesAndSDKs/FidelityFX-SDK/v2.3.0/Kits/FidelityFX/signedbin/amd_fidelityfx_upscaler_dx12.dll",
+                                                    "Github"
+                                            )
+                                            .addRemote(
+                                                    () -> "https://api.fuukir.cn/dl/sr/amd_fidelityfx_upscaler_dx12.dll",
+                                                    "Mirror"
                                             )
                                             .build())
                                     .build()
@@ -221,8 +226,16 @@ public class AlgorithmDescriptions {
                     ExtraResources.builder()
                             .add(ExtraResource.builder("libxess.dll")
                                     .addRemote(
-                                            "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/libxess.dll",
-                                            "CNB Mirror"
+                                            () -> "https://raw.githubusercontent.com/intel/xess/refs/heads/main/bin/libxess.dll",
+                                            "Github"
+                                    )
+                                    .addRemote(
+                                            () -> "https://api.fuukir.cn/dl/sr/libxess.dll",
+                                            "Mirror"
+                                    )
+                                    .addRemote(
+                                            () -> "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/libxess.dll",
+                                            "Mirror (CNB)"
                                     )
                                     .build()
                             )
@@ -273,8 +286,20 @@ public class AlgorithmDescriptions {
                             ? ExtraResources.builder()
                             .add(ExtraResource.builder("nvngx_dlss.dll")
                                     .addRemote(
-                                            "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlss.dll",
-                                            "CNB Mirror"
+                                            NgxDlssLatestProvider.getInstance(),
+                                            "NVIDIA NGX (Latest)"
+                                    )
+                                    .addRemote(
+                                            () -> "https://raw.githubusercontent.com/NVIDIA/DLSS/refs/heads/main/lib/Windows_x86_64/rel/nvngx_dlss.dll",
+                                            "Github"
+                                    )
+                                    .addRemote(
+                                            () -> "https://api.fuukir.cn/dl/sr/nvngx_dlss.dll",
+                                            "Mirror"
+                                    )
+                                    .addRemote(
+                                            () -> "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlss.dll",
+                                            "Mirror (CNB)"
                                     )
                                     .build()
                             )

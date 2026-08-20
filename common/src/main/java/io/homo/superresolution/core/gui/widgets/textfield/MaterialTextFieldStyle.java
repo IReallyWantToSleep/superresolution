@@ -18,11 +18,16 @@
 
 package io.homo.superresolution.core.gui.widgets.textfield;
 
+import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.core.WidgetStyle;
+import io.homo.superresolution.core.utils.Color;
+
+import java.util.function.Function;
 
 public class MaterialTextFieldStyle extends WidgetStyle<MaterialTextFieldStyle> {
     private MaterialTextFieldVariant variant = MaterialTextFieldVariant.Filled;
     private MaterialTextFieldSize size = MaterialTextFieldSize.Standard;
+    private Function<MaterialScheme, Color> labelBackground = null;
 
     public MaterialTextFieldVariant variant() {
         return variant;
@@ -39,6 +44,15 @@ public class MaterialTextFieldStyle extends WidgetStyle<MaterialTextFieldStyle> 
 
     public MaterialTextFieldStyle size(MaterialTextFieldSize size) {
         this.size = size == null ? MaterialTextFieldSize.Standard : size;
+        return this;
+    }
+
+    public Function<MaterialScheme, Color> labelBackground() {
+        return labelBackground;
+    }
+
+    public MaterialTextFieldStyle labelBackground(Function<MaterialScheme, Color> labelBackground) {
+        this.labelBackground = labelBackground;
         return this;
     }
 }

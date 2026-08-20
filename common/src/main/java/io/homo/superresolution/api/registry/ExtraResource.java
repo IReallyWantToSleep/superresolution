@@ -151,7 +151,19 @@ public class ExtraResource {
         }
         HttpURLConnection connection = null;
         try {
-            URI uri = new URI(source.src);
+            String src;
+            try {
+                src = source.provider.get();
+            } catch (Exception e) {
+                SuperResolution.LOGGER.error("Failed to resolve remote source url", e);
+                errorListener.onError(ErrorCode.NetworkError);
+                return false;
+            }
+            if (src == null || src.isBlank()) {
+                errorListener.onError(ErrorCode.NetworkError);
+                return false;
+            }
+            URI uri = new URI(src);
             connection = (HttpURLConnection) uri.toURL().openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(10000);
@@ -294,6 +306,11 @@ public class ExtraResource {
     }
 
     @FunctionalInterface
+    public interface SrcProvider {
+        String get() throws Exception;
+    }
+
+    @FunctionalInterface
     public interface ProgressListener {
         void onProgress(long totalBytes, float progress);
     }
@@ -310,17 +327,30 @@ public class ExtraResource {
 
     public static class ResourceSource {
         protected final String src;
+        protected final SrcProvider provider;
         protected final Type type;
         protected final String sourceName;
 
         public ResourceSource(String src, Type type, String sourceName) {
             this.src = src;
+            this.provider = null;
+            this.type = type;
+            this.sourceName = sourceName;
+        }
+
+        public ResourceSource(SrcProvider provider, Type type, String sourceName) {
+            this.src = null;
+            this.provider = provider;
             this.type = type;
             this.sourceName = sourceName;
         }
 
         public String getSrc() {
             return src;
+        }
+
+        public SrcProvider getProvider() {
+            return provider;
         }
 
         public Type getType() {
@@ -360,8 +390,8 @@ public class ExtraResource {
             return addSource(new ResourceSource(src, ResourceSource.Type.Local, sourceName));
         }
 
-        public Builder addRemote(String src, String sourceName) {
-            return addSource(new ResourceSource(src, ResourceSource.Type.Remote, sourceName));
+        public Builder addRemote(SrcProvider provider, String sourceName) {
+            return addSource(new ResourceSource(provider, ResourceSource.Type.Remote, sourceName));
         }
 
         public ExtraResource build() {

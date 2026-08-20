@@ -52,11 +52,11 @@ import io.homo.superresolution.core.gui.widgets.progress.MaterialCircularProgres
 import io.homo.superresolution.core.gui.widgets.progress.MaterialLinearProgressIndicator;
 import io.homo.superresolution.core.gui.widgets.progress.MaterialProgressShape;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
-import io.homo.superresolution.core.gui.widgets.select.MaterialSelectSize;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSliderSize;
 import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
 import io.homo.superresolution.core.gui.widgets.textfield.MaterialTextField;
+import io.homo.superresolution.core.gui.widgets.textfield.MaterialTextFieldSize;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.core.utils.MouseCursor;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
@@ -575,7 +575,7 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
                 .addOption("balanced", "Balanced", MaterialSymbols.iconTune())
                 .addOption("performance", "Performance", MaterialSymbols.iconSpeed())
                 .setValue("quality");
-        smallSelect.style().size(MaterialSelectSize.Small);
+        smallSelect.style().size(MaterialTextFieldSize.Compact);
         configureSelect(smallSelect);
         selects.addChild(smallSelect);
         container.addChild(selects);

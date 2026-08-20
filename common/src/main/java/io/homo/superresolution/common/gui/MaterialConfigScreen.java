@@ -1255,7 +1255,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     d.dismiss();
                     d.onDismiss(foo -> {
                         Pair<MaterialResourcesList, MaterialDialog> selector = createOnlineResourceSelector(resources);
-                        selector.left().startDownload();
                         getView().showDialog(selector.right());
                     });
                 }
@@ -1345,7 +1344,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         #if ENABLE_AUTO_DOWNLOAD == 1
         Pair<MaterialResourcesList,MaterialDialog> selector = createOnlineResourceSelector(resources);
         getView().showDialog(selector.right());
-        selector.left().startDownload();
         #else
         Pair<MaterialResourcesList,MaterialDialog> selector = createLocalResourceSelector(resources);
         getView().showDialog(selector.right());
