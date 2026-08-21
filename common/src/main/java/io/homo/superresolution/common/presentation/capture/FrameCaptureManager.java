@@ -16,6 +16,7 @@ import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.presentation.vulkan.FramePacingTiming;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.upscale.DispatchResource;
@@ -150,19 +151,19 @@ public final class FrameCaptureManager {
     }
 
     private static boolean isWorldFrame() {
-        #if MC_VER >= MC_26_1 && MC_VER < MC_26_2 || MC_VER >= MC_1_21_11 && MC_VER < MC_26_1 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2  || MC_VER == MC_1_20_1
+        #if MC_VER >= MC_26_1 && MC_VER <= MC_26_2 || MC_VER >= MC_1_21_11 && MC_VER < MC_26_1 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2  || MC_VER == MC_1_20_1
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft == null
                 || !SuperResolution.gameIsLoaded
                 || minecraft.level == null) {
             return false;
         }
-        if (minecraft.gameRenderer.getMainCamera() == null
-                || !minecraft.gameRenderer.getMainCamera().isInitialized()) {
+        if (MinecraftUtils.getCamera() == null
+                || !MinecraftUtils.getCamera().isInitialized()) {
             return false;
         }
         #if MC_VER >= MC_26_1
-        return !minecraft.gameRenderer.getMainCamera().isPanoramicMode();
+        return !MinecraftUtils.getCamera().isPanoramicMode();
         #else
         return true;
         #endif

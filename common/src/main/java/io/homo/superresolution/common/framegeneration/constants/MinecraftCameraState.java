@@ -39,7 +39,7 @@ public final class MinecraftCameraState {
         Quaternionf inverseRotation = camera.rotation().conjugate(new Quaternionf());
         Matrix4f viewRotation = new Matrix4f().rotation(inverseRotation);
 
-        #if MC_VER >= MC_26_1 && MC_VER < MC_26_2
+        #if MC_VER >= MC_26_1 && MC_VER <= MC_26_2
         Vector3d position = new Vector3d(camera.position().x, camera.position().y, camera.position().z);
         Vector3f forward = new Vector3f(camera.forwardVector());
         Vector3f up = new Vector3f(camera.upVector());
