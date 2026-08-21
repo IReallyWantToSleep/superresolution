@@ -115,7 +115,7 @@ public class SuperResolutionConfig {
                 () -> true,
                 "Enable super-resolution upscaling"
         );
-        #if (MC_VER >= MC_1_21_11 && MC_VER < MC_26_2) || MC_VER == MC_1_21_1  || MC_VER == MC_1_20_1
+        #if (MC_VER >= MC_1_21_11 && MC_VER <= MC_26_2) || MC_VER == MC_1_21_1  || MC_VER == MC_1_20_1
         ENABLE_VULKAN_PRESENTATION = builder.defineBoolean(
                 "enable_vulkan_presentation",
                 () -> false,
@@ -607,7 +607,7 @@ public class SuperResolutionConfig {
     }
 
     public static boolean isEnableVulkanPresentation() {
-        #if (MC_VER >= MC_1_21_11 && MC_VER < MC_26_2) || MC_VER == MC_1_21_1 || MC_VER == MC_1_20_1
+        #if (MC_VER >= MC_1_21_11 && MC_VER <= MC_26_2) || MC_VER == MC_1_21_1 || MC_VER == MC_1_20_1
         return ENABLE_VULKAN_PRESENTATION.get();
         #else
         return false;
@@ -615,7 +615,7 @@ public class SuperResolutionConfig {
     }
 
     public static void setEnableVulkanPresentation(boolean value) {
-        #if (MC_VER >= MC_1_21_11 && MC_VER < MC_26_2) || MC_VER == MC_1_21_1 || MC_VER == MC_1_20_1
+        #if (MC_VER >= MC_1_21_11 && MC_VER <= MC_26_2) || MC_VER == MC_1_21_1 || MC_VER == MC_1_20_1
         ENABLE_VULKAN_PRESENTATION.set(value);
         #endif
     }

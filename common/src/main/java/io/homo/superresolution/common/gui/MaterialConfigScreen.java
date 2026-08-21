@@ -126,7 +126,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private static final float GROUP_TITLE_PILL_MIN_HEIGHT = 30f;
     private static final float FRAME_TITLE_PILL_HORIZONTAL_PADDING = 16f;
     private static final float GROUP_TITLE_PILL_HORIZONTAL_PADDING = 9f;
-    #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1
+    #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1 || MC_VER == MC_26_2
     private static final boolean CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION = true;
     #else
     private static final boolean CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION = false;

@@ -77,7 +77,7 @@ public final class VulkanPresentationFeature {
     }
 
     public static boolean isRequested() {
-        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1
+        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1 || MC_VER == MC_26_2
         ensureConfigLoaded();
         if (startupRequested == null) {
             startupRequested = SuperResolutionConfig.isEnableVulkanPresentation()
