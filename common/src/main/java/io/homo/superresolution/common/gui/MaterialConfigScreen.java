@@ -1789,8 +1789,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         for (Pair<String, Text> operation : operations) {
             MaterialChart cpuChart = MaterialChart.create()
                     .title(operation.right().getString())
-                    .addSeries(new MaterialChartDataSeries("CPU (ms)", Color.from("#4FC3F7"), MaterialChartType.Curve, 128))
-                    .addSeries(new MaterialChartDataSeries("GPU (ms)", Color.from("#BA53FF"), MaterialChartType.Curve, 128))
+                    .addSeries(new MaterialChartDataSeries("CPU (ms)", Color.from("#4FC3F7"), MaterialChartType.Line, 256))
+                    .addSeries(new MaterialChartDataSeries("GPU (ms)", Color.from("#BA53FF"), MaterialChartType.Line, 256))
                     .autoRange()
                     .valueFormatter(v -> String.format("%.2f ms", v))
                     .updateCallback(chart -> {
@@ -1813,7 +1813,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             cpuChart.style()
                     .showAverage(true)
                     .showGrid(true)
-                    .showLegend(true);
+                    .showLegend(true)
+                    .dataLineWidth(1f);
             cpuChart.layout().setWidthPercent(100);
             cpuChart.setElementHeight(180);
             cpuChart.layout().setMargin(YogaEdge.BOTTOM, 8);

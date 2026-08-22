@@ -32,7 +32,7 @@ public class PerformanceTracker {
     public static final String GL_CAPTURE_FLIP = "GL Capture Flip";
     public static final String GL_INPUT_CONVERT = "GL Input Convert";
 
-    private static final int MAX_RESULT = 128;
+    private static final int MAX_RESULT = 256;
     private static final Object2ObjectOpenHashMap<String, TrackerContext> contextMap = new Object2ObjectOpenHashMap<>();
 
     static {
