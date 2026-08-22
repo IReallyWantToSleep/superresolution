@@ -37,25 +37,34 @@ import java.util.regex.Pattern;
 
 public class NgxDlssLatestProvider implements ExtraResource.SrcProvider {
     private static final Logger LOGGER = LoggerFactory.getLogger(NgxDlssLatestProvider.class);
-    private static final NgxDlssLatestProvider INSTANCE = new NgxDlssLatestProvider();
+    private static final NgxDlssLatestProvider DLSS_INSTANCE = new NgxDlssLatestProvider(NgxModel.DLSS);
+    private static final NgxDlssLatestProvider DLSSD_INSTANCE = new NgxDlssLatestProvider(NgxModel.DLSSD);
 
     private static final String BASE_URL = "https://ngx.download.nvidia.com/";
     private static final String CONFIG_URL = BASE_URL + "dev-models/org/nvidia/team/ngx/models/config/versions/2/files/nvngx_server_config.txt";
     private static final int MAX_PAGES = 100;
 
     private static final Pattern INI_SECTION = Pattern.compile("^\\s*\\[(.+?)]");
-    private static final Pattern INI_DLSS_ENTRY = Pattern.compile("^\\s*app_([0-9A-Fa-f]+)\\s*=\\s*([0-9]+(?:\\.[0-9]+)*)");
+    private static final Pattern INI_APP_ENTRY = Pattern.compile("^\\s*app_([0-9A-Fa-f]+)\\s*=\\s*([0-9]+(?:\\.[0-9]+)*)");
     private static final Pattern XML_KEY = Pattern.compile("<Key>([^<]+)</Key>");
     private static final Pattern XML_TRUNCATED = Pattern.compile("<IsTruncated>(true|false)</IsTruncated>");
-    private static final Pattern DLSS_OBJECT_KEY = Pattern.compile("org/nvidia/team/ngx/models/dlss/versions/(\\d+)/files/160_([0-9A-Fa-f]+)\\.bin$");
 
+    private final NgxModel model;
     private volatile String cachedUrl;
 
-    private NgxDlssLatestProvider() {
+    private NgxDlssLatestProvider(NgxModel model) {
+        this.model = model;
     }
 
     public static NgxDlssLatestProvider getInstance() {
-        return INSTANCE;
+        return DLSS_INSTANCE;
+    }
+
+    public static NgxDlssLatestProvider getInstance(NgxModel model) {
+        return switch (model) {
+            case DLSS -> DLSS_INSTANCE;
+            case DLSSD -> DLSSD_INSTANCE;
+        };
     }
 
     private static int compareSemver(String a, String b) {
@@ -99,25 +108,25 @@ public class NgxDlssLatestProvider implements ExtraResource.SrcProvider {
     }
 
     private String resolve() throws IOException {
-        Map<String, String> dlssApps = fetchDlssAppVersions();
-        if (dlssApps.isEmpty()) {
-            throw new IOException("No entries found in [dlss] section of NGX server config");
+        Map<String, String> apps = fetchAppVersions();
+        if (apps.isEmpty()) {
+            throw new IOException("No entries found in [" + model.configSection + "] section of NGX server config");
         }
-        List<String> candidates = new ArrayList<>(dlssApps.keySet());
-        candidates.sort((a, b) -> compareSemver(dlssApps.get(b), dlssApps.get(a)));
-        Map<String, DlssObject> objects = fetchDlssObjects();
+        List<String> candidates = new ArrayList<>(apps.keySet());
+        candidates.sort((a, b) -> compareSemver(apps.get(b), apps.get(a)));
+        Map<String, DlssObject> objects = fetchObjects();
         for (String appId : candidates) {
             DlssObject object = objects.get(appId);
             if (object != null) {
                 String url = BASE_URL + object.key;
-                LOGGER.info("Resolved latest DLSS object from NGX: app_{} = {}, {}", appId, dlssApps.get(appId), url);
+                LOGGER.info("Resolved latest {} object from NGX: app_{} = {}, {}", model.configSection, appId, apps.get(appId), url);
                 return url;
             }
         }
-        throw new IOException("No DLSS object found on NGX server for any known app id");
+        throw new IOException("No " + model.configSection + " object found on NGX server for any known app id");
     }
 
-    private Map<String, String> fetchDlssAppVersions() throws IOException {
+    private Map<String, String> fetchAppVersions() throws IOException {
         String config = httpGet(CONFIG_URL);
         Map<String, String> apps = new HashMap<>();
         String section = null;
@@ -131,10 +140,10 @@ public class NgxDlssLatestProvider implements ExtraResource.SrcProvider {
                 section = sectionMatcher.group(1).trim();
                 continue;
             }
-            if (!"dlss".equalsIgnoreCase(section)) {
+            if (!model.configSection.equalsIgnoreCase(section)) {
                 continue;
             }
-            Matcher entryMatcher = INI_DLSS_ENTRY.matcher(line);
+            Matcher entryMatcher = INI_APP_ENTRY.matcher(line);
             if (entryMatcher.find()) {
                 apps.put(entryMatcher.group(1).toUpperCase(), entryMatcher.group(2));
             }
@@ -142,7 +151,7 @@ public class NgxDlssLatestProvider implements ExtraResource.SrcProvider {
         return apps;
     }
 
-    private Map<String, DlssObject> fetchDlssObjects() throws IOException {
+    private Map<String, DlssObject> fetchObjects() throws IOException {
         Map<String, DlssObject> objects = new HashMap<>();
         String marker = null;
         for (int page = 0; page < MAX_PAGES; page++) {
@@ -155,7 +164,7 @@ public class NgxDlssLatestProvider implements ExtraResource.SrcProvider {
             while (keyMatcher.find()) {
                 String key = unescapeXml(keyMatcher.group(1));
                 lastKey = key;
-                Matcher objectMatcher = DLSS_OBJECT_KEY.matcher(key);
+                Matcher objectMatcher = model.objectKeyPattern.matcher(key);
                 if (objectMatcher.find()) {
                     long version = Long.parseLong(objectMatcher.group(1));
                     String appId = objectMatcher.group(2).toUpperCase();
@@ -191,6 +200,20 @@ public class NgxDlssLatestProvider implements ExtraResource.SrcProvider {
             }
         } finally {
             connection.disconnect();
+        }
+    }
+
+    public enum NgxModel {
+        DLSS("dlss"),
+        DLSSD("dlssd");
+
+        private final String configSection;
+        private final Pattern objectKeyPattern;
+
+        NgxModel(String name) {
+            this.configSection = name;
+            this.objectKeyPattern = Pattern.compile(
+                    "org/nvidia/team/ngx/models/" + name + "/versions/(\\d+)/files/160_([0-9A-Fa-f]+)\\.bin$");
         }
     }
 

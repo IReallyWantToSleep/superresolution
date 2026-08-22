@@ -349,8 +349,12 @@ public class AlgorithmDescriptions {
                             )
                             .add(ExtraResource.builder("nvngx_dlssd.dll")
                                     .addRemote(
-                                            () -> "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlssd.dll",
-                                            "Mirror (CNB)"
+                                            NgxDlssLatestProvider.getInstance(NgxDlssLatestProvider.NgxModel.DLSSD),
+                                            "NVIDIA NGX (Latest)"
+                                    )
+                                    .addRemote(
+                                            () -> "https://raw.githubusercontent.com/NVIDIA/DLSS/refs/heads/main/lib/Windows_x86_64/rel/nvngx_dlssd.dll",
+                                            "Github"
                                     )
                                     .build()
                             )

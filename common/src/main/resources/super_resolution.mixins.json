@@ -24,6 +24,7 @@
         "framegeneration.v1_21_11.GameRendererConstantsMixin",
         "framegeneration.v26_1_x.GameRendererConstantsMixin",
         "framegeneration.v26_2.GameRendererConstantsMixin",
+        "framegeneration.v26_2.NativeLibrariesBootstrapMixin",
         "gui.AbstractWidgetAccessor",
         "gui.GameRendererAccessor",
         "gui.GuiGraphicsAccessor",
