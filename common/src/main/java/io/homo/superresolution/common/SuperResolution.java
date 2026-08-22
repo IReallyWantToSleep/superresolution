@@ -155,11 +155,9 @@ public final class SuperResolution implements Destroyable {
         }
 
         OptiScalerLoader.loadConfiguredDll();
-        #if MC_VER != MC_26_2
         if (VulkanPresentationFeature.shouldInitializeStreamline() && !Streamline.prepareEarly()) {
             LOGGER.warn("Streamline is unavailable; falling back to non-Streamline backends.");
         }
-        #endif
     }
 
     public static void onGameLoadFinished() {
