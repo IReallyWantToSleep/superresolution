@@ -83,6 +83,10 @@ cd superresolution
 ./gradlew buildAllVersions
 ```
 
+# 赞助
+
+如果SR对你有帮助，并且你想支持我们的开发，欢迎来[爱发电](https://ifdian.net/a/X187J3X1)支持我们
+
 ---
 
 # 许可证
