@@ -28,7 +28,6 @@ import imgui.flag.ImGuiHoveredFlags;
 import imgui.flag.ImGuiWindowFlags;
 import imgui.type.ImBoolean;
 import io.homo.superresolution.api.InitializationDescription;
-import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
@@ -39,7 +38,7 @@ import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
-import io.homo.superresolution.common.upscale.fsr2.FSR2;
+import io.homo.superresolution.common.upscale.algo.legacy.fsr2.FSR2;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeProvider;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
@@ -47,9 +46,9 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachm
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
-import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Context;
-import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResourceType;
-import io.homo.superresolution.thirdparty.fsr2.common.Fsr2PipelineResources;
+import io.homo.superresolution.thirdparty.fsr2.Fsr2Context;
+import io.homo.superresolution.thirdparty.fsr2.Fsr2PipelineResourceType;
+import io.homo.superresolution.thirdparty.fsr2.Fsr2PipelineResources;
 import net.minecraft.client.Minecraft;
 
 import java.util.ArrayList;
@@ -63,6 +62,18 @@ public class ImGuiLayer {
     private static final float PREVIEW_WIDTH = 280.0f;
     private static final float TEXTURE_GRID_SPACING = 12.0f;
     private static final String[] PERF_OPERATIONS = {"Frame", "Level Render", "Main Render", "Upscale", "GUI"};
+    /**
+     * Per-stage GPU rows. Only meaningful with detailed profiling on - the VK ones have no
+     * CPU series at all - so they are skipped entirely rather than drawn as flat lines.
+     */
+    private static final String[] PERF_GPU_STAGE_OPERATIONS = {
+            PerformanceTracker.GL_INPUT_CONVERT,
+            PerformanceTracker.GL_INTEROP_FLIP,
+            PerformanceTracker.GL_CAPTURE_FLIP,
+            PerformanceTracker.VK_UPSCALE,
+            PerformanceTracker.VK_FRAME_GEN,
+            PerformanceTracker.VK_PRESENT_BLIT
+    };
     private static final Map<String, ImBoolean> WINDOW_OPEN = new LinkedHashMap<>();
 
     static {
@@ -189,6 +200,20 @@ public class ImGuiLayer {
         ImGui.end();
     }
 
+    private static String[] allPerformanceOperations(boolean gpuEnabled) {
+        if (!gpuEnabled) {
+            return PERF_OPERATIONS;
+        }
+        String[] combined = new String[PERF_OPERATIONS.length + PERF_GPU_STAGE_OPERATIONS.length];
+        System.arraycopy(PERF_OPERATIONS, 0, combined, 0, PERF_OPERATIONS.length);
+        System.arraycopy(
+                PERF_GPU_STAGE_OPERATIONS, 0,
+                combined, PERF_OPERATIONS.length,
+                PERF_GPU_STAGE_OPERATIONS.length
+        );
+        return combined;
+    }
+
     private void drawPerformanceWindow() {
         if (!isWindowVisible("Performance")) {
             return;
@@ -197,7 +222,7 @@ public class ImGuiLayer {
         boolean gpuEnabled = SuperResolutionConfig.isEnableDetailedProfiling();
         ImGui.text("Detailed GPU Profiling: " + gpuEnabled);
 
-        for (String operation : PERF_OPERATIONS) {
+        for (String operation : allPerformanceOperations(gpuEnabled)) {
             float cpuMs = nanosToMillis(PerformanceTracker.getLastResultCPU(operation));
             float[] cpuValues = updateHistory(cpuPerfHistory, operation, cpuMs);
             ImGui.text("%s CPU %.3f ms".formatted(operation, cpuMs));

@@ -118,11 +118,11 @@ public class GraphicsCapabilities {
                 int actualMinor = GLFW.glfwGetWindowAttrib(testWindow, GLFW.GLFW_CONTEXT_VERSION_MINOR);
                 glVersions.add(Pair.of(actualMajor, actualMinor));
                 GLFW.glfwDestroyWindow(testWindow);
-                LOGGER.info("添加可用OpenGL版本 {}.{}", actualMajor, actualMinor);
+                LOGGER.info("Added supported OpenGL version {}.{}", actualMajor, actualMinor);
                 break;
             }
         }
-        LOGGER.info("最高OpenGL版本 {}.{}", getHighestOpenGLVersion().left(), getHighestOpenGLVersion().right());
+        LOGGER.info("Highest supported OpenGL version {}.{}", getHighestOpenGLVersion().left(), getHighestOpenGLVersion().right());
         GLFW.glfwDefaultWindowHints();
     }
 

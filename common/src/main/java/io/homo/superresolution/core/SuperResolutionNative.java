@@ -56,6 +56,7 @@ public class SuperResolutionNative {
             int renderApiType,
             SROpenGLDeviceInfo openglDeviceInfo,
             SRVulkanDeviceInfo vulkanDeviceInfo,
+            SRD3D12DeviceInfo d3d12DeviceInfo,
             int upscaledSizeX,
             int upscaledSizeY,
             int renderSizeX,
@@ -74,7 +75,7 @@ public class SuperResolutionNative {
     public static native int NsrDispatchUpscale(
             long context,
             int renderApiType,
-            long vulkanCommandBuffer,
+            long nativeCommandBuffer,
             SRTextureResource color,
             SRTextureResource depth,
             SRTextureResource motionVectors,

@@ -24,6 +24,8 @@ import java.io.BufferedReader
 import java.io.IOException
 import java.io.InputStreamReader
 
+private val consoleReader = BufferedReader(InputStreamReader(System.`in`))
+
 plugins {
     id("net.neoforged.moddev") version "2.0.141" apply false
     id("multiversion")
@@ -49,8 +51,6 @@ allprojects {
     repositories {
         mavenCentral()
         maven(url = "https://maven.neoforged.net/releases")
-        maven(url = "https://maven.aliyun.com/repository/central")
-        maven(url = "https://maven.aliyun.com/repository/gradle-plugin")
         maven(url = "https://maven.architectury.dev/")
         maven(url = "https://maven.nucleoid.xyz/")
         maven(url = "https://maven.shedaniel.me/")
@@ -80,11 +80,6 @@ allprojects {
             }
         }
 
-        //apply(plugin = "systems.manifold.manifold-gradle-plugin")
-        //extensions.findByName("manifold")?.withGroovyBuilder {
-        //    setProperty("manifoldVersion", rootProject.property("manifold_version"))
-        //}
-
         tasks.withType(JavaCompile::class.java).configureEach {
             inputs.file(rootProject.layout.projectDirectory.file("build.properties"))
                 .withPropertyName("manifoldDefines")
@@ -106,7 +101,7 @@ allprojects {
                     force("org.lwjgl:lwjgl-opengl:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
                     force("org.lwjgl:lwjgl-vulkan:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
                     force("org.lwjgl:lwjgl-openal:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
-                    force("org.lwjgl:lwjgl-stb:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
+                    force("org.lwjgl:lwjgl-stb:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglStbVersion}")
                     force("org.lwjgl:lwjgl-jemalloc:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
                     force("org.lwjgl:lwjgl-tinyfd:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
                     force("org.lwjgl:lwjgl-freetype:${(rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.lwjglVersion}")
@@ -164,7 +159,7 @@ if (srConfigsDir.exists()) {
 
         tasks.register<GradleBuild>(nestedBuildTaskName) {
             group = "build"
-            description = "构建版本 $versionName"
+            description = "Build version $versionName"
             buildName = "superresolution_$suffix"
             dir = rootDir
             setTasks(listOf("clean", "build"))
@@ -176,14 +171,14 @@ if (srConfigsDir.exists()) {
 
         tasks.register(collectTaskName) {
             group = "build"
-            description = "收集版本 $versionName 构建产物"
+            description = "Collect build artifacts for version $versionName"
             dependsOn(nestedBuildTaskName)
             doLast {
                 srOutputDir.mkdirs()
                 platforms.forEach { platform ->
                     val libsDir = file("$rootDir/$platform/build/libs")
                     if (!libsDir.exists()) {
-                        println("警告: 构建目录不存在 - $libsDir")
+                        println("Warning: build directory does not exist - $libsDir")
                         return@forEach
                     }
                     copy {
@@ -227,13 +222,13 @@ orderedNestedBuildTasks.forEach { taskName ->
 
 tasks.register<Delete>("cleanBuildJars") {
     group = "build"
-    description = "清理 build_jars 输出目录"
+    description = "Clear the build_jars output directory"
     delete(srOutputDir)
 }
 
 tasks.register<GradleBuild>("publishApiToShnexus") {
     group = "publishing"
-    description = "以 Minecraft 1.20.1（Java 17）配置发布 Super Resolution API 到 shnexus"
+    description = "Publish the Super Resolution API to shnexus with the Minecraft 1.20.1 (Java 17) configuration"
     buildName = "superresolution_api_1_20_1"
     dir = rootDir
     setTasks(listOf(":common:publishApiPublicationToShnexusRepository"))
@@ -250,14 +245,14 @@ tasks.register<GradleBuild>("publishApiToShnexus") {
         val missing = listOf("shnexusUsername", "shnexusPassword")
             .filterNot { providers.gradleProperty(it).isPresent }
         if (missing.isNotEmpty()) {
-            throw GradleException("缺少远程发布凭据: ${missing.joinToString()}")
+            throw GradleException("Missing remote publishing credentials: ${missing.joinToString()}")
         }
     }
 }
 
 tasks.register("buildOneVersion") {
     group = "build"
-    description = "构建指定版本并收集产物，使用 -Psr.version=<configName>"
+    description = "Build a specified version and collect artifacts; use -Psr.version=<configName>"
     dependsOn("cleanBuildJars")
 
     val requestedVersion = project.findProperty("sr.version")?.toString()
@@ -268,38 +263,38 @@ tasks.register("buildOneVersion") {
     doFirst {
         val versionName = project.findProperty("sr.version")?.toString()
         if (versionName.isNullOrBlank()) {
-            throw GradleException("请通过 -Psr.version=<configName> 指定版本，例如 -Psr.version=1.20.6")
+            throw GradleException("Specify a version with -Psr.version=<configName>, for example -Psr.version=1.20.6")
         }
         if (!collectTaskByVersion.containsKey(versionName)) {
-            throw GradleException("未找到可构建版本: $versionName")
+            throw GradleException("No buildable version found: $versionName")
         }
     }
 }
 
 tasks.register("buildAllVersions") {
     group = "build"
-    description = "遍历 configs/*.json 构建全部版本并收集产物到 build_jars"
+    description = "Build every version in configs/*.json and collect artifacts in build_jars"
     dependsOn("cleanBuildJars")
     dependsOn(collectTaskByVersion.values)
 
     doFirst {
         gradle.startParameter.isContinueOnFailure = true
         if (!srConfigsDir.exists()) {
-            throw GradleException("configs 目录不存在: $srConfigsDir")
+            throw GradleException("The configs directory does not exist: $srConfigsDir")
         }
         if (collectTaskByVersion.isEmpty()) {
-            throw GradleException("未找到可构建版本（可能全部 skip_build=true）")
+            throw GradleException("No buildable versions found (all may have skip_build=true)")
         }
     }
 
     doLast {
-        println("\n构建完成，输出目录: $srOutputDir")
+        println("\nBuild complete. Output directory: $srOutputDir")
     }
 }
 
 tasks.register("buildAll") {
     group = "build"
-    description = "先构建 native，再执行 buildAllVersions"
+    description = "Build native code, then run buildAllVersions"
     dependsOn(nativeBuildTaskPath)
     dependsOn("buildAllVersions")
 }
@@ -311,30 +306,35 @@ tasks.named("buildAllVersions") {
 tasks.register("uploadToModrinth") {
     doLast {
         val (currentVersion, latestChangelog) = findLatestChangelog()
+        val autoConfirm = project.findProperty("modrinth.autoConfirm")
+            ?.toString()
+            ?.toBoolean() ?: false
 
-        println("\n=== 最新版本更新日志 ($currentVersion) ===\n")
+        println("\n=== Latest release notes ($currentVersion) ===\n")
         println(latestChangelog)
         println("\n========================")
 
-        var confirm = getConsoleInput("是否使用此更新日志？(Y/N): ").trim().lowercase()
-        if (!confirm.startsWith("y")) {
-            println("上传已取消")
-            return@doLast
+        if (!autoConfirm) {
+            var confirm = getConsoleInput("Use these release notes? (Y/N): ").trim().lowercase()
+            if (!confirm.startsWith("y")) {
+                println("Upload cancelled")
+                return@doLast
+            }
+
+            confirm = getConsoleInput("Continue? (Y/N): ").trim().lowercase()
+            if (!confirm.startsWith("y")) {
+                println("Upload cancelled")
+                return@doLast
+            }
         }
 
         ModrinthUploader.init()
         val jarsDir = file("$projectDir/build_jars")
-        println("将要上传的文件：")
+        println("Files to upload:")
         jarsDir.listFiles()?.forEach { file ->
             if (file.name.startsWith("super") && file.name.endsWith(".jar")) {
                 println(file.absolutePath)
             }
-        }
-
-        confirm = getConsoleInput("是否继续？(Y/N): ").trim().lowercase()
-        if (!confirm.startsWith("y")) {
-            println("上传已取消")
-            return@doLast
         }
 
         jarsDir.listFiles()?.forEach { file ->
@@ -346,8 +346,8 @@ tasks.register("uploadToModrinth") {
                         notSucceed = false
                     } catch (e: Exception) {
                         e.printStackTrace()
-                        confirm = getConsoleInput("上传失败，是否重试？(Y/N): ").trim().lowercase()
-                        if (!confirm.startsWith("y")) {
+                        val retry = getConsoleInput("Upload failed. Retry? (Y/N): ").trim().lowercase()
+                        if (!retry.startsWith("y")) {
                             notSucceed = false
                         }
                     }
@@ -359,7 +359,7 @@ tasks.register("uploadToModrinth") {
 
 tasks.register("uploadToCurseForge") {
     group = "publishing"
-    description = "校验并上传 build_jars 中的模组文件到 CurseForge"
+    description = "Validate and upload mod artifacts in build_jars to CurseForge"
 
     doLast {
         val dryRun = project.findProperty("curseforge.dryRun")
@@ -379,48 +379,48 @@ tasks.register("uploadToCurseForge") {
             file("$rootDir/changelogs")
         )
 
-        println("\n=== CurseForge 上传计划 ===")
-        println("项目 ID: ${CurseForgeUploader.defaultProjectId()}")
-        println("模组版本: ${uploadPlan.modVersion}")
-        println("更新日志: ${uploadPlan.changelogFile.absolutePath}")
-        println("文件数量: ${uploadPlan.artifacts.size}")
+        println("\n=== CurseForge upload plan ===")
+        println("Project ID: ${CurseForgeUploader.defaultProjectId()}")
+        println("Mod version: ${uploadPlan.modVersion}")
+        println("Release notes: ${uploadPlan.changelogFile.absolutePath}")
+        println("File count: ${uploadPlan.artifacts.size}")
         uploadPlan.artifacts.forEachIndexed { index, artifact ->
             println(
                 "${index + 1}. ${artifact.file.name} | "
-                    + "${artifact.loaderName} | "
-                    + "${artifact.gameVersions.joinToString(", ")} | "
-                    + "Client | "
-                    + artifact.releaseType
+                        + "${artifact.loaderName} | "
+                        + "${artifact.gameVersions.joinToString(", ")} | "
+                        + "Client | "
+                        + artifact.releaseType
             )
         }
         println("==========================\n")
 
         if (dryRun) {
-            println("dryRun=true，已完成预检，未连接 CurseForge。")
+            println("dryRun=true; preflight completed without connecting to CurseForge.")
             return@doLast
         }
 
         val apiToken = System.getenv("CURSEFORGE_API_TOKEN")
         if (apiToken.isNullOrBlank()) {
-            throw GradleException("缺少环境变量 CURSEFORGE_API_TOKEN")
+            throw GradleException("Missing CURSEFORGE_API_TOKEN environment variable")
         }
 
         if (!autoConfirm) {
-            val confirm = getConsoleInput("确认上传以上文件到 CurseForge？(Y/N): ")
+            val confirm = getConsoleInput("Upload the listed files to CurseForge? (Y/N): ")
                 .trim()
                 .lowercase()
             if (!confirm.startsWith("y")) {
-                println("上传已取消")
+                println("Upload cancelled")
                 return@doLast
             }
         }
 
         uploadPlan.artifacts.forEachIndexed { index, artifact ->
-            println("[${index + 1}/${uploadPlan.artifacts.size}] 上传 ${artifact.file.name}")
+            println("[${index + 1}/${uploadPlan.artifacts.size}] Uploading ${artifact.file.name}")
             val fileId = CurseForgeUploader.uploadFile(artifact, apiToken)
-            println("上传成功，CurseForge 文件 ID: $fileId")
+            println("Upload successful. CurseForge file ID: $fileId")
         }
-        println("全部 ${uploadPlan.artifacts.size} 个文件上传完成。")
+        println("All ${uploadPlan.artifacts.size} files uploaded.")
     }
 }
 
@@ -475,7 +475,7 @@ fun compareSemver(a: String, b: String): Int {
 fun findLatestChangelog(): Pair<String?, String> {
     val changelogsDir = rootProject.file("changelogs")
     if (!changelogsDir.exists() || !changelogsDir.isDirectory) {
-        throw GradleException("changelogs/ 目录不存在")
+        throw GradleException("The changelogs/ directory does not exist")
     }
 
     val pattern = Regex("^(\\d+\\.\\d+\\.\\d+(-[a-zA-Z]+(\\.[\\d]+)?)*)\\.md$")
@@ -486,10 +486,10 @@ fun findLatestChangelog(): Pair<String?, String> {
             if (match != null) match.groupValues[1] to file else null
         }
         ?.sortedWith { (v1, _), (v2, _) -> -compareSemver(v1, v2) }
-        ?: throw GradleException("changelogs/ 中没有找到有效的 changelog 文件")
+        ?: throw GradleException("No valid changelog file found in changelogs/")
 
     if (versions.isEmpty()) {
-        throw GradleException("changelogs/ 中没有找到有效的 changelog 文件")
+        throw GradleException("No valid changelog file found in changelogs/")
     }
 
     val (latestVersion, latestFile) = versions.first()
@@ -499,10 +499,9 @@ fun findLatestChangelog(): Pair<String?, String> {
 fun getConsoleInput(prompt: String): String {
     try {
         print(prompt)
-        val br = BufferedReader(InputStreamReader(System.`in`))
         println()
-        return br.readLine()
+        return consoleReader.readLine() ?: ""
     } catch (e: IOException) {
-        throw GradleException("无法读取用户输入", e)
+        throw GradleException("Unable to read user input", e)
     }
 }

@@ -101,7 +101,3 @@ If SR has been helpful to you and you'd like to support our development, you're 
 * The mod itself uses GPL-3.0
 * Native libraries use MIT
 * This software contains source code provided by NVIDIA Corporation
-
-## Stargazer History
-
-[![Stargazers over time](https://starchart.cc/187J3X1-114514/superresolution.svg?variant=adaptive)](https://starchart.cc/187J3X1-114514/superresolution)

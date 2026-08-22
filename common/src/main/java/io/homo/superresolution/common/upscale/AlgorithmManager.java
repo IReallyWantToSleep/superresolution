@@ -20,7 +20,6 @@ package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.InputResourceType;
-import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
@@ -30,11 +29,10 @@ import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.thirdparty.fsr2.common.Fsr2Utils;
+import io.homo.superresolution.thirdparty.fsr2.Fsr2Utils;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import net.minecraft.client.Camera;
-import net.minecraft.client.Minecraft;
 import org.joml.Matrix4f;
 
 public class AlgorithmManager {
@@ -176,6 +174,20 @@ public class AlgorithmManager {
         return 0;
     }
 
+    /**
+     * The tracker records nanoseconds, but every upscaler takes the frame delta in
+     * milliseconds: DLSS through {@code FrameTimeDeltaInMsec} and FFX through
+     * {@code frameTimeDelta}. Passing the raw nanosecond value pins FFX's internal
+     * {@code deltaTime} at its 1.0 ceiling on every frame, and FFX only warns when the
+     * value is too small, so the mismatch is silent. Before the first frame completes
+     * the tracker has no sample and returns 0, which is equally degenerate for temporal
+     * accumulation, so fall back to a 60 Hz delta until one is available.
+     */
+    public static float getFrameTimeDeltaMs() {
+        float deltaMs = PerformanceTracker.getLastResultCPU("Frame") / 1_000_000f;
+        return deltaMs > 0.0f ? deltaMs : 1000.0f / 60.0f;
+    }
+
     public static DispatchResource getDispatchResource(
             ITexture color,
             ITexture depth,
@@ -193,7 +205,7 @@ public class AlgorithmManager {
                 new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
 
                 GameFrameIndex.current(),
-                PerformanceTracker.getLastResultCPU("Frame"),
+                getFrameTimeDeltaMs(),
                 (float) param.verticalFov,
                 (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
                 MinecraftUtils.getCameraNear(),

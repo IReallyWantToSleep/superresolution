@@ -81,7 +81,8 @@ public class SRCompatV3Processor implements SRCompatProcessor {
                 description.equals(AlgorithmDescriptions.FSR) ||
                         description.equals(AlgorithmDescriptions.DLSS) ||
                         description.equals(AlgorithmDescriptions.DLSSRR) ||
-                        description.equals(AlgorithmDescriptions.XESS)
+                        description.equals(AlgorithmDescriptions.XESS) ||
+                        description.equals(AlgorithmDescriptions.FSR4_D3D12)
         ) {
             return false;
         } else {
@@ -118,7 +119,8 @@ public class SRCompatV3Processor implements SRCompatProcessor {
                 description.equals(AlgorithmDescriptions.FSR) ||
                         description.equals(AlgorithmDescriptions.DLSS) ||
                         description.equals(AlgorithmDescriptions.DLSSRR) ||
-                        description.equals(AlgorithmDescriptions.XESS)
+                        description.equals(AlgorithmDescriptions.XESS) ||
+                        description.equals(AlgorithmDescriptions.FSR4_D3D12)
         ) {
             return rawJitter.mul(1, -1);
         } else {

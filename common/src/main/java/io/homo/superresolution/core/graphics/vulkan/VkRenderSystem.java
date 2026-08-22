@@ -75,7 +75,7 @@ public class VkRenderSystem implements IRenderSystem {
         renderSystem.instance = instance;
         renderSystem.capabilities.init(instance, physicalDevice);
         renderSystem.vulkanDevice = new VulkanDevice(instance, physicalDevice, device, graphicsQueueFamilyIndex, false);
-        LOGGER.info("Vulkan borrowed 初始化完成");
+        LOGGER.info("Borrowed Vulkan initialization completed");
         return renderSystem;
     }
 
@@ -137,7 +137,7 @@ public class VkRenderSystem implements IRenderSystem {
         VulkanPresentationFeature.validateDevice(this, physicalDevice);
         this.vulkanDevice = createLogicalDeviceWithCapabilities(physicalDevice);
         VulkanPresentationFeature.completeInitialization(this);
-        LOGGER.info("Vulkan 初始化完成");
+        LOGGER.info("Vulkan initialization completed");
     }
 
     @Override
@@ -163,7 +163,7 @@ public class VkRenderSystem implements IRenderSystem {
             capabilities.destroy();
             capabilities = null;
         }
-        LOGGER.info("Vulkan 已销毁");
+        LOGGER.info("Vulkan destroyed");
     }
 
     @Override
@@ -223,7 +223,7 @@ public class VkRenderSystem implements IRenderSystem {
             VK_CHECK(vkEnumeratePhysicalDevices(instance, deviceCount, devices));
             List<GraphicsDevice> graphicsDevices = new ArrayList<>();
             GraphicsDevice openglDevice = GraphicsDevice.createFromOpenGL();
-            LOGGER.info("OpenGL 设备: {} (Device UUIDs: {}, Driver UUID: {})",
+            LOGGER.info("OpenGL device: {} (Device UUIDs: {}, Driver UUID: {})",
                     openglDevice.deviceName(),
                     uuidListToHex(openglDevice.deviceUUIDs()),
                     bytesToHex(openglDevice.driverUUID())
@@ -232,7 +232,7 @@ public class VkRenderSystem implements IRenderSystem {
                 VkPhysicalDevice physicalDevice = new VkPhysicalDevice(devices.get(i), instance);
                 graphicsDevices.add(GraphicsDevice.createFromVulkan(physicalDevice));
             }
-            LOGGER.info("检测到 {} 个 Vulkan 物理设备:", graphicsDevices.size());
+            LOGGER.info("Detected {} Vulkan physical device(s):", graphicsDevices.size());
             for (int i = 0; i < deviceCount.get(0); i++) {
                 GraphicsDevice device = graphicsDevices.get(i);
                 LOGGER.info("[{}] {} (Device UUIDs: {}, Driver UUID: {})",
@@ -248,7 +248,7 @@ public class VkRenderSystem implements IRenderSystem {
                     return new VkPhysicalDevice(devices.get(i), instance);
                 }
             }
-            LOGGER.error("未找到与当前 OpenGL 设备和驱动 UUID 均匹配的 Vulkan 物理设备，默认选择第一个设备");
+            LOGGER.error("No Vulkan physical device matches both the current OpenGL device and driver UUID; defaulting to the first device");
             return new VkPhysicalDevice(devices.get(0), instance);
         }
     }
@@ -288,9 +288,9 @@ public class VkRenderSystem implements IRenderSystem {
             for (String ext : deviceExtensions) {
                 if (supportedDeviceExts.contains(ext)) {
                     enableDeviceExts.add(ext);
-                    LOGGER.info("启用设备扩展: {}", ext);
+                    LOGGER.info("Enabling device extension: {}", ext);
                 } else {
-                    LOGGER.warn("扩展 {} 不被当前物理设备支持，已跳过", ext);
+                    LOGGER.warn("Extension {} is not supported by the current physical device; skipping it", ext);
                 }
             }
 
@@ -369,7 +369,7 @@ public class VkRenderSystem implements IRenderSystem {
                     hasSynchronization2Extension && synchronization2Features.synchronization2();
             boolean deviceSupportsTimelineSemaphore = features12.timelineSemaphore();
             boolean deviceSupportsPresentId = hasPresentIdExtension && presentIdFeatures.presentId();
-            LOGGER.info("Vulkan 设备特性支持状态:");
+            LOGGER.info("Vulkan device feature support:");
             LOGGER.info("  mutableDescriptorType: {}", deviceSupportsMutableDescriptor);
             LOGGER.info("  shaderInt8: {}", deviceSupportsShaderInt8);
             LOGGER.info("  shaderInt16: {}", deviceSupportsShaderInt16);

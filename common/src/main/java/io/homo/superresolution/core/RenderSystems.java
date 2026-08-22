@@ -89,8 +89,8 @@ public class RenderSystems {
             VK.create();
         } catch (Exception | Error e) {
             if (e.getMessage() == null || !e.getMessage().contains("Vulkan has already been created")) {
-                VkRenderSystem.LOGGER.error("Vulkan 初始化失败，似乎缺少Vulkan运行库，错误 {}", e.getMessage());
-                VkRenderSystem.LOGGER.error("Vulkan 初始化错误详情", e);
+                VkRenderSystem.LOGGER.error("Vulkan initialization failed; the Vulkan runtime may be missing. Error: {}", e.getMessage());
+                VkRenderSystem.LOGGER.error("Vulkan initialization failure details", e);
                 return false;
             }
         }
@@ -103,7 +103,7 @@ public class RenderSystems {
             );
             return true;
         } catch (Throwable t) {
-            VkRenderSystem.LOGGER.error("无法从Blaze3D 创建 Vulkan device", t);
+            VkRenderSystem.LOGGER.error("Unable to create a Vulkan device from Blaze3D", t);
             vulkan = null;
             return false;
         }
@@ -122,8 +122,8 @@ public class RenderSystems {
         } catch (Exception | Error e) {
             String message = e.getMessage();
             if (message == null || !message.contains("Vulkan has already been created")) {
-                VkRenderSystem.LOGGER.error("Vulkan初始化失败，似乎缺少Vulkan运行库，错误 {}", e.getMessage());
-                VkRenderSystem.LOGGER.error("Vulkan 初始化错误详情", e);
+                VkRenderSystem.LOGGER.error("Vulkan initialization failed; the Vulkan runtime may be missing. Error: {}", e.getMessage());
+                VkRenderSystem.LOGGER.error("Vulkan initialization failure details", e);
                 if (VulkanPresentationFeature.isRequested()) {
                     VulkanPresentationFeature.disableAfterFailure(e);
                     throw new RuntimeException("Vulkan presentation requires a working Vulkan loader", e);
@@ -165,13 +165,13 @@ public class RenderSystems {
             vulkan.initRenderSystem();
             return;
         } catch (VulkanException vkException) {
-            VkRenderSystem.LOGGER.error("Vulkan初始化失败，已禁用Vulkan", vkException);
+            VkRenderSystem.LOGGER.error("Vulkan initialization failed; Vulkan has been disabled", vkException);
             if (VulkanPresentationFeature.isRequested()) {
                 VulkanPresentationFeature.disableAfterFailure(vkException);
                 throw vkException;
             }
         } catch (Throwable e) {
-            VkRenderSystem.LOGGER.error("Vulkan初始化失败，发生未知错误，已禁用Vulkan", e);
+            VkRenderSystem.LOGGER.error("Vulkan initialization failed with an unknown error; Vulkan has been disabled", e);
             if (VulkanPresentationFeature.isRequested()) {
                 VulkanPresentationFeature.disableAfterFailure(e);
                 throw new RuntimeException("Vulkan presentation initialization failed", e);

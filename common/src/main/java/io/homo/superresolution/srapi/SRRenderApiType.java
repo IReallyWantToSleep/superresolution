@@ -20,7 +20,8 @@ package io.homo.superresolution.srapi;
 
 public enum SRRenderApiType {
     VULKAN(0),
-    OPENGL(1);
+    OPENGL(1),
+    D3D12(2);
 
     public final int value;
 

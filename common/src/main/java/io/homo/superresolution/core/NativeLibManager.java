@@ -52,7 +52,9 @@ public class NativeLibManager {
     #endif
     private static final List<NativeLib> libs = new ArrayList<>();
     public static NativeLib LIB_SUPER_RESOLUTION = null;
+    public static NativeLib LIB_SUPER_RESOLUTION_D3D12_INTEROP = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
+    public static NativeLib LIB_SUPER_RESOLUTION_FSR4 = null;
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_NGX = null;
     public static NativeLib LIB_SUPER_RESOLUTION_STREAMLINE = null;
@@ -72,8 +74,18 @@ public class NativeLibManager {
                     true,
                     true
             );
+            LIB_SUPER_RESOLUTION_D3D12_INTEROP = new NativeLib(
+                    "SuperResolutionD3D12Interop",
+                    true,
+                    false
+            );
             LIB_SUPER_RESOLUTION_FSR = new NativeLib(
                     "SuperResolutionFSR",
+                    false,
+                    false
+            );
+            LIB_SUPER_RESOLUTION_FSR4 = new NativeLib(
+                    "SuperResolutionFSR4",
                     false,
                     false
             );
@@ -94,7 +106,9 @@ public class NativeLibManager {
             );
 
             libs.add(LIB_SUPER_RESOLUTION);
+            libs.add(LIB_SUPER_RESOLUTION_D3D12_INTEROP);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
+            libs.add(LIB_SUPER_RESOLUTION_FSR4);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
             libs.add(LIB_SUPER_RESOLUTION_NGX);
             libs.add(LIB_SUPER_RESOLUTION_STREAMLINE);
@@ -122,10 +136,15 @@ public class NativeLibManager {
         return nativeApiAvailable;
     }
 
+    public static boolean d3d12InteropAvailable() {
+        return LIB_SUPER_RESOLUTION_D3D12_INTEROP != null
+                && LIB_SUPER_RESOLUTION_D3D12_INTEROP.available;
+    }
+
     public static void createLibraryDir(Path path) {
         File dir = path.toFile();
         if (!dir.exists() && !dir.mkdirs()) {
-            LOGGER.error("无法创建目录: {}", dir);
+            LOGGER.error("Unable to create directory: {}", dir);
         }
     }
 
@@ -133,7 +152,7 @@ public class NativeLibManager {
         if (librariesExtracted) {
             return;
         }
-        LOGGER.info("开始提取依赖库文件");
+        LOGGER.info("Extracting native dependencies");
         createLibraryDir(path);
         List<String> requiredFailures = new ArrayList<>();
         List<String> optionalFailures = new ArrayList<>();
@@ -143,39 +162,39 @@ public class NativeLibManager {
                 if (!extractLibrary(path, lib)) {
                     if (lib.required) {
                         requiredFailures.add(lib.fileName);
-                        LOGGER.error("必要依赖库 {} 提取失败", lib.fileName);
+                        LOGGER.error("Failed to extract required dependency {}", lib.fileName);
                     } else {
                         optionalFailures.add(lib.fileName);
-                        LOGGER.warn("可选依赖库 {} 提取失败，已跳过", lib.fileName);
+                        LOGGER.warn("Failed to extract optional dependency {}; skipping it", lib.fileName);
                     }
                 }
             } catch (Exception e) {
                 if (lib.required) {
                     requiredFailures.add("%s: %s".formatted(lib.fileName, e.getMessage()));
-                    LOGGER.error("必要依赖库 {} 提取失败: {}", lib.fileName, e.getMessage());
-                    LOGGER.error("原生库提取错误详情", e);
+                    LOGGER.error("Failed to extract required dependency {}: {}", lib.fileName, e.getMessage());
+                    LOGGER.error("Native dependency extraction failure details", e);
                 } else {
                     optionalFailures.add(lib.fileName);
-                    LOGGER.warn("可选依赖库 {} 提取失败，已跳过: {}", lib.fileName, e.getMessage());
+                    LOGGER.warn("Failed to extract optional dependency {}; skipping it: {}", lib.fileName, e.getMessage());
                 }
             }
         }
 
         if (!requiredFailures.isEmpty()) {
             String errorMsg = String.join(", ", requiredFailures);
-            LOGGER.error("必要依赖库提取失败: {}", errorMsg);
+            LOGGER.error("Required dependency extraction failed: {}", errorMsg);
             MessageBox.createError(
                     "SuperResolution在提取必要依赖库时失败，失败的库：%s".formatted(errorMsg),
                     "Error"
             );
-            throw new RuntimeException("必要依赖库提取失败: " + errorMsg);
+            throw new RuntimeException("Required dependency extraction failed: " + errorMsg);
         }
 
         if (!optionalFailures.isEmpty()) {
-            LOGGER.info("已跳过以下可选依赖库: {}", String.join(", ", optionalFailures));
+            LOGGER.info("Skipped optional dependencies: {}", String.join(", ", optionalFailures));
         }
 
-        LOGGER.info("依赖库文件已提取到 {}", path);
+        LOGGER.info("Native dependencies extracted to {}", path);
         librariesExtracted = true;
     }
 
@@ -188,10 +207,10 @@ public class NativeLibManager {
         for (NativeLib lib : libs) {
             if (lib.extractedPath == null) {
                 if (lib.required) {
-                    LOGGER.error("必要依赖库 {} 未提取，无法加载", lib.fileName);
-                    throw new RuntimeException("必要依赖库 " + lib.fileName + " 未提取");
+                    LOGGER.error("Required dependency {} was not extracted and cannot be loaded", lib.fileName);
+                    throw new RuntimeException("Required dependency " + lib.fileName + " was not extracted");
                 } else {
-                    LOGGER.warn("可选依赖库 {} 未提取，已跳过加载", lib.fileName);
+                    LOGGER.warn("Optional dependency {} was not extracted; skipping load", lib.fileName);
                     continue;
                 }
             }
@@ -199,15 +218,15 @@ public class NativeLibManager {
             File f = lib.getTargetPath(path).toFile();
             if (lib.loadAtStartup) {
                 try {
-                    LOGGER.info("加载依赖库： {}", f.getAbsolutePath());
+                    LOGGER.info("Loading native dependency: {}", f.getAbsolutePath());
                     System.load(f.getAbsolutePath());
                     lib.available = true;
                 } catch (Throwable e) {
                     if (lib.required) {
-                        LOGGER.error("必要依赖库 {} 加载失败: {}", lib.fileName, e.getMessage());
-                        throw new RuntimeException("必要依赖库加载失败: " + lib.fileName, e);
+                        LOGGER.error("Failed to load required dependency {}: {}", lib.fileName, e.getMessage());
+                        throw new RuntimeException("Failed to load required dependency: " + lib.fileName, e);
                     } else {
-                        LOGGER.warn("可选依赖库 {} 加载失败，已跳过: {}", lib.fileName, e.getMessage());
+                        LOGGER.warn("Failed to load optional dependency {}; skipping it: {}", lib.fileName, e.getMessage());
                         lib.available = false;
                     }
                 }
@@ -237,7 +256,7 @@ public class NativeLibManager {
             } catch (IOException replacementFailure) {
                 String currentChecksum = getExistingChecksum(filePath);
                 if (embeddedChecksum.equals(currentChecksum)) {
-                    LOGGER.info("依赖库 {} 已由另一个 Minecraft 实例写入，checksum 一致，直接复用", filePath);
+                    LOGGER.info("Native dependency {} was written by another Minecraft instance with a matching checksum; reusing it", filePath);
                     return true;
                 }
                 throw createReplacementException(
@@ -322,9 +341,9 @@ public class NativeLibManager {
         try (InputStream in = classLoader.getResourceAsStream(resourceName)) {
             if (in == null) {
                 if (library.required) {
-                    LOGGER.error("必要依赖库 {} 提取失败：资源未找到", sourcePath);
+                    LOGGER.error("Failed to extract required dependency {}: resource not found", sourcePath);
                 } else {
-                    LOGGER.warn("可选依赖库 {} 提取失败：资源未找到", sourcePath);
+                    LOGGER.warn("Failed to extract optional dependency {}: resource not found", sourcePath);
                 }
                 return false;
             }
@@ -333,7 +352,7 @@ public class NativeLibManager {
             String existingChecksum = getExistingChecksum(targetPath);
             if (embeddedChecksum.equals(existingChecksum)) {
                 library.extractedPath = targetPath;
-                LOGGER.info("{} 已存在且 checksum 一致，跳过提取", library.fileName);
+                LOGGER.info("{} already exists with a matching checksum; skipping extraction", library.fileName);
                 return true;
             }
 
@@ -350,23 +369,23 @@ public class NativeLibManager {
             try (InputStream copyInput = classLoader.getResourceAsStream(resourceName)) {
                 if (_writeFile(copyInput, targetPath, embeddedChecksum, existingChecksum)) {
                     library.extractedPath = targetPath;
-                    LOGGER.info("{} 提取成功", library.fileName);
+                    LOGGER.info("Extracted {}", library.fileName);
                     return true;
                 }
             }
 
             if (library.required) {
-                throw new IOException("必要依赖库 " + library.fileName + " 提取失败");
+                throw new IOException("Failed to extract required dependency " + library.fileName);
             } else {
-                LOGGER.warn("可选依赖库 {} 提取失败", library.fileName);
+                LOGGER.warn("Failed to extract optional dependency {}", library.fileName);
                 return false;
             }
         } catch (IOException e) {
             if (library.required) {
-                LOGGER.error("必要依赖库 {} 提取失败; 信息: {}", library.fileName, e.toString());
+                LOGGER.error("Failed to extract required dependency {}; details: {}", library.fileName, e.toString());
                 throw e;
             } else {
-                LOGGER.warn("可选依赖库 {} 提取失败; 信息: {}", library.fileName, e.toString());
+                LOGGER.warn("Failed to extract optional dependency {}; details: {}", library.fileName, e.toString());
                 return false;
             }
         }

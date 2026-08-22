@@ -4,11 +4,12 @@
 
 #ifdef __cplusplus
 extern "C" {
-#endif
+    #endif
 
-SR_API SRReturnCode srGetStreamlineUpscaleProviders(SRUpscaleProvider *outProvider);
-SR_API SRReturnCode srGetStreamlineUpscaleProvidersCount(uint32_t *outCount);
+    SR_API SRReturnCode srGetStreamlineUpscaleProviders(SRUpscaleProvider *outProvider);
 
-#ifdef __cplusplus
+    SR_API SRReturnCode srGetStreamlineUpscaleProvidersCount(uint32_t *outCount);
+
+    #ifdef __cplusplus
 }
 #endif

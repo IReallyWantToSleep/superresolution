@@ -23,6 +23,7 @@ import net.irisshaders.iris.compat.dh.DHCompatInternal;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -44,19 +45,20 @@ public class DHCompatInternalMixin {
     @Inject(method = "reconnectDHTextures", at = @At("RETURN"))
     public void fixDHDepth(int depthTex, CallbackInfo ci) {
         if (dhTerrainFramebuffer != null && IrisFramebufferUtils.getFramebufferDepthAttachment(dhWaterFramebuffer.getId()) != depthTex) {
-            reconnectTextures(depthTex);
+            sr$reconnectTextures(depthTex);
         }
 
         if (dhWaterFramebuffer != null && IrisFramebufferUtils.getFramebufferDepthAttachment(dhWaterFramebuffer.getId()) != depthTex) {
-            reconnectTextures(depthTex);
+            sr$reconnectTextures(depthTex);
         }
 
         if (dhGenericFramebuffer != null && IrisFramebufferUtils.getFramebufferDepthAttachment(dhWaterFramebuffer.getId()) != depthTex) {
-            reconnectTextures(depthTex);
+            sr$reconnectTextures(depthTex);
         }
     }
 
-    private void reconnectTextures(int depthTex) {
+    @Unique
+    private void sr$reconnectTextures(int depthTex) {
         #if MC_VER < MC_1_21_5
         if (dhTerrainFramebuffer != null) {
             dhTerrainFramebuffer.addDepthAttachment(depthTex);

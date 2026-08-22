@@ -24,8 +24,6 @@ pluginManagement {
         mavenCentral()
         maven(url = "https://maven.neoforged.net")
         maven(url = "https://maven.fabricmc.net/")
-        maven(url = "https://maven.aliyun.com/repository/central")
-        maven(url = "https://maven.aliyun.com/repository/gradle-plugin")
         maven(url = "https://maven.shedaniel.me/")
         maven(url = "https://libraries.minecraft.net")
         maven(url = "https://maven.parchmentmc.org/")
@@ -33,7 +31,11 @@ pluginManagement {
 }
 
 plugins {
-    id("org.gradle.toolchains.foojay-resolver-convention") version "0.8.0"
+    // 1.0.0 is the first release compatible with Gradle 9: every earlier version
+    // references JvmVendorSpec.IBM_SEMERU, which Gradle 9 removed. The failure only
+    // surfaces when a toolchain actually has to be provisioned, so it stays hidden
+    // as long as the requested JDK is already installed or cached in ~/.gradle/jdks.
+    id("org.gradle.toolchains.foojay-resolver-convention") version "1.0.0"
 }
 
 rootProject.name = "superresolution"
@@ -50,7 +52,7 @@ if (!nativeOnlyMode) {
 }
 
 val minecraftVersionConfig = providers.gradleProperty("minecraft_version_config").orNull
-    ?: throw GradleException("缺少属性 minecraft_version_config")
+    ?: throw GradleException("Missing minecraft_version_config property")
 
 val versionConfigSrc = JsonSlurper().parse(
     File("$rootDir/configs/$minecraftVersionConfig.json")
@@ -61,10 +63,10 @@ val isUnobfuscated = versionConfigSrc["unobfuscated"] as? Boolean ?: false
 gradle.extensions.extraProperties["versionConfigSrc"] = versionConfigSrc
 
 val commonConfig = versionConfigSrc["common"] as? Map<*, *>
-    ?: throw GradleException("版本配置缺少 common 节点")
+    ?: throw GradleException("Version configuration is missing the common node")
 
 val minecraftVersion = commonConfig["minecraft_version"]?.toString()
-    ?: throw GradleException("版本配置缺少 common.minecraft_version")
+    ?: throw GradleException("Version configuration is missing common.minecraft_version")
 
 gradle.extensions.extraProperties["minecraft_version"] = minecraftVersion
 
@@ -75,14 +77,14 @@ gradle.extensions.extraProperties["isUseDebugLib"] = providers.gradleProperty("u
 
 if (!nativeOnlyMode) {
     val isVulkan = gradle.extensions.extraProperties["isVulkan"] as Boolean
-    println("❇️ 图形API " + if (isVulkan) "Vulkan" else "OpenGL")
-    println("❇️ 当前Minecraft版本 $minecraftVersion")
+    println("Graphics API: " + if (isVulkan) "Vulkan" else "OpenGL")
+    println("Current Minecraft version: $minecraftVersion")
 
     val platforms = commonConfig["platforms"] as? List<*> ?: emptyList<Any?>()
     for (loader in platforms) {
         val loaderName = loader?.toString()?.trim().orEmpty()
         if (loaderName.isBlank()) continue
-        println("❇️ 已启用加载器 $loaderName")
+        println("Enabled loader: $loaderName")
         include(loaderName)
         if (loaderName == "fabric") {
             val fabricBuildFile = File(rootDir, "fabric/build.gradle.kts")

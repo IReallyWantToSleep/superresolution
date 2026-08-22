@@ -29,6 +29,7 @@ import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.lwjgl.vulkan.VK10.*;
 
@@ -37,7 +38,12 @@ public class VulkanCommandPool implements ICommandPool {
     private final VulkanQueue queue;
     private final EnumSet<CommandPoolFlags> flags;
     private final String debugLabel;
-    private final List<VulkanCommandBuffer> allocatedBuffers = new ArrayList<>();
+    // Iterated after every queue submission (VulkanDevice.reapCompletedTransientResources)
+    // and mutated only when a command buffer is created or destroyed, and the iteration
+    // can itself destroy buffers. Copy-on-write gives that pattern a stable snapshot per
+    // iteration without copying the list on every submit, and makes the cross-thread
+    // access from the render and frame-generation threads safe.
+    private final List<VulkanCommandBuffer> allocatedBuffers = new CopyOnWriteArrayList<>();
     private final VulkanFencePool fencePool;
     private int graphicsQueueFamilyIndex;
     private long commandPool;

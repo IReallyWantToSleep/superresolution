@@ -38,7 +38,7 @@ public final class SRWorkModeManager {
                 register.invoke(null);
             } catch (ClassNotFoundException ignored) {
             } catch (Throwable throwable) {
-                SuperResolution.LOGGER.warn("初始化工作模式 {} 失败", className, throwable);
+                SuperResolution.LOGGER.warn("Failed to initialize work mode {}", className, throwable);
             }
         }
     }
@@ -46,7 +46,7 @@ public final class SRWorkModeManager {
     public static void register(SRWorkModeProvider provider) {
         SRWorkModeProvider old = PROVIDERS.put(provider.id(), provider);
         if (old != null && old != provider) {
-            SuperResolution.LOGGER.warn("工作模式 {} 被重复注册，将使用新的实现 {}", provider.id(), provider.getClass().getName());
+            SuperResolution.LOGGER.warn("Work mode {} was registered more than once; using the new implementation {}", provider.id(), provider.getClass().getName());
         }
     }
 

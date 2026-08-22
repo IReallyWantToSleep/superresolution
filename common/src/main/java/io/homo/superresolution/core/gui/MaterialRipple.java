@@ -403,34 +403,20 @@ public class MaterialRipple {
 
             float currentRadius = lerp(startRippleRadius, maxRippleRadius, radiusProgress);
             float currentAlpha = pressedAlpha * alphaProgress;
-            if (true) {
-                float maxGradientRadius = currentRadius / (1 - RIPPLE_SMOOTHNESS);
-                float innerRadius = currentRadius * RIPPLE_SMOOTHNESS;
+            float maxGradientRadius = currentRadius / (1 - RIPPLE_SMOOTHNESS);
+            float innerRadius = currentRadius * RIPPLE_SMOOTHNESS;
 
-                Color centerColor = color.copy().alpha((int) (255 * currentAlpha));
-                Color edgeColor = color.copy().alpha(0);
+            Color centerColor = color.copy().alpha((int) (255 * currentAlpha));
+            Color edgeColor = color.copy().alpha(0);
 
-                return ctx.radialGradient(
-                        currentCenter.x,
-                        currentCenter.y,
-                        innerRadius,
-                        maxGradientRadius,
-                        centerColor,
-                        edgeColor
-                );
-            } else {
-                Color centerColor = color.copy().alpha((int) (255 * currentAlpha));
-                Color edgeColor = color.copy().alpha(0);
-
-                return ctx.radialGradient(
-                        currentCenter.x,
-                        currentCenter.y,
-                        0,
-                        currentRadius,
-                        centerColor,
-                        edgeColor
-                );
-            }
+            return ctx.radialGradient(
+                    currentCenter.x,
+                    currentCenter.y,
+                    innerRadius,
+                    maxGradientRadius,
+                    centerColor,
+                    edgeColor
+            );
         }
 
         public boolean shouldRender() {

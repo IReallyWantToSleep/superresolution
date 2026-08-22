@@ -21,7 +21,6 @@ package io.homo.superresolution.forge;
 import io.homo.superresolution.common.SuperResolutionKeyMapping;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.dataset.DataSetGenerator;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 
 import io.homo.superresolution.forge.compat.sodium.SodiumOptionScreen;

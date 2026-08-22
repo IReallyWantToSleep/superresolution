@@ -24,9 +24,7 @@ import io.homo.irisapi.IrisReflectionUtils;
 import io.homo.irisapi.NamedCompositePass;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlOnlyNameTexture;
-import io.homo.superresolution.shadercompat.mixin.core.CompositeRendererAccessor;
 import net.irisshaders.iris.gl.texture.InternalTextureFormat;
-import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.irisshaders.iris.targets.RenderTarget;
 import net.irisshaders.iris.targets.RenderTargets;
 

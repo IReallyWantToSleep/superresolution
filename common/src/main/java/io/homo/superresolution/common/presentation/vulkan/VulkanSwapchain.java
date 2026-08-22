@@ -14,6 +14,7 @@ import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchRequest;
 import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchResult;
 import io.homo.superresolution.api.registry.FrameGenerationDispatchCompletion;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.framegeneration.FramePresentPlan;
@@ -32,6 +33,7 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 import io.homo.superresolution.core.graphics.vulkan.VulkanQueue;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -41,6 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.function.LongConsumer;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -67,6 +70,9 @@ final class VulkanSwapchain {
     private final VulkanCommandBufferRing commandBuffers =
             new VulkanCommandBufferRing(MAX_IN_FLIGHT_FRAMES);
     private final PresentPacer pacer = new PresentPacer();
+    private final Object fgToMainSemaphoreLock = new Object();
+    private long[] fgToMainSemaphorePool = new long[MAX_IN_FLIGHT_FRAMES];
+    private int fgToMainSemaphorePoolSize;
     private final Object swapchainLock = new Object();
     private final Object applicationManagedTargetLock = new Object();
     private final long[] imageAvailable = new long[ACQUIRE_SYNC_SLOTS];
@@ -435,6 +441,18 @@ final class VulkanSwapchain {
                     commandBufferHandles[index] =
                             commandBuffer.getNativeCommandBuffer().address();
                 }
+                // Opened on the first FG command buffer and closed on the last one the
+                // provider actually filled. Submissions on the FG queue start in order, so
+                // the two timestamps bracket the whole provider dispatch. Closing before
+                // the blit loop below keeps this measuring generation only - those blits
+                // record their own present-blit regions.
+                VulkanTimestampProfiler fgProfiler = device.timestampProfiler();
+                int fgTimestampSlot = fgProfiler == null || commandBuffers.isEmpty()
+                        ? -1
+                        : fgProfiler.beginRegion(
+                                commandBuffers.get(0).getNativeCommandBuffer(),
+                                PerformanceTracker.VK_FRAME_GEN
+                        );
                 AsyncFrameGenerationDispatchRequest request =
                         new AsyncFrameGenerationDispatchRequest(
                                 job.frameResources(),
@@ -458,6 +476,7 @@ final class VulkanSwapchain {
                             throwable
                     );
                     resetCommandBuffers(commandBuffers, 0);
+                    cancelFgTimestamp(fgProfiler, fgTimestampSlot);
                     return null;
                 }
 
@@ -483,6 +502,7 @@ final class VulkanSwapchain {
                         );
                     }
                     resetCommandBuffers(commandBuffers, 0);
+                    cancelFgTimestamp(fgProfiler, fgTimestampSlot);
                     return null;
                 }
 
@@ -492,8 +512,22 @@ final class VulkanSwapchain {
                     abortProviderLease(outputLease);
                     outputLease = null;
                     resetCommandBuffers(commandBuffers, 0);
+                    cancelFgTimestamp(fgProfiler, fgTimestampSlot);
                     requestRecreate();
                     return null;
+                }
+
+                if (fgTimestampSlot >= 0) {
+                    // Land the closing write in the last buffer the provider used; the
+                    // tail buffers of an under-filled batch are reset, never submitted.
+                    int lastFgBuffer = Math.min(
+                            Math.max(generatedCount, 1),
+                            commandBuffers.size()
+                    ) - 1;
+                    fgProfiler.endRegion(
+                            commandBuffers.get(lastFgBuffer).getNativeCommandBuffer(),
+                            fgTimestampSlot
+                    );
                 }
 
                 acquireScheduledPresentTargets(generatedCount + 1, targets);
@@ -527,7 +561,7 @@ final class VulkanSwapchain {
                 long[] resourceSignals = job.frameResources().releaseSemaphores();
                 boolean mainReadsCaptureInput = result.realOutput() == null;
                 long[] fgResourceSignals = mainReadsCaptureInput ? NO_SEMAPHORES : resourceSignals;
-                fgToMainReady = createBinarySemaphore("SR FG-to-Main Ready batch=" + batchId);
+                fgToMainReady = acquireFgToMainSemaphore();
 
                 // Submissions to one queue begin in order, so barriers recorded by the
                 // provider still bind across the split. What changes is when each generated
@@ -668,7 +702,7 @@ final class VulkanSwapchain {
                                 submissionGenerations,
                                 realCommandBuffer,
                                 realCommandBuffer.submissionGeneration(),
-                                device,
+                                this::recycleFgToMainSemaphore,
                                 fgToMainReady
                         );
                 VulkanLowLatency.PresentBatchIds presentIds =
@@ -683,9 +717,26 @@ final class VulkanSwapchain {
                         batchIntervalNanos(realPeriodNanos, generatedCount);
                 List<PresentFrame> presentFrames =
                         new ArrayList<>(generatedCount + 1);
+                FrameGenerationDispatchCompletion realAcquireCompletion =
+                        new SubmittedCommandBufferCompletion(
+                                realCommandBuffer,
+                                realCommandBuffer.submissionGeneration()
+                        );
                 for (int index = 0; index < targets.size(); index++) {
                     boolean generated = index < generatedCount;
                     ScheduledPresentTarget target = targets.get(index);
+                    // The acquire semaphore of frame `index` is waited on by submission
+                    // `index` alone, so its lease is reusable as soon as that submission
+                    // retires. Handing the batch-wide completion here instead would block
+                    // the FG thread's drain on the whole batch -- including the real frame
+                    // -- and, through FrameResources.awaitBorrowedInputReleaseSubmission,
+                    // stall the render thread on the previous batch's GPU work.
+                    FrameGenerationDispatchCompletion acquireCompletion = generated
+                            ? new SubmittedCommandBufferCompletion(
+                                    commandBuffers.get(index),
+                                    submissionGenerations[index]
+                            )
+                            : realAcquireCompletion;
                     presentFrames.add(new PresentFrame(
                             firstDisplayIndex + index,
                             job.realIndex(),
@@ -708,6 +759,7 @@ final class VulkanSwapchain {
                             pacingEnabled,
                             outputLease,
                             completion,
+                            acquireCompletion,
                             target.acquireLease()::close
                     ));
                 }
@@ -744,7 +796,8 @@ final class VulkanSwapchain {
                 }
 
                 if (fgToMainReady != VK_NULL_HANDLE) {
-                    vkDestroySemaphore(device.getVkDevice(), fgToMainReady, null);
+                    // Nothing was submitted on this path, so the semaphore is still unsignaled.
+                    recycleFgToMainSemaphore(fgToMainReady);
                     fgToMainReady = VK_NULL_HANDLE;
                 }
                 try {
@@ -790,6 +843,12 @@ final class VulkanSwapchain {
             requestRecreate();
         }
         return null;
+    }
+
+    private static void cancelFgTimestamp(VulkanTimestampProfiler profiler, int slot) {
+        if (profiler != null && slot >= 0) {
+            profiler.cancelRegion(slot);
+        }
     }
 
     private PresentFrame submitRealOnly(
@@ -909,6 +968,9 @@ final class VulkanSwapchain {
                         0,
                         false,
                         null,
+                        completion,
+                        // Real-only batches are a single submission, so the batch
+                        // completion is already the acquire-semaphore granularity.
                         completion,
                         acquireLease::close
                 );
@@ -1137,6 +1199,7 @@ final class VulkanSwapchain {
             }
             destroySemaphores(renderFinished);
             renderFinished = new long[0];
+            destroyFgToMainSemaphorePool();
         }
         if (failure != null) {
             throw new IllegalStateException("Application-managed scheduler shutdown failed", failure);
@@ -1647,6 +1710,9 @@ final class VulkanSwapchain {
             }
         }
         if (fgToMainReady != VK_NULL_HANDLE) {
+            // Not recycled: when the FG submissions landed but the real submission that
+            // waits on this semaphore did not, it is still signaled, and a pooled
+            // semaphore must go back unsignaled. Aborts are rare, so destroy it.
             vkDestroySemaphore(device.getVkDevice(), fgToMainReady, null);
         }
     }
@@ -1754,6 +1820,10 @@ final class VulkanSwapchain {
             boolean generatedFrame
     ) {
         VkCommandBuffer nativeCommandBuffer = commandBuffer.getNativeCommandBuffer();
+        VulkanTimestampProfiler profiler = device.timestampProfiler();
+        int timestampSlot = profiler == null
+                ? -1
+                : profiler.beginRegion(nativeCommandBuffer, PerformanceTracker.VK_PRESENT_BLIT);
         try (MemoryStack stack = MemoryStack.stackPush()) {
             int oldSourceLayout = source.getCurrentLayout();
             int oldSwapchainLayout = imageLayouts[imageIndex];
@@ -1836,6 +1906,9 @@ final class VulkanSwapchain {
                     null,
                     presentBarrier
             );
+        }
+        if (timestampSlot >= 0) {
+            profiler.endRegion(nativeCommandBuffer, timestampSlot);
         }
         source.setCurrentLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         imageLayouts[imageIndex] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
@@ -2287,6 +2360,51 @@ final class VulkanSwapchain {
                 : requested;
     }
 
+    /**
+     * Hands out the FG-to-Main batch semaphore. A batch used to create and destroy one
+     * per frame; recycling keeps that driver allocation off the dispatch path. Returning
+     * a handle here is only legal once the batch that used it has fully retired, which is
+     * what {@link SubmittedProviderBatchCompletion} proves before it calls back. Never
+     * blocks: an empty pool just creates another semaphore.
+     */
+    private long acquireFgToMainSemaphore() {
+        synchronized (fgToMainSemaphoreLock) {
+            if (fgToMainSemaphorePoolSize > 0) {
+                return fgToMainSemaphorePool[--fgToMainSemaphorePoolSize];
+            }
+        }
+        return createBinarySemaphore("SR FG-to-Main Ready");
+    }
+
+    /**
+     * Only accepts semaphores proven to be back in the unsignaled state: either the batch
+     * that used it fully retired (its signal was consumed by the real submission's wait),
+     * or it was never submitted at all.
+     */
+    private void recycleFgToMainSemaphore(long semaphore) {
+        if (semaphore == VK_NULL_HANDLE) {
+            return;
+        }
+        synchronized (fgToMainSemaphoreLock) {
+            if (fgToMainSemaphorePoolSize == fgToMainSemaphorePool.length) {
+                fgToMainSemaphorePool = Arrays.copyOf(
+                        fgToMainSemaphorePool,
+                        fgToMainSemaphorePool.length * 2
+                );
+            }
+            fgToMainSemaphorePool[fgToMainSemaphorePoolSize++] = semaphore;
+        }
+    }
+
+    private void destroyFgToMainSemaphorePool() {
+        synchronized (fgToMainSemaphoreLock) {
+            for (int index = 0; index < fgToMainSemaphorePoolSize; index++) {
+                vkDestroySemaphore(device.getVkDevice(), fgToMainSemaphorePool[index], null);
+            }
+            fgToMainSemaphorePoolSize = 0;
+        }
+    }
+
     private long createBinarySemaphore(String debugLabel) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkSemaphoreCreateInfo createInfo = VkSemaphoreCreateInfo.calloc(stack)
@@ -2440,9 +2558,9 @@ final class VulkanSwapchain {
         private final long[] fgSubmissionGenerations;
         private final VulkanCommandBuffer realCommandBuffer;
         private final long realSubmissionGeneration;
-        private final VulkanDevice device;
+        private final LongConsumer semaphoreRecycler;
         private final long fgToMainReady;
-        private final AtomicBoolean semaphoreDestroyed = new AtomicBoolean();
+        private final AtomicBoolean semaphoreReleased = new AtomicBoolean();
 
         private SubmittedProviderBatchCompletion(
                 FrameGenerationDispatchCompletion providerCompletion,
@@ -2450,7 +2568,7 @@ final class VulkanSwapchain {
                 long[] fgSubmissionGenerations,
                 VulkanCommandBuffer realCommandBuffer,
                 long realSubmissionGeneration,
-                VulkanDevice device,
+                LongConsumer semaphoreRecycler,
                 long fgToMainReady
         ) {
             if (providerCompletion == null
@@ -2460,7 +2578,7 @@ final class VulkanSwapchain {
                     || fgSubmissionGenerations.length != fgCommandBuffers.size()
                     || fgCommandBuffers.contains(null)
                     || realCommandBuffer == null
-                    || device == null
+                    || semaphoreRecycler == null
                     || fgToMainReady == VK_NULL_HANDLE) {
                 throw new IllegalArgumentException(
                         "Submitted provider completion dependencies cannot be null/zero"
@@ -2471,7 +2589,7 @@ final class VulkanSwapchain {
             this.fgSubmissionGenerations = fgSubmissionGenerations.clone();
             this.realCommandBuffer = realCommandBuffer;
             this.realSubmissionGeneration = realSubmissionGeneration;
-            this.device = device;
+            this.semaphoreRecycler = semaphoreRecycler;
             this.fgToMainReady = fgToMainReady;
         }
 
@@ -2488,7 +2606,7 @@ final class VulkanSwapchain {
             if (!realCommandBuffer.isSubmissionComplete(realSubmissionGeneration)) {
                 return false;
             }
-            destroySemaphore();
+            releaseSemaphore();
             return true;
         }
 
@@ -2499,12 +2617,12 @@ final class VulkanSwapchain {
                 fgCommandBuffers[index].waitForSubmission(fgSubmissionGenerations[index]);
             }
             realCommandBuffer.waitForSubmission(realSubmissionGeneration);
-            destroySemaphore();
+            releaseSemaphore();
         }
 
-        private void destroySemaphore() {
-            if (semaphoreDestroyed.compareAndSet(false, true)) {
-                vkDestroySemaphore(device.getVkDevice(), fgToMainReady, null);
+        private void releaseSemaphore() {
+            if (semaphoreReleased.compareAndSet(false, true)) {
+                semaphoreRecycler.accept(fgToMainReady);
             }
         }
     }

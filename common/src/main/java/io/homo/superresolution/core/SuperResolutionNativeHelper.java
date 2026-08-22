@@ -51,18 +51,12 @@ public class SuperResolutionNativeHelper {
             Class<VK> clazz = VK.class;
             try {
                 return (long) clazz.getDeclaredMethod("getGlobalCommands").invoke(null).getClass().getField("vkGetInstanceProcAddr").get(null);
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException(e);
-            } catch (NoSuchFieldException e) {
-                throw new RuntimeException(e);
-            } catch (InvocationTargetException e) {
-                throw new RuntimeException(e);
-            } catch (NoSuchMethodException e) {
+            } catch (IllegalAccessException | NoSuchFieldException | InvocationTargetException | NoSuchMethodException e) {
                 throw new RuntimeException(e);
             }
         }
         return VK10.vkGetDeviceProcAddr(
-                ((VulkanDevice) RenderSystems.vulkan().device()).getVkDevice(),
+                RenderSystems.vulkan().device().getVkDevice(),
                 name
         );
     }

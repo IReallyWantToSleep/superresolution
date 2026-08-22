@@ -106,7 +106,7 @@ namespace {
     }
 
     const StreamlineCore *coreFunctions() {
-        std::lock_guard<std::mutex> lock(g_coreFunctionMutex);
+        std::lock_guard lock(g_coreFunctionMutex);
         if (g_coreFunctionsResolved) {
             return &g_coreFunctions;
         }
@@ -116,21 +116,21 @@ namespace {
         }
         StreamlineCore core{};
         bool resolved = resolveCoreFunction(module, "slInit", core.init)
-            && resolveCoreFunction(module, "slShutdown", core.shutdown)
-            && resolveCoreFunction(module, "slIsFeatureSupported", core.isFeatureSupported)
-            && resolveCoreFunction(module, "slIsFeatureLoaded", core.isFeatureLoaded)
-            && resolveCoreFunction(module, "slSetFeatureLoaded", core.setFeatureLoaded)
-            && resolveCoreFunction(module, "slEvaluateFeature", core.evaluateFeature)
-            && resolveCoreFunction(module, "slAllocateResources", core.allocateResources)
-            && resolveCoreFunction(module, "slFreeResources", core.freeResources)
-            && resolveCoreFunction(module, "slSetTag", core.setTag)
-            && resolveCoreFunction(module, "slSetTagForFrame", core.setTagForFrame)
-            && resolveCoreFunction(module, "slGetFeatureRequirements", core.getFeatureRequirements)
-            && resolveCoreFunction(module, "slGetFeatureVersion", core.getFeatureVersion)
-            && resolveCoreFunction(module, "slSetConstants", core.setConstants)
-            && resolveCoreFunction(module, "slGetFeatureFunction", core.getFeatureFunction)
-            && resolveCoreFunction(module, "slGetNewFrameToken", core.getNewFrameToken)
-            && resolveCoreFunction(module, "slSetVulkanInfo", core.setVulkanInfo);
+                        && resolveCoreFunction(module, "slShutdown", core.shutdown)
+                        && resolveCoreFunction(module, "slIsFeatureSupported", core.isFeatureSupported)
+                        && resolveCoreFunction(module, "slIsFeatureLoaded", core.isFeatureLoaded)
+                        && resolveCoreFunction(module, "slSetFeatureLoaded", core.setFeatureLoaded)
+                        && resolveCoreFunction(module, "slEvaluateFeature", core.evaluateFeature)
+                        && resolveCoreFunction(module, "slAllocateResources", core.allocateResources)
+                        && resolveCoreFunction(module, "slFreeResources", core.freeResources)
+                        && resolveCoreFunction(module, "slSetTag", core.setTag)
+                        && resolveCoreFunction(module, "slSetTagForFrame", core.setTagForFrame)
+                        && resolveCoreFunction(module, "slGetFeatureRequirements", core.getFeatureRequirements)
+                        && resolveCoreFunction(module, "slGetFeatureVersion", core.getFeatureVersion)
+                        && resolveCoreFunction(module, "slSetConstants", core.setConstants)
+                        && resolveCoreFunction(module, "slGetFeatureFunction", core.getFeatureFunction)
+                        && resolveCoreFunction(module, "slGetNewFrameToken", core.getNewFrameToken)
+                        && resolveCoreFunction(module, "slSetVulkanInfo", core.setVulkanInfo);
         if (!resolved) {
             return nullptr;
         }
@@ -289,7 +289,8 @@ namespace {
         if (result == JNI_OK) {
             return true;
         }
-        if (result != JNI_EDETACHED || javaVm->AttachCurrentThread(reinterpret_cast<void **>(&env), nullptr) != JNI_OK) {
+        if (result != JNI_EDETACHED || javaVm->AttachCurrentThread(reinterpret_cast<void **>(&env), nullptr) !=
+            JNI_OK) {
             env = nullptr;
             return false;
         }
@@ -361,8 +362,8 @@ namespace {
 
     bool isActiveJavaSession(jlong handle) {
         return g_streamlineInitialized
-            && g_javaSession
-            && reinterpret_cast<jlong>(g_javaSession.get()) == handle;
+               && g_javaSession
+               && reinterpret_cast<jlong>(g_javaSession.get()) == handle;
     }
 
     template<typename T>
@@ -395,7 +396,8 @@ namespace {
         return result == sl::Result::eOk ? function(viewport, options) : result;
     }
 
-    sl::Result callDLSSGGetState(const sl::ViewportHandle &viewport, sl::DLSSGState &state, const sl::DLSSGOptions *options) {
+    sl::Result callDLSSGGetState(const sl::ViewportHandle &viewport, sl::DLSSGState &state,
+                                 const sl::DLSSGOptions *options) {
         PFun_slDLSSGGetState *function = nullptr;
         sl::Result result = resolveFeatureFunction(sl::kFeatureDLSS_G, "slDLSSGGetState", function);
         return result == sl::Result::eOk ? function(viewport, state, options) : result;
@@ -775,7 +777,7 @@ namespace {
         std::vector<jint> raw(static_cast<size_t>(count));
         env->GetIntArrayRegion(values, 0, count, raw.data());
         result.reserve(static_cast<size_t>(count));
-        for (jint value : raw) {
+        for (jint value: raw) {
             result.push_back(static_cast<sl::Feature>(value));
         }
         return result;
@@ -797,7 +799,8 @@ namespace {
         env->DeleteLocalRef(array);
     }
 
-    void writeStringArrayField(JNIEnv *env, jobject object, const char *name, const char *const *values, uint32_t count) {
+    void writeStringArrayField(JNIEnv *env, jobject object, const char *name, const char *const *values,
+                               uint32_t count) {
         jclass stringClass = env->FindClass("java/lang/String");
         if (!stringClass) {
             return;
@@ -850,9 +853,9 @@ namespace {
             return false;
         }
         constexpr const char *kResourceSignature =
-            "Lio/homo/superresolution/core/streamline/StreamlineTypes$Resource;";
+                "Lio/homo/superresolution/core/streamline/StreamlineTypes$Resource;";
         constexpr const char *kExtentSignature =
-            "Lio/homo/superresolution/core/streamline/StreamlineTypes$Extent;";
+                "Lio/homo/superresolution/core/streamline/StreamlineTypes$Extent;";
         jobject resourceObject = getObject(env, object, "resource", kResourceSignature);
         if (!readResource(env, resourceObject, out.resource)) {
             if (resourceObject) {
@@ -912,12 +915,27 @@ namespace {
             return false;
         }
         constants.jitterOffset = {getFloat(env, object, "jitterOffsetX"), getFloat(env, object, "jitterOffsetY")};
-        constants.mvecScale = {getFloat(env, object, "motionVectorScaleX"), getFloat(env, object, "motionVectorScaleY")};
-        constants.cameraPinholeOffset = {getFloat(env, object, "cameraPinholeOffsetX"), getFloat(env, object, "cameraPinholeOffsetY")};
-        constants.cameraPos = {getFloat(env, object, "cameraPosX"), getFloat(env, object, "cameraPosY"), getFloat(env, object, "cameraPosZ")};
-        constants.cameraUp = {getFloat(env, object, "cameraUpX"), getFloat(env, object, "cameraUpY"), getFloat(env, object, "cameraUpZ")};
-        constants.cameraRight = {getFloat(env, object, "cameraRightX"), getFloat(env, object, "cameraRightY"), getFloat(env, object, "cameraRightZ")};
-        constants.cameraFwd = {getFloat(env, object, "cameraFwdX"), getFloat(env, object, "cameraFwdY"), getFloat(env, object, "cameraFwdZ")};
+        constants.mvecScale = {
+            getFloat(env, object, "motionVectorScaleX"), getFloat(env, object, "motionVectorScaleY")
+        };
+        constants.cameraPinholeOffset = {
+            getFloat(env, object, "cameraPinholeOffsetX"), getFloat(env, object, "cameraPinholeOffsetY")
+        };
+        constants.cameraPos = {
+            getFloat(env, object, "cameraPosX"), getFloat(env, object, "cameraPosY"),
+            getFloat(env, object, "cameraPosZ")
+        };
+        constants.cameraUp = {
+            getFloat(env, object, "cameraUpX"), getFloat(env, object, "cameraUpY"), getFloat(env, object, "cameraUpZ")
+        };
+        constants.cameraRight = {
+            getFloat(env, object, "cameraRightX"), getFloat(env, object, "cameraRightY"),
+            getFloat(env, object, "cameraRightZ")
+        };
+        constants.cameraFwd = {
+            getFloat(env, object, "cameraFwdX"), getFloat(env, object, "cameraFwdY"),
+            getFloat(env, object, "cameraFwdZ")
+        };
         constants.cameraNear = getFloat(env, object, "cameraNear");
         constants.cameraFar = getFloat(env, object, "cameraFar");
         constants.cameraFOV = getFloat(env, object, "cameraFov");
@@ -930,7 +948,8 @@ namespace {
         constants.orthographicProjection = static_cast<sl::Boolean>(getByte(env, object, "orthographicProjection"));
         constants.motionVectorsDilated = static_cast<sl::Boolean>(getByte(env, object, "motionVectorsDilated"));
         constants.motionVectorsJittered = static_cast<sl::Boolean>(getByte(env, object, "motionVectorsJittered"));
-        constants.minRelativeLinearDepthObjectSeparation = getFloat(env, object, "minRelativeLinearDepthObjectSeparation");
+        constants.minRelativeLinearDepthObjectSeparation = getFloat(env, object,
+                                                                    "minRelativeLinearDepthObjectSeparation");
         return true;
     }
 
@@ -971,8 +990,10 @@ namespace {
         options.hudLessBufferFormat = static_cast<uint32_t>(getInt(env, object, "hudLessBufferFormat"));
         options.uiBufferFormat = static_cast<uint32_t>(getInt(env, object, "uiBufferFormat"));
         options.bReserved15 = static_cast<sl::Boolean>(getByte(env, object, "reserved15"));
-        options.queueParallelismMode = static_cast<sl::DLSSGQueueParallelismMode>(getInt(env, object, "queueParallelismMode"));
-        options.enableUserInterfaceRecomposition = static_cast<sl::Boolean>(getByte(env, object, "enableUserInterfaceRecomposition"));
+        options.queueParallelismMode = static_cast<sl::DLSSGQueueParallelismMode>(getInt(
+            env, object, "queueParallelismMode"));
+        options.enableUserInterfaceRecomposition = static_cast<sl::Boolean>(getByte(
+            env, object, "enableUserInterfaceRecomposition"));
         options.dynamicTargetFrameRate = getFloat(env, object, "dynamicTargetFrameRate");
     }
 
@@ -1047,7 +1068,8 @@ namespace {
         if (g_streamlineInitialized) {
             return SR_RETURN_CODE_OK;
         }
-        const wchar_t *message = L"Streamline is not initialized. Call Streamline.initEarly/prepareEarly before creating the SR Vulkan context.";
+        const wchar_t *message =
+                L"Streamline is not initialized. Call Streamline.initEarly/prepareEarly before creating the SR Vulkan context.";
         if (desc->messageCallback) {
             desc->messageCallback(SR_MESSAGE_TYPE_ERROR, message);
         } else {
@@ -1097,8 +1119,8 @@ extern "C" {
             session->logListener = env->NewGlobalRef(logListener);
             jclass listenerClass = env->GetObjectClass(logListener);
             session->logMethod = listenerClass
-                ? env->GetMethodID(listenerClass, "onLog", "(ILjava/lang/String;)V")
-                : nullptr;
+                                     ? env->GetMethodID(listenerClass, "onLog", "(ILjava/lang/String;)V")
+                                     : nullptr;
             if (listenerClass) {
                 env->DeleteLocalRef(listenerClass);
             }
@@ -1111,7 +1133,7 @@ extern "C" {
         session->pluginPaths = readWideStringArray(env, pluginPaths);
         std::vector<const wchar_t *> pluginPointers;
         pluginPointers.reserve(session->pluginPaths.size());
-        for (const std::wstring &path : session->pluginPaths) {
+        for (const std::wstring &path: session->pluginPaths) {
             pluginPointers.push_back(path.c_str());
         }
         std::vector<sl::Feature> requestedFeatures = readFeatures(env, features);
@@ -1184,7 +1206,8 @@ extern "C" {
         return isActiveJavaSession(session) ? JNI_TRUE : JNI_FALSE;
     }
 
-    SR_API SRReturnCode srStreamlineInit(const char *pluginPath, const char *logPath, SRMessageCallback messageCallback) {
+    SR_API SRReturnCode srStreamlineInit(const char *pluginPath, const char *logPath,
+                                         SRMessageCallback messageCallback) {
         return resultToReturnCode(initStreamline(pluginPath, logPath, messageCallback));
     }
 
@@ -1255,7 +1278,8 @@ extern "C" {
         return SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srStreamlineDLSSCreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc) {
+    SR_API SRReturnCode srStreamlineDLSSCreateUpscaleContext(SRUpscaleContext *context,
+                                                             const SRCreateUpscaleContextDesc *desc) {
         if (!context || !desc) {
             return SR_RETURN_CODE_NULL_POINTER;
         }
@@ -1327,7 +1351,8 @@ extern "C" {
         return SR_RETURN_CODE_OK;
     }
 
-    SR_API SRReturnCode srStreamlineDLSSQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result, SRUpscaleContextQueryType queryType) {
+    SR_API SRReturnCode srStreamlineDLSSQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result,
+                                                     SRUpscaleContextQueryType queryType) {
         if (!context || !result) {
             return SR_RETURN_CODE_NULL_POINTER;
         }
@@ -1338,8 +1363,8 @@ extern "C" {
                 return SR_RETURN_CODE_OK;
             case SR_UPSCALE_CONTEXT_QUERY_GPU_MEMORY_INFO: {
                 sl::ViewportHandle viewport(kViewportId);
-            sl::DLSSState state{};
-            sl::Result slResult = callDLSSGetState(viewport, state);
+                sl::DLSSState state{};
+                sl::Result slResult = callDLSSGetState(viewport, state);
                 if (slResult != sl::Result::eOk) {
                     return resultToReturnCode(slResult);
                 }
@@ -1347,7 +1372,8 @@ extern "C" {
                 return SR_RETURN_CODE_OK;
             }
             case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE:
-                reinterpret_cast<SRQueryAvailabilityResult *>(result)->isAvailable = g_streamlineInitialized && g_dlssOptionsInitialized;
+                reinterpret_cast<SRQueryAvailabilityResult *>(result)->isAvailable =
+                        g_streamlineInitialized && g_dlssOptionsInitialized;
                 return SR_RETURN_CODE_OK;
             default:
                 return SR_RETURN_CODE_INVALID_ARGUMENT;
@@ -1364,7 +1390,8 @@ extern "C" {
             return SR_RETURN_CODE_UNEXPECTED_ERROR;
         }
         if (!desc->color.exist || !desc->output.exist || !desc->depth.exist || !desc->motionVectors.exist) {
-            sendContextMessage(privateData, SR_MESSAGE_TYPE_ERROR, L"Streamline DLSS requires color, output, depth and motion vector resources.");
+            sendContextMessage(privateData, SR_MESSAGE_TYPE_ERROR,
+                               L"Streamline DLSS requires color, output, depth and motion vector resources.");
             return SR_RETURN_CODE_INVALID_ARGUMENT;
         }
 
@@ -1372,7 +1399,8 @@ extern "C" {
         if (!frameTokenParam
             || frameTokenParam->valueType != SR_PARAM_VALUE_TYPE_POINTER
             || !frameTokenParam->value.ptrValue) {
-            sendContextMessage(privateData, SR_MESSAGE_TYPE_ERROR, L"Streamline DLSS requires a frame token from the Java integration.");
+            sendContextMessage(privateData, SR_MESSAGE_TYPE_ERROR,
+                               L"Streamline DLSS requires a frame token from the Java integration.");
             return SR_RETURN_CODE_INVALID_ARGUMENT;
         }
         auto *frameToken = reinterpret_cast<sl::FrameToken *>(frameTokenParam->value.ptrValue);
@@ -1398,8 +1426,10 @@ extern "C" {
             tags.emplace_back(&exposure, sl::kBufferTypeExposure, tagLifecycle, &exposureExtent);
         }
 
-        auto *commandBuffer = reinterpret_cast<sl::CommandBuffer *>(desc->commandList.apiCommandBuffer.vulkan.commandBuffer);
-        sl::Result result = callSetTagForFrame(*frameToken, viewport, tags.data(), static_cast<uint32_t>(tags.size()), commandBuffer);
+        auto *commandBuffer = reinterpret_cast<sl::CommandBuffer *>(desc->commandList.apiCommandBuffer.vulkan.
+            commandBuffer);
+        sl::Result result = callSetTagForFrame(*frameToken, viewport, tags.data(), static_cast<uint32_t>(tags.size()),
+                                               commandBuffer);
         if (result != sl::Result::eOk) {
             reportResult(privateData, L"slSetTagForFrame", result);
             return resultToReturnCode(result);
@@ -1411,8 +1441,12 @@ extern "C" {
         options.outputHeight = desc->upscaleSize.y;
         options.preExposure = desc->preExposure;
         options.exposureScale = 1.0f;
-        options.colorBuffersHDR = hasFlag(context->desc.flags, SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_HDR) ? sl::Boolean::eTrue : sl::Boolean::eFalse;
-        options.useAutoExposure = hasFlag(context->desc.flags, SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_AUTO_EXPOSURE) ? sl::Boolean::eTrue : sl::Boolean::eFalse;
+        options.colorBuffersHDR = hasFlag(context->desc.flags, SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_HDR)
+                                      ? sl::Boolean::eTrue
+                                      : sl::Boolean::eFalse;
+        options.useAutoExposure = hasFlag(context->desc.flags, SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_AUTO_EXPOSURE)
+                                      ? sl::Boolean::eTrue
+                                      : sl::Boolean::eFalse;
         options.alphaUpscalingEnabled = sl::Boolean::eFalse;
         const SRContextExtraParam *presetParam = srFindParam(&context->desc.extraParams, "DLSS_RENDER_PRESET");
         sl::DLSSPreset preset = sl::DLSSPreset::eDefault;
@@ -1554,7 +1588,8 @@ extern "C" {
         return static_cast<jint>(result);
     }
 
-    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_streamline_StreamlineNative_nGetLastVkResult(JNIEnv *, jclass) {
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_streamline_StreamlineNative_nGetLastVkResult(
+        JNIEnv *, jclass) {
         return static_cast<jint>(g_lastVkResult);
     }
 
@@ -1575,8 +1610,7 @@ extern "C" {
 
     JNIEXPORT jboolean JNICALL Java_io_homo_superresolution_core_streamline_StreamlineNative_nIsDLSSGSupported(
         JNIEnv *,
-        jclass
-    ) {
+        jclass) {
         bool supported = false;
         SRReturnCode code = srStreamlineIsDLSSGSupported(&supported);
         return code == SR_RETURN_CODE_OK && supported ? JNI_TRUE : JNI_FALSE;
@@ -1726,9 +1760,10 @@ extern "C" {
         setInt(env, outRequirements, "flags", static_cast<jint>(requirements.flags));
         setInt(env, outRequirements, "maxNumCpuThreads", static_cast<jint>(requirements.maxNumCPUThreads));
         setInt(env, outRequirements, "maxNumViewports", static_cast<jint>(requirements.maxNumViewports));
-        writeIntArrayField(env, outRequirements, "requiredTags", requirements.requiredTags, requirements.numRequiredTags);
+        writeIntArrayField(env, outRequirements, "requiredTags", requirements.requiredTags,
+                           requirements.numRequiredTags);
         constexpr const char *kVersionSignature =
-            "Lio/homo/superresolution/core/streamline/StreamlineTypes$Version;";
+                "Lio/homo/superresolution/core/streamline/StreamlineTypes$Version;";
         jobject osDetected = getObject(env, outRequirements, "osVersionDetected", kVersionSignature);
         jobject osRequired = getObject(env, outRequirements, "osVersionRequired", kVersionSignature);
         jobject driverDetected = getObject(env, outRequirements, "driverVersionDetected", kVersionSignature);
@@ -1741,13 +1776,20 @@ extern "C" {
         if (osRequired) env->DeleteLocalRef(osRequired);
         if (driverDetected) env->DeleteLocalRef(driverDetected);
         if (driverRequired) env->DeleteLocalRef(driverRequired);
-        setInt(env, outRequirements, "vkNumComputeQueuesRequired", static_cast<jint>(requirements.vkNumComputeQueuesRequired));
-        setInt(env, outRequirements, "vkNumGraphicsQueuesRequired", static_cast<jint>(requirements.vkNumGraphicsQueuesRequired));
-        writeStringArrayField(env, outRequirements, "vkDeviceExtensions", requirements.vkDeviceExtensions, requirements.vkNumDeviceExtensions);
-        writeStringArrayField(env, outRequirements, "vkInstanceExtensions", requirements.vkInstanceExtensions, requirements.vkNumInstanceExtensions);
-        writeStringArrayField(env, outRequirements, "vkFeatures12", requirements.vkFeatures12, requirements.vkNumFeatures12);
-        writeStringArrayField(env, outRequirements, "vkFeatures13", requirements.vkFeatures13, requirements.vkNumFeatures13);
-        setInt(env, outRequirements, "vkNumOpticalFlowQueuesRequired", static_cast<jint>(requirements.vkNumOpticalFlowQueuesRequired));
+        setInt(env, outRequirements, "vkNumComputeQueuesRequired",
+               static_cast<jint>(requirements.vkNumComputeQueuesRequired));
+        setInt(env, outRequirements, "vkNumGraphicsQueuesRequired",
+               static_cast<jint>(requirements.vkNumGraphicsQueuesRequired));
+        writeStringArrayField(env, outRequirements, "vkDeviceExtensions", requirements.vkDeviceExtensions,
+                              requirements.vkNumDeviceExtensions);
+        writeStringArrayField(env, outRequirements, "vkInstanceExtensions", requirements.vkInstanceExtensions,
+                              requirements.vkNumInstanceExtensions);
+        writeStringArrayField(env, outRequirements, "vkFeatures12", requirements.vkFeatures12,
+                              requirements.vkNumFeatures12);
+        writeStringArrayField(env, outRequirements, "vkFeatures13", requirements.vkFeatures13,
+                              requirements.vkNumFeatures13);
+        setInt(env, outRequirements, "vkNumOpticalFlowQueuesRequired",
+               static_cast<jint>(requirements.vkNumOpticalFlowQueuesRequired));
         return static_cast<jint>(sl::Result::eOk);
     }
 
@@ -1767,7 +1809,7 @@ extern "C" {
             return static_cast<jint>(result);
         }
         constexpr const char *kVersionSignature =
-            "Lio/homo/superresolution/core/streamline/StreamlineTypes$Version;";
+                "Lio/homo/superresolution/core/streamline/StreamlineTypes$Version;";
         jobject versionSl = getObject(env, outVersion, "versionSl", kVersionSignature);
         jobject versionNgx = getObject(env, outVersion, "versionNgx", kVersionSignature);
         writeVersion(env, versionSl, version.versionSL);
@@ -1816,7 +1858,7 @@ extern "C" {
         }
         std::vector<sl::ResourceTag> tags;
         tags.reserve(ownedTags.size());
-        for (const OwnedResourceTag &owned : ownedTags) {
+        for (const OwnedResourceTag &owned: ownedTags) {
             tags.push_back(*owned.tag);
         }
         sl::ViewportHandle handle(static_cast<uint32_t>(viewport));
@@ -1846,7 +1888,7 @@ extern "C" {
         }
         std::vector<sl::ResourceTag> tags;
         tags.reserve(ownedTags.size());
-        for (const OwnedResourceTag &owned : ownedTags) {
+        for (const OwnedResourceTag &owned: ownedTags) {
             tags.push_back(*owned.tag);
         }
         sl::ViewportHandle handle(static_cast<uint32_t>(viewport));
@@ -1932,13 +1974,13 @@ extern "C" {
             return static_cast<jint>(sl::Result::eErrorInvalidParameter);
         }
         constexpr const char *kViewportSignature =
-            "Lio/homo/superresolution/core/streamline/StreamlineTypes$Viewport;";
+                "Lio/homo/superresolution/core/streamline/StreamlineTypes$Viewport;";
         constexpr const char *kResourceTagSignature =
-            "Lio/homo/superresolution/core/streamline/StreamlineTypes$ResourceTag;";
+                "Lio/homo/superresolution/core/streamline/StreamlineTypes$ResourceTag;";
         constexpr const char *kConstantsSignature =
-            "Lio/homo/superresolution/core/streamline/StreamlineTypes$Constants;";
-        std::vector<std::unique_ptr<sl::ViewportHandle>> viewports;
-        std::vector<std::unique_ptr<sl::Constants>> constants;
+                "Lio/homo/superresolution/core/streamline/StreamlineTypes$Constants;";
+        std::vector<std::unique_ptr<sl::ViewportHandle> > viewports;
+        std::vector<std::unique_ptr<sl::Constants> > constants;
         std::vector<OwnedResourceTag> tags;
         std::vector<const sl::BaseStructure *> inputs;
         viewports.reserve(static_cast<size_t>(count));
@@ -2125,7 +2167,8 @@ extern "C" {
         setInt(env, outState, "numFramesToGenerateMax", static_cast<jint>(state.numFramesToGenerateMax));
         setByte(env, outState, "reserved4", static_cast<jbyte>(state.bReserved4));
         setByte(env, outState, "vsyncSupportAvailable", static_cast<jbyte>(state.bIsVsyncSupportAvailable));
-        setLong(env, outState, "inputsProcessingCompletionFence", reinterpret_cast<jlong>(state.inputsProcessingCompletionFence));
+        setLong(env, outState, "inputsProcessingCompletionFence",
+                reinterpret_cast<jlong>(state.inputsProcessingCompletionFence));
         setLong(env, outState, "lastPresentInputsProcessingCompletionFenceValue",
                 static_cast<jlong>(state.lastPresentInputsProcessingCompletionFenceValue));
         setByte(env, outState, "dynamicMfgSupported", static_cast<jbyte>(state.bIsDynamicMFGSupported));
@@ -2143,7 +2186,7 @@ extern "C" {
             return static_cast<jint>(sl::Result::eErrorInvalidParameter);
         }
         constexpr const char *kListenerSignature =
-            "Lio/homo/superresolution/core/streamline/StreamlineApiErrorListener;";
+                "Lio/homo/superresolution/core/streamline/StreamlineApiErrorListener;";
         jobject listener = getObject(env, javaOptions, "onApiError", kListenerSignature);
         if (g_javaSession->apiErrorListener) {
             env->DeleteGlobalRef(g_javaSession->apiErrorListener);
@@ -2154,8 +2197,8 @@ extern "C" {
             g_javaSession->apiErrorListener = env->NewGlobalRef(listener);
             jclass listenerClass = env->GetObjectClass(listener);
             g_javaSession->apiErrorMethod = listenerClass
-                ? env->GetMethodID(listenerClass, "onApiError", "(I)V")
-                : nullptr;
+                                                ? env->GetMethodID(listenerClass, "onApiError", "(I)V")
+                                                : nullptr;
             if (listenerClass) {
                 env->DeleteLocalRef(listenerClass);
             }

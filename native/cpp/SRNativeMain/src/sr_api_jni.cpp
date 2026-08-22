@@ -96,6 +96,9 @@ SRTextureResource fromJavaSRTextureResourceVK(JNIEnv *env, jobject obj) {
     jfieldID imageViewFieldId = env->GetFieldID(cls, "imageView", JAVA_TYPE_LONG);
     jlong imageView = env->GetLongField(obj, imageViewFieldId);
 
+    jfieldID stateFieldId = env->GetFieldID(cls, "state", JAVA_TYPE_INT);
+    jint state = env->GetIntField(obj, stateFieldId);
+
     jfieldID descFieldId = env->GetFieldID(cls, "description",
                                            "Lio/homo/superresolution/srapi/SRTextureResourceDescription;");
     jobject descObj = env->GetObjectField(obj, descFieldId);
@@ -107,6 +110,7 @@ SRTextureResource fromJavaSRTextureResourceVK(JNIEnv *env, jobject obj) {
     resource.handle = reinterpret_cast<void *>(image);
     resource.desc = desc;
     resource.imageView = reinterpret_cast<void *>(imageView);
+    resource.state = static_cast<SRResourceStates>(state);
     if (descObj != nullptr) {
         env->DeleteLocalRef(descObj);
     }
@@ -136,6 +140,7 @@ extern "C" {
         jint renderApiType,
         jobject openglDeviceInfo,
         jobject vulkanDeviceInfo,
+        jobject d3d12DeviceInfo,
         jint upscaledSizeX,
         jint upscaledSizeY,
         jint renderSizeX,
@@ -203,6 +208,24 @@ extern "C" {
                                            L"Vulkan device info is required for Vulkan API type.");
                 return SR_RETURN_CODE_INVALID_ARGUMENT;
             }
+        } else if (renderApiType == SR_RENDER_API_TYPE_D3D12) {
+            if (d3d12DeviceInfo != nullptr) {
+                jclass d3d12InfoCls = env->GetObjectClass(d3d12DeviceInfo);
+                jfieldID deviceField = env->GetFieldID(d3d12InfoCls, "device", "J");
+                desc.renderDeviceInfo.d3d12.device = reinterpret_cast<void *>(
+                    env->GetLongField(d3d12DeviceInfo, deviceField));
+                env->DeleteLocalRef(d3d12InfoCls);
+
+                if (desc.renderDeviceInfo.d3d12.device == nullptr) {
+                    sr_message_callback_bridge(SR_MESSAGE_TYPE_ERROR,
+                                               L"A non-null D3D12 device is required.");
+                    return SR_RETURN_CODE_INVALID_ARGUMENT;
+                }
+            } else {
+                sr_message_callback_bridge(SR_MESSAGE_TYPE_ERROR,
+                                           L"D3D12 device info is required for D3D12 API type.");
+                return SR_RETURN_CODE_INVALID_ARGUMENT;
+            }
         } else {
             sr_message_callback_bridge(SR_MESSAGE_TYPE_ERROR, L"Invalid render API type.");
             return SR_RETURN_CODE_INVALID_ARGUMENT;
@@ -248,7 +271,7 @@ extern "C" {
         jclass clazz,
         jlong contextPtr,
         jint renderApiType,
-        jlong vulkanCommandBuffer,
+        jlong nativeCommandBuffer,
         jobject color,
         jobject depth,
         jobject motionVectors,
@@ -282,7 +305,10 @@ extern "C" {
         desc.commandList.renderApiType = static_cast<SRRenderApiType>(renderApiType);
         if (renderApiType == SR_RENDER_API_TYPE_VULKAN) {
             desc.commandList.apiCommandBuffer.vulkan.commandBuffer = reinterpret_cast<VkCommandBuffer>(
-                vulkanCommandBuffer);
+                nativeCommandBuffer);
+        } else if (renderApiType == SR_RENDER_API_TYPE_D3D12) {
+            desc.commandList.apiCommandBuffer.d3d12.commandList = reinterpret_cast<void *>(
+                nativeCommandBuffer);
         }
 
         if (extraParamsPtr != 0) {

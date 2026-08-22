@@ -1,3 +1,4 @@
+#pragma once
 #ifdef ON_LINUX64
     #include "jni_linux64.h"
 #elif defined(ON_WIN64)

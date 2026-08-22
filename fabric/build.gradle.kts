@@ -207,11 +207,18 @@ loom {
     runs {
         named("client") {
             vmArg("-XX:+CreateMinidumpOnCrash")
+
             vmArg("--enable-preview")
             vmArg("--enable-native-access=ALL-UNNAMED")
+
             vmArg("-Dmixin.debug.export=true")
-            //shut up again
+
+            // We force set the lwjgl version to versionConfig.common.lwjglVersion
+            // Sodium will check the lwjgl version,ensure it equals the lwjgl version of corresponding Minecraft version
+            // We must disable the check,otherwise sodium will crash the game.
             vmArg("-Dsodium.checks.issue2561=false")
+
+            // Only effective in 1.21.5+
             programArg("--graphicsBackend=opengl")
             programArg("--renderDebugLabels=true")
 

@@ -28,8 +28,7 @@ import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.v2.SRCompatV2Processor;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.v3.SRCompatV3Processor;
-import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
-import io.homo.superresolution.common.upscale.InteropResourcesConverter;
+import io.homo.superresolution.common.upscale.InteropResourcesPreprocessor;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -254,7 +253,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
                 Path candidate = root.resolve("superresolution.v" + ver + ".json");
                 if (Files.exists(candidate)) {
                     srConfigPath = candidate;
-                    SuperResolution.LOGGER.info("加载光影接口配置文件: superresolution.v{}.json", ver);
+                    SuperResolution.LOGGER.info("Loading shader-pack interface configuration: superresolution.v{}.json", ver);
                     break;
                 }
             }
@@ -262,7 +261,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
                 Path candidate = root.resolve("superresolution.json");
                 if (Files.exists(candidate)) {
                     srConfigPath = candidate;
-                    SuperResolution.LOGGER.info("加载光影接口配置文件: superresolution.json");
+                    SuperResolution.LOGGER.info("Loading shader-pack interface configuration: superresolution.json");
                 }
             }
             if (srConfigPath != null) {
@@ -273,12 +272,12 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
                 }
                 SRCompatBuiltinMacros.addMacros(preprocessor);
                 shaderCompatData = SRCompatConfigParser.load(srConfigPath, preprocessor);
-                SuperResolution.LOGGER.info("光影包 {} 支持超分辨率功能", root);
+                SuperResolution.LOGGER.info("Shader pack {} supports super resolution", root);
                 return;
             }
         } catch (Throwable throwable) {
-            SuperResolution.LOGGER.trace("从光影包 {} 加载SR配置失败", root, throwable);
-            SuperResolution.LOGGER.warn("加载 {} 光影包中的SR配置时发生错误", root);
+            SuperResolution.LOGGER.trace("Failed to load the SR configuration from shader pack {}", root, throwable);
+            SuperResolution.LOGGER.warn("An error occurred while loading the SR configuration from shader pack {}", root);
         }
         shaderCompatData = null;
     }
@@ -429,7 +428,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
     @Override
     public void destroy() {
         renderTargets.clear();
-        InteropResourcesConverter.destroy();
+        InteropResourcesPreprocessor.destroy();
         SRCompatV2Processor.destroyPipelineCache();
         SRCompatV3Processor.destroyPipelineCache();
     }

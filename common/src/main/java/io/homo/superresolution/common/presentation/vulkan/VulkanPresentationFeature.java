@@ -18,6 +18,8 @@ import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.core.graphics.GraphicsDevice;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
+import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanQueueUtils;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.PointerBuffer;
@@ -49,13 +51,33 @@ public final class VulkanPresentationFeature {
         return isAvailable;
     }
 
+    /**
+     * Drains any Vulkan GPU timestamps that have completed. Called once per frame from the
+     * render thread; a no-op unless detailed profiling is on and the device supports
+     * timestamp queries.
+     */
+    public static void collectGpuTimestamps() {
+        VkRenderSystem system = renderSystem;
+        if (system == null) {
+            return;
+        }
+        VulkanDevice device = system.device();
+        if (device == null) {
+            return;
+        }
+        VulkanTimestampProfiler profiler = device.timestampProfiler();
+        if (profiler != null) {
+            profiler.collect();
+        }
+    }
+
     private static boolean isAvailable;
 
     private VulkanPresentationFeature() {
     }
 
     public static boolean isRequested() {
-        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1
+        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1 || MC_VER == MC_26_2
         ensureConfigLoaded();
         if (startupRequested == null) {
             startupRequested = SuperResolutionConfig.isEnableVulkanPresentation()

@@ -397,17 +397,18 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
             return true;
         }
 
+        AbstractWidget<?> target = hitWidget(new Vector2f(x, y), w -> w.isDisabled());
+        if (target != null && target != this) {
+            target.mousePress(x, y, button);
+            return true;
+        }
+
         Rectangle bounds = getRawBounds();
         if (!bounds.in(x, y)) {
             if (style().scrimDismiss()) {
                 dismiss();
             }
             return true;
-        }
-
-        AbstractWidget<?> target = findInteractiveWidgetAt(new Vector2f(x, y));
-        if (target != null && target != this) {
-            target.mousePress(x, y, button);
         }
 
         return true;
@@ -421,7 +422,7 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
             return true;
         }
 
-        AbstractWidget<?> target = findInteractiveWidgetAt(new Vector2f(x, y));
+        AbstractWidget<?> target = hitWidget(new Vector2f(x, y), w -> w.isDisabled());
 
         if (target != hoveredInDialog) {
             if (hoveredInDialog != null) {

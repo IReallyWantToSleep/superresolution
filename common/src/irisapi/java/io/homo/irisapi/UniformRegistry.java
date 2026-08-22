@@ -18,7 +18,6 @@
 
 package io.homo.irisapi;
 
-import net.irisshaders.iris.gl.uniform.DynamicUniformHolder;
 import net.irisshaders.iris.gl.uniform.UniformHolder;
 
 public class UniformRegistry {

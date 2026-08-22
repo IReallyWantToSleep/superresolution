@@ -24,7 +24,7 @@ import io.homo.superresolution.api.config.values.single.EnumValue;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.ConfigSpecType;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
-import io.homo.superresolution.common.upscale.ffxfsr.FSRVersion;
+import io.homo.superresolution.common.upscale.algo.ffxfsr.FSRVersion;
 import net.minecraft.network.chat.Component;
 
 import java.util.Map;

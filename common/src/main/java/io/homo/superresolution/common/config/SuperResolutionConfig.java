@@ -82,8 +82,6 @@ public class SuperResolutionConfig {
     public static final BooleanValue PAUSE_GAME_ON_GUI;
     public static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
     public static final BooleanValue ENABLE_COMPAT_SHADER_COMPILER;
-    public static final BooleanValue ENABLE_DATASET_GENERATOR;
-    public static final StringValue DATASET_PATH;
     public static final BooleanValue ENABLE_DETAILED_PROFILING;
     public static final BooleanValue ENABLE_DEBUG;
     public static final BooleanValue ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT;
@@ -117,7 +115,7 @@ public class SuperResolutionConfig {
                 () -> true,
                 "Enable super-resolution upscaling"
         );
-        #if (MC_VER >= MC_1_21_11 && MC_VER < MC_26_2) || MC_VER == MC_1_21_1  || MC_VER == MC_1_20_1
+        #if (MC_VER >= MC_1_21_11 && MC_VER <= MC_26_2) || MC_VER == MC_1_21_1  || MC_VER == MC_1_20_1
         ENABLE_VULKAN_PRESENTATION = builder.defineBoolean(
                 "enable_vulkan_presentation",
                 () -> false,
@@ -282,16 +280,6 @@ public class SuperResolutionConfig {
                 "This option enables the use of a compatibility shader compiler for compiling shaders when set to true."
         );
 
-        ENABLE_DATASET_GENERATOR = builder.defineBoolean(
-                "dataset/enable_dataset_generator",
-                () -> false,
-                ""
-        );
-        DATASET_PATH = builder.defineString(
-                "dataset/dataset_path",
-                () -> "msrDataset",
-                ""
-        );
         ENABLE_DETAILED_PROFILING = builder.defineBoolean(
                 "debug/enable_detailed_profiling",
                 () -> false,
@@ -418,7 +406,7 @@ public class SuperResolutionConfig {
             }
         }
 
-        SuperResolution.LOGGER.info("你的硬件不支持所有算法????"); //最逆天的一集
+        SuperResolution.LOGGER.info("Your hardware does not support all algorithms."); //最逆天的一集
         return AlgorithmDescriptions.NONE;
     }
 
@@ -442,7 +430,7 @@ public class SuperResolutionConfig {
         }
 
         if (!algo.requirement.check().support() && !Platform.currentPlatform.isDevelopmentEnvironment()) {
-            SuperResolution.LOGGER.warn("算法 {} 不支持，回退到默认算法", algo.displayName);
+            SuperResolution.LOGGER.warn("Algorithm {} is unsupported; falling back to the default algorithm", algo.displayName);
             AlgorithmDescription<?> defaultAlgo = getDefaultAlgorithm();
             UPSCALE_ALGO.set(defaultAlgo.codeName);
             return defaultAlgo;
@@ -450,14 +438,14 @@ public class SuperResolutionConfig {
 
         // 光影包禁用的算法只在运行期回退，不写回配置——卸载光影包后恢复用户原选择
         if (SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algo.codeName)) {
-            SuperResolution.LOGGER.warn("算法 {} 已被当前光影包禁用，回退到默认算法", algo.displayName);
+            SuperResolution.LOGGER.warn("Algorithm {} is disabled by the current shader pack; falling back to the default algorithm", algo.displayName);
             return getDefaultAlgorithm();
         }
 
         // None（仅帧生成模式）仅在光影包声明支持时可用；不写回配置，切换光影后自动恢复
         if (AlgorithmDescriptions.NONE.equals(algo)
                 && !SRWorkModeManager.getCurrentState().supportsFrameGeneration()) {
-            SuperResolution.LOGGER.warn("当前光影包不支持仅帧生成模式，None 算法不可用，回退到默认算法");
+            SuperResolution.LOGGER.warn("The current shader pack does not support frame-generation-only mode; the None algorithm is unavailable. Falling back to the default algorithm.");
             return getDefaultAlgorithm();
         }
 
@@ -484,7 +472,7 @@ public class SuperResolutionConfig {
             SuperResolution.algorithmDescription = newAlgo;
 
             if (!SuperResolution.createAlgorithm()) {
-                throw new RuntimeException("创建算法失败");
+                throw new RuntimeException("Failed to create algorithm");
             }
 
             if (oldAlgorithmInstance != null) {
@@ -492,12 +480,12 @@ public class SuperResolutionConfig {
                     oldAlgorithmInstance.destroy();
                     return true;
                 } catch (Exception e) {
-                    SuperResolution.LOGGER.error("销毁旧算法时出错", e);
+                    SuperResolution.LOGGER.error("Error while destroying the old algorithm", e);
                 }
             }
 
         } catch (Exception e) {
-            SuperResolution.LOGGER.error("切换到算法 {} 失败，尝试回滚", newAlgo.displayName, e);
+            SuperResolution.LOGGER.error("Failed to switch to algorithm {}; attempting rollback", newAlgo.displayName, e);
 
             UPSCALE_ALGO.set(oldDescription != null ? oldDescription.codeName : AlgorithmDescriptions.NONE.codeName);
             SuperResolution.algorithmDescription = oldDescription;
@@ -517,7 +505,7 @@ public class SuperResolutionConfig {
     }
 
     private static void fallbackToNone() {
-        SuperResolution.LOGGER.error("所有回滚尝试失败，使用NONE算法");
+        SuperResolution.LOGGER.error("All rollback attempts failed; using the NONE algorithm");
         UPSCALE_ALGO.set(AlgorithmDescriptions.NONE.codeName);
         SuperResolution.algorithmDescription = AlgorithmDescriptions.NONE;
         SuperResolution.createAlgorithm();
@@ -619,7 +607,7 @@ public class SuperResolutionConfig {
     }
 
     public static boolean isEnableVulkanPresentation() {
-        #if (MC_VER >= MC_1_21_11 && MC_VER < MC_26_2) || MC_VER == MC_1_21_1 || MC_VER == MC_1_20_1
+        #if (MC_VER >= MC_1_21_11 && MC_VER <= MC_26_2) || MC_VER == MC_1_21_1 || MC_VER == MC_1_20_1
         return ENABLE_VULKAN_PRESENTATION.get();
         #else
         return false;
@@ -627,7 +615,7 @@ public class SuperResolutionConfig {
     }
 
     public static void setEnableVulkanPresentation(boolean value) {
-        #if (MC_VER >= MC_1_21_11 && MC_VER < MC_26_2) || MC_VER == MC_1_21_1 || MC_VER == MC_1_20_1
+        #if (MC_VER >= MC_1_21_11 && MC_VER <= MC_26_2) || MC_VER == MC_1_21_1 || MC_VER == MC_1_20_1
         ENABLE_VULKAN_PRESENTATION.set(value);
         #endif
     }
@@ -662,14 +650,6 @@ public class SuperResolutionConfig {
 
     public static void setEnableCompatShaderCompiler(boolean value) {
         ENABLE_COMPAT_SHADER_COMPILER.set(value);
-    }
-
-    public static boolean isEnableDatasetGenerator() {
-        return ENABLE_DATASET_GENERATOR.get();
-    }
-
-    public static void setEnableDatasetGenerator(boolean value) {
-        ENABLE_DATASET_GENERATOR.set(value);
     }
 
     public static boolean isEnableDetailedProfiling() {
@@ -775,7 +755,7 @@ public class SuperResolutionConfig {
         try {
             return Color.from(colorStr);
         } catch (IllegalArgumentException e) {
-            SuperResolution.LOGGER.warn("无效的主题颜色配置: {}，使用默认颜色", colorStr);
+            SuperResolution.LOGGER.warn("Invalid theme color configuration: {}; using the default color", colorStr);
             return Color.from("#78DC77");
         }
     }

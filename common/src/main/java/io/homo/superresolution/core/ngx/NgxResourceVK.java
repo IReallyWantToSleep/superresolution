@@ -33,12 +33,25 @@ public final class NgxResourceVK implements AutoCloseable {
     public boolean readWrite;
 
     private ByteBuffer nativeBuffer = MemoryUtil.memAlloc(RESOURCE_SIZE).order(ByteOrder.nativeOrder());
+    private boolean nativeBufferStale = true;
+
+    /**
+     * Marks the mirrored native struct as needing a rewrite. Callers that mutate the
+     * public fields after the resource has been used must invoke this; the fields are
+     * fixed at creation for every resource this mod builds, so in practice the struct
+     * is written once instead of on each of the ~20 lookups a DLSS evaluate performs.
+     */
+    public void markDirty() {
+        nativeBufferStale = true;
+    }
 
     public long nativeAddress() {
         if (nativeBuffer == null) {
             throw new IllegalStateException("NGX resource is closed");
         }
-        sync();
+        if (nativeBufferStale) {
+            sync();
+        }
         return MemoryUtil.memAddress(nativeBuffer);
     }
 
@@ -65,6 +78,7 @@ public final class NgxResourceVK implements AutoCloseable {
         }
         nativeBuffer.putInt(IMAGE_VIEW_INFO_SIZE, type);
         nativeBuffer.put(IMAGE_VIEW_INFO_SIZE + Integer.BYTES, (byte) (readWrite ? 1 : 0));
+        nativeBufferStale = false;
     }
 
     @Override

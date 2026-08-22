@@ -4,13 +4,11 @@ project(SuperResolutionNativeMain)
 set(THIRD_PARTY_DIR "${PROJECT_SOURCE_DIR}/third_party")
 set(FT_DIR "${THIRD_PARTY_DIR}/freetype")
 set(GLSLANG_DIR "${THIRD_PARTY_DIR}/glslang")
-#set(TGFX_DIR "${THIRD_PARTY_DIR}/tgfx")
 
 include_directories(
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/src
     ${GLSLANG_DIR}
-    #${TGFX_DIR}/include
 )
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")

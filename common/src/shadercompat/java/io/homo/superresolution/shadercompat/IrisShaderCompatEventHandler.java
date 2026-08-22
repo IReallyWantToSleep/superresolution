@@ -18,20 +18,14 @@
 
 package io.homo.superresolution.shadercompat;
 
-import io.homo.irisapi.IrisAPI;
-import io.homo.irisapi.IrisCompositePassRenderingEvent;
-import io.homo.irisapi.MacroRegistrationEvent;
-import io.homo.irisapi.UniformRegistrationEvent;
+import io.homo.irisapi.*;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.UniformRegistrar;
-import io.homo.superresolution.common.minecraft.handler.shadercompat.v2.SRCompatV2Processor;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRCompatProcessor;
-import io.homo.superresolution.shadercompat.mixin.core.CompositeRendererAccessor;
 import io.homo.superresolution.shadercompat.mixin.core.RenderTargetsAccessor;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.gl.uniform.UniformHolder;
@@ -75,12 +69,11 @@ public class IrisShaderCompatEventHandler {
         }
 
         try {
-            if (((CompositeRendererAccessor) event.getCompositeRenderer()).getRenderTargets() != null) {
+            if (event.getCompositeRenderer().getRenderTargets() != null) {
                 if (
                         !(
                                 (RenderTargetsAccessor) (
-                                        (
-                                                (CompositeRendererAccessor) event.getCompositeRenderer()
+                                        (event.getCompositeRenderer()
                                         )
                                                 .getRenderTargets()
                                 )
@@ -91,7 +84,7 @@ public class IrisShaderCompatEventHandler {
                 }
             }
         } catch (Throwable throwable) {
-            SuperResolution.LOGGER.error("执行超分时发生错误", throwable);
+            SuperResolution.LOGGER.error("Error while performing super resolution", throwable);
         }
     }
 
@@ -139,8 +132,8 @@ public class IrisShaderCompatEventHandler {
             }
         } catch (Throwable throwable) {
             if (!failedToDispatchUpscale){
-                SuperResolution.LOGGER.error("执行超分时发生错误", throwable);
-                SuperResolution.LOGGER.error("下次错误将不会再打印，直到重载光影");
+                SuperResolution.LOGGER.error("Error while performing super resolution", throwable);
+                SuperResolution.LOGGER.error("Further errors will not be logged until the shader pack is reloaded.");
             }
             failedToDispatchUpscale = true;
         }

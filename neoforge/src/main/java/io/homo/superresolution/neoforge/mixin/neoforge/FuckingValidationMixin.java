@@ -27,7 +27,6 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import java.util.function.BiFunction;
-//坏狐狸在高版本引入了ValidationLayer，iris恰好跟这玩意冲突
 #if MC_VER >= MC_1_21_10 && MC_VER < MC_26_1
 import com.mojang.blaze3d.opengl.GlDevice;
 import com.mojang.blaze3d.systems.GpuDevice;

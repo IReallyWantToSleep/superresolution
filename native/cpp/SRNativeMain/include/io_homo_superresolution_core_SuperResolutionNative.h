@@ -50,10 +50,10 @@ JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_d
 /*
  * Class:     io_homo_superresolution_core_SuperResolutionNative
  * Method:    NsrCreateUpscaleContext
- * Signature: (Lio/homo/superresolution/srapi/SRUpscaleContext;JILio/homo/superresolution/srapi/SROpenGLDeviceInfo;Lio/homo/superresolution/srapi/SRVulkanDeviceInfo;IIIIJJI)I
+ * Signature: (Lio/homo/superresolution/srapi/SRUpscaleContext;JILio/homo/superresolution/srapi/SROpenGLDeviceInfo;Lio/homo/superresolution/srapi/SRVulkanDeviceInfo;Lio/homo/superresolution/srapi/SRD3D12DeviceInfo;IIIIJJI)I
  */
 JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrCreateUpscaleContext
-  (JNIEnv *, jclass, jobject, jlong, jint, jobject, jobject, jint, jint, jint, jint, jlong, jlong, jint);
+  (JNIEnv *, jclass, jobject, jlong, jint, jobject, jobject, jobject, jint, jint, jint, jint, jlong, jlong, jint);
 
 /*
  * Class:     io_homo_superresolution_core_SuperResolutionNative

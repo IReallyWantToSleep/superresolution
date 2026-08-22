@@ -50,6 +50,7 @@ public class SuperResolutionNativeAPI {
                 desc.renderApiType.value,
                 desc.getOpenglDeviceInfo(),
                 desc.getVulkanDeviceInfo(),
+                desc.getD3D12DeviceInfo(),
                 desc.upscaledSize.x,
                 desc.upscaledSize.y,
                 desc.renderSize.x,
@@ -85,7 +86,7 @@ public class SuperResolutionNativeAPI {
         int code = SuperResolutionNative.NsrDispatchUpscale(
                 context.nativePtr,
                 desc.commandList.renderApiType.value,
-                desc.commandList.getVulkanCommandBufferAddress(),
+                desc.commandList.getNativeCommandBufferAddress(),
                 desc.color,
                 desc.depth,
                 desc.motionVectors,

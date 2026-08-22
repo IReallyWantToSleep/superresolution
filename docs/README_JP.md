@@ -95,8 +95,3 @@ SR がお役に立ち、開発を応援したい場合は、[Afdian（爱发电�
 * ネイティブライブラリは MIT を使用
 * このソフトウェアには NVIDIA Corporation が提供するソースコードが含まれています
 
-## スター履歴
-
-[![Stargazers over time](https://starchart.cc/187J3X1-114514/superresolution.svg?variant=adaptive)](https://starchart.cc/187J3X1-114514/superresolution)
-
-

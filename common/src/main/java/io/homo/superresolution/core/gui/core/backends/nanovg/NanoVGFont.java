@@ -70,7 +70,7 @@ public class NanoVGFont implements IFont {
 
             //TODO: 这里存在内存泄漏风险，后续需要在不需要字体时调用MemoryUtil.memFree(fontBuffer)释放内存
         } catch (Exception e) {
-            throw new RuntimeException("字体加载失败: " + name, e);
+            throw new RuntimeException("Failed to load font: " + name, e);
         }
     }
 }

@@ -40,7 +40,6 @@ import io.homo.superresolution.api.registry.FrameGenerationRegistry;
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
-import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.api.registry.LowLatencyDescription;
 import io.homo.superresolution.api.registry.LowLatencyRegistry;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
@@ -54,7 +53,7 @@ import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
-import io.homo.superresolution.common.upscale.VulkanInteropAlgorithm;
+import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
@@ -127,7 +126,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private static final float GROUP_TITLE_PILL_MIN_HEIGHT = 30f;
     private static final float FRAME_TITLE_PILL_HORIZONTAL_PADDING = 16f;
     private static final float GROUP_TITLE_PILL_HORIZONTAL_PADDING = 9f;
-    #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1
+    #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1 || MC_VER == MC_26_2
     private static final boolean CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION = true;
     #else
     private static final boolean CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION = false;
@@ -244,6 +243,18 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         updateContentTransition();
 
         super.draw(ctx, inputState);
+    }
+
+    /**
+     * Forces {@code key}'s page to be rebuilt the next time it is displayed. A page that
+     * is currently on screen keeps rendering its existing instance until it is switched
+     * away from, at which point the view detaches it, so dropping the cache entry here
+     * cannot leave two instances attached.
+     */
+    private void invalidateContentFrame(String key) {
+        if (contentFrames != null) {
+            contentFrames.remove(key);
+        }
     }
 
     private Frame getOrCreateContentFrame(String key) {
@@ -728,7 +739,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 builder.hintOption(Text.literal("vulkan_presentation_unavailable"))
                         .setIcon(MaterialSymbols.iconWarning())
                         .setTitle(Text.translatable("superresolution.screen.config.hint.vulkan_presentation_unavailable.title").getString())
-                        .setText(Text.translatable("superresolution.screen.config.hint.vulkan_presentation_unavailable.text").getString())
+                        .setText(Text.translatable("superresolution.screen.config.hint.vulkan_presentation_unavailable.text").getString()
+                                .formatted(Platform.currentPlatform.getMinecraftVersion()))
                         .build();
             }
             builder.hintOption(Text.literal("tip114514"))
@@ -1257,7 +1269,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                     d.dismiss();
                     d.onDismiss(foo -> {
                         Pair<MaterialResourcesList, MaterialDialog> selector = createOnlineResourceSelector(resources);
-                        selector.left().startDownload();
                         getView().showDialog(selector.right());
                     });
                 }
@@ -1347,7 +1358,6 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         #if ENABLE_AUTO_DOWNLOAD == 1
         Pair<MaterialResourcesList,MaterialDialog> selector = createOnlineResourceSelector(resources);
         getView().showDialog(selector.right());
-        selector.left().startDownload();
         #else
         Pair<MaterialResourcesList,MaterialDialog> selector = createLocalResourceSelector(resources);
         getView().showDialog(selector.right());
@@ -1390,7 +1400,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                             .setItemEnableRequirement(this::getInteropSyncModeItemRequirement)
                             .setSaveConsumer((value) -> {
                                 SuperResolutionConfig.setInteropSyncMode(value);
-                                if (SuperResolution.currentAlgorithm instanceof VulkanInteropAlgorithm) {
+                                if (SuperResolution.currentAlgorithm instanceof GlVulkanInteropAlgorithm) {
                                     SuperResolution.recreateAlgorithm();
                                 }
                                 refreshFrameGenerationOptions();
@@ -1441,7 +1451,17 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 SuperResolutionConfig.isEnableDetailedProfiling())
                         .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_detailed_profiling"))
                         .setDefaultValue(() -> false)
-                        .setSaveConsumer(SuperResolutionConfig::setEnableDetailedProfiling)
+                        .setSaveConsumer((Consumer<Boolean>) value -> {
+                            SuperResolutionConfig.setEnableDetailedProfiling(value);
+                            // The performance page decides which charts exist when it is
+                            // built, and getOrCreateContentFrame caches every page for the
+                            // life of the screen, so a page visited before this toggle
+                            // would keep its old row set until the screen was reopened.
+                            // Dropping it here makes the next visit rebuild. Switching
+                            // away already detaches the frame from the view, so the
+                            // replacement cannot end up double-attached.
+                            invalidateContentFrame("performance");
+                        })
                         .build()
         );
 
@@ -1737,19 +1757,41 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
         boolean detailedProfiling = SuperResolutionConfig.isEnableDetailedProfiling();
 
-        Pair<String, Text>[] operations = new Pair[]{
+        List<Pair<String, Text>> operationList = new ArrayList<>(List.of(
                 Pair.of("Frame", Text.translatable("superresolution.screen.config.section.performance.chart.frame")),
+                Pair.of("Reflex Sleep", Text.translatable("superresolution.screen.config.section.performance.chart.reflex_sleep")),
                 Pair.of("Main Render", Text.translatable("superresolution.screen.config.section.performance.chart.main_render")),
                 Pair.of("Level Render", Text.translatable("superresolution.screen.config.section.performance.chart.level_render")),
                 Pair.of("Upscale", Text.translatable("superresolution.screen.config.section.performance.chart.upscale")),
-                Pair.of("GUI", Text.translatable("superresolution.screen.config.section.performance.chart.gui")),
-        };
+                Pair.of("GUI", Text.translatable("superresolution.screen.config.section.performance.chart.gui"))
+        ));
+        if (detailedProfiling) {
+            // Per-stage GPU rows. These carry no useful data without detailed profiling -
+            // the VK ones have no CPU series at all, since no push/pop pair wraps them -
+            // so they are left out entirely rather than drawn as flat lines.
+            operationList.addAll(List.of(
+                    Pair.of(PerformanceTracker.GL_INPUT_CONVERT,
+                            Text.translatable("superresolution.screen.config.section.performance.chart.gl_input_convert")),
+                    Pair.of(PerformanceTracker.GL_INTEROP_FLIP,
+                            Text.translatable("superresolution.screen.config.section.performance.chart.gl_interop_flip")),
+                    Pair.of(PerformanceTracker.GL_CAPTURE_FLIP,
+                            Text.translatable("superresolution.screen.config.section.performance.chart.gl_capture_flip")),
+                    Pair.of(PerformanceTracker.VK_UPSCALE,
+                            Text.translatable("superresolution.screen.config.section.performance.chart.vk_upscale")),
+                    Pair.of(PerformanceTracker.VK_FRAME_GEN,
+                            Text.translatable("superresolution.screen.config.section.performance.chart.vk_frame_gen")),
+                    Pair.of(PerformanceTracker.VK_PRESENT_BLIT,
+                            Text.translatable("superresolution.screen.config.section.performance.chart.vk_present_blit"))
+            ));
+        }
+        @SuppressWarnings("unchecked")
+        Pair<String, Text>[] operations = operationList.toArray(new Pair[0]);
 
         for (Pair<String, Text> operation : operations) {
             MaterialChart cpuChart = MaterialChart.create()
                     .title(operation.right().getString())
-                    .addSeries(new MaterialChartDataSeries("CPU (ms)", Color.from("#4FC3F7"), MaterialChartType.Curve, 128))
-                    .addSeries(new MaterialChartDataSeries("GPU (ms)", Color.from("#BA53FF"), MaterialChartType.Curve, 128))
+                    .addSeries(new MaterialChartDataSeries("CPU (ms)", Color.from("#4FC3F7"), MaterialChartType.Line, 256))
+                    .addSeries(new MaterialChartDataSeries("GPU (ms)", Color.from("#BA53FF"), MaterialChartType.Line, 256))
                     .autoRange()
                     .valueFormatter(v -> String.format("%.2f ms", v))
                     .updateCallback(chart -> {
@@ -1772,7 +1814,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
             cpuChart.style()
                     .showAverage(true)
                     .showGrid(true)
-                    .showLegend(true);
+                    .showLegend(true)
+                    .dataLineWidth(1f);
             cpuChart.layout().setWidthPercent(100);
             cpuChart.setElementHeight(180);
             cpuChart.layout().setMargin(YogaEdge.BOTTOM, 8);
@@ -1970,7 +2013,9 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 new ContributorInfo("StarsShine11904", Text.translatable("superresolution.screen.config.info.about.contributor.starsshine11904.desc").getString(), "https://github.com/StarsShine11904", "/assets/super_resolution/textures/gui/contributors/StarsShine11904.png"),
                 new ContributorInfo("暇じゃない暇人", Text.translatable("superresolution.screen.config.info.about.contributor.nohimazin.desc").getString(), "https://github.com/nohimazin", "/assets/super_resolution/textures/gui/contributors/nohimazin.png"),
                 new ContributorInfo("HaringPro", Text.translatable("superresolution.screen.config.info.about.contributor.haringpro.desc").getString(), "https://github.com/HaringPro", "/assets/super_resolution/textures/gui/contributors/haringpro.png"),
-                new ContributorInfo("GeForceLegend", Text.translatable("superresolution.screen.config.info.about.contributor.geforcelegend.desc").getString(), "https://github.com/GeForceLegend", "/assets/super_resolution/textures/gui/contributors/geforcelegend.png")
+                new ContributorInfo("GeForceLegend", Text.translatable("superresolution.screen.config.info.about.contributor.geforcelegend.desc").getString(), "https://github.com/GeForceLegend", "/assets/super_resolution/textures/gui/contributors/geforcelegend.png"),
+                new ContributorInfo("Havesten", Text.translatable("superresolution.screen.config.info.about.contributor.havesten.desc").getString(), "", "/assets/super_resolution/textures/gui/contributors/Havesten.png"),
+                new ContributorInfo("sssxks", Text.translatable("superresolution.screen.config.info.about.contributor.sssxks.desc").getString(), "https://github.com/sssxks", "/assets/super_resolution/textures/gui/contributors/sssxks.png")
         ));
         Collections.shuffle(contributors);
         for (ContributorInfo contributor : contributors) {
@@ -2666,7 +2711,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 inputStream
                         );
                     } catch (Throwable ignored) {
-                        SuperResolution.LOGGER.error("加载配置界面图像失败", ignored);
+                        SuperResolution.LOGGER.error("Failed to load configuration screen image", ignored);
                         loaded = true;
                         return;
                     }

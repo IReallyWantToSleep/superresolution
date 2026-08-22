@@ -18,13 +18,10 @@
 
 package io.homo.superresolution.fabric.compat.sodium;
 
-#if MC_VER > MC_1_21_10 || 1
-
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import net.caffeinemc.mods.sodium.api.config.ConfigEntryPoint;
 import net.caffeinemc.mods.sodium.api.config.structure.ConfigBuilder;
-import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 
 public class SodiumConfigBuilder implements ConfigEntryPoint {
@@ -44,14 +41,8 @@ public class SodiumConfigBuilder implements ConfigEntryPoint {
                 .addPage(configBuilder
                         .createExternalPage()
                         .setName(Component.translatable("superresolution.config_gui"))
-                        .setScreenConsumer((screen -> Minecraft.getInstance().setScreen(ConfigScreenBuilder.create().buildConfigScreen(screen))))
+                        .setScreenConsumer((screen -> MinecraftUtils.setScreen(ConfigScreenBuilder.create().buildConfigScreen(screen))))
                 );
         #endif
     }
 }
-
-#else
-public class SodiumConfigBuilder {
-
-}
-#endif

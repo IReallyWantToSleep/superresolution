@@ -7,15 +7,15 @@ extern "C" {
     #endif
 
     SR_API SRReturnCode
+
     srFfxFsr2CreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc) {
         if (desc->renderApiType == SR_RENDER_API_TYPE_VULKAN) {
             return srFfxFsr2VkCreateUpscaleContext(context, desc);
-        } else {
-            if (desc->messageCallback) {
-                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR2 only supports Vulkan");
-            }
-            return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
         }
+        if (desc->messageCallback) {
+            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR2 only supports Vulkan");
+        }
+        return SR_RETURN_CODE_UNSUPPORTED_RENDER_API;
     }
 
     SR_API SRReturnCode srFfxFsr2InitUpscaleContext(SRUpscaleContext *context) {
@@ -53,12 +53,12 @@ extern "C" {
 
     SR_API SRUpscaleContextCallbacks srGetFfxFSR2UpscaleCallbacks() {
         static SRUpscaleContextCallbacks callbacks = {
-            .pCreate = (SRCreateFunc) srFfxFsr2CreateUpscaleContext,
-            .pInit = (SRInitFunc) srFfxFsr2InitUpscaleContext,
-            .pDestroy = (SRDestroyFunc) srFfxFsr2DestroyUpscaleContext,
-            .pQuery = (SRQueryFunc) srFfxFsr2QueryUpscale,
-            .pDispatchUpscale = (SRDispatchUpscaleFunc) srFfxFsr2DispatchUpscale,
-            .pShutdown = (SRShutdownFunc) srFfxFsr2Shutdown,
+            .pCreate = static_cast<SRCreateFunc>(srFfxFsr2CreateUpscaleContext),
+            .pInit = static_cast<SRInitFunc>(srFfxFsr2InitUpscaleContext),
+            .pDestroy = static_cast<SRDestroyFunc>(srFfxFsr2DestroyUpscaleContext),
+            .pQuery = reinterpret_cast<SRQueryFunc>(srFfxFsr2QueryUpscale),
+            .pDispatchUpscale = static_cast<SRDispatchUpscaleFunc>(srFfxFsr2DispatchUpscale),
+            .pShutdown = static_cast<SRShutdownFunc>(srFfxFsr2Shutdown),
         };
         return callbacks;
     }

@@ -20,8 +20,6 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSemaphoreWaitInfo;
 
-import java.util.ArrayList;
-import java.util.List;
 
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
@@ -298,22 +296,43 @@ public final class FrameResources {
         return motionVector.glTexture();
     }
 
+    // Called on the present path for every frame, so these fill a right-sized primitive
+    // array directly instead of boxing through a List<Long> and a Stream.
     public long[] readySemaphores() {
-        List<Long> semaphores = new ArrayList<>(4);
-        addReadySemaphore(semaphores, finalColor);
-        addReadySemaphore(semaphores, hudlessColor);
-        addReadySemaphore(semaphores, depth);
-        addReadySemaphore(semaphores, motionVector);
-        return semaphores.stream().mapToLong(Long::longValue).toArray();
+        long[] semaphores = new long[validResourceCount()];
+        int count = 0;
+        count = addReadySemaphore(semaphores, count, finalColor);
+        count = addReadySemaphore(semaphores, count, hudlessColor);
+        count = addReadySemaphore(semaphores, count, depth);
+        addReadySemaphore(semaphores, count, motionVector);
+        return semaphores;
     }
 
     public long[] releaseSemaphores() {
-        List<Long> semaphores = new ArrayList<>(4);
-        addReleaseSemaphore(semaphores, finalColor);
-        addReleaseSemaphore(semaphores, hudlessColor);
-        addReleaseSemaphore(semaphores, depth);
-        addReleaseSemaphore(semaphores, motionVector);
-        return semaphores.stream().mapToLong(Long::longValue).toArray();
+        long[] semaphores = new long[validResourceCount()];
+        int count = 0;
+        count = addReleaseSemaphore(semaphores, count, finalColor);
+        count = addReleaseSemaphore(semaphores, count, hudlessColor);
+        count = addReleaseSemaphore(semaphores, count, depth);
+        addReleaseSemaphore(semaphores, count, motionVector);
+        return semaphores;
+    }
+
+    private int validResourceCount() {
+        int count = 0;
+        if (finalColor.isValid()) {
+            count++;
+        }
+        if (hudlessColor.isValid()) {
+            count++;
+        }
+        if (depth.isValid()) {
+            count++;
+        }
+        if (motionVector.isValid()) {
+            count++;
+        }
+        return count;
     }
 
     private void awaitReusable() {
@@ -412,15 +431,19 @@ public final class FrameResources {
         }
     }
 
-    private static void addReadySemaphore(List<Long> semaphores, FrameTextureResource resource) {
-        if (resource.isValid()) {
-            semaphores.add(resource.readySemaphore());
+    private static int addReadySemaphore(long[] semaphores, int count, FrameTextureResource resource) {
+        if (!resource.isValid()) {
+            return count;
         }
+        semaphores[count] = resource.readySemaphore();
+        return count + 1;
     }
 
-    private static void addReleaseSemaphore(List<Long> semaphores, FrameTextureResource resource) {
-        if (resource.isValid()) {
-            semaphores.add(resource.releaseSemaphore());
+    private static int addReleaseSemaphore(long[] semaphores, int count, FrameTextureResource resource) {
+        if (!resource.isValid()) {
+            return count;
         }
+        semaphores[count] = resource.releaseSemaphore();
+        return count + 1;
     }
 }

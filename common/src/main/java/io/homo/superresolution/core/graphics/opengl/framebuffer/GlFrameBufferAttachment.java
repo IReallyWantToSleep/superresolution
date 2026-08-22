@@ -19,7 +19,7 @@
 package io.homo.superresolution.core.graphics.opengl.framebuffer;
 
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.opengl.GlConst;
+import static org.lwjgl.opengl.GL33.*;
 
 public class GlFrameBufferAttachment {
     public FrameBufferAttachmentType type;
@@ -31,9 +31,9 @@ public class GlFrameBufferAttachment {
     }
 
     public enum FrameBufferAttachmentType {
-        COLOR(GlConst.GL_COLOR_ATTACHMENT0),
-        DEPTH(GlConst.GL_DEPTH_ATTACHMENT),
-        DEPTH_STENCIL(GlConst.GL_DEPTH_STENCIL_ATTACHMENT);
+        COLOR(GL_COLOR_ATTACHMENT0),
+        DEPTH(GL_DEPTH_ATTACHMENT),
+        DEPTH_STENCIL(GL_DEPTH_STENCIL_ATTACHMENT);
         private final int srcAttachmentId;
         private int attachmentId;
 
@@ -43,7 +43,7 @@ public class GlFrameBufferAttachment {
         }
 
         public FrameBufferAttachmentType index(int index) {
-            if (this.srcAttachmentId != GlConst.GL_COLOR_ATTACHMENT0) {
+            if (this.srcAttachmentId != GL_COLOR_ATTACHMENT0) {
                 throw new RuntimeException();
             }
             this.attachmentId = srcAttachmentId + index;

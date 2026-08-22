@@ -19,7 +19,9 @@
 package io.homo.superresolution.core.gui.widgets.select;
 
 import io.homo.superresolution.core.gui.MaterialSymbol;
+import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
+import io.homo.superresolution.core.gui.core.MouseButton;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.animator.Animator;
 import io.homo.superresolution.core.gui.core.animator.TimeInterpolator;
@@ -33,6 +35,10 @@ import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenu;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuItem;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuSelectionMode;
+import io.homo.superresolution.core.gui.widgets.textfield.MaterialTextField;
+import io.homo.superresolution.core.gui.widgets.textfield.MaterialTextFieldSize;
+import io.homo.superresolution.core.gui.widgets.textfield.MaterialTextFieldStyle;
+import io.homo.superresolution.core.gui.widgets.textfield.MaterialTextFieldVariant;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaPositionType;
@@ -48,7 +54,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>> {
-    private final MaterialSelectField field;
+    private final MaterialTextField field;
     private final MaterialMenu menu;
     private final List<SelectOption<T>> options = new ArrayList<>();
     private T selectedValue = null;
@@ -75,12 +81,20 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
             .timeInterpolator(TimeInterpolator.easeOutCubic());
 
     public MaterialSelect() {
-        this.style = new MaterialSelectStyle();
+        this.style = new MaterialTextFieldStyle();
 
         layout().setFlexDirection(YogaFlexDirection.COLUMN);
 
-        field = new MaterialSelectField(this);
-        field.onClick(e -> toggleMenu());
+        field = new MaterialTextField();
+        field.style(this.style);
+        style().variant(MaterialTextFieldVariant.Outlined);
+        field.readOnly(true);
+        field.trailingIcon(MaterialSymbols.iconArrowDropDown());
+        field.onMousePress(e -> {
+            if (e.getButton() == MouseButton.Left.id()) {
+                toggleMenu();
+            }
+        });
         addChild(field);
 
         menu = MaterialMenu.create()
@@ -475,7 +489,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     private void handleSelection(T value, String displayText) {
         T oldValue = this.selectedValue;
         this.selectedValue = value;
-        field.value(displayText);
+        field.setValue(displayText);
         closeMenu();
         if (onSelectionChanged != null) {
             onSelectionChanged.accept(new WidgetEvent.ChangeEvent<>(oldValue, value));
@@ -487,13 +501,13 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         if (selectedValue != null) {
             for (SelectOption<T> option : options) {
                 if (option.value.equals(selectedValue)) {
-                    field.value(option.displayText);
+                    field.setValue(option.displayText);
                     return;
                 }
             }
-            field.value(displayFormatter.apply(selectedValue));
+            field.setValue(displayFormatter.apply(selectedValue));
         } else {
-            field.value("");
+            field.setValue("");
         }
     }
 
@@ -517,7 +531,8 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
             return;
         }
         menu.expand();
-        field.setMenuOpen(true);
+        field.setFocused(true);
+        field.trailingIconRotation(180f);
         if (getFrame() != null) {
             getFrame().requestFocus(this);
         }
@@ -526,7 +541,8 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
 
     void closeMenu() {
         menu.collapse();
-        field.setMenuOpen(false);
+        field.setFocused(false);
+        field.trailingIconRotation(0f);
         directionalAnimator.fromTo(directionalAnimator.get(), 0f).start();
     }
 
@@ -535,14 +551,18 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     private void updateSize() {
-        MaterialSelectSize size = style().size();
+        MaterialTextFieldSize size = style().size();
+        float height = size.containerHeight();
+        if (!field.supportingText().isEmpty()) {
+            height += size.supportingTextTopMargin() + size.supportingTextFontSize() + 2f;
+        }
         layout().setWidth(width);
-        layout().setHeight(size.containerHeight());
+        layout().setHeight(height);
     }
 
     @Override
-    public MaterialSelectStyle style() {
-        return (MaterialSelectStyle) super.style();
+    public MaterialTextFieldStyle style() {
+        return (MaterialTextFieldStyle) super.style();
     }
 
     @Override
@@ -598,7 +618,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
             widthDirty = false;
             return;
         }
-        MaterialSelectSize size = style().size();
+        MaterialTextFieldSize size = style().size();
         float maxTextWidth = 0;
         for (SelectOption<T> option : options) {
             float tw = ctx.measureTextWidth(

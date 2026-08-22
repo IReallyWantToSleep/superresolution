@@ -19,7 +19,7 @@
 package io.homo.superresolution.core.utils;
 
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.upscale.fsr1.FSR1;
+import io.homo.superresolution.common.upscale.algo.legacy.fsr1.FSR1;
 
 import java.io.BufferedReader;
 import java.io.IOException;

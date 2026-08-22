@@ -579,7 +579,7 @@ final class AsyncFrameGenerationScheduler implements AutoCloseable {
     private void releaseScheduledFrame(PresentFrame frame) {
         swapchain.releaseScheduledTarget(frame);
         pendingAcquireReleases.add(
-                new AcquireLeaseRelease(frame, frame.sourceCompletion())
+                new AcquireLeaseRelease(frame, frame.acquireCompletion())
         );
         realFramesQueue.signalConsumer();
         if (frame.kind() == PresentFrame.Kind.REAL && frame.sourceLease() != null) {

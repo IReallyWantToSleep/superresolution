@@ -74,9 +74,9 @@ public class JsonMacroPreprocessor {
             return result.toString();
 
         } catch (LexerException e) {
-            throw new RuntimeException("预处理 JSON 文本时发生词法错误", e);
+            throw new RuntimeException("Lexical error while preprocessing JSON text", e);
         } catch (Exception e) {
-            throw new RuntimeException("预处理 JSON 文本失败", e);
+            throw new RuntimeException("Failed to preprocess JSON text", e);
         }
     }
 

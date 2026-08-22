@@ -6,7 +6,6 @@
     "minVersion": "0.8",
     "client": [
         "iris.GlFramebufferMixin",
-        "iris.IrisRenderingPipelineMixin",
         "reesessodiumoptions.TabFrameMixin",
         "simpleclouds.DefaultPipelineMixin",
         "simpleclouds.ShaderSupportPipelineMixin",

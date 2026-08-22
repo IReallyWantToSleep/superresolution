@@ -5,6 +5,7 @@
 #include "xess.h"
 
 extern "C" {
-    SR_API SRReturnCode srGetXeSSUpscaleProviders(SRUpscaleProvider * outProvider);
-    SR_API SRReturnCode srGetXeSSUpscaleProvidersCount(uint32_t * outCount);
+    SR_API SRReturnCode srGetXeSSUpscaleProviders(SRUpscaleProvider *outProvider);
+
+    SR_API SRReturnCode srGetXeSSUpscaleProvidersCount(uint32_t *outCount);
 }

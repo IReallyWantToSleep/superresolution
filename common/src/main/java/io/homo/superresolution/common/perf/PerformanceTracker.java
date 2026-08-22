@@ -25,19 +25,45 @@ import org.lwjgl.opengl.GL41;
 import java.util.Arrays;
 
 public class PerformanceTracker {
-    private static final int MAX_RESULT = 128;
+    public static final String VK_UPSCALE = "VK Upscale";
+    public static final String VK_FRAME_GEN = "VK FrameGen";
+    public static final String VK_PRESENT_BLIT = "VK Present Blit";
+    public static final String GL_INTEROP_FLIP = "GL Interop Flip";
+    public static final String GL_CAPTURE_FLIP = "GL Capture Flip";
+    public static final String GL_INPUT_CONVERT = "GL Input Convert";
+
+    private static final int MAX_RESULT = 256;
     private static final Object2ObjectOpenHashMap<String, TrackerContext> contextMap = new Object2ObjectOpenHashMap<>();
 
     static {
         addOperation("Frame");
+        addOperation("Reflex Sleep");
         addOperation("Level Render");
         addOperation("Main Render");
         addOperation("Upscale");
         addOperation("GUI");
+        // Regions timed with GPU-side queries owned elsewhere: the Vulkan ones come from
+        // VulkanTimestampProfiler, the GL ones from the interop/capture passes. Registered
+        // up front so submitExternalGpuSample only ever writes into an existing context.
+        addExternalGpuOperation(VK_UPSCALE);
+        addExternalGpuOperation(VK_FRAME_GEN);
+        addExternalGpuOperation(VK_PRESENT_BLIT);
+        addOperation(GL_INTEROP_FLIP);
+        addOperation(GL_CAPTURE_FLIP);
+        addOperation(GL_INPUT_CONVERT);
     }
 
     public static void addOperation(String operationName) {
-        contextMap.computeIfAbsent(operationName, k -> new TrackerContext());
+        contextMap.computeIfAbsent(operationName, k -> new TrackerContext(false));
+    }
+
+    /**
+     * Registers an operation whose GPU time arrives via {@link #submitExternalGpuSample}.
+     * These never allocate GL query objects, because their timings come from a Vulkan
+     * query pool on a different device.
+     */
+    public static void addExternalGpuOperation(String operationName) {
+        contextMap.computeIfAbsent(operationName, k -> new TrackerContext(true));
     }
 
     public static void beginFrame() {
@@ -69,7 +95,7 @@ public class PerformanceTracker {
         }
         ctx.cpuStartPending = false;
 
-        if (!SuperResolutionConfig.isEnableDetailedProfiling()) {
+        if (!SuperResolutionConfig.isEnableDetailedProfiling() || ctx.externalGpu) {
             return;
         }
 
@@ -91,7 +117,7 @@ public class PerformanceTracker {
             return;
         }
 
-        if (SuperResolutionConfig.isEnableDetailedProfiling()) {
+        if (SuperResolutionConfig.isEnableDetailedProfiling() && !ctx.externalGpu) {
             ctx.ensureQueriesInitialized();
             GL41.glQueryCounter(ctx.queryIdsEnd[ctx.cursor], GL41.GL_TIMESTAMP);
             ctx.queryEnded[ctx.cursor] = true;
@@ -101,11 +127,27 @@ public class PerformanceTracker {
         ctx.cpuTimes[ctx.cursor] = end - ctx.tempCpuStart;
         ctx.cpuStartPending = false;
 
-        if (SuperResolutionConfig.isEnableDetailedProfiling()) {
+        if (SuperResolutionConfig.isEnableDetailedProfiling() && !ctx.externalGpu) {
             tryCleanPendingResults(ctx);
         }
 
         ctx.cursor = (ctx.cursor + 1) % MAX_RESULT;
+    }
+
+    /**
+     * Records a GPU duration measured by something other than this class's GL queries -
+     * currently {@code VulkanTimestampProfiler}, whose timestamps come back several
+     * frames after the work was recorded. Such a context keeps its own ring cursor
+     * because there is no {@code push}/{@code pop} pair driving it.
+     */
+    public static void submitExternalGpuSample(String operationName, long nanos) {
+        TrackerContext ctx = contextMap.get(operationName);
+        if (ctx == null) {
+            return;
+        }
+        ctx.gpuTimes[ctx.externalCursor] = nanos;
+        ctx.externalCursor = (ctx.externalCursor + 1) % MAX_RESULT;
+        ctx.cursor = ctx.externalCursor;
     }
 
     public static void clear(String operationName) {
@@ -149,6 +191,10 @@ public class PerformanceTracker {
             return new long[0];
         }
 
+        if (ctx.externalGpu) {
+            return rotatedCopy(ctx.gpuTimes, ctx.cursor);
+        }
+
         ctx.ensureQueriesInitialized();
 
         for (int i = 0; i < MAX_RESULT; i++) {
@@ -187,15 +233,29 @@ public class PerformanceTracker {
             return 0;
         }
 
-        ctx.ensureQueriesInitialized();
-
         int lastIdx = (ctx.cursor - 1 + MAX_RESULT) % MAX_RESULT;
+
+        if (ctx.externalGpu) {
+            return ctx.gpuTimes[lastIdx];
+        }
+
+        ctx.ensureQueriesInitialized();
 
         if (ctx.queryPending[lastIdx] && ctx.queryEnded[lastIdx]) {
             syncGpuResultAtIndex(ctx, lastIdx, true);
         }
 
         return ctx.gpuTimes[lastIdx];
+    }
+
+    private static long[] rotatedCopy(long[] source, int head) {
+        long[] result = new long[MAX_RESULT];
+        int len1 = MAX_RESULT - head;
+        System.arraycopy(source, head, result, 0, len1);
+        if (head > 0) {
+            System.arraycopy(source, 0, result, len1, head);
+        }
+        return result;
     }
 
     private static void tryCleanPendingResults(TrackerContext ctx) {
@@ -246,12 +306,15 @@ public class PerformanceTracker {
         final boolean[] queryEnded = new boolean[MAX_RESULT]; // 防止 pop 意外没有调用导致的卡死
 
         int cursor = 0;
+        int externalCursor = 0;
+        boolean externalGpu = false;
         long tempCpuStart = 0;
         boolean cpuStartPending = false;
         boolean queriesInitialized = false;
 
-        TrackerContext() {
-            if (SuperResolutionConfig.isEnableDetailedProfiling()) {
+        TrackerContext(boolean external) {
+            this.externalGpu = external;
+            if (!external && SuperResolutionConfig.isEnableDetailedProfiling()) {
                 initQueries();
             }
         }
@@ -263,7 +326,7 @@ public class PerformanceTracker {
         }
 
         void ensureQueriesInitialized() {
-            if (!queriesInitialized && SuperResolutionConfig.isEnableDetailedProfiling()) {
+            if (!externalGpu && !queriesInitialized && SuperResolutionConfig.isEnableDetailedProfiling()) {
                 initQueries();
             }
         }

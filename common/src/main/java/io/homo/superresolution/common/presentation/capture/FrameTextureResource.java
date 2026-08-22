@@ -10,8 +10,9 @@
 
 package io.homo.superresolution.common.presentation.capture;
 
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
-import io.homo.superresolution.common.upscale.InteropResourcesConverter;
+import io.homo.superresolution.common.upscale.InteropResourcesPreprocessor;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
@@ -30,6 +31,9 @@ import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_TRANSFER_DST_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_TRANSFER_SRC_EXT;
 
 final class FrameTextureResource {
+    /** flip_y and flip_motion_vector_y sample from binding 0 only. */
+    private static final int CAPTURE_FLIP_TEXTURE_UNITS = 1;
+
     private final VulkanDevice device;
     private final String label;
     private VulkanTexture vkTexture;
@@ -56,12 +60,27 @@ final class FrameTextureResource {
                 : source.getTextureFormat();
         ensureOwned(source.getWidth(), source.getHeight(), format);
         awaitOwnedRelease();
-        try (GlState ignored = new GlState()) {
+        PerformanceTracker.push(PerformanceTracker.GL_CAPTURE_FLIP);
+        // The no-arg GlState saves STATE_ALL: ~78 synchronous glGet* queries plus as many
+        // restores, which profiled at 0.22ms CPU around a 0.07ms dispatch - and every
+        // other GlState call site in the codebase already passes a narrow mask.
+        //
+        // flip_y / flip_motion_vector_y bind one sampler at binding 0 and one storage
+        // image at binding 1, so the only global state they disturb is the current
+        // program, the active texture unit, and unit 0's binding. STATE_TEXTURE is not
+        // enough on its own: it restores whichever unit was active at save time, which is
+        // not necessarily the unit the dispatch clobbered. The storage image goes to an
+        // image unit, which GlState does not track under any mask.
+        try (GlState ignored = new GlState(
+                GlState.STATE_PROGRAM | GlState.STATE_ACTIVE_TEXTURE | GlState.STATE_TEXTURES,
+                CAPTURE_FLIP_TEXTURE_UNITS)) {
             if (motionVector) {
-                InteropResourcesConverter.flipMotionVectorY(source, glTexture);
+                InteropResourcesPreprocessor.flipMotionVectorY(source, glTexture);
             } else {
-                InteropResourcesConverter.flipY(source, glTexture);
+                InteropResourcesPreprocessor.flipY(source, glTexture);
             }
+        } finally {
+            PerformanceTracker.pop(PerformanceTracker.GL_CAPTURE_FLIP);
         }
         ready.signalVulkan(
                 new int[]{Math.toIntExact(glTexture.handle())},

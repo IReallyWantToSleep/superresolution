@@ -25,7 +25,6 @@ import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
 import io.homo.superresolution.core.graphics.impl.framebuffer.*;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.Gl;
-import io.homo.superresolution.core.graphics.opengl.GlConst;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import org.jetbrains.annotations.NotNull;
 
@@ -271,7 +270,7 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
         List<ColorAttachment> list = new ArrayList<>();
         for (GlFrameBufferAttachment attachment : attachments) {
             if (attachment.type == GlFrameBufferAttachment.FrameBufferAttachmentType.COLOR) {
-                int index = attachment.type.attachmentId() - GlConst.GL_COLOR_ATTACHMENT0;
+                int index = attachment.type.attachmentId() - GL_COLOR_ATTACHMENT0;
                 list.add(new ColorAttachment(index, attachment.texture));
             }
         }
@@ -409,12 +408,12 @@ public class GlFrameBuffer implements IBindableFrameBuffer, IDebuggableObject {
     @Override
     public String getDebugLabel() {
         return label != null ? label : "FrameBuffer-%s|Color-%s|Depth-%s|DepthStencil-%s"
-                                       .formatted(
-                                               handle(),
-                                               colorAttachment != null ? colorAttachment.texture.string() : "None",
-                                               depthAttachment != null ? depthAttachment.texture.string() : "None",
-                                               depthStencilAttachment != null ? depthStencilAttachment.texture.string() : "None"
-                                       );
+                .formatted(
+                        handle(),
+                        colorAttachment != null ? colorAttachment.texture.string() : "None",
+                        depthAttachment != null ? depthAttachment.texture.string() : "None",
+                        depthStencilAttachment != null ? depthStencilAttachment.texture.string() : "None"
+                );
     }
 
     @Override

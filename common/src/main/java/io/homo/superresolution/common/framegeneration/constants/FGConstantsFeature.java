@@ -15,7 +15,7 @@ import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.VulkanInteropAlgorithm;
+import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeProvider;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
@@ -26,7 +26,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class FGConstantsFeature {
-    private static final int CONSTANTS_CAPACITY = Math.max(16, VulkanInteropAlgorithm.MAX_IN_FLIGHT_FRAME * 4);
+    private static final int CONSTANTS_CAPACITY = Math.max(16, GlVulkanInteropAlgorithm.MAX_IN_FLIGHT_FRAME * 4);
     private static final Map<Integer, FGConstants> CONSTANTS = new LinkedHashMap<>();
 
     private static boolean registered;

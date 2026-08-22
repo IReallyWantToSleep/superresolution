@@ -29,7 +29,6 @@ import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsage;
@@ -327,7 +326,7 @@ public class ValidatedCommandDecoder implements ICommandDecoder {
     }
 
     @Override
-    public void writeToTexture(ICommandBuffer commandBuffer,ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel) {
+    public void writeToTexture(ICommandBuffer commandBuffer, ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel) {
         requireNonNull(commandBuffer, "writeToTexture", "commandBuffer");
         requireNonNullTexture(texture, "writeToTexture");
         if (data == null) {
@@ -348,7 +347,7 @@ public class ValidatedCommandDecoder implements ICommandDecoder {
 
         requireTextureUsage(texture, TextureUsage.TransferDestination, "writeToTexture");
 
-        rawCommandDecoder.writeToTexture(commandBuffer,texture, data, x, y, width, height, mipLevel);
+        rawCommandDecoder.writeToTexture(commandBuffer, texture, data, x, y, width, height, mipLevel);
     }
 
     @Override
@@ -393,6 +392,7 @@ public class ValidatedCommandDecoder implements ICommandDecoder {
         requireRangeInclusive(a, 0.0f, 1.0f, "setBlendConstants", "a");
         rawCommandDecoder.setBlendConstants(commandBuffer, r, g, b, a);
     }
+
     @Override
     public void beginRenderPass(ICommandBuffer commandBuffer, RenderPass renderPass) {
         requireNonNull(commandBuffer, "beginRenderPass", "commandBuffer");
@@ -537,7 +537,9 @@ public class ValidatedCommandDecoder implements ICommandDecoder {
                                             PipelineDescriptorSet descriptorSet,
                                             Object pipeline) {
         Map<String, PipelineDescriptorSet.ResourceBinding> bindings = descriptorSet.getBindings();
-        if (bindings.isEmpty()) return;
+        if (bindings.isEmpty()) {
+            return;
+        }
 
         for (Map.Entry<String, PipelineDescriptorSet.ResourceBinding> entry : bindings.entrySet()) {
             String name = entry.getKey();

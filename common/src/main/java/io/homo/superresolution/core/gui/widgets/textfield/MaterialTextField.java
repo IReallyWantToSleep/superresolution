@@ -57,6 +57,9 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
     private final Animator.FloatAnimator labelAnimator = Animator.ofFloat(0f, 0f)
             .duration(ANIMATION_DURATION_MS)
             .timeInterpolator(TimeInterpolator.easeOutCubic());
+    private final Animator.FloatAnimator trailingIconRotationAnimator = Animator.ofFloat(0f, 0f)
+            .duration(200L)
+            .timeInterpolator(TimeInterpolator.easeOutCubic());
     private final MaterialWidgetOverlay<MaterialTextField> trailingIconOverlay = new MaterialWidgetOverlay<>(this) {
         @Override
         protected void drawShape(RenderContext ctx, MaterialTextField widget, Color color) {
@@ -169,6 +172,9 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
         }
         if (hasTrailingIconAction() && trailingIconHovered) {
             return MouseCursor.HAND;
+        }
+        if (readOnly) {
+            return MouseCursor.ARROW;
         }
         return MouseCursor.IBEAM;
     }
@@ -302,6 +308,7 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
     public void render(RenderContext ctx, UIInputState inputState) {
         focusAnimator.update();
         labelAnimator.update();
+        trailingIconRotationAnimator.update();
 
         Rectangle componentBounds = getRawBounds();
         MaterialTextFieldSize size = style().size();
@@ -351,12 +358,17 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
                         colors.trailingIconColor
                 );
             }
+            ctx.save();
+            ctx.translate(iconCenterX, centerY);
+            ctx.rotate((float) Math.toRadians(trailingIconRotationAnimator.get()));
+            ctx.translate(-iconCenterX, -centerY);
             currentTrailingIcon.render(
                     ctx,
                     colors.trailingIconColor,
                     size.iconSize(),
                     new Vector2f(iconCenterX, centerY)
             );
+            ctx.restore();
             contentEndX -= size.iconSize() + size.iconTextGap();
         }
 
@@ -375,6 +387,9 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
         }
         if (labelAnimator.isRunning()) {
             labelAnimator.cancel();
+        }
+        if (trailingIconRotationAnimator.isRunning()) {
+            trailingIconRotationAnimator.cancel();
         }
         trailingIconOverlay.destroy();
     }
@@ -468,6 +483,11 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
         return this;
     }
 
+    public MaterialTextField trailingIconRotation(float degrees) {
+        trailingIconRotationAnimator.fromTo(trailingIconRotationAnimator.get(), degrees).start();
+        return this;
+    }
+
     public MaterialTextField clipboard(ClipboardAdapter clipboard) {
         this.clipboard = Objects.requireNonNull(clipboard, "clipboard");
         return this;
@@ -486,7 +506,7 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
 
         String oldValue = this.value;
         this.value = sanitizedValue;
-        cursorIndex = sanitizedValue.length();
+        cursorIndex = readOnly ? 0 : sanitizedValue.length();
         clearSelection();
         undoHistory.clear();
         redoHistory.clear();
@@ -664,12 +684,15 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
         if (style().variant() == MaterialTextFieldVariant.Outlined && labelProgress > 0f) {
             float labelWidth = ctx.measureTextWidth(label, labelFontSize, labelFontSize + 2f);
             float backgroundAlpha = 255f * Math.min(1f, labelProgress);
+            Color labelBg = style().labelBackground() != null
+                    ? style().labelBackground().apply(scheme())
+                    : scheme().surface();
             ctx.rect(
                     contentStartX - 4f,
                     labelY - labelFontSize / 2f,
                     labelWidth + 8f,
                     labelFontSize,
-                    scheme().surface().copy().alpha((int) backgroundAlpha),
+                    labelBg.copy().alpha((int) backgroundAlpha),
                     true
             );
         }
@@ -716,7 +739,7 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
         ctx.save();
         ctx.scissor(contentStartX, bounds.y, visibleWidth, bounds.height);
 
-        if (drawValue && hasSelection()) {
+        if (drawValue && hasSelection() && !readOnly) {
             float selectionStart = contentStartX + renderedCharacterOffsets[selectionStart()] - horizontalScrollOffset;
             float selectionEnd = contentStartX + renderedCharacterOffsets[selectionEnd()] - horizontalScrollOffset;
             ctx.rect(
@@ -742,7 +765,7 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
                 false
         );
 
-        if (isFocused() && isCaretVisible()) {
+        if (isFocused() && !readOnly && isCaretVisible()) {
             float caretX = contentStartX + renderedCharacterOffsets[cursorIndex] - horizontalScrollOffset;
             ctx.rect(
                     caretX,
@@ -815,6 +838,10 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
             return;
         }
 
+        if (readOnly) {
+            return;
+        }
+
         cursorIndex = cursorIndexAt(event.getMousePosition().x);
         clearSelection();
         dragSelectionAnchor = cursorIndex;
@@ -822,7 +849,7 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
     }
 
     private void onMouseDrag(MouseEvent.MouseDragEvent event) {
-        if (!isFocused() || !isPressed() || isDisabled()) {
+        if (!isFocused() || !isPressed() || isDisabled() || readOnly) {
             return;
         }
 

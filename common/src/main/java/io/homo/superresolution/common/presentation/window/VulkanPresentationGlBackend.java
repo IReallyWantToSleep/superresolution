@@ -10,7 +10,7 @@
 
 package io.homo.superresolution.common.presentation.window;
 
-#if MC_VER >= MC_26_1 && MC_VER < MC_26_2
+#if MC_VER >= MC_26_1
 import com.mojang.blaze3d.GLFWErrorCapture;
 import com.mojang.blaze3d.opengl.GlBackend;
 import com.mojang.blaze3d.shaders.GpuDebugOptions;
@@ -18,6 +18,7 @@ import com.mojang.blaze3d.shaders.ShaderSource;
 import com.mojang.blaze3d.systems.BackendCreationException;
 import com.mojang.blaze3d.systems.GpuDevice;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import org.jspecify.annotations.NonNull;
 import org.lwjgl.glfw.GLFW;
 
 import static org.lwjgl.glfw.GLFW.GLFW_CLIENT_API;
@@ -39,6 +40,7 @@ public final class VulkanPresentationGlBackend extends GlBackend {
         GLFW.glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
     }
 
+    #if !(MC_VER >= MC_26_2)
     @Override
     public void handleWindowCreationErrors(GLFWErrorCapture.Error error) throws BackendCreationException {
         String message = "Failed to create the Vulkan presentation window";
@@ -108,6 +110,82 @@ public final class VulkanPresentationGlBackend extends GlBackend {
         failure.addSuppressed(cause);
         return VulkanPresentationGlBackend.<RuntimeException, T>sneakyThrow(failure);
     }
+    #else
+        @Override
+    public void handleWindowCreationErrors(GLFWErrorCapture.Error error) throws BackendCreationException {
+        String message = "Failed to create the Vulkan presentation window";
+        if (error != null) {
+            message += ": " + error;
+        }
+        throw new BackendCreationException(message,BackendCreationException.Reason.OTHER);
+    }
+
+    @Override
+    public @NonNull GpuDevice createDevice(
+            long window,
+            @NonNull ShaderSource defaultShaderSource,
+            @NonNull GpuDebugOptions debugOptions,
+            @NonNull Runnable criticalShaderLoader) {
+        long helper = NULL;
+        try {
+            if (window == NULL) {
+                throw new IllegalStateException("Minecraft provided a null presentation window");
+            }
+            PresentationWindowState.attachPresentation(window);
+
+            GLFW.glfwDefaultWindowHints();
+            GLFW.glfwWindowHint(GLFW_CLIENT_API, GLFW_OPENGL_API);
+            GLFW.glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
+            GLFW.glfwWindowHint(GLFW_FOCUSED, GLFW_FALSE);
+            GLFW.glfwWindowHint(GLFW_FOCUS_ON_SHOW, GLFW_FALSE);
+            GLFW.glfwWindowHint(GLFW_RESIZABLE, GLFW_FALSE);
+            super.setWindowHints();
+
+            helper = GLFW.glfwCreateWindow(1, 1, HELPER_TITLE, NULL, NULL);
+            if (helper == NULL) {
+                throw new IllegalStateException("Failed to create the hidden OpenGL helper window");
+            }
+            PresentationWindowState.attachRender(helper);
+
+            GpuDevice device = super.createDevice(helper, defaultShaderSource, debugOptions,criticalShaderLoader);
+            validateHandles(window, helper);
+            return device;
+        } catch (Throwable throwable) {
+            if (helper != NULL && !PresentationWindowState.isRender(helper)) {
+                GLFW.glfwDestroyWindow(helper);
+            }
+            PresentationWindowState.resetAfterStartupFailure();
+            VulkanPresentationFeature.disableAfterFailure(throwable);
+            return throwBackendCreationFailure(throwable);
+        } finally {
+            GLFW.glfwDefaultWindowHints();
+        }
+    }
+
+    private static void validateHandles(long presentation, long render) {
+        if (presentation == render) {
+            throw new IllegalStateException("Presentation and render windows unexpectedly share a handle");
+        }
+        if (GLFW.glfwGetWindowAttrib(presentation, GLFW_CLIENT_API) != GLFW_NO_API) {
+            throw new IllegalStateException("Minecraft presentation window was not created with GLFW_NO_API");
+        }
+        if (GLFW.glfwGetWindowAttrib(render, GLFW_CLIENT_API) != GLFW_OPENGL_API) {
+            throw new IllegalStateException("Hidden render window does not own an OpenGL context");
+        }
+        if (GLFW.glfwGetCurrentContext() != render) {
+            throw new IllegalStateException("Hidden render window is not the current OpenGL context");
+        }
+    }
+
+    private static <T> T throwBackendCreationFailure(Throwable cause) {
+        BackendCreationException failure = new BackendCreationException(
+                "Failed to initialize Vulkan presentation: " + cause.getMessage(),
+                BackendCreationException.Reason.OTHER
+        );
+        failure.addSuppressed(cause);
+        return VulkanPresentationGlBackend.<RuntimeException, T>sneakyThrow(failure);
+    }
+    #endif
 
     @SuppressWarnings("unchecked")
     private static <E extends Throwable, T> T sneakyThrow(Throwable throwable) throws E {

@@ -50,7 +50,7 @@ public class ImageLoader {
             imageFileData = MemoryUtil.memAlloc(data.length);
             imageFileData.put(data);
         } catch (IOException e) {
-            SuperResolution.LOGGER.error("加载图像失败", e);
+            SuperResolution.LOGGER.error("Failed to load image", e);
             return null;
         }
         imageFileData.rewind();

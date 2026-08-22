@@ -355,16 +355,16 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     @Override
     public void writeToBuffer(ICommandBuffer commandBuffer, IBuffer dst, long dstOffset, long size, ByteBuffer data) {
         if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
-            throw new IllegalArgumentException("writeToBuffer: commandBuffer类型错误: " + commandBuffer.getClass().getName());
+            throw new IllegalArgumentException("writeToBuffer: invalid commandBuffer type: " + commandBuffer.getClass().getName());
         }
         if (!(dst instanceof VulkanBuffer vkBuffer)) {
-            throw new IllegalArgumentException("writeToBuffer: buffer类型错误: " + dst.getClass().getName());
+            throw new IllegalArgumentException("writeToBuffer: invalid buffer type: " + dst.getClass().getName());
         }
         if (data == null) {
-            throw new IllegalArgumentException("writeToBuffer: data为null");
+            throw new IllegalArgumentException("writeToBuffer: data must not be null");
         }
         if (dstOffset < 0) {
-            throw new IllegalArgumentException("writeToBuffer: dstOffset不能为负数");
+            throw new IllegalArgumentException("writeToBuffer: dstOffset must not be negative");
         }
 
         ByteBuffer src = data.duplicate();
@@ -372,7 +372,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             return;
         }
         if (dstOffset + size > dst.getSize()) {
-            throw new IllegalArgumentException("writeToBuffer: 写入范围超出缓冲大小");
+            throw new IllegalArgumentException("writeToBuffer: write range exceeds buffer size");
         }
 
         if (vkBuffer.getUsages().has(BufferUsage.TransferSrc)) {
@@ -396,16 +396,16 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     @Override
     public void writeToBuffer(ICommandBuffer commandBuffer, IVertexBuffer dst, long dstOffset, ByteBuffer data) {
         if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
-            throw new IllegalArgumentException("writeToBuffer(IVertexBuffer): commandBuffer类型错误: " + commandBuffer.getClass().getName());
+            throw new IllegalArgumentException("writeToBuffer(IVertexBuffer): invalid commandBuffer type: " + commandBuffer.getClass().getName());
         }
         if (!(dst instanceof VulkanVertexBuffer vkVertexBuffer)) {
-            throw new IllegalArgumentException("writeToBuffer(IVertexBuffer): vertexBuffer类型错误: " + dst.getClass().getName());
+            throw new IllegalArgumentException("writeToBuffer(IVertexBuffer): invalid vertexBuffer type: " + dst.getClass().getName());
         }
         if (data == null) {
-            throw new IllegalArgumentException("writeToBuffer(IVertexBuffer): data为null");
+            throw new IllegalArgumentException("writeToBuffer(IVertexBuffer): data must not be null");
         }
         if (dstOffset < 0) {
-            throw new IllegalArgumentException("writeToBuffer(IVertexBuffer): dstOffset不能为负数");
+            throw new IllegalArgumentException("writeToBuffer(IVertexBuffer): dstOffset must not be negative");
         }
 
         ByteBuffer src = data.duplicate();
@@ -414,7 +414,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             return;
         }
         if (dstOffset + size > dst.getSizeInBytes()) {
-            throw new IllegalArgumentException("writeToBuffer(IVertexBuffer): 写入范围超出缓冲大小");
+            throw new IllegalArgumentException("writeToBuffer(IVertexBuffer): write range exceeds buffer size");
         }
 
         VulkanBuffer stagingBuffer = new VulkanBuffer(
@@ -462,16 +462,16 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     @Override
     public void writeToTexture(ICommandBuffer commandBuffer, ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel) {
         if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
-            throw new IllegalArgumentException("writeToTexture: commandBuffer类型错误: " + commandBuffer.getClass().getName());
+            throw new IllegalArgumentException("writeToTexture: invalid commandBuffer type: " + commandBuffer.getClass().getName());
         }
         if (!(texture instanceof VulkanTexture vkTexture)) {
-            throw new IllegalArgumentException("writeToTexture: texture类型错误: " + texture.getClass().getName());
+            throw new IllegalArgumentException("writeToTexture: invalid texture type: " + texture.getClass().getName());
         }
         if (data == null) {
-            throw new IllegalArgumentException("writeToTexture: data为null");
+            throw new IllegalArgumentException("writeToTexture: data must not be null");
         }
         if (x < 0 || y < 0 || width <= 0 || height <= 0) {
-            throw new IllegalArgumentException("writeToTexture: 无效的纹理区域参数");
+            throw new IllegalArgumentException("writeToTexture: invalid texture region arguments");
         }
 
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
@@ -585,13 +585,13 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     @Override
     public void beginRenderPass(ICommandBuffer commandBuffer, RenderPass renderPass) {
         if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
-            throw new IllegalArgumentException("beginRenderPass: commandBuffer类型错误: " + commandBuffer.getClass().getName());
+            throw new IllegalArgumentException("beginRenderPass: invalid commandBuffer type: " + commandBuffer.getClass().getName());
         }
         if (renderPass == null) {
-            throw new IllegalArgumentException("beginRenderPass: renderPass为null");
+            throw new IllegalArgumentException("beginRenderPass: renderPass must not be null");
         }
         if (!(renderPass instanceof VulkanRenderPass vkRenderPass)) {
-            throw new IllegalArgumentException("beginRenderPass: renderPass类型错误: " + renderPass.getClass().getName());
+            throw new IllegalArgumentException("beginRenderPass: invalid renderPass type: " + renderPass.getClass().getName());
         }
 
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
@@ -695,10 +695,10 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     @Override
     public void endRenderPass(ICommandBuffer commandBuffer) {
         if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
-            throw new IllegalArgumentException("endRenderPass: commandBuffer类型错误: " + commandBuffer.getClass().getName());
+            throw new IllegalArgumentException("endRenderPass: invalid commandBuffer type: " + commandBuffer.getClass().getName());
         }
         if (!vcb.isRenderPassActive()) {
-            throw new IllegalStateException("endRenderPass: 当前没有活动的render pass");
+            throw new IllegalStateException("endRenderPass: no render pass is active");
         }
 
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
@@ -711,16 +711,16 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     @Override
     public void bindPipeline(ICommandBuffer commandBuffer, GraphicsPipeline pipeline) {
         if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
-            throw new IllegalArgumentException("bindPipeline(graphics): commandBuffer类型错误: " + commandBuffer.getClass().getName());
+            throw new IllegalArgumentException("bindPipeline(graphics): invalid commandBuffer type: " + commandBuffer.getClass().getName());
         }
         if (!vcb.isRenderPassActive()) {
-            throw new IllegalStateException("bindPipeline(graphics): 当前没有活动的render pass，请先调用 beginRenderPass");
+            throw new IllegalStateException("bindPipeline(graphics): no render pass is active; call beginRenderPass first");
         }
         if (pipeline == null) {
-            throw new IllegalArgumentException("bindPipeline(graphics): pipeline为null");
+            throw new IllegalArgumentException("bindPipeline(graphics): pipeline must not be null");
         }
         if (!(pipeline instanceof VulkanGraphicsPipeline vkGraphicsPipeline)) {
-            throw new IllegalArgumentException("bindPipeline(graphics): pipeline类型错误: " + pipeline.getClass().getName());
+            throw new IllegalArgumentException("bindPipeline(graphics): invalid pipeline type: " + pipeline.getClass().getName());
         }
 
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
@@ -742,16 +742,16 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     @Override
     public void bindPipeline(ICommandBuffer commandBuffer, ComputePipeline pipeline) {
         if (!(commandBuffer instanceof VulkanCommandBuffer vcb)) {
-            throw new IllegalArgumentException("bindPipeline(compute): commandBuffer类型错误: " + commandBuffer.getClass().getName());
+            throw new IllegalArgumentException("bindPipeline(compute): invalid commandBuffer type: " + commandBuffer.getClass().getName());
         }
         if (vcb.isRenderPassActive()) {
-            throw new IllegalStateException("bindPipeline(compute): render pass进行中，不能绑定compute pipeline");
+            throw new IllegalStateException("bindPipeline(compute): cannot bind a compute pipeline while a render pass is active");
         }
         if (pipeline == null) {
-            throw new IllegalArgumentException("bindPipeline(compute): pipeline为null");
+            throw new IllegalArgumentException("bindPipeline(compute): pipeline must not be null");
         }
         if (!(pipeline instanceof VulkanComputePipeline vkComputePipeline)) {
-            throw new IllegalArgumentException("bindPipeline(compute): pipeline类型错误: " + pipeline.getClass().getName());
+            throw new IllegalArgumentException("bindPipeline(compute): invalid pipeline type: " + pipeline.getClass().getName());
         }
 
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
@@ -773,24 +773,24 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     public void draw(ICommandBuffer commandBuffer, IVertexBuffer vertexBuffer, int vertexCount, int firstVertex) {
         VulkanCommandBuffer vcb = (VulkanCommandBuffer) commandBuffer;
         if (!vcb.isRenderPassActive()) {
-            throw new IllegalStateException("draw: 当前没有活动的render pass，请先调用 beginRenderPass");
+            throw new IllegalStateException("draw: no render pass is active; call beginRenderPass first");
         }
         VulkanGraphicsPipeline vkGraphicsPipeline = vcb.getBoundGraphicsPipeline();
         if (vkGraphicsPipeline == null) {
-            throw new IllegalStateException("draw: 当前未绑定图形管线，请先调用 bindPipeline(graphics)");
+            throw new IllegalStateException("draw: no graphics pipeline is bound; call bindPipeline(graphics) first");
         }
 
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
         GraphicsPipeline graphicsPipeline = vkGraphicsPipeline;
 
         if (vertexBuffer == null) {
-            throw new IllegalArgumentException("draw: vertexBuffer为null");
+            throw new IllegalArgumentException("draw: vertexBuffer must not be null");
         }
         if (vertexCount <= 0) {
-            throw new IllegalArgumentException("draw: vertexCount必须为正数");
+            throw new IllegalArgumentException("draw: vertexCount must be positive");
         }
         if (firstVertex < 0) {
-            throw new IllegalArgumentException("draw: firstVertex不能为负数");
+            throw new IllegalArgumentException("draw: firstVertex must not be negative");
         }
 
         withLabel(cmd, "Draw", () -> {
@@ -808,11 +808,11 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     public void dispatch(ICommandBuffer commandBuffer, int groupCountX, int groupCountY, int groupCountZ) {
         VulkanCommandBuffer vcb = (VulkanCommandBuffer) commandBuffer;
         if (vcb.isRenderPassActive()) {
-            throw new IllegalStateException("dispatch: render pass进行中，不能执行compute dispatch");
+            throw new IllegalStateException("dispatch: cannot execute a compute dispatch while a render pass is active");
         }
         VulkanComputePipeline vkComputePipeline = vcb.getBoundComputePipeline();
         if (vkComputePipeline == null) {
-            throw new IllegalStateException("dispatch: 当前未绑定计算管线，请先调用 bindPipeline(compute)");
+            throw new IllegalStateException("dispatch: no compute pipeline is bound; call bindPipeline(compute) first");
         }
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
 

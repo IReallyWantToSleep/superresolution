@@ -151,7 +151,19 @@ public class ExtraResource {
         }
         HttpURLConnection connection = null;
         try {
-            URI uri = new URI(source.src);
+            String src;
+            try {
+                src = source.provider.get();
+            } catch (Exception e) {
+                SuperResolution.LOGGER.error("Failed to resolve remote source url", e);
+                errorListener.onError(ErrorCode.NetworkError);
+                return false;
+            }
+            if (src == null || src.isBlank()) {
+                errorListener.onError(ErrorCode.NetworkError);
+                return false;
+            }
+            URI uri = new URI(src);
             connection = (HttpURLConnection) uri.toURL().openConnection();
             connection.setRequestMethod("GET");
             connection.setConnectTimeout(10000);
@@ -206,7 +218,7 @@ public class ExtraResource {
                     errorListener.onError(ErrorCode.NetworkError);
                 }
                 deletePartialFile(targetFile);
-                SuperResolution.LOGGER.error("HTTP 下载失败 (IO 异常)", e);
+                SuperResolution.LOGGER.error("HTTP download failed (I/O exception)", e);
                 return false;
             }
             if (isCancelled(errorListener)) {
@@ -216,7 +228,7 @@ public class ExtraResource {
             finishListener.onFinish(targetFile);
             return true;
         } catch (Exception e) {
-            SuperResolution.LOGGER.error("HTTP 下载失败", e);
+            SuperResolution.LOGGER.error("HTTP download failed", e);
             if (Thread.currentThread().isInterrupted()) {
                 errorListener.onError(ErrorCode.Cancelled);
             } else {
@@ -272,7 +284,7 @@ public class ExtraResource {
             }
         } catch (FileNotFoundException ex) {
             errorListener.onError(ErrorCode.PermissionDenied);
-            SuperResolution.LOGGER.error("本地资源文件未找到", ex);
+            SuperResolution.LOGGER.error("Local resource file not found", ex);
             return false;
         } catch (Exception ex) {
             if (Thread.currentThread().isInterrupted()) {
@@ -280,7 +292,7 @@ public class ExtraResource {
             } else {
                 errorListener.onError(ErrorCode.UnknownError);
             }
-            SuperResolution.LOGGER.error("本地资源复制失败", ex);
+            SuperResolution.LOGGER.error("Failed to copy local resource", ex);
             return false;
         }
     }
@@ -291,6 +303,11 @@ public class ExtraResource {
         PermissionDenied,
         Cancelled,
         UnknownError
+    }
+
+    @FunctionalInterface
+    public interface SrcProvider {
+        String get() throws Exception;
     }
 
     @FunctionalInterface
@@ -310,17 +327,30 @@ public class ExtraResource {
 
     public static class ResourceSource {
         protected final String src;
+        protected final SrcProvider provider;
         protected final Type type;
         protected final String sourceName;
 
         public ResourceSource(String src, Type type, String sourceName) {
             this.src = src;
+            this.provider = null;
+            this.type = type;
+            this.sourceName = sourceName;
+        }
+
+        public ResourceSource(SrcProvider provider, Type type, String sourceName) {
+            this.src = null;
+            this.provider = provider;
             this.type = type;
             this.sourceName = sourceName;
         }
 
         public String getSrc() {
             return src;
+        }
+
+        public SrcProvider getProvider() {
+            return provider;
         }
 
         public Type getType() {
@@ -360,8 +390,8 @@ public class ExtraResource {
             return addSource(new ResourceSource(src, ResourceSource.Type.Local, sourceName));
         }
 
-        public Builder addRemote(String src, String sourceName) {
-            return addSource(new ResourceSource(src, ResourceSource.Type.Remote, sourceName));
+        public Builder addRemote(SrcProvider provider, String sourceName) {
+            return addSource(new ResourceSource(provider, ResourceSource.Type.Remote, sourceName));
         }
 
         public ExtraResource build() {

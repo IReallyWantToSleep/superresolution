@@ -95,7 +95,7 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
         try {
             return this.clazz.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
-            SuperResolution.LOGGER.error("算法创建失败", e);
+            SuperResolution.LOGGER.error("Failed to create algorithm", e);
             throw new RuntimeException(e);
         }
     }

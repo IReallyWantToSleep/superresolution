@@ -27,6 +27,7 @@ import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -56,6 +57,7 @@ public abstract class MinecraftMixin {
     @Unique
     private boolean super_resolution$b3dVulkanFrame = false;
 
+    #if !(MC_VER <= MC_1_20_1)
     #if MC_VER <= MC_1_20_1
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;setOverlay(Lnet/minecraft/client/gui/screens/Overlay;)V", unsafe = true), method = "<init>")
     #elif MC_VER > MC_26_1_2
@@ -66,18 +68,8 @@ public abstract class MinecraftMixin {
     private void onClientStarted(net.minecraft.client.main.GameConfig data, CallbackInfo ci) {
         SuperResolution.onClientStarted();
     }
+    #endif
 
-    /*
-    @Inject(at = @At(value = "TAIL"), method = "doWorldLoad")
-    private void onJoinLevel(CallbackInfo ci) {
-        SuperResolution.onJoinLevel();
-    }
-
-    @Inject(at = @At(value = "TAIL"), method = "setLevel")
-    private void onLevelChanged(CallbackInfo ci) {
-        SuperResolution.onLevelChanged();
-    }
-    */
     @Inject(at = @At(value = "RETURN"), method = "onGameLoadFinished")
     private void onLoadDone(CallbackInfo ci) {
         SuperResolution.gameIsLoaded = true;
@@ -88,10 +80,19 @@ public abstract class MinecraftMixin {
     private void onRenderBegin(CallbackInfo ci) {
         // Include Reflex pacing in the CPU frame delta used by GUI animations.
         PerformanceTracker.beginFrame();
+        // Vulkan timestamps land a few frames after the work was recorded, so drain
+        // whatever is ready once per frame on the render thread.
+        VulkanPresentationFeature.collectGpuTimestamps();
         if (SuperResolution.gameIsLoaded) {
             int frameIndex = GameFrameIndex.beginFrame();
             LowLatency.beginFrame(frameIndex);
+            // Tracked on its own so the Frame chart's variance can be attributed. The
+            // sleep stays inside the Frame sample by design (see above), but it is a
+            // latency control loop rather than render cost, and when the GPU is
+            // saturated it dominates the frame and hunts.
+            PerformanceTracker.push("Reflex Sleep");
             LowLatency.sleep();
+            PerformanceTracker.pop("Reflex Sleep");
             LowLatency.beginSimulation();
         }
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
@@ -114,10 +115,6 @@ public abstract class MinecraftMixin {
     private void onRenderEnd(CallbackInfo ci) {
         if (super_resolution$b3dVulkanFrame) {
             super_resolution$b3dVulkanFrame = false;
-            RenderHandlerManager.onFrameEnd();
-            PerformanceTracker.pop("Frame");
-            SuperResolution.onClientTickEnd();
-            return;
         }
         RenderHandlerManager.onFrameEnd();
         PerformanceTracker.pop("Frame");
@@ -146,13 +143,14 @@ public abstract class MinecraftMixin {
     }
     #endif
     #if MC_VER > MC_26_1_2
-    //just like fabric`s invoke point
+    //just like fabric's invoke point
     @Inject(method = "stop",at = @At(value = "TAIL"))
     public void onDestroy(CallbackInfo ci) {
         SuperResolution.onClientStopping();
         SuperResolution.onClientStopped();
     }
     #else
+
     // Resource cleanup runs early (at the "Stopping!" log) while the interop OpenGL
     // context is still current. The OpenGL context and Vulkan device are torn down at
     // destroy() TAIL, after Minecraft has finished its own shutdown rendering (disconnect

@@ -30,7 +30,7 @@ public enum TextureWrapMode {
             case MirroredRepeat -> org.lwjgl.opengl.GL14.GL_MIRRORED_REPEAT;
             case ClampToEdge -> org.lwjgl.opengl.GL12.GL_CLAMP_TO_EDGE;
             case ClampToBorder -> org.lwjgl.opengl.GL13.GL_CLAMP_TO_BORDER;
-            default -> throw new IllegalArgumentException("未知的TextureWrapMode: " + this);
+            default -> throw new IllegalArgumentException("Unknown TextureWrapMode: " + this);
         };
     }
 
@@ -40,7 +40,7 @@ public enum TextureWrapMode {
             case MirroredRepeat -> org.lwjgl.vulkan.VK10.VK_SAMPLER_ADDRESS_MODE_MIRRORED_REPEAT;
             case ClampToEdge -> org.lwjgl.vulkan.VK10.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
             case ClampToBorder -> org.lwjgl.vulkan.VK10.VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
-            default -> throw new IllegalArgumentException("未知的TextureWrapMode: " + this);
+            default -> throw new IllegalArgumentException("Unknown TextureWrapMode: " + this);
         };
     }
 }

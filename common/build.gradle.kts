@@ -2,7 +2,6 @@ import multiversion.BasePlatformConfig
 import multiversion.Dependency
 import multiversion.VersionConfig
 import org.gradle.api.tasks.SourceSetContainer
-import org.gradle.api.tasks.Sync
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JavaToolchainService
@@ -125,9 +124,9 @@ dependencies {
         compileOnly("org.ow2.asm:asm-tree:9.6")
     }
 
+    //Finding Iris dependency
     var irisDependency: Pair<Dependency, Boolean>? = null
     var irisPlatform: String? = null
-
     if (versionConfig.common.enableNeoForge && irisDependency == null) {
         irisDependency = findIris(versionConfig.neoforge)
         irisPlatform = "neoforge"
@@ -181,6 +180,7 @@ val hackSourceSet = sourceSets.maybeCreate("hack")
 val shaderCompatSourceSet = sourceSets.maybeCreate("shadercompat")
 
 tasks.register<JavaCompile>("genJNIHeader") {
+    description = "Generate JNI Header"
     val outputDir = file("../native/cpp/SRNativeMain/include")
 
     source = fileTree("../common/src/main/java") {
@@ -206,7 +206,7 @@ tasks.register<JavaCompile>("genJNIHeader") {
     }
 
     doLast {
-        println("JNI 头文件已生成到: ${outputDir.absolutePath}")
+        println("JNI headers generated at: ${outputDir.absolutePath}")
         delete("$buildDir/jni-temp")
     }
 }
@@ -264,28 +264,11 @@ artifacts {
 
 val useDebugLib = gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true
 
-// Cross-platform NVNGX DLSS-G snippet: the Linux binary ships inside the vendored
-// DLSS SDK and is renamed to the unversioned form the NGX loader searches for.
-val dlssgLinuxSnippet = rootProject.file(
-    "native/cpp/SRNativeNGX/third_party/DLSS/lib/Linux_x86_64/" +
-            (if (useDebugLib) "dev" else "rel") +
-            "/libnvidia-ngx-dlssg.so.310.7.0"
-)
-
 tasks.named<ProcessResources>("processResources") {
     if (useDebugLib) {
         exclude("**/libSuperResolution*+*+release.*")
     } else {
         exclude("**/libSuperResolution*+*+debug.*")
-    }
-
-    if (dlssgLinuxSnippet.isFile) {
-        from(dlssgLinuxSnippet) {
-            rename { "libnvidia-ngx-dlssg.so" }
-            into("lib")
-        }
-    } else {
-        logger.warn("DLSS-G Linux snippet not found at ${dlssgLinuxSnippet}; the jar will not bundle it")
     }
 }
 
@@ -309,15 +292,15 @@ apply(plugin = "maven-publish")
 
 val srIsDevBuild = (gradle.extensions.extraProperties.properties["isDev"] as? Boolean) == true
 val minecraftVersionConfig = providers.gradleProperty("minecraft_version_config").orNull
-    ?: throw GradleException("缺少属性 minecraft_version_config")
+    ?: throw GradleException("Missing minecraft_version_config property")
 val publishingApiToShnexus = gradle.startParameter.taskNames.any { taskName ->
     taskName.substringAfterLast(':') == "publishApiPublicationToShnexusRepository"
 }
 
 if (publishingApiToShnexus && minecraftVersionConfig != "1.20.1") {
     throw GradleException(
-        "远程 Super Resolution API 发布必须使用 minecraft_version_config=1.20.1；"
-            + "请执行 :publishApiToShnexus。"
+        "Remote Super Resolution API publishing must use minecraft_version_config=1.20.1; "
+            + "run :publishApiToShnexus."
     )
 }
 

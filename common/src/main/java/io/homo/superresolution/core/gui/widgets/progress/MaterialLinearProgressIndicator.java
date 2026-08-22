@@ -204,7 +204,7 @@ public class MaterialLinearProgressIndicator extends MaterialWidget<MaterialLine
         float remaining = width - end * width;
         float visibleStop = Math.max(0f, Math.min(stopDiameter, remaining - effectiveGap));
         float stopLeft = Math.max(0f, width - visibleStop);
-        float trackStart = Math.min(x + stopLeft, endX + effectiveGap);
+        float trackStart = activeW > 0f ? Math.min(x + stopLeft, endX + effectiveGap) : x;
         float trackEnd = x + stopLeft - effectiveGap;
 
         boolean wavy = amplitude > 0f;

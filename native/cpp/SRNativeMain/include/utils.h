@@ -1,4 +1,6 @@
-#include "jni/JNI0.h"
+#pragma once
+
+#include "jni/jni.h"
 
 bool init_java_bridge(JNIEnv *env);
 void java_log(const char *msg, int level);

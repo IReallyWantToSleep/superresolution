@@ -29,10 +29,10 @@ public class Gl {
 
     static {
         if (!isSupportDSA()) {
-            SuperResolution.LOGGER.info("不支持DSA 使用 CompatDirectStateAccessImpl");
+            SuperResolution.LOGGER.info("DSA is unsupported; using CompatDirectStateAccessImpl");
             DSA = new CompatDirectStateAccessImpl();
         } else {
-            SuperResolution.LOGGER.info("支持DSA 使用 GL45OrEXTDirectStateAccessImpl");
+            SuperResolution.LOGGER.info("DSA is supported; using GL45OrEXTDirectStateAccessImpl");
             DSA = new GL45OrEXTDirectStateAccessImpl();
         }
     }

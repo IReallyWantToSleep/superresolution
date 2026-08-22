@@ -45,7 +45,7 @@ public class FileIncluder {
             return source;
         }
 
-        SuperResolution.LOGGER.error("加载着色器头文件失败 {}", fullPath);
+        SuperResolution.LOGGER.error("Failed to load shader header {}", fullPath);
         return """
                 #error "include failed %s"
                 """.formatted(fullPath);
@@ -85,10 +85,10 @@ public class FileIncluder {
 
                 if (Files.exists(includePath)) {
                     source = Files.readString(includePath);
-                    SuperResolution.LOGGER.error("加载着色器头文件 (Dev): {}", includePath);
+                    SuperResolution.LOGGER.error("Failed to load shader header in development environment: {}", includePath);
                 }
             } catch (Throwable e) {
-                SuperResolution.LOGGER.error("开发环境着色器头文件热加载失败", e);
+                SuperResolution.LOGGER.error("Shader header hot reload failed in development environment", e);
             }
         }
 

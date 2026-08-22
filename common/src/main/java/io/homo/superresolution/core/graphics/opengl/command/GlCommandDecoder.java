@@ -34,12 +34,14 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.PrimitiveType;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexAttributeFormat;
-import io.homo.superresolution.core.graphics.opengl.*;
+import io.homo.superresolution.core.graphics.opengl.Gl;
+import io.homo.superresolution.core.graphics.opengl.GlDevice;
+import io.homo.superresolution.core.graphics.opengl.GlState;
+import io.homo.superresolution.core.graphics.opengl.OpenGLException;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlComputePipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlGraphicsPipeline;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlPipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.opengl.pipeline.GlRenderPass;
-import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import io.homo.superresolution.core.graphics.opengl.vertex.GlVertexBuffer;
 import org.lwjgl.opengl.GL44;
 import org.lwjgl.system.MemoryUtil;
@@ -112,15 +114,15 @@ public class GlCommandDecoder implements ICommandDecoder {
         GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "clearTextureRGBA");
         requireTexture(texture, "clearTextureRGBA");
         if (color == null || color.length == 0) {
-            throw new IllegalArgumentException("clearTextureRGBA: 颜色数组为空");
+            throw new IllegalArgumentException("clearTextureRGBA: color array is empty");
         }
 
         TextureFormat format = texture.getTextureFormat();
         if (format.isDepth() || format.isStencil()) {
-            throw new IllegalArgumentException("clearTextureRGBA: 纹理格式不支持颜色清除: " + format);
+            throw new IllegalArgumentException("clearTextureRGBA: texture format does not support color clearing: " + format);
         }
         if (color.length != format.getChannelCount()) {
-            throw new IllegalArgumentException("clearTextureRGBA: 颜色分量数与纹理通道数不匹配");
+            throw new IllegalArgumentException("clearTextureRGBA: color component count does not match the texture channel count");
         }
         for (float component : color) {
             requireRangeInclusive(component, 0.0f, 1.0f, "clearTextureRGBA", "颜色分量");
@@ -169,7 +171,7 @@ public class GlCommandDecoder implements ICommandDecoder {
                     int status = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
                     if (status != GL_FRAMEBUFFER_COMPLETE) {
                         glDeleteFramebuffers(fbo);
-                        throw new OpenGLException("clearTextureRGBA: FBO状态不完整, 状态码: " + status);
+                        throw new OpenGLException("clearTextureRGBA: FBO is incomplete, status: " + status);
                     }
 
                     glViewport(0, 0, texture.getWidth(), texture.getHeight());
@@ -197,7 +199,7 @@ public class GlCommandDecoder implements ICommandDecoder {
 
         TextureFormat format = texture.getTextureFormat();
         if (!format.isDepth()) {
-            throw new IllegalArgumentException("clearTextureDepth: 纹理格式不支持深度清除: " + format);
+            throw new IllegalArgumentException("clearTextureDepth: texture format does not support depth clearing: " + format);
         }
 
         final int debugId = nextClearId();
@@ -240,11 +242,11 @@ public class GlCommandDecoder implements ICommandDecoder {
                         int fallbackStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
                         if (fallbackStatus != GL_FRAMEBUFFER_COMPLETE) {
                             glDeleteFramebuffers(fbo);
-                            throw new OpenGLException("clearTextureDepth: FBO状态不完整, 状态码: " + status + ", fallback: " + fallbackStatus);
+                            throw new OpenGLException("clearTextureDepth: FBO is incomplete, status: " + status + ", fallback: " + fallbackStatus);
                         }
                     } else if (status != GL_FRAMEBUFFER_COMPLETE) {
                         glDeleteFramebuffers(fbo);
-                        throw new OpenGLException("clearTextureDepth: FBO状态不完整, 状态码: " + status);
+                        throw new OpenGLException("clearTextureDepth: FBO is incomplete, status: " + status);
                     }
 
                     glViewport(0, 0, texture.getWidth(), texture.getHeight());
@@ -277,9 +279,9 @@ public class GlCommandDecoder implements ICommandDecoder {
         TextureFormat format = texture.getTextureFormat();
         if (!format.isDepthStencil()) {
             if (format.isDepth()) {
-                throw new IllegalArgumentException("clearTextureStencil: 深度纹理不支持模板清除: " + format);
+                throw new IllegalArgumentException("clearTextureStencil: depth texture does not support stencil clearing: " + format);
             }
-            throw new IllegalArgumentException("clearTextureStencil: 纹理格式不支持模板清除: " + format);
+            throw new IllegalArgumentException("clearTextureStencil: texture format does not support stencil clearing: " + format);
         }
 
         final int debugId = nextClearId();
@@ -309,7 +311,7 @@ public class GlCommandDecoder implements ICommandDecoder {
                     int fallbackStatus = glCheckFramebufferStatus(GL_DRAW_FRAMEBUFFER);
                     if (fallbackStatus != GL_FRAMEBUFFER_COMPLETE) {
                         glDeleteFramebuffers(fbo);
-                        throw new OpenGLException("clearTextureStencil: FBO状态不完整, 状态码: " + status + ", fallback: " + fallbackStatus);
+                        throw new OpenGLException("clearTextureStencil: FBO is incomplete, status: " + status + ", fallback: " + fallbackStatus);
                     }
                 }
 
@@ -353,11 +355,11 @@ public class GlCommandDecoder implements ICommandDecoder {
         requireTexture(src, "copyTexture");
         requireTexture(dst, "copyTexture");
         if (src.getTextureFormat() != dst.getTextureFormat()) {
-            throw new IllegalArgumentException("copyTexture: 源和目标纹理格式不一致，无法拷贝：" +
+            throw new IllegalArgumentException("copyTexture: source and destination texture formats differ; unable to copy: " +
                     src.getTextureFormat() + " -> " + dst.getTextureFormat());
         }
         if (src.getTextureType() != dst.getTextureType()) {
-            throw new IllegalArgumentException("copyTexture: 源和目标纹理类型不一致，无法拷贝：" +
+            throw new IllegalArgumentException("copyTexture: source and destination texture types differ; unable to copy: " +
                     src.getTextureType() + " -> " + dst.getTextureType());
         }
         requireNonNegative(srcLevel, "copyTexture", "srcLevel");
@@ -365,7 +367,7 @@ public class GlCommandDecoder implements ICommandDecoder {
         int srcLevels = src.getMipmapSettings().resolveLevels(src.getWidth(), src.getHeight());
         int dstLevels = dst.getMipmapSettings().resolveLevels(dst.getWidth(), dst.getHeight());
         if (srcLevel >= srcLevels || dstLevel >= dstLevels) {
-            throw new IllegalArgumentException("copyTexture: mipmap等级超出范围");
+            throw new IllegalArgumentException("copyTexture: mipmap level is out of range");
         }
         requireNonNegative(srcX0, "copyTexture", "srcX0");
         requireNonNegative(srcY0, "copyTexture", "srcY0");
@@ -381,21 +383,21 @@ public class GlCommandDecoder implements ICommandDecoder {
         int dstWidth = mipSize(dst.getWidth(), dstLevel);
         int dstHeight = mipSize(dst.getHeight(), dstLevel);
         if (srcX1 <= srcX0 || dstX1 <= dstX0) {
-            throw new IllegalArgumentException("copyTexture: X范围无效");
+            throw new IllegalArgumentException("copyTexture: invalid X range");
         }
         if (src.getTextureType() == TextureType.Texture1D) {
             if (srcY0 != 0 || srcY1 != 1 || dstY0 != 0 || dstY1 != 1) {
-                throw new IllegalArgumentException("copyTexture: 1D纹理Y范围必须为[0,1]");
+                throw new IllegalArgumentException("copyTexture: 1D texture Y range must be [0, 1]");
             }
             if (srcX1 > srcWidth || dstX1 > dstWidth) {
-                throw new IllegalArgumentException("copyTexture: X范围超出纹理尺寸");
+                throw new IllegalArgumentException("copyTexture: X range exceeds texture dimensions");
             }
         } else {
             if (srcY1 <= srcY0 || dstY1 <= dstY0) {
-                throw new IllegalArgumentException("copyTexture: Y范围无效");
+                throw new IllegalArgumentException("copyTexture: invalid Y range");
             }
             if (srcX1 > srcWidth || srcY1 > srcHeight || dstX1 > dstWidth || dstY1 > dstHeight) {
-                throw new IllegalArgumentException("copyTexture: 范围超出纹理尺寸");
+                throw new IllegalArgumentException("copyTexture: range exceeds texture dimensions");
             }
         }
 
@@ -453,10 +455,10 @@ public class GlCommandDecoder implements ICommandDecoder {
         requireNonNegative(srcOffset, "copyBuffer", "srcOffset");
         requireNonNegative(dstOffset, "copyBuffer", "dstOffset");
         if (size <= 0) {
-            throw new IllegalArgumentException("copyBuffer: size必须为正数");
+            throw new IllegalArgumentException("copyBuffer: size must be positive");
         }
         if (srcOffset + size > src.getSize() || dstOffset + size > dst.getSize()) {
-            throw new IllegalArgumentException("copyBuffer: 拷贝范围超出缓冲大小");
+            throw new IllegalArgumentException("copyBuffer: copy range exceeds buffer size");
         }
 
         final int debugId = nextCopyId();
@@ -485,7 +487,7 @@ public class GlCommandDecoder implements ICommandDecoder {
         requireBuffer(dst, "writeToBuffer");
         requireNonNegative(dstOffset, "writeToBuffer", "dstOffset");
         if (data == null) {
-            throw new IllegalArgumentException("writeToBuffer: data为null");
+            throw new IllegalArgumentException("writeToBuffer: data must not be null");
         }
 
         ByteBuffer src = data.duplicate();
@@ -493,7 +495,7 @@ public class GlCommandDecoder implements ICommandDecoder {
             return;
         }
         if (dstOffset + size > dst.getSize()) {
-            throw new IllegalArgumentException("writeToBuffer: 写入范围超出缓冲大小");
+            throw new IllegalArgumentException("writeToBuffer: write range exceeds buffer size");
         }
 
         ByteBuffer snapshot = MemoryUtil.memAlloc((int) size);
@@ -512,10 +514,10 @@ public class GlCommandDecoder implements ICommandDecoder {
     }
 
     @Override
-    public void writeToTexture(ICommandBuffer commandBuffer,ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel) {
+    public void writeToTexture(ICommandBuffer commandBuffer, ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel) {
         requireTexture(texture, "writeToTexture");
         if (data == null) {
-            throw new IllegalArgumentException("writeToTexture: data为null");
+            throw new IllegalArgumentException("writeToTexture: data must not be null");
         }
         requireNonNegative(x, "writeToTexture", "x");
         requireNonNegative(y, "writeToTexture", "y");
@@ -526,7 +528,7 @@ public class GlCommandDecoder implements ICommandDecoder {
         TextureFormat format = texture.getTextureFormat();
         int expectedSize = width * height * format.getBytesPerPixel();
         if (data.remaining() < expectedSize) {
-            throw new IllegalArgumentException("writeToTexture: 数据大小不足，至少需要 " + expectedSize + " 字节");
+            throw new IllegalArgumentException("writeToTexture: data size is insufficient; at least " + expectedSize + " bytes are required");
         }
 
         final int debugId = nextCopyId();
@@ -536,7 +538,7 @@ public class GlCommandDecoder implements ICommandDecoder {
             case RGB8, RGB16F -> GL_RGB;
             case R8, R16F, R32F, R32UI, R16_SNORM -> GL_RED;
             case RG8, RG16F, RG32F -> GL_RG;
-            default -> throw new IllegalArgumentException("writeToTexture: 不支持的纹理格式: " + format);
+            default -> throw new IllegalArgumentException("writeToTexture: unsupported texture format: " + format);
         };
         ByteBuffer snapshot = MemoryUtil.memAlloc(expectedSize);
         MemoryUtil.memCopy(MemoryUtil.memAddress(data), MemoryUtil.memAddress(snapshot), expectedSize);
@@ -572,7 +574,7 @@ public class GlCommandDecoder implements ICommandDecoder {
     public void setViewport(ICommandBuffer commandBuffer, float x, float y, float width, float height) {
         GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "setViewport");
         if (width <= 0 || height <= 0) {
-            throw new IllegalArgumentException("setViewport: width/height必须为正数");
+            throw new IllegalArgumentException("setViewport: width and height must be positive");
         }
         putGlCommand(commandBuffer, () -> {
             if (glCommandBuffer.executionStateCache().matchesViewport(x, y, width, height)) {
@@ -589,7 +591,7 @@ public class GlCommandDecoder implements ICommandDecoder {
         requireNonNegative(x, "setScissor", "x");
         requireNonNegative(y, "setScissor", "y");
         if (width < 0 || height < 0) {
-            throw new IllegalArgumentException("setScissor: width/height不能为负数");
+            throw new IllegalArgumentException("setScissor: width and height must not be negative");
         }
         putGlCommand(commandBuffer, () -> {
             if (glCommandBuffer.executionStateCache().matchesScissor(x, y, width, height)) {
@@ -604,7 +606,7 @@ public class GlCommandDecoder implements ICommandDecoder {
     public void setLineWidth(ICommandBuffer commandBuffer, float width) {
         GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "setLineWidth");
         if (width <= 0) {
-            throw new IllegalArgumentException("setLineWidth: width必须为正数");
+            throw new IllegalArgumentException("setLineWidth: width must be positive");
         }
         putGlCommand(commandBuffer, () -> {
             if (glCommandBuffer.executionStateCache().matchesLineWidth(width)) {
@@ -635,10 +637,10 @@ public class GlCommandDecoder implements ICommandDecoder {
     public void beginRenderPass(ICommandBuffer commandBuffer, RenderPass renderPass) {
         GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "beginRenderPass");
         if (renderPass == null) {
-            throw new IllegalArgumentException("beginRenderPass: renderPass为null");
+            throw new IllegalArgumentException("beginRenderPass: renderPass must not be null");
         }
         if (!(renderPass instanceof GlRenderPass glRenderPass)) {
-            throw new IllegalArgumentException("beginRenderPass: renderPass类型错误: " + renderPass.getClass().getName());
+            throw new IllegalArgumentException("beginRenderPass: invalid renderPass type: " + renderPass.getClass().getName());
         }
         glCommandBuffer._beginRenderPass(glRenderPass);
 
@@ -655,7 +657,7 @@ public class GlCommandDecoder implements ICommandDecoder {
     public void endRenderPass(ICommandBuffer commandBuffer) {
         GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "endRenderPass");
         if (!glCommandBuffer.isRenderPassActive()) {
-            throw new IllegalStateException("endRenderPass: 当前没有活动的render pass");
+            throw new IllegalStateException("endRenderPass: no render pass is active");
         }
 
         GlRenderPass glRenderPass = glCommandBuffer.getActiveRenderPass();
@@ -678,16 +680,16 @@ public class GlCommandDecoder implements ICommandDecoder {
     public void bindPipeline(ICommandBuffer commandBuffer, GraphicsPipeline pipeline) {
         GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "bindPipeline(graphics)");
         if (!glCommandBuffer.isRenderPassActive()) {
-            throw new IllegalStateException("bindPipeline(graphics): 当前没有活动的render pass，请先调用 beginRenderPass");
+            throw new IllegalStateException("bindPipeline(graphics): no render pass is active; call beginRenderPass first");
         }
         if (pipeline == null) {
-            throw new IllegalArgumentException("bindPipeline(graphics): pipeline为null");
+            throw new IllegalArgumentException("bindPipeline(graphics): pipeline must not be null");
         }
         if (!(pipeline instanceof GlGraphicsPipeline glPipeline)) {
-            throw new IllegalArgumentException("bindPipeline(graphics): pipeline类型错误: " + pipeline.getClass().getName());
+            throw new IllegalArgumentException("bindPipeline(graphics): invalid pipeline type: " + pipeline.getClass().getName());
         }
         if (pipeline.renderPass() != glCommandBuffer.getActiveRenderPass()) {
-            throw new IllegalStateException("bindPipeline(graphics): pipeline.renderPass 与当前活动 render pass 不匹配");
+            throw new IllegalStateException("bindPipeline(graphics): pipeline.renderPass does not match the active render pass");
         }
 
         GlPipelineDescriptorSet descriptorSet = (GlPipelineDescriptorSet) glPipeline.descriptorSet();
@@ -716,13 +718,13 @@ public class GlCommandDecoder implements ICommandDecoder {
     public void bindPipeline(ICommandBuffer commandBuffer, ComputePipeline pipeline) {
         GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "bindPipeline(compute)");
         if (glCommandBuffer.isRenderPassActive()) {
-            throw new IllegalStateException("bindPipeline(compute): render pass进行中，不能绑定compute pipeline");
+            throw new IllegalStateException("bindPipeline(compute): cannot bind a compute pipeline while a render pass is active");
         }
         if (pipeline == null) {
-            throw new IllegalArgumentException("bindPipeline(compute): pipeline为null");
+            throw new IllegalArgumentException("bindPipeline(compute): pipeline must not be null");
         }
         if (!(pipeline instanceof GlComputePipeline glPipeline)) {
-            throw new IllegalArgumentException("bindPipeline(compute): pipeline类型错误: " + pipeline.getClass().getName());
+            throw new IllegalArgumentException("bindPipeline(compute): invalid pipeline type: " + pipeline.getClass().getName());
         }
 
         GlPipelineDescriptorSet descriptorSet = (GlPipelineDescriptorSet) glPipeline.descriptorSet();
@@ -753,22 +755,22 @@ public class GlCommandDecoder implements ICommandDecoder {
     ) {
         GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "draw");
         if (!glCommandBuffer.isRenderPassActive()) {
-            throw new IllegalStateException("draw: 当前没有活动的render pass，请先调用 beginRenderPass");
+            throw new IllegalStateException("draw: no render pass is active; call beginRenderPass first");
         }
         GlGraphicsPipeline pipeline = glCommandBuffer.getBoundGraphicsPipeline();
         if (pipeline == null) {
-            throw new IllegalStateException("draw: 当前未绑定图形管线，请先调用 bindPipeline(graphics)");
+            throw new IllegalStateException("draw: no graphics pipeline is bound; call bindPipeline(graphics) first");
         }
         if (vertexBuffer == null) {
-            throw new IllegalArgumentException("draw: vertexBuffer为null");
+            throw new IllegalArgumentException("draw: vertexBuffer must not be null");
         }
         if (!(vertexBuffer instanceof GlVertexBuffer)) {
-            throw new IllegalArgumentException("draw: vertexBuffer类型错误: " + vertexBuffer.getClass().getName());
+            throw new IllegalArgumentException("draw: invalid vertexBuffer type: " + vertexBuffer.getClass().getName());
         }
         requirePositive(vertexCount, "draw", "vertexCount");
         requireNonNegative(firstVertex, "draw", "firstVertex");
         if (firstVertex + vertexCount > vertexBuffer.getVertexCount()) {
-            throw new IllegalArgumentException("draw: 顶点范围超出vertexBuffer大小");
+            throw new IllegalArgumentException("draw: vertex range exceeds vertexBuffer size");
         }
 
         putGlCommand(commandBuffer, () -> {
@@ -815,11 +817,11 @@ public class GlCommandDecoder implements ICommandDecoder {
     ) {
         GlCommandBuffer glCommandBuffer = requireGlCommandBuffer(commandBuffer, "dispatch");
         if (glCommandBuffer.isRenderPassActive()) {
-            throw new IllegalStateException("dispatch: render pass进行中，不能执行compute dispatch");
+            throw new IllegalStateException("dispatch: cannot execute a compute dispatch while a render pass is active");
         }
         GlComputePipeline computePipeline = glCommandBuffer.getBoundComputePipeline();
         if (computePipeline == null) {
-            throw new IllegalStateException("dispatch: 当前未绑定计算管线，请先调用 bindPipeline(compute)");
+            throw new IllegalStateException("dispatch: no compute pipeline is bound; call bindPipeline(compute) first");
         }
         requirePositive(groupCountX, "dispatch", "groupCountX");
         requirePositive(groupCountY, "dispatch", "groupCountY");
@@ -868,53 +870,53 @@ public class GlCommandDecoder implements ICommandDecoder {
 
     private GlCommandBuffer requireGlCommandBuffer(ICommandBuffer commandBuffer, String action) {
         if (commandBuffer == null) {
-            throw new IllegalArgumentException(action + ": commandBuffer为null");
+            throw new IllegalArgumentException(action + ": commandBuffer must not be null");
         }
         if (commandBuffer instanceof GlCommandBuffer glCommandBuffer) {
             return glCommandBuffer;
         }
-        throw new IllegalArgumentException(action + ": commandBuffer类型错误: " + commandBuffer.getClass().getName());
+        throw new IllegalArgumentException(action + ": invalid commandBuffer type: " + commandBuffer.getClass().getName());
     }
 
     private void requireTexture(ITexture texture, String action) {
         if (texture == null) {
-            throw new IllegalArgumentException(action + ": 输入的纹理对象为null");
+            throw new IllegalArgumentException(action + ": input texture must not be null");
         }
     }
 
     private void requireBuffer(IBuffer buffer, String action) {
         if (buffer == null) {
-            throw new IllegalArgumentException(action + ": 输入的缓冲对象为null");
+            throw new IllegalArgumentException(action + ": input buffer must not be null");
         }
     }
 
     private void requireRangeInclusive(float value, float min, float max, String action, String name) {
         if (value < min || value > max) {
-            throw new IllegalArgumentException(action + ": " + name + "超出范围[" + min + "," + max + "]");
+            throw new IllegalArgumentException(action + ": " + name + " is out of range [" + min + ", " + max + "]");
         }
     }
 
     private void requireRangeInclusive(int value, int min, int max, String action, String name) {
         if (value < min || value > max) {
-            throw new IllegalArgumentException(action + ": " + name + "超出范围[" + min + "," + max + "]");
+            throw new IllegalArgumentException(action + ": " + name + " is out of range [" + min + ", " + max + "]");
         }
     }
 
     private void requirePositive(int value, String action, String name) {
         if (value <= 0) {
-            throw new IllegalArgumentException(action + ": " + name + "必须为正数");
+            throw new IllegalArgumentException(action + ": " + name + " must be positive");
         }
     }
 
     private void requireNonNegative(int value, String action, String name) {
         if (value < 0) {
-            throw new IllegalArgumentException(action + ": " + name + "不能为负数");
+            throw new IllegalArgumentException(action + ": " + name + " must not be negative");
         }
     }
 
     private void requireNonNegative(long value, String action, String name) {
         if (value < 0) {
-            throw new IllegalArgumentException(action + ": " + name + "不能为负数");
+            throw new IllegalArgumentException(action + ": " + name + " must not be negative");
         }
     }
 

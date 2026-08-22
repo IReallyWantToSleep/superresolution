@@ -28,33 +28,51 @@ import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
 import io.homo.superresolution.core.gui.widgets.MaterialWidget;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
+import io.homo.superresolution.core.gui.widgets.button.MaterialButtonShape;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
+import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuItemSize;
+import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuSize;
 import io.homo.superresolution.core.gui.widgets.progress.MaterialLinearProgressIndicator;
+import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
+import io.homo.superresolution.core.gui.widgets.textfield.MaterialTextFieldSize;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.utils.DirectoryEnsurer;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
+import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.style.StyleSizeLength;
 import org.joml.Vector2f;
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
+import java.util.Optional;
 
 public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialResourcesListItem> {
+    private static final MaterialTextFieldSize SOURCE_SELECT_SIZE = new MaterialTextFieldSize(
+            34, 8, 4, 1, 2, 1, 2, 16, 8, 12, 10, 12, 0, 10, 2
+    );
+    private static final MaterialMenuItemSize SOURCE_MENU_ITEM_SIZE = new MaterialMenuItemSize(
+            34, 8, 16, 8, 12
+    );
+
     private final ExtraResource resource;
     private final DirectoryEnsurer targetDirectory;
+    private final MaterialResourcesList list;
     private final AbstractWidget<?> iconWidget;
     private final MaterialLabel nameLabel;
     private final MaterialLabel infoLabel;
     private final MaterialLabel filePathLabel;
     private final MaterialLinearProgressIndicator progressBar;
     private final MaterialButton selectFileButton;
+    private final MaterialSelect<ExtraResource.ResourceSource> sourceSelect;
+    private final MaterialButton downloadButton;
     private final ContainerWidget contentContainer = ContainerWidget.create();
     private final ContainerWidget textContainer = ContainerWidget.create();
     private final ContainerWidget iconContainer = ContainerWidget.create();
@@ -66,15 +84,18 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
     private volatile long totalBytes = 0;
     private volatile ExtraResource.ErrorCode errorCode;
     private volatile String selectedPath = null;
+    private volatile ExtraResource.ResourceSource selectedSource = null;
 
     public MaterialResourcesListItem(
             ExtraResource resource,
             DirectoryEnsurer targetDirectory,
+            MaterialResourcesList list,
             boolean enableDownload
     ) {
         this.enableDownload = enableDownload;
         this.resource = resource;
         this.targetDirectory = targetDirectory;
+        this.list = list;
         getLayoutNode().setDebugName("MaterialDownloadListItem");
 
         iconWidget = new IconWidget();
@@ -120,9 +141,56 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
             progressBar = new MaterialLinearProgressIndicator();
             progressContainer.addChild(progressBar);
             contentContainer.addChild(progressContainer);
+
+            sourceSelect = MaterialSelect.create();
+            sourceSelect.style().size(SOURCE_SELECT_SIZE);
+            sourceSelect.style().labelBackground(MaterialScheme::surfaceContainerHigh);
+            sourceSelect.label(Text.translatable("superresolution.screen.download.select.source").getString());
+            sourceSelect.minWidth(140);
+            for (ExtraResource.ResourceSource source : resource.getSources()) {
+                sourceSelect.addOption(source, source.getSourceName());
+            }
+            sourceSelect.getMenu().itemStyle(style -> style.size(SOURCE_MENU_ITEM_SIZE));
+            sourceSelect.getMenu().style().size(MaterialMenuSize.Compact);
+            for (ExtraResource.ResourceSource source : resource.getSources()) {
+                if (source.getType() == ExtraResource.ResourceSource.Type.Remote) {
+                    selectedSource = source;
+                    break;
+                }
+            }
+            if (selectedSource == null && !resource.getSources().isEmpty()) {
+                selectedSource = resource.getSources().get(0);
+            }
+            if (selectedSource != null) {
+                sourceSelect.setValue(selectedSource);
+            }
+            sourceSelect.onSelectionChanged(value -> selectedSource = value);
+            rightButtonContainer.addChild(sourceSelect);
+
+            downloadButton = MaterialButton.create(
+                    new MaterialButtonSize(
+                    28,
+                            4,
+                            0,
+                            0,
+                            10,
+                            10,
+                            20,
+                            12)
+                    )
+                    .variant(MaterialButtonVariant.Tonal)
+                    .shape(MaterialButtonShape.Round)
+                    .text("")
+                    .icon(() -> getActionIcon());
+            downloadButton.onClick(event -> onDownloadButtonClicked());
+            downloadButton.setTooltipSupplier(() -> Optional.of(Tooltip.withContext(getActionTooltip())));
+            rightButtonContainer.addChild(downloadButton);
+
             selectFileButton = null;
         } else {
             progressBar = null;
+            sourceSelect = null;
+            downloadButton = null;
             selectFileButton = MaterialButton.create(MaterialButtonSize.ExtraSmall)
                     .variant(MaterialButtonVariant.Outlined)
                     .text(Text.translatable("superresolution.screen.download.button.select_file").getString())
@@ -132,9 +200,7 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
         }
 
         addChild(contentContainer);
-        if (!enableDownload) {
-            addChild(rightButtonContainer);
-        }
+        addChild(rightButtonContainer);
     }
 
     private static String formatBytes(long bytes) {
@@ -155,6 +221,20 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
         return state;
     }
 
+    public ExtraResource.ResourceSource getSelectedSource() {
+        return selectedSource;
+    }
+
+    public void markDownloading() {
+        this.state = DownloadState.DOWNLOADING;
+        this.downloadedBytes = 0;
+        this.totalBytes = 0;
+        if (enableDownload && progressBar != null) {
+            progressBar.setProgress(0f);
+        }
+        syncControls();
+    }
+
     public void updateProgress(long downloadedBytes, long totalBytes) {
         this.downloadedBytes = downloadedBytes;
         this.totalBytes = totalBytes;
@@ -166,6 +246,7 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
                 progressBar.setProgress(0f);
             }
         }
+        syncControls();
     }
 
     public void markCompleted() {
@@ -173,6 +254,7 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
         if (enableDownload && progressBar != null) {
             progressBar.setProgress(1f);
         }
+        syncControls();
     }
 
     public void markError(ExtraResource.ErrorCode code) {
@@ -182,10 +264,12 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
         }
         this.state = DownloadState.ERROR;
         this.errorCode = code;
+        syncControls();
     }
 
     public void markCancelled() {
         this.state = DownloadState.CANCELLED;
+        syncControls();
     }
 
     public void resetToPending() {
@@ -195,6 +279,63 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
         this.errorCode = null;
         if (enableDownload && progressBar != null) {
             progressBar.setProgress(0f);
+        }
+        syncControls();
+    }
+
+    private void syncControls() {
+        if (!enableDownload || sourceSelect == null || downloadButton == null) {
+            return;
+        }
+        switch (state) {
+            case PENDING, ERROR, CANCELLED -> {
+                sourceSelect.setDisabled(false);
+                downloadButton.setDisabled(false);
+            }
+            case DOWNLOADING -> {
+                sourceSelect.setDisabled(true);
+                downloadButton.setDisabled(false);
+            }
+            case COMPLETED -> {
+                sourceSelect.setDisabled(true);
+                downloadButton.setDisabled(true);
+            }
+            default -> {
+            }
+        }
+    }
+
+    private MaterialSymbol getActionIcon() {
+        return switch (state) {
+            case DOWNLOADING -> MaterialSymbols.iconClose();
+            case COMPLETED -> MaterialSymbols.iconDownloadDone();
+            case ERROR -> MaterialSymbols.iconRefresh();
+            default -> MaterialSymbols.iconDownload();
+        };
+    }
+
+    private String getActionTooltip() {
+        return switch (state) {
+            case DOWNLOADING ->
+                    Text.translatable("superresolution.screen.download.button.cancel").getString();
+            case COMPLETED ->
+                    Text.translatable("superresolution.screen.download.state.completed").getString();
+            case ERROR ->
+                    Text.translatable("superresolution.screen.config.dialog.download.action.retry").getString();
+            default ->
+                    Text.translatable("superresolution.screen.download.button.download").getString();
+        };
+    }
+
+    private void onDownloadButtonClicked() {
+        if (list == null) {
+            return;
+        }
+        switch (state) {
+            case DOWNLOADING -> list.cancelDownload(resource);
+            case COMPLETED -> {
+            }
+            default -> list.startDownload(resource, selectedSource);
         }
     }
 
@@ -219,7 +360,7 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
             this.selectedPath = sourcePath;
             this.state = DownloadState.SELECTED;
         } catch (Exception e) {
-            SuperResolution.LOGGER.error("选择资源文件失败", e);
+            SuperResolution.LOGGER.error("Failed to select resource file", e);
             this.state = DownloadState.ERROR;
             this.errorCode = ExtraResource.ErrorCode.PermissionDenied;
         }
@@ -310,6 +451,8 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
 
             contentContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
             contentContainer.layout().setFlexGrow(1f);
+            contentContainer.layout().setFlexShrink(1f);
+            contentContainer.layout().setMinWidth(StyleSizeLength.points(0));
             contentContainer.layout().setPadding(YogaEdge.LEFT, 8);
             contentContainer.layout().setGap(YogaGutter.COLUMN, 4);
 
@@ -323,6 +466,13 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
                 progressBar.layout().setWidthPercent(100);
                 progressBar.layout().setHeight(4);
             }
+
+            rightButtonContainer.layout().setFlexDirection(YogaFlexDirection.ROW);
+            rightButtonContainer.layout().setGap(YogaGutter.COLUMN, 8);
+            rightButtonContainer.layout().setAlignItems(YogaAlign.CENTER);
+            rightButtonContainer.layout().setJustifyContent(YogaJustify.CENTER);
+            rightButtonContainer.layout().setFlexShrink(0);
+            rightButtonContainer.layout().setMargin(YogaEdge.LEFT, 8);
         } else {
             contentContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
             contentContainer.layout().setFlexGrow(1f);

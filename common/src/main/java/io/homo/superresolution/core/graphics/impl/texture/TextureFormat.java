@@ -238,7 +238,7 @@ public enum TextureFormat {
             case RG16F -> 4;
             case RG32F -> 8;
             case R32F, R32UI -> 4;
-            case RGBA16F,RGBA16_SNORM ,RGBA16 -> 8;
+            case RGBA16F, RGBA16_SNORM, RGBA16 -> 8;
             case RGBA32F -> 16;
             case RGB16F, DEPTH32F_STENCIL8 -> 6;
             case R11G11B10F -> 4;
