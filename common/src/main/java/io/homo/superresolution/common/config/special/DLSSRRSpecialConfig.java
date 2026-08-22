@@ -15,10 +15,6 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
-
-/*
- * Super Resolution
- */
 package io.homo.superresolution.common.config.special;
 
 import io.homo.superresolution.api.SuperResolutionAPI;
@@ -26,20 +22,20 @@ import io.homo.superresolution.api.config.ModConfigSpecBuilder;
 import io.homo.superresolution.api.config.values.single.EnumValue;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.ConfigSpecType;
-import io.homo.superresolution.common.config.enums.DLSSRenderPreset;
+import io.homo.superresolution.common.config.enums.DLSSRRRenderPreset;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import net.minecraft.network.chat.Component;
 
 import java.util.Map;
 
-public class DLSSSpecialConfig extends SpecialConfig {
-    public EnumValue<DLSSRenderPreset> RENDER_PRESET = specBuilder.defineEnum(
-            "special/dlss/render_preset",
-            DLSSRenderPreset.class,
-            () -> DLSSRenderPreset.K
+public class DLSSRRSpecialConfig extends SpecialConfig {
+    public EnumValue<DLSSRRRenderPreset> RENDER_PRESET = specBuilder.defineEnum(
+            "special/dlssrr/render_preset",
+            DLSSRRRenderPreset.class,
+            () -> DLSSRRRenderPreset.D
     );
 
-    public DLSSSpecialConfig(ModConfigSpecBuilder specBuilder) {
+    public DLSSRRSpecialConfig(ModConfigSpecBuilder specBuilder) {
         super(specBuilder);
     }
 
@@ -47,17 +43,17 @@ public class DLSSSpecialConfig extends SpecialConfig {
     protected void buildDescriptions(Map<String, SpecialConfigDescription<?>> map) {
         map.put(
                 "render_preset",
-                new SpecialConfigDescription<DLSSRenderPreset>()
+                new SpecialConfigDescription<DLSSRRRenderPreset>()
                         .setKey("render_preset")
-                        .setName(Component.translatable("superresolution.screen.config.special.dlss.renderpreset.name"))
-                        .setTooltip(Component.translatable("superresolution.screen.config.special.dlss.renderpreset.tooltip"))
+                        .setName(Component.translatable("superresolution.screen.config.special.dlssrr.renderpreset.name"))
+                        .setTooltip(Component.translatable("superresolution.screen.config.special.dlssrr.renderpreset.tooltip"))
                         .setType(ConfigSpecType.ENUM)
-                        .setClazz(DLSSRenderPreset.class)
-                        .setDefaultValue(DLSSRenderPreset.K)
+                        .setClazz(DLSSRRRenderPreset.class)
+                        .setDefaultValue(DLSSRRRenderPreset.D)
                         .setSaveConsumer((v) -> {
-                            if (getSpecialConfigs().DLSS.RENDER_PRESET.get() != v) {
-                                getSpecialConfigs().DLSS.RENDER_PRESET.set(v);
-                                if (SuperResolutionAPI.getCurrentAlgorithmDescription() == AlgorithmDescriptions.DLSS) {
+                            if (getSpecialConfigs().DLSSRR.RENDER_PRESET.get() != v) {
+                                getSpecialConfigs().DLSSRR.RENDER_PRESET.set(v);
+                                if (SuperResolutionAPI.getCurrentAlgorithmDescription() == AlgorithmDescriptions.DLSSRR) {
                                     SuperResolution.recreateAlgorithm();
                                 }
                             }

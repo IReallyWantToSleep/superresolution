@@ -249,6 +249,8 @@
     "superresolution.screen.config.section.profiling": "效能分析器",
     "superresolution.screen.config.special.dlss.renderpreset.name": "DLSS 模型",
     "superresolution.screen.config.special.dlss.renderpreset.tooltip": "選擇 DLSS 渲染預設（模型）。",
+    "superresolution.screen.config.special.dlssrr.renderpreset.name": "DLSS RR 模型",
+    "superresolution.screen.config.special.dlssrr.renderpreset.tooltip": "選擇 DLSS 光線重建的渲染預設（模型）。",
     "superresolution.screen.config.special.fsr.version.name": "FSR 版本",
     "superresolution.screen.config.special.fsr.version.tooltip": "FSR 版本。FSR2 為 2.3.3，FSR3 為 3.1.4\n預設為 2.3.3",
     "superresolution.screen.config.special.fsr1.fp16.name": "啟用半精度（FP16）",

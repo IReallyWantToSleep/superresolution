@@ -97,6 +97,7 @@ public final class NgxConstants {
     public static final int RAY_RECONSTRUCTION_PRESET_DEFAULT = 0;
     public static final int RAY_RECONSTRUCTION_PRESET_D = 4;
     public static final int RAY_RECONSTRUCTION_PRESET_E = 5;
+    public static final int RAY_RECONSTRUCTION_PRESET_F = 6;
 
     public static final String DLSS_DENOISE_MODE = "DLSS.Denoise.Mode";
     public static final String DLSS_ROUGHNESS_MODE = "DLSS.Roughness.Mode";

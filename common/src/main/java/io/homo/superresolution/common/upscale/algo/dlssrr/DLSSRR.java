@@ -281,7 +281,7 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
     }
 
     private static void configurePreset(NgxParameters parameters) {
-        int preset = SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode();
+        int preset = SuperResolutionConfig.SPECIAL.DLSSRR.RENDER_PRESET.get().getCode();
         parameters.setInt(NgxConstants.RAY_RECONSTRUCTION_PRESET_DLAA, preset);
         parameters.setInt(NgxConstants.RAY_RECONSTRUCTION_PRESET_QUALITY, preset);
         parameters.setInt(NgxConstants.RAY_RECONSTRUCTION_PRESET_BALANCED, preset);

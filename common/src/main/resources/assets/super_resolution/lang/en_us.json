@@ -248,6 +248,8 @@
     "superresolution.screen.config.section.profiling": "Profiler",
     "superresolution.screen.config.special.dlss.renderpreset.name": "NVIDIA DLSS Model",
     "superresolution.screen.config.special.dlss.renderpreset.tooltip": "Select NVIDIA DLSS render preset (model)",
+    "superresolution.screen.config.special.dlssrr.renderpreset.name": "NVIDIA DLSS RR Model",
+    "superresolution.screen.config.special.dlssrr.renderpreset.tooltip": "Select NVIDIA DLSS Ray Reconstruction render preset (model)",
     "superresolution.screen.config.special.fsr.version.name": "FSR Version",
     "superresolution.screen.config.special.fsr.version.tooltip": "FSR version: 2.3.3 for FSR2, 3.1.4 for FSR3.\nDefault is 2.3.3",
     "superresolution.screen.config.special.fsr1.fp16.name": "Enable Half Precision (FP16)",

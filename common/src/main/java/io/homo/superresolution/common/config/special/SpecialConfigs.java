@@ -30,6 +30,7 @@ public class SpecialConfigs {
     public FSR2SpecialConfig FSR2;
     public FSRSpecialConfig FSR;
     public DLSSSpecialConfig DLSS;
+    public DLSSRRSpecialConfig DLSSRR;
     public SGSR2SpecialConfig SGSR2;
     public SGSR1SpecialConfig SGSR1;
 
@@ -41,13 +42,14 @@ public class SpecialConfigs {
         FSR2 = new FSR2SpecialConfig(builder);
         FSR = new FSRSpecialConfig(builder);
         DLSS = new DLSSSpecialConfig(builder);
+        DLSSRR = new DLSSRRSpecialConfig(builder);
         SGSR2 = new SGSR2SpecialConfig(builder);
         SGSR1 = new SGSR1SpecialConfig(builder);
         description.put("fsr1", Pair.of(FSR1, AlgorithmDescriptions.FSR1.getDisplayName()));
         description.put("fsr2", Pair.of(FSR2, AlgorithmDescriptions.FSR2.getDisplayName()));
         description.put("fsr", Pair.of(FSR, AlgorithmDescriptions.FSR.getDisplayName()));
         description.put("dlss", Pair.of(DLSS, AlgorithmDescriptions.DLSS.getDisplayName()));
-        description.put("dlssrr", Pair.of(DLSS, AlgorithmDescriptions.DLSSRR.getDisplayName()));
+        description.put("dlssrr", Pair.of(DLSSRR, AlgorithmDescriptions.DLSSRR.getDisplayName()));
         description.put("sgsr2", Pair.of(SGSR2, AlgorithmDescriptions.SGSR2.getDisplayName()));
         description.put("sgsr1", Pair.of(SGSR1, AlgorithmDescriptions.SGSR1.getDisplayName()));
     }

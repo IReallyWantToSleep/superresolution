@@ -248,6 +248,8 @@
     "superresolution.screen.config.section.profiling": "性能分析器",
     "superresolution.screen.config.special.dlss.renderpreset.name": "NVIDIA DLSS 模型",
     "superresolution.screen.config.special.dlss.renderpreset.tooltip": "选择 NVIDIA DLSS 的渲染预设（模型）",
+    "superresolution.screen.config.special.dlssrr.renderpreset.name": "NVIDIA DLSS RR 模型",
+    "superresolution.screen.config.special.dlssrr.renderpreset.tooltip": "选择 NVIDIA DLSS 光线重建的渲染预设（模型）",
     "superresolution.screen.config.special.fsr.version.name": "FSR 版本",
     "superresolution.screen.config.special.fsr.version.tooltip": "FSR 的版本：2.3.3 为 FSR2，3.1.4 为 FSR3。\n默认为 2.3.3。",
     "superresolution.screen.config.special.fsr1.fp16.name": "启用半精度（FP16）",
