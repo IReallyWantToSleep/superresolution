@@ -19,20 +19,42 @@
 package io.homo.superresolution.api;
 
 public enum InputResourceType {
-    Color,
-    Depth,
-    MotionVectors,
-    Exposure,
-    DiffuseAlbedo,
-    SpecularAlbedo,
-    Normals,
-    Roughness,
-    NormalRoughness,
-    SpecularMotionVectors,
-    SpecularHitDistance,
-    TransparencyLayer,
-    TransparencyLayerOpacity,
-    ColorBeforeTransparency,
-    ScreenSpaceSubsurfaceScatteringGuide,
-    DepthOfFieldGuide
+    Color("color"),
+    Depth("depth"),
+    MotionVectors("motion_vectors"),
+    Exposure("exposure"),
+    DiffuseAlbedo("diffuse_albedo"),
+    SpecularAlbedo("specular_albedo"),
+    Normals("normals"),
+    Roughness("roughness"),
+    NormalRoughness("normal_roughness"),
+    SpecularMotionVectors("specular_motion_vectors"),
+    SpecularHitDistance("specular_hit_distance"),
+    TransparencyLayer("transparency_layer"),
+    TransparencyLayerOpacity("transparency_layer_opacity"),
+    ColorBeforeTransparency("color_before_transparency"),
+    ScreenSpaceSubsurfaceScatteringGuide("screen_space_subsurface_scattering_guide"),
+    DepthOfFieldGuide("depth_of_field_guide");
+
+    private final String v3InputKey;
+
+    InputResourceType(String v3InputKey) {
+        this.v3InputKey = v3InputKey;
+    }
+
+    public String getV3InputKey() {
+        return v3InputKey;
+    }
+
+    public static InputResourceType fromV3InputKey(String key) {
+        if (key == null) {
+            return null;
+        }
+        for (InputResourceType type : values()) {
+            if (type.v3InputKey.equals(key)) {
+                return type;
+            }
+        }
+        return null;
+    }
 }

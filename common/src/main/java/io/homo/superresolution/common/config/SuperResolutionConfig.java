@@ -734,6 +734,7 @@ public class SuperResolutionConfig {
         }
         if (
                 getUpscaleAlgorithm().equals(AlgorithmDescriptions.DLSS) ||
+                        getUpscaleAlgorithm().equals(AlgorithmDescriptions.DLSSRR) ||
                         getUpscaleAlgorithm().equals(AlgorithmDescriptions.XESS)
 
         ) {

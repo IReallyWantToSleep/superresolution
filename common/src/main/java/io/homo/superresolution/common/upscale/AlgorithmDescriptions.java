@@ -32,6 +32,7 @@ import io.homo.superresolution.api.registry.ExtraResources;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.upscale.algo.dlss.DLSS;
 import io.homo.superresolution.common.upscale.algo.dlss.NgxDlssLatestProvider;
+import io.homo.superresolution.common.upscale.algo.dlssrr.DLSSRR;
 import io.homo.superresolution.common.upscale.algo.ffxfsr.FfxFSR;
 import io.homo.superresolution.common.upscale.algo.ffxfsr.FfxFSR4D3D12;
 import io.homo.superresolution.common.upscale.algo.legacy.anime4k.Anime4K;
@@ -310,6 +311,57 @@ public class AlgorithmDescriptions {
             .qualityPresets(DLSS_QUALITY_PRESETS)
             .customUpscaleRatio(false)
             .build();
+    public static final AlgorithmDescription<DLSSRR> DLSSRR = AlgorithmDescription.builder(DLSSRR.class)
+            .briefName("NVIDIA DLSS-RR")
+            .codeName("dlssrr")
+            .displayName("NVIDIA DLSS Ray Reconstruction")
+            .requirement(
+                    Requirement.nothing()
+                            .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
+                            .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.LINUX))
+                            .requiredGlExtension("GL_EXT_memory_object")
+                            .requiredGlExtension("GL_EXT_semaphore")
+                            .glMajorVersion(4)
+                            .glMinorVersion(6)
+                            .requireVulkan(true)
+            )
+            .extraResources(
+                    Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS
+                            ? ExtraResources.builder()
+                            .add(ExtraResource.builder("nvngx_dlss.dll")
+                                    .addRemote(
+                                            NgxDlssLatestProvider.getInstance(),
+                                            "NVIDIA NGX (Latest)"
+                                    )
+                                    .addRemote(
+                                            () -> "https://raw.githubusercontent.com/NVIDIA/DLSS/refs/heads/main/lib/Windows_x86_64/rel/nvngx_dlss.dll",
+                                            "Github"
+                                    )
+                                    .addRemote(
+                                            () -> "https://api.fuukir.cn/dl/sr/nvngx_dlss.dll",
+                                            "Mirror"
+                                    )
+                                    .addRemote(
+                                            () -> "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlss.dll",
+                                            "Mirror (CNB)"
+                                    )
+                                    .build()
+                            )
+                            .add(ExtraResource.builder("nvngx_dlssd.dll")
+                                    .addRemote(
+                                            () -> "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlssd.dll",
+                                            "Mirror (CNB)"
+                                    )
+                                    .build()
+                            )
+                            .build()
+                            : ExtraResources.builder().build()
+            )
+            .supportJitter(true)
+            .qualityPresets(DLSS_QUALITY_PRESETS)
+            .customUpscaleRatio(false)
+            .build();
+
     private static final List<QualityPreset> ANIME4K_QUALITY_PRESETS = List.of(
             new QualityPreset()
                     .setUpscaleRatio(2.0f)
@@ -339,6 +391,7 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(FSR4_D3D12);
         AlgorithmRegistry.registry(XESS);
         AlgorithmRegistry.registry(DLSS);
+        AlgorithmRegistry.registry(DLSSRR);
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
         if (Platform.currentPlatform.isDevelopmentEnvironment()) {

@@ -46,6 +46,8 @@ import io.homo.superresolution.core.graphics.vulkan.*;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 
+import java.util.Arrays;
+
 import static org.lwjgl.opengl.EXTSemaphore.*;
 import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
@@ -82,6 +84,13 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
     }
 
     protected void onBeforeInteropResourcesDestroyed() {
+    }
+
+    protected void processAdditionalInputResources(InFlightFrameResourcesSet inFlight, DispatchResource dispatchResource) {
+    }
+
+    protected int[] getAdditionalInputSignalTextureHandles(InFlightFrameResourcesSet inFlight) {
+        return new int[0];
     }
 
     protected void createResources() {
@@ -136,21 +145,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
             //    inFlight.commandBuffer.waitForFence();
             //}
             processInputResources(inFlight, dispatchResource);
-            glFinishSemaphore.signalVulkan(
-                    new int[]{Math.toIntExact(inFlight.inputColorGlTexture.handle()),
-                            Math.toIntExact(inFlight.inputDepthGlTexture.handle()),
-                            Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle()),
-                            Math.toIntExact(inFlight.inputExposureGlTexture.handle())
-
-                    },
-                    new int[]{},
-                    new int[]{
-                            GL_LAYOUT_SHADER_READ_ONLY_EXT,
-                            GL_LAYOUT_SHADER_READ_ONLY_EXT,
-                            GL_LAYOUT_SHADER_READ_ONLY_EXT,
-                            GL_LAYOUT_SHADER_READ_ONLY_EXT
-                    }
-            );
+            signalInputTexturesReady(inFlight);
             publishCaptureInputs(inFlight, dispatchResource);
 
             VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
@@ -212,21 +207,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                 }
                 processInputResources(inFlight, dispatchResource);
 
-                glFinishSemaphore.signalVulkan(
-                        new int[]{Math.toIntExact(inFlight.inputColorGlTexture.handle()),
-                                Math.toIntExact(inFlight.inputDepthGlTexture.handle()),
-                                Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle()),
-                                Math.toIntExact(inFlight.inputExposureGlTexture.handle())
-
-                        },
-                        new int[]{},
-                        new int[]{
-                                GL_LAYOUT_SHADER_READ_ONLY_EXT,
-                                GL_LAYOUT_SHADER_READ_ONLY_EXT,
-                                GL_LAYOUT_SHADER_READ_ONLY_EXT,
-                                GL_LAYOUT_SHADER_READ_ONLY_EXT
-                        }
-                );
+                signalInputTexturesReady(inFlight);
                 publishCaptureInputs(inFlight, dispatchResource);
             }
             if (currentFrameIndex > 1) {
@@ -394,6 +375,20 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
         } finally {
             PerformanceTracker.pop(PerformanceTracker.GL_INPUT_CONVERT);
         }
+        processAdditionalInputResources(inFlight, dispatchResource);
+    }
+
+    private void signalInputTexturesReady(InFlightFrameResourcesSet inFlight) {
+        int[] additionalHandles = getAdditionalInputSignalTextureHandles(inFlight);
+        int[] handles = new int[4 + additionalHandles.length];
+        handles[0] = Math.toIntExact(inFlight.inputColorGlTexture.handle());
+        handles[1] = Math.toIntExact(inFlight.inputDepthGlTexture.handle());
+        handles[2] = Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle());
+        handles[3] = Math.toIntExact(inFlight.inputExposureGlTexture.handle());
+        System.arraycopy(additionalHandles, 0, handles, 4, additionalHandles.length);
+        int[] layouts = new int[handles.length];
+        Arrays.fill(layouts, GL_LAYOUT_SHADER_READ_ONLY_EXT);
+        inFlight.glFinish.signalVulkan(handles, new int[]{}, layouts);
     }
 
     private void publishCaptureInputs(

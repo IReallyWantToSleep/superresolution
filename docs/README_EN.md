@@ -90,6 +90,10 @@ cd superresolution
 ./gradlew buildAllVersions
 ```
 
+# Support Us
+
+If SR has been helpful to you and you'd like to support our development, you're welcome to support us on [Afdian](https://ifdian.net/a/X187J3X1).
+
 ---
 
 # License

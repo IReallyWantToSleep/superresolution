@@ -80,7 +80,8 @@ public class SRCompatBuiltinMacros {
             preprocessor.addMacro("SR_JITTER_SEQUENCE_LENGTH",
                     frameGenOnly ? "0" : Integer.toString(AlgorithmManager.getConfiguredJitterSequenceLength()));
             preprocessor.addMacro("SR_ALGO_DLSS_RENDERPRESET",
-                    selectedAlgorithm.equals(AlgorithmDescriptions.DLSS) ?
+                    (selectedAlgorithm.equals(AlgorithmDescriptions.DLSS)
+                            || selectedAlgorithm.equals(AlgorithmDescriptions.DLSSRR)) ?
                             Integer.toString(SuperResolutionConfig.SPECIAL.DLSS.RENDER_PRESET.get().getCode()) :
                             "0");
         } else {

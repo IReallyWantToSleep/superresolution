@@ -584,6 +584,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
     private boolean isExperimentalAlgorithm(AlgorithmDescription<?> algorithmDescription){
         return algorithmDescription.equals(AlgorithmDescriptions.DLSS) ||
+                algorithmDescription.equals(AlgorithmDescriptions.DLSSRR) ||
                 algorithmDescription.equals(AlgorithmDescriptions.XESS) ||
                 algorithmDescription.equals(AlgorithmDescriptions.ANIME4K);
     }
