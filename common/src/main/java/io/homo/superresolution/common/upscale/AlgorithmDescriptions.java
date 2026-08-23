@@ -305,7 +305,15 @@ public class AlgorithmDescriptions {
                                     .build()
                             )
                             .build()
-                            : ExtraResources.builder().build()
+                            : ExtraResources.builder()
+                            .add(ExtraResource.builder("libnvidia-ngx-dlss.so.310.7.0")
+                                    .addRemote(
+                                            () -> "https://raw.githubusercontent.com/NVIDIA/DLSS/a291cc7d2cc642a51566f3dfd5376f635cd1b284/lib/Linux_x86_64/rel/libnvidia-ngx-dlss.so.310.7.0",
+                                            "Github"
+                                    )
+                                    .build()
+                            )
+                            .build()
             )
             .supportJitter(true)
             .qualityPresets(DLSS_QUALITY_PRESETS)
@@ -328,29 +336,14 @@ public class AlgorithmDescriptions {
             .extraResources(
                     Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS
                             ? ExtraResources.builder()
-                            .add(ExtraResource.builder("nvngx_dlss.dll")
-                                    .addRemote(
-                                            NgxDlssLatestProvider.getInstance(),
-                                            "NVIDIA NGX (Latest)"
-                                    )
-                                    .addRemote(
-                                            () -> "https://raw.githubusercontent.com/NVIDIA/DLSS/refs/heads/main/lib/Windows_x86_64/rel/nvngx_dlss.dll",
-                                            "Github"
-                                    )
-                                    .addRemote(
-                                            () -> "https://api.fuukir.cn/dl/sr/nvngx_dlss.dll",
-                                            "Mirror"
-                                    )
-                                    .addRemote(
-                                            () -> "https://cnb.cool/187J3X1-114514/mc-superresolution/-/releases/download/assets/nvngx_dlss.dll",
-                                            "Mirror (CNB)"
-                                    )
-                                    .build()
-                            )
                             .add(ExtraResource.builder("nvngx_dlssd.dll")
                                     .addRemote(
                                             NgxDlssLatestProvider.getInstance(NgxDlssLatestProvider.NgxModel.DLSSD),
                                             "NVIDIA NGX (Latest)"
+                                    )
+                                    .addRemote(
+                                            () -> "https://api.fuukir.cn/dl/sr/nvngx_dlssd.dll",
+                                            "Mirror"
                                     )
                                     .addRemote(
                                             () -> "https://raw.githubusercontent.com/NVIDIA/DLSS/refs/heads/main/lib/Windows_x86_64/rel/nvngx_dlssd.dll",
@@ -359,7 +352,15 @@ public class AlgorithmDescriptions {
                                     .build()
                             )
                             .build()
-                            : ExtraResources.builder().build()
+                            : ExtraResources.builder()
+                            .add(ExtraResource.builder("libnvidia-ngx-dlssd.so.310.7.0")
+                                    .addRemote(
+                                            () -> "https://raw.githubusercontent.com/NVIDIA/DLSS/a291cc7d2cc642a51566f3dfd5376f635cd1b284/lib/Linux_x86_64/rel/libnvidia-ngx-dlssd.so.310.7.0",
+                                            "Github"
+                                    )
+                                    .build()
+                            )
+                            .build()
             )
             .supportJitter(true)
             .qualityPresets(DLSS_QUALITY_PRESETS)
