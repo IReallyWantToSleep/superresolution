@@ -30,7 +30,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(value = PipelineManager.class,remap = false)
 public class PipelineManagerMixin {
-    @Inject(method = "preparePipeline",at = @At(value = "INVOKE", target = "Lnet/irisshaders/iris/shaderpack/materialmap/WorldRenderingSettings;clearReloadRequired()V"))
+    @Inject(method = "preparePipeline",at = @At(value = "INVOKE", target = "Lnet/irisshaders/iris/uniforms/SystemTimeUniforms$Timer;reset()V"))
     private void reset(NamespacedId currentDimension, CallbackInfoReturnable<WorldRenderingPipeline> cir){
         IrisShaderCompatUpscaleDispatcher.reset();
         SuperResolution.recreateAlgorithmIfChanged();

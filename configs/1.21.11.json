@@ -5,8 +5,7 @@
         "minecraft_version": "1.21.11",
         "parchment_version": "1.21.11:2025.12.20",
         "platforms": [
-            "fabric",
-            "neoforge"
+            "fabric"
         ],
         "lwjgl_version": "3.3.4",
         "lwjgl_stb_version": "3.3.3",
@@ -29,10 +28,6 @@
         "dependencies": {
             "modrinth": [
                 {
-                    "name": "iris",
-                    "version": "1.10.7+1.21.11-fabric"
-                },
-                {
                     "name": "sodium",
                     "version": "0.8.7+mc1.21.11"
                 },
@@ -51,34 +46,13 @@
                     "use_jarjar": true
                 }
             ],
-            "local": []
+            "local": [
+                {
+                    "name": "iris-fabric-1.10.6-snapshot+mc1.21.11-local",
+                    "isMod": true
+                }
+            ]
         },
         "modmenu_version": "17.0.0-beta.1"
-    },
-    "neoforge": {
-        "loader_version": "21.11.38-beta",
-        "dependencies": {
-            "modrinth": [
-                {
-                    "name": "spark",
-                    "version": "1.10.156-neoforge"
-                },
-                {
-                    "name": "sodium",
-                    "version": "0.8.7+mc1.21.11"
-                },
-                {
-                    "name": "iris",
-                    "version": "1.10.7+1.21.11-neoforge"
-                },
-                {
-                    "name": "distanthorizons",
-                    "version": "2.4.5-b-1.21.11",
-                    "compileOnly": true
-                }
-            ],
-            "local": [
-            ]
-        }
     }
 }
