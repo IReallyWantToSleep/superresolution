@@ -34,7 +34,7 @@
         "super_resolution-fabric.mixins.json",
         "super_resolution-fabric-compat.mixins.json",
         "super_resolution.shadercompat.mixins.json",
-        "super_resolution_irisapi.mixins.json"
+        "super_resolution_irisapi.mixins.json"{irisVelocityExtMixin}
     ],
     "depends": {
         "fabricloader": "*",
@@ -51,5 +51,9 @@
         "renderscale": "*",
         "gpu_booster": "*",
         "gpu_tape": "*"
+    },
+    "custom": {
+        "sodium:options": {
+        }
     }
 }

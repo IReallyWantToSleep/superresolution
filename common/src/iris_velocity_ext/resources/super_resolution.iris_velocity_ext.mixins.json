@@ -1,0 +1,34 @@
+{
+    "required": true,
+    "package": "io.homo.superresolution.iris_velocity_ext.v26_1.mixin",
+    "plugin": "io.homo.superresolution.iris_velocity_ext.v26_1.mixin.IrisVelocityExtMixinPlugin",
+    "compatibilityLevel": "JAVA_8",
+    "minVersion": "0.8",
+    "client": [
+        "BakedQuadCacheMixin",
+        "BlockEntityRenderDispatcherVelocityMixin",
+        "BufferBuilderFormatMixin",
+        "BufferBuilderVelocityMixin",
+        "CustomGeometrySubmitCaptureMixin",
+        "EntityRenderDispatcherVelocityMixin",
+        "EntityRenderStateKeyMixin",
+        "LevelRendererFrameMixin",
+        "ModelPartCubeVelocityMixin",
+        "RenderPipelineFormatMixin",
+        "ShaderCreatorLinkMixin",
+        "SubmitKeyStorageMixin",
+        "SubmitNodeCollectionCaptureMixin",
+        "VertexConsumerBakedQuadMixin",
+        "feature.CustomFeatureRendererVelocityMixin",
+        "feature.ItemFeatureRendererVelocityMixin",
+        "feature.ModelFeatureRendererVelocityMixin",
+        "feature.ModelPartFeatureRendererVelocityMixin"
+    ],
+    "mixins": [
+
+    ],
+    "injectors": {
+        "defaultRequire": 1
+    },
+    "refmap": "super_resolution.refmap.json"
+}

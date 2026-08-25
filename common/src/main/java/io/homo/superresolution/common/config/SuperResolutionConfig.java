@@ -85,6 +85,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue ENABLE_DETAILED_PROFILING;
     public static final BooleanValue ENABLE_DEBUG;
     public static final BooleanValue ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT;
+    public static final BooleanValue ENABLE_IRIS_EXTENSION;
     public static final EnumValue<InternalTextureFormat> INTERNAL_TEXTURE_FORMAT;
     public static final EnumValue<MaterialTheme> THEME;
     public static final EnumValue<SchemeVariant> THEME_SCHEME_VARIANT;
@@ -103,6 +104,7 @@ public class SuperResolutionConfig {
     public static final OperatingSystemType CURRENT_OS_TYPE = new OperatingSystem().type;
     public static final Runnable resolutionChangeCallback;
     private static volatile boolean unstableIncompatibleShaderSupportStartup;
+    private static volatile boolean irisExtensionStartup;
     private static volatile boolean startupOptionsFrozen;
 
     static {
@@ -290,6 +292,11 @@ public class SuperResolutionConfig {
                 () -> false,
                 "Enable unstable super resolution support for incompatible shader packs. Requires a game restart."
         );
+        ENABLE_IRIS_EXTENSION = builder.defineBoolean(
+                "enable_iris_extension",
+                () -> false,
+                "Enable Super Resolution extensions for Iris (e.g. the irisExt_velocity vertex attribute). Requires a game restart."
+        );
 
         INTERNAL_TEXTURE_FORMAT = builder.defineEnum(
                 "internal_texture_format",
@@ -376,11 +383,24 @@ public class SuperResolutionConfig {
             return;
         }
         unstableIncompatibleShaderSupportStartup = ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT.get();
+        irisExtensionStartup = ENABLE_IRIS_EXTENSION.get();
         startupOptionsFrozen = true;
     }
 
     public static boolean isUnstableIncompatibleShaderSupportEnabledAtStartup() {
         return startupOptionsFrozen && unstableIncompatibleShaderSupportStartup;
+    }
+
+    public static boolean isIrisExtensionEnabledAtStartup() {
+        return startupOptionsFrozen && irisExtensionStartup;
+    }
+
+    public static boolean isEnableIrisExtension() {
+        return ENABLE_IRIS_EXTENSION.get();
+    }
+
+    public static void setEnableIrisExtension(boolean value) {
+        ENABLE_IRIS_EXTENSION.set(value);
     }
 
     public static boolean isEnableUnstableIncompatibleShaderSupport() {

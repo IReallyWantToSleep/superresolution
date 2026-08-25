@@ -236,10 +236,20 @@ val fabricVersionRange = if (versionConfig.common.fabricVersionRange.size == 1) 
     versionConfig.common.fabricVersionRange.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }
 }
 
+// The iris velocity extension only exists for Minecraft 26.1; its mixin config lives in the
+// common jar only for those versions, so the reference here must be conditional too — Fabric
+// loader fails hard on a mixin config that is listed but absent from the jar.
+val irisVelocityExtMixinEntry = if (versionConfig.common.minecraftVersion.startsWith("26.1")) {
+    ",\n        \"super_resolution.iris_velocity_ext.mixins.json\""
+} else {
+    ""
+}
+
 tasks.named<ProcessResources>("processResources") {
     inputs.property("version", fabricModVersion)
     inputs.property("javaVersion", fabricJavaVersion)
     inputs.property("versionRange", fabricVersionRange)
+    inputs.property("irisVelocityExtMixin", irisVelocityExtMixinEntry)
     filesMatching("fabric.mod.json") {
         expand(
             mapOf(
@@ -250,6 +260,7 @@ tasks.named<ProcessResources>("processResources") {
         )
         filter { line: String ->
             line.replace("\"{versionRange}\"", fabricVersionRange)
+                .replace("{irisVelocityExtMixin}", irisVelocityExtMixinEntry)
         }
     }
     if (gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true){

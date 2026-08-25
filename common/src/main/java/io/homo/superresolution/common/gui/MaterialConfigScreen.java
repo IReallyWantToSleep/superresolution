@@ -1439,6 +1439,15 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 return true;
                             })
                             .build();
+
+                    builder.booleanOption(
+                                    Text.translatable("superresolution.screen.config.options.label.enable_iris_extension"),
+                                    SuperResolutionConfig.isEnableIrisExtension())
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_iris_extension"))
+                            .setDefaultValue(() -> false)
+                            .setRequireRestartGame(true)
+                            .setSaveConsumer(SuperResolutionConfig::setEnableIrisExtension)
+                            .build();
                 }
         );
 

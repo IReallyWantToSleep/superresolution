@@ -178,7 +178,7 @@ val irisapiSourceSet = sourceSets.maybeCreate("irisapi")
 val sharedSourceSet = sourceSets.maybeCreate("shared")
 val hackSourceSet = sourceSets.maybeCreate("hack")
 val shaderCompatSourceSet = sourceSets.maybeCreate("shadercompat")
-
+val irisVelocityExtSourceSet = sourceSets.maybeCreate("iris_velocity_ext")
 tasks.register<JavaCompile>("genJNIHeader") {
     description = "Generate JNI Header"
     val outputDir = file("../native/cpp/SRNativeMain/include")
@@ -226,6 +226,26 @@ mainSourceSet.runtimeClasspath += irisapiSourceSet.output
 mainSourceSet.compileClasspath += sharedSourceSet.output
 mainSourceSet.runtimeClasspath += sharedSourceSet.output
 
+irisVelocityExtSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
+irisVelocityExtSourceSet.compileClasspath += mainSourceSet.compileClasspath
+irisVelocityExtSourceSet.runtimeClasspath += mainSourceSet.runtimeClasspath
+irisVelocityExtSourceSet.compileClasspath += irisapiSourceSet.output
+irisVelocityExtSourceSet.runtimeClasspath += irisapiSourceSet.output
+irisVelocityExtSourceSet.compileClasspath += sharedSourceSet.output
+irisVelocityExtSourceSet.runtimeClasspath += sharedSourceSet.output
+irisVelocityExtSourceSet.compileClasspath += mainSourceSet.output
+irisVelocityExtSourceSet.runtimeClasspath += mainSourceSet.output
+
+val irisVelocityExtSupported = versionConfig.common.minecraftVersion.startsWith("26.1")
+if (irisVelocityExtSupported) {
+    dependencies {
+        add("iris_velocity_extCompileOnly", "io.github.llamalad7:mixinextras-common:0.5.0")
+    }
+} else {
+    irisVelocityExtSourceSet.java.setSrcDirs(emptyList<java.io.File>())
+    irisVelocityExtSourceSet.resources.setSrcDirs(emptyList<java.io.File>())
+}
+
 hackSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
 hackSourceSet.compileClasspath += mainSourceSet.compileClasspath
 hackSourceSet.compileClasspath += mainSourceSet.output
@@ -249,10 +269,17 @@ tasks.named<Jar>("jar") {
     from(sharedSourceSet.output)
     from(hackSourceSet.output)
     from(shaderCompatSourceSet.output)
+    if (irisVelocityExtSupported) {
+        from(irisVelocityExtSourceSet.output)
+    }
 }
 
 artifacts {
-    listOf(mainSourceSet, irisapiSourceSet, sharedSourceSet, hackSourceSet, shaderCompatSourceSet).forEach { sourceSet ->
+    val publishedSourceSets = mutableListOf(mainSourceSet, irisapiSourceSet, sharedSourceSet, hackSourceSet, shaderCompatSourceSet)
+    if (irisVelocityExtSupported) {
+        publishedSourceSets.add(irisVelocityExtSourceSet)
+    }
+    publishedSourceSets.forEach { sourceSet ->
         sourceSet.java.sourceDirectories.files.forEach { dir ->
             add("commonJava", dir)
         }

@@ -172,3 +172,4 @@ __pycache__
 .gradle*
 /AGENTS.md.bak
 /.codemoss/
+/.workdir
