@@ -104,14 +104,24 @@ public final class StreamlineSession implements AutoCloseable {
         return handle == 0L || !StreamlineNative.nIsSessionActive(handle);
     }
 
-    public int shutdown() {
-        long handle = nativeHandle.getAndSet(0L);
-        return handle == 0L ? 0 : StreamlineNative.nClose(handle);
+    public synchronized int shutdown() {
+        long handle = nativeHandle.get();
+        if (handle == 0L) {
+            return 0;
+        }
+        int result = StreamlineNative.nClose(handle);
+        if (result == 0) {
+            nativeHandle.set(0L);
+        }
+        return result;
     }
 
     @Override
     public void close() {
-        shutdown();
+        int result = shutdown();
+        if (result != 0) {
+            throw new StreamlineException("slShutdown", result);
+        }
     }
 
     /**

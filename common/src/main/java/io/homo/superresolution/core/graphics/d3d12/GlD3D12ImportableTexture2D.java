@@ -12,6 +12,9 @@ package io.homo.superresolution.core.graphics.d3d12;
 
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+
+import java.util.Objects;
 
 import static org.lwjgl.opengl.EXTMemoryObject.*;
 import static org.lwjgl.opengl.EXTMemoryObjectWin32.GL_HANDLE_TYPE_D3D12_RESOURCE_EXT;
@@ -22,19 +25,48 @@ import static org.lwjgl.opengl.GL11.*;
  * OpenGL texture view over a D3D12 shared committed resource.
  */
 public final class GlD3D12ImportableTexture2D extends GlTexture2D {
-    private final D3D12InteropContext.Resource source;
+    private final D3D12Texture2D source;
+    private final int importedTextureId;
+    private D3D12Texture2D.ExternalBorrowLease sourceBorrow;
     private int memoryObject;
+    private boolean textureDeleteAttempted;
+    private boolean textureDestroyed;
 
-    public GlD3D12ImportableTexture2D(D3D12InteropContext.Resource source) {
-        super(source.textureDescription());
+    public GlD3D12ImportableTexture2D(D3D12Texture2D source) {
+        super(requireSharedTexture(source));
         this.source = source;
-        configureMipmap();
-        try {
-            initializeTexture();
-        } catch (Throwable throwable) {
-            destroy();
-            throw throwable;
+        this.importedTextureId = Math.toIntExact(handle());
+    }
+
+    /**
+     * Completes the fallible import after the caller has retained this owner.
+     */
+    public synchronized void initializeImport() {
+        source.device().withLifecycleLock(this::initializeImportLocked);
+    }
+
+    private void initializeImportLocked() {
+        source.device().assertLifecycleLockHeld();
+        if (textureDestroyed) {
+            throw new IllegalStateException(
+                    "The OpenGL/D3D12 imported texture is destroyed");
         }
+        if (sourceBorrow != null || memoryObject != 0) {
+            throw new IllegalStateException(
+                    "The OpenGL/D3D12 imported texture is already initialized");
+        }
+        sourceBorrow = source.borrowExternal();
+        configureMipmap();
+        initializeTextureLocked();
+    }
+
+    private static TextureDescription requireSharedTexture(D3D12Texture2D source) {
+        Objects.requireNonNull(source, "source");
+        if (!source.isShared()) {
+            throw new IllegalArgumentException(
+                    "OpenGL can only import a shared D3D12 Texture2D");
+        }
+        return source.getTextureDescription();
     }
 
     private static void clearGlErrors() {
@@ -45,7 +77,16 @@ public final class GlD3D12ImportableTexture2D extends GlTexture2D {
     }
 
     @Override
-    protected void initializeTexture() {
+    protected synchronized void initializeTexture() {
+        source.device().withLifecycleLock(this::initializeTextureLocked);
+    }
+
+    private void initializeTextureLocked() {
+        source.device().assertLifecycleLockHeld();
+        if (sourceBorrow == null) {
+            throw new IllegalStateException(
+                    "The D3D12 Texture2D import borrow is closed");
+        }
         try (
                 GlState ignored = new GlState(
                         GlState.STATE_TEXTURE |
@@ -61,36 +102,66 @@ public final class GlD3D12ImportableTexture2D extends GlTexture2D {
                     GL_TRUE);
             glImportMemoryWin32HandleEXT(
                     memoryObject,
-                    source.allocationSize(),
+                    0L,
                     GL_HANDLE_TYPE_D3D12_RESOURCE_EXT,
-                    source.sharedHandle());
+                    source.sharedHandleLocked());
 
             glBindTexture(GL_TEXTURE_2D, Math.toIntExact(handle()));
             glTextureStorageMem2DEXT(
                     Math.toIntExact(handle()),
                     1,
-                    source.textureDescription().getFormat().gl(),
-                    source.textureDescription().getWidth(),
-                    source.textureDescription().getHeight(),
+                    source.getTextureFormat().gl(),
+                    source.getWidth(),
+                    source.getHeight(),
                     memoryObject,
                     0);
             int error = glGetError();
             if (error != GL_NO_ERROR) {
                 throw new IllegalStateException(
-                        "Could not import D3D12 resource " + source.index() +
+                        "Could not import D3D12 resource " + source.string() +
                                 " into OpenGL (error 0x" +
                                 Integer.toHexString(error) + ").");
             }
-            updateDebugLabel(source.textureDescription().getLabel());
+            updateDebugLabel(source.getTextureDescription().getLabel());
+        }
+    }
+
+    private static void checkGlError(String operation) {
+        int error = glGetError();
+        if (error != GL_NO_ERROR) {
+            throw new IllegalStateException(
+                    operation + " failed with OpenGL error 0x" +
+                            Integer.toHexString(error) + ".");
         }
     }
 
     @Override
-    public void destroy() {
-        super.destroy();
+    public synchronized void destroy() {
+        source.device().withLifecycleLock(this::destroyLocked);
+    }
+
+    private void destroyLocked() {
+        source.device().assertLifecycleLockHeld();
+        if (!textureDestroyed) {
+            clearGlErrors();
+            if (!textureDeleteAttempted) {
+                super.destroy();
+                textureDeleteAttempted = true;
+            } else {
+                glDeleteTextures(importedTextureId);
+            }
+            checkGlError("Delete the OpenGL/D3D12 imported texture");
+            textureDestroyed = true;
+        }
         if (memoryObject != 0) {
+            clearGlErrors();
             glDeleteMemoryObjectsEXT(memoryObject);
+            checkGlError("Delete the OpenGL/D3D12 imported memory object");
             memoryObject = 0;
+        }
+        if (sourceBorrow != null) {
+            sourceBorrow.close();
+            sourceBorrow = null;
         }
     }
 }

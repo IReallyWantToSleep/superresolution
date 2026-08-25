@@ -35,8 +35,12 @@ public class SuperResolutionNativeAPI {
             SRUpscaleProvider provider,
             SRCreateUpscaleContextDesc desc
     ) {
-        if (provider.nativePtr < 1 || desc == null) {
+        if (outContext == null || provider == null ||
+                provider.nativePtr < 1 || desc == null) {
             return SRReturnCode.NULL_POINTER;
+        }
+        if (outContext.nativePtr != 0) {
+            return SRReturnCode.INVALID_ARGUMENT;
         }
 
         long extraParamsPtr = desc.extraParams != null ? desc.extraParams.getNativePtr() : 0;

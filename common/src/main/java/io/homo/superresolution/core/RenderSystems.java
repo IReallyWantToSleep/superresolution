@@ -24,11 +24,14 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.core.graphics.d3d12.D3D12OpenGlInterop;
+import io.homo.superresolution.core.graphics.d3d12.D3D12RenderSystem;
 import io.homo.superresolution.core.graphics.opengl.GlRenderSystem;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VulkanException;
 import io.homo.superresolution.core.streamline.Streamline;
+import io.homo.superresolution.core.utils.ThrowableUtil;
 import org.lwjgl.vulkan.KHRExternalMemoryFd;
 import org.lwjgl.vulkan.KHRExternalSemaphoreFd;
 import org.lwjgl.vulkan.VK;
@@ -52,6 +55,7 @@ import static org.lwjgl.vulkan.KHRDynamicRendering.VK_KHR_DYNAMIC_RENDERING_EXTE
 public class RenderSystems {
     private static VkRenderSystem vulkan;
     private static GlRenderSystem opengl;
+    private static D3D12RenderSystem d3d12;
 
     public static void init() {
         opengl = new GlRenderSystem();
@@ -60,13 +64,59 @@ public class RenderSystems {
     }
 
 
-    public static void destroy() {
+    public static synchronized void destroy() {
+        Throwable failure = null;
+        D3D12RenderSystem d3d12ToDestroy = d3d12;
+        if (d3d12ToDestroy != null) {
+            try {
+                d3d12ToDestroy.destroyRenderSystem();
+            } catch (Throwable throwable) {
+                if (!d3d12ToDestroy.isDestroyed()) {
+                    throwDestroyFailure(throwable);
+                }
+                failure = appendDestroyFailure(failure, throwable);
+            } finally {
+                if (d3d12ToDestroy.isDestroyed()) {
+                    d3d12 = null;
+                }
+            }
+        }
         if (opengl != null) {
-            opengl.destroyRenderSystem();
+            try {
+                opengl.destroyRenderSystem();
+            } catch (Throwable throwable) {
+                failure = appendDestroyFailure(failure, throwable);
+            }
         }
         if (vulkan != null) {
-            vulkan.destroyRenderSystem();
+            try {
+                vulkan.destroyRenderSystem();
+            } catch (Throwable throwable) {
+                failure = appendDestroyFailure(failure, throwable);
+            }
         }
+        throwDestroyFailure(failure);
+    }
+
+    private static Throwable appendDestroyFailure(Throwable failure, Throwable addition) {
+        if (failure == null) {
+            return addition;
+        }
+        if (failure != addition) {
+            failure.addSuppressed(addition);
+        }
+        return failure;
+    }
+
+    private static void throwDestroyFailure(Throwable failure) {
+        if (failure == null) {
+            return;
+        }
+        ThrowableUtil.rethrowError(failure);
+        if (failure instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        }
+        throw new RuntimeException("Failed to destroy render systems", failure);
     }
 
     public static boolean isSupportVulkan() {
@@ -75,6 +125,11 @@ public class RenderSystems {
 
     public static boolean isSupportOpenGL() {
         return true;
+    }
+
+    public static boolean isSupportD3D12() {
+        return Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS &&
+                NativeLibManager.d3d12Available();
     }
 
     public static boolean initBorrowedB3DVulkanIfAvailable() {
@@ -186,6 +241,41 @@ public class RenderSystems {
 
     public static VkRenderSystem vulkan() {
         return vulkan;
+    }
+
+    public static synchronized D3D12RenderSystem d3d12() {
+        if (d3d12 != null) {
+            if (!d3d12.isInitialized()) {
+                throw new IllegalStateException(
+                        "A failed D3D12 render system is retained for destruction retry.");
+            }
+            return d3d12;
+        }
+        if (!isSupportD3D12()) {
+            throw new UnsupportedOperationException(
+                    "D3D12 RHI is unavailable on this platform or its native library failed to load.");
+        }
+
+        D3D12RenderSystem candidate = new D3D12RenderSystem(
+                D3D12OpenGlInterop.queryAdapterLuid());
+        try {
+            candidate.initRenderSystem();
+            d3d12 = candidate;
+            return candidate;
+        } catch (RuntimeException | Error failure) {
+            try {
+                candidate.destroyRenderSystem();
+            } catch (RuntimeException | Error cleanupFailure) {
+                if (!candidate.isDestroyed()) {
+                    d3d12 = candidate;
+                }
+                if (failure != cleanupFailure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
+            ThrowableUtil.rethrowError(failure);
+            throw failure;
+        }
     }
 
     public static IRenderSystem current() {

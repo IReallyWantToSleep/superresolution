@@ -115,8 +115,13 @@ public class FfxFSR extends SRApiAlgorithm {
                 SRReturnCode initUpscaleContextCode = SuperResolutionNativeAPI.srInitUpscaleContext(context);
                 if (initUpscaleContextCode != SRReturnCode.OK) {
                     SuperResolution.LOGGER.error("Failed to initialize upscale context. Return code: {}", initUpscaleContextCode);
-                    context = null;
-                    throw new RuntimeException("Failed to initialize upscale context");
+                    RuntimeException failure = new RuntimeException("Failed to initialize upscale context");
+                    try {
+                        destroySRApiContext();
+                    } catch (Throwable cleanupFailure) {
+                        failure.addSuppressed(cleanupFailure);
+                    }
+                    throw failure;
                 }
             }
         }
@@ -125,15 +130,16 @@ public class FfxFSR extends SRApiAlgorithm {
 
     @Override
     protected void destroySRApiContext() {
-        if (context != null) {
-            if (context.nativePtr > 0) {
-                SRReturnCode code = context.destroy();
-                if (code != SRReturnCode.OK) {
-                    SuperResolution.LOGGER.error("Failed to destroy FSR context: {}", code);
-                }
-            }
-            context = null;
+        if (context == null) {
+            return;
         }
+
+        SRReturnCode code = context.destroy();
+        if (code != SRReturnCode.OK) {
+            SuperResolution.LOGGER.error("Failed to destroy FSR context: {}", code);
+            throw new RuntimeException("Failed to destroy FSR context: " + code);
+        }
+        context = null;
     }
 
     @Override

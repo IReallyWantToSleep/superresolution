@@ -2,6 +2,8 @@
 #include "sr/xess/xess.h"
 #include <cstring>
 #include <cstdlib>
+#include <mutex>
+#include <new>
 #include <string>
 #include "sr/xess/sr_provider.h"
 #include "XeSS/inc/xess/xess_vk.h"
@@ -31,16 +33,17 @@ struct SRXeSSFunctionsTable {
 static SRXeSSFunctionsTable g_xessFunctions = {};
 static bool g_xessFunctionsLoaded = false;
 static HMODULE g_xessModule = nullptr;
+static size_t g_xessContextCount = 0;
+static std::mutex g_xessMutex;
 
 template<typename T>
-static bool srXeSSResolve(T &fn, const char *name, SRMessageCallback messageCallback) {
+static bool srXeSSResolve(T &fn, const char *name, std::wstring &errorMessage) {
     fn = reinterpret_cast<T>(GetProcAddress(g_xessModule, name));
     if (!fn) {
-        if (messageCallback) {
+        if (errorMessage.empty()) {
             std::wstring wideName(name, name + std::strlen(name));
-            std::wstring msg = L"Failed to resolve XeSS symbol: ";
-            msg += wideName;
-            messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
+            errorMessage = L"Failed to resolve XeSS symbol: ";
+            errorMessage += wideName;
         }
         return false;
     }
@@ -48,14 +51,26 @@ static bool srXeSSResolve(T &fn, const char *name, SRMessageCallback messageCall
 }
 
 SR_API SRReturnCode srXeSSLoadFunctionsFromDll(const char *dllPath, SRMessageCallback messageCallback) {
+    std::unique_lock<std::mutex> lock(g_xessMutex);
     if (g_xessFunctionsLoaded) {
         return SR_RETURN_CODE_OK;
+    }
+    if (g_xessContextCount != 0) {
+        return SR_RETURN_CODE_UNEXPECTED_ERROR;
+    }
+    if (g_xessModule) {
+        if (!FreeLibrary(g_xessModule)) {
+            return SR_RETURN_CODE_UNEXPECTED_ERROR;
+        }
+        g_xessModule = nullptr;
+        g_xessFunctions = {};
     }
 
     const char *effectivePath = (dllPath && std::strlen(dllPath) > 0) ? dllPath : "libxess.dll";
 
     int wideLen = MultiByteToWideChar(CP_UTF8, 0, effectivePath, -1, nullptr, 0);
     if (wideLen <= 0) {
+        lock.unlock();
         if (messageCallback) {
             messageCallback(SR_MESSAGE_TYPE_ERROR, L"Failed to convert XeSS dll path to wide string.");
         }
@@ -68,29 +83,43 @@ SR_API SRReturnCode srXeSSLoadFunctionsFromDll(const char *dllPath, SRMessageCal
     g_xessModule = LoadLibraryW(widePath.c_str());
 
     if (!g_xessModule) {
+        std::wstring msg;
         if (messageCallback) {
-            std::wstring msg = L"Failed to load XeSS library: ";
+            msg = L"Failed to load XeSS library: ";
             msg += widePath;
+        }
+        lock.unlock();
+        if (messageCallback) {
             messageCallback(SR_MESSAGE_TYPE_ERROR, msg.c_str());
         }
         return SR_RETURN_CODE_CANNOT_FIND_LIBRARY;
     }
 
     bool resolved = true;
-    resolved &= srXeSSResolve(g_xessFunctions.xessGetInputResolution, "xessGetInputResolution", messageCallback);
-    resolved &= srXeSSResolve(g_xessFunctions.xessVKInit, "xessVKInit", messageCallback);
-    resolved &= srXeSSResolve(g_xessFunctions.xessVKCreateContext, "xessVKCreateContext", messageCallback);
-    resolved &= srXeSSResolve(g_xessFunctions.xessSetLoggingCallback, "xessSetLoggingCallback", messageCallback);
-    resolved &= srXeSSResolve(g_xessFunctions.xessDestroyContext, "xessDestroyContext", messageCallback);
-    resolved &= srXeSSResolve(g_xessFunctions.xessGetVersion, "xessGetVersion", messageCallback);
-    resolved &= srXeSSResolve(g_xessFunctions.xessGetProperties, "xessGetProperties", messageCallback);
-    resolved &= srXeSSResolve(g_xessFunctions.xessVKExecute, "xessVKExecute", messageCallback);
-    resolved &= srXeSSResolve(g_xessFunctions.xessSetVelocityScale, "xessSetVelocityScale", messageCallback);
+    std::wstring resolveError;
+    resolved &= srXeSSResolve(g_xessFunctions.xessGetInputResolution, "xessGetInputResolution", resolveError);
+    resolved &= srXeSSResolve(g_xessFunctions.xessVKInit, "xessVKInit", resolveError);
+    resolved &= srXeSSResolve(g_xessFunctions.xessVKCreateContext, "xessVKCreateContext", resolveError);
+    resolved &= srXeSSResolve(g_xessFunctions.xessSetLoggingCallback, "xessSetLoggingCallback", resolveError);
+    resolved &= srXeSSResolve(g_xessFunctions.xessDestroyContext, "xessDestroyContext", resolveError);
+    resolved &= srXeSSResolve(g_xessFunctions.xessGetVersion, "xessGetVersion", resolveError);
+    resolved &= srXeSSResolve(g_xessFunctions.xessGetProperties, "xessGetProperties", resolveError);
+    resolved &= srXeSSResolve(g_xessFunctions.xessVKExecute, "xessVKExecute", resolveError);
+    resolved &= srXeSSResolve(g_xessFunctions.xessSetVelocityScale, "xessSetVelocityScale", resolveError);
 
     if (!resolved) {
-        FreeLibrary(g_xessModule);
-        g_xessModule = nullptr;
-        return SR_RETURN_CODE_INVALID_PROVIDER_LIBRARY;
+        SRReturnCode result = SR_RETURN_CODE_INVALID_PROVIDER_LIBRARY;
+        if (!FreeLibrary(g_xessModule)) {
+            result = SR_RETURN_CODE_UNEXPECTED_ERROR;
+        } else {
+            g_xessModule = nullptr;
+            g_xessFunctions = {};
+        }
+        lock.unlock();
+        if (messageCallback) {
+            messageCallback(SR_MESSAGE_TYPE_ERROR, resolveError.c_str());
+        }
+        return result;
     }
 
     g_xessFunctionsLoaded = true;
@@ -102,14 +131,31 @@ struct SRXeSSPrivateData {
     xess_coord_t renderSize;
     SRMessageCallback messageCallback;
     bool isAvailable;
+    bool contextCreated;
+    bool initialized;
 };
 #ifdef __cplusplus
 extern "C" {
     #endif
     SR_API SRReturnCode srXeSSInitUpscaleContext(SRUpscaleContext *context) {
-        SRXeSSPrivateData *privateData = (SRXeSSPrivateData *) context->userContext;
-        xess_result_t status;
+        if (!context || !context->userContext) {
+            return SR_RETURN_CODE_NULL_POINTER;
+        }
+        auto *privateData = static_cast<SRXeSSPrivateData *>(context->userContext);
+        if (!privateData->contextCreated || !privateData->xessContext) {
+            return SR_RETURN_CODE_UNSUPPORTED;
+        }
+        if (privateData->initialized) {
+            return SR_RETURN_CODE_OK;
+        }
+
         const SRCreateUpscaleContextDesc *desc = &context->desc;
+        std::unique_lock<std::mutex> lock(g_xessMutex);
+        if (!g_xessFunctionsLoaded ||
+            !g_xessFunctions.xessGetInputResolution ||
+            !g_xessFunctions.xessVKInit) {
+            return SR_RETURN_CODE_UNSUPPORTED;
+        }
         float upscaleRatio = static_cast<float>(desc->upscaledSize.x) / static_cast<float>(desc->renderSize.x);
         xess_quality_settings_t quality_settings = XESS_QUALITY_SETTING_AA;
         if (upscaleRatio < 1.0f)
@@ -138,11 +184,19 @@ extern "C" {
         xess_2d_t upscale_size;
         upscale_size.x = desc->upscaledSize.x;
         upscale_size.y = desc->upscaledSize.y;
-        g_xessFunctions.xessGetInputResolution(
+        xess_result_t status = g_xessFunctions.xessGetInputResolution(
             privateData->xessContext,
             &upscale_size,
             quality_settings,
             &privateData->renderSize);
+        if (status != XESS_RESULT_SUCCESS) {
+            lock.unlock();
+            if (desc->messageCallback) {
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS input-resolution query failed");
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
+            }
+            return SR_RETURN_CODE_ERROR;
+        }
         uint32_t initializeFlags = 0;
         if (!(desc->flags & SR_UPSCALE_CONTEXT_CREATE_FLAG_ENABLE_HDR)) {
             initializeFlags |= XESS_INIT_FLAG_LDR_INPUT_COLOR;
@@ -172,15 +226,25 @@ extern "C" {
         };
         status = g_xessFunctions.xessVKInit(privateData->xessContext, &params);
         if (status != XESS_RESULT_SUCCESS) {
-            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS Context init failed");
-            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
+            lock.unlock();
+            if (desc->messageCallback) {
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS Context init failed");
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
+            }
             return SR_RETURN_CODE_ERROR;
         }
-        desc->messageCallback(SR_MESSAGE_TYPE_INFO, L"XeSS Context init successful");
-        return (SRReturnCode) SR_RETURN_CODE_OK;
+        privateData->initialized = true;
+        lock.unlock();
+        if (desc->messageCallback) {
+            desc->messageCallback(SR_MESSAGE_TYPE_INFO, L"XeSS Context init successful");
+        }
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srXeSSCreateUpscaleContext(SRUpscaleContext *context, const SRCreateUpscaleContextDesc *desc) {
+        if (!context || !desc) {
+            return SR_RETURN_CODE_NULL_POINTER;
+        }
         if (desc->renderApiType != SR_RENDER_API_TYPE_VULKAN) {
             if (desc->messageCallback) {
                 desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS only supports Vulkan");
@@ -198,32 +262,48 @@ extern "C" {
             return SR_RETURN_CODE_CANNOT_FIND_LIBRARY;
         }
 
-        ///////////////
-        SRXeSSPrivateData *privateData = new SRXeSSPrivateData();
+        auto *privateData = new(std::nothrow) SRXeSSPrivateData{};
+        if (!privateData) {
+            return SR_RETURN_CODE_ERROR;
+        }
+        std::unique_lock<std::mutex> lock(g_xessMutex);
+        if (!g_xessFunctionsLoaded || !g_xessFunctions.xessVKCreateContext) {
+            lock.unlock();
+            delete privateData;
+            return SR_RETURN_CODE_CANNOT_FIND_LIBRARY;
+        }
         auto status = g_xessFunctions.xessVKCreateContext(
             (VkInstance) desc->renderDeviceInfo.vulkan.instance,
             (VkPhysicalDevice) desc->renderDeviceInfo.vulkan.physicalDevice,
             (VkDevice) desc->renderDeviceInfo.vulkan.device,
             &privateData->xessContext);
-        if (status != XESS_RESULT_SUCCESS && status != XESS_RESULT_ERROR_UNSUPPORTED_DEVICE) {
-            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS Context create failed");
-            desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
+        if (status == XESS_RESULT_ERROR_UNSUPPORTED_DEVICE) {
+            lock.unlock();
+            if (desc->messageCallback) {
+                desc->messageCallback(SR_MESSAGE_TYPE_WARNING, L"XeSS is unsupported on this device");
+            }
+            delete privateData;
+            return SR_RETURN_CODE_UNSUPPORTED;
+        }
+        if (status != XESS_RESULT_SUCCESS || !privateData->xessContext) {
+            lock.unlock();
+            if (desc->messageCallback) {
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS Context create failed");
+                desc->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
+            }
             delete privateData;
             return SR_RETURN_CODE_ERROR;
         }
-        desc->messageCallback(SR_MESSAGE_TYPE_INFO, L"XeSS Context create successful");
-        if (status == XESS_RESULT_SUCCESS) {
-            privateData->isAvailable = true;
-        } else {
-            privateData->isAvailable = false;
-            context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
-            privateData->messageCallback = desc->messageCallback;
-            context->userContext = privateData;
-            return (SRReturnCode) SR_RETURN_CODE_OK;
-        }
-        context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
+        ++g_xessContextCount;
+        privateData->contextCreated = true;
+        privateData->isAvailable = true;
         privateData->messageCallback = desc->messageCallback;
+        context->desc = *desc;
         context->userContext = privateData;
+        lock.unlock();
+        if (desc->messageCallback) {
+            desc->messageCallback(SR_MESSAGE_TYPE_INFO, L"XeSS Context create successful");
+        }
 
         //g_xessFunctions.xessSetLoggingCallback(
         //    privateData->xessContext,
@@ -240,19 +320,53 @@ extern "C" {
             return SR_RETURN_CODE_NULL_POINTER;
         }
         auto *privateData = static_cast<SRXeSSPrivateData *>(context->userContext);
-        g_xessFunctions.xessDestroyContext(privateData->xessContext);
+        std::unique_lock<std::mutex> lock(g_xessMutex);
+        if (privateData->contextCreated) {
+            if (!g_xessFunctionsLoaded || !privateData->xessContext ||
+                !g_xessFunctions.xessDestroyContext) {
+                return SR_RETURN_CODE_ERROR;
+            }
+            xess_result_t status = g_xessFunctions.xessDestroyContext(privateData->xessContext);
+            if (status != XESS_RESULT_SUCCESS) {
+                lock.unlock();
+                if (privateData->messageCallback) {
+                    privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS Context destroy failed");
+                    privateData->messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
+                }
+                return SR_RETURN_CODE_ERROR;
+            }
+            privateData->xessContext = nullptr;
+            privateData->contextCreated = false;
+            privateData->initialized = false;
+            privateData->isAvailable = false;
+            if (g_xessContextCount != 0) {
+                --g_xessContextCount;
+            }
+        }
+        lock.unlock();
         delete privateData;
         context->userContext = nullptr;
         return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srXeSSQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result,
-                                           SRUpscaleContextQueryType queryType) {
+                                            SRUpscaleContextQueryType queryType) {
+        if (!context || !context->userContext || !result) {
+            return SR_RETURN_CODE_NULL_POINTER;
+        }
+        auto *privateData = static_cast<SRXeSSPrivateData *>(context->userContext);
+        if (!privateData->contextCreated || !privateData->xessContext) {
+            return SR_RETURN_CODE_UNSUPPORTED;
+        }
+        std::lock_guard<std::mutex> lock(g_xessMutex);
+        if (!g_xessFunctionsLoaded) {
+            return SR_RETURN_CODE_UNSUPPORTED;
+        }
         switch (queryType) {
             case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO: {
                 xess_version_t version;
                 g_xessFunctions.xessGetVersion(&version);
-                static SRQueryVersionResult outResult = {};
+                static thread_local SRQueryVersionResult outResult = {};
                 outResult.versionId = SR_MAKE_VERSION(version.major, version.minor, version.patch);
                 outResult.versionNumber = SR_MAKE_VERSION(version.major, version.minor, version.patch);
                 result->data = &outResult;
@@ -262,17 +376,17 @@ extern "C" {
                 xess_2d_t pOutputResolution = {};
                 xess_properties_t pBindingProperties = {};
                 g_xessFunctions.xessGetProperties(
-                    static_cast<SRXeSSPrivateData *>(context->userContext)->xessContext,
+                    privateData->xessContext,
                     &pOutputResolution,
                     &pBindingProperties);
-                static SRQueryGpuMemoryResult outResult = {};
+                static thread_local SRQueryGpuMemoryResult outResult = {};
                 outResult.gpuMemory = pBindingProperties.tempBufferHeapSize + pBindingProperties.tempTextureHeapSize;
                 result->data = &outResult;
                 break;
             }
             case SR_UPSCALE_CONTEXT_QUERY_AVAILABLE: {
-                static SRQueryAvailabilityResult outResult = {};
-                outResult.isAvailable = static_cast<SRXeSSPrivateData *>(context->userContext)->isAvailable;
+                static thread_local SRQueryAvailabilityResult outResult = {};
+                outResult.isAvailable = privateData->isAvailable;
                 result->data = &outResult;
                 break;
             }
@@ -298,7 +412,20 @@ extern "C" {
     }
 
     SR_API SRReturnCode srXeSSDispatchUpscale(SRUpscaleContext *context, const SRDispatchUpscaleDesc *desc) {
-        xess_context_handle_t xessContext = static_cast<SRXeSSPrivateData *>(context->userContext)->xessContext;
+        if (!context || !context->userContext || !desc) {
+            return SR_RETURN_CODE_NULL_POINTER;
+        }
+        auto *privateData = static_cast<SRXeSSPrivateData *>(context->userContext);
+        if (!privateData->contextCreated || !privateData->initialized || !privateData->xessContext) {
+            return SR_RETURN_CODE_ERROR;
+        }
+        std::unique_lock<std::mutex> lock(g_xessMutex);
+        if (!g_xessFunctionsLoaded ||
+            !g_xessFunctions.xessSetVelocityScale ||
+            !g_xessFunctions.xessVKExecute) {
+            return SR_RETURN_CODE_UNSUPPORTED;
+        }
+        xess_context_handle_t xessContext = privateData->xessContext;
 
         xess_vk_execute_params_t executeParams = {};
         if (desc->color.exist) {
@@ -335,18 +462,27 @@ extern "C" {
                                                     desc->commandList.apiCommandBuffer.vulkan.commandBuffer,
                                                     &executeParams);
         if (status != XESS_RESULT_SUCCESS) {
-            static_cast<SRXeSSPrivateData *>(context->userContext)->
-                    messageCallback(SR_MESSAGE_TYPE_ERROR, L"XeSS execute failed");
-            static_cast<SRXeSSPrivateData *>(context->userContext)->messageCallback(
-                SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
+            lock.unlock();
+            if (privateData->messageCallback) {
+                privateData->messageCallback(
+                    SR_MESSAGE_TYPE_ERROR, L"XeSS execute failed");
+                privateData->messageCallback(
+                    SR_MESSAGE_TYPE_ERROR, std::to_wstring(status).c_str());
+            }
             return SR_RETURN_CODE_ERROR;
         }
         return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srXeSSShutdown() {
+        std::lock_guard<std::mutex> lock(g_xessMutex);
+        if (g_xessContextCount != 0) {
+            return SR_RETURN_CODE_UNEXPECTED_ERROR;
+        }
         if (g_xessModule) {
-            FreeLibrary(g_xessModule);
+            if (!FreeLibrary(g_xessModule)) {
+                return SR_RETURN_CODE_UNEXPECTED_ERROR;
+            }
             g_xessModule = nullptr;
         }
         g_xessFunctions = {};

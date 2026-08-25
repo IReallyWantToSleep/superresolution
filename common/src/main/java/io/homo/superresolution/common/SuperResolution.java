@@ -54,6 +54,7 @@ import io.homo.superresolution.core.ngx.NgxInitializer;
 import io.homo.superresolution.core.streamline.Streamline;
 import io.homo.superresolution.core.utils.MessageBox;
 import io.homo.superresolution.srapi.SuperResolutionNativeAPI;
+import io.homo.superresolution.srapi.SRReturnCode;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
 import org.slf4j.Logger;
@@ -82,6 +83,7 @@ public final class SuperResolution implements Destroyable {
     private static final Requirement commonRequirement = Requirement.nothing()
             .glMajorVersion(4).glMinorVersion(1);
     public static AbstractAlgorithm currentAlgorithm;
+    private static final ArrayList<AbstractAlgorithm> retainedAlgorithmOwners = new ArrayList<>(4);
     public static None defaultAlgorithm = new None();
     public static boolean isInit;
     public static boolean isPreInit;
@@ -324,10 +326,39 @@ public final class SuperResolution implements Destroyable {
 
     public static boolean createAlgorithm(InitializationDescription desc) {
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            Throwable retainedFailure = retryRetainedAlgorithmOwners(null);
+            if (retainedFailure != null) {
+                LOGGER.error(
+                        "Could not release a previously failed algorithm before " +
+                                "switching to the borrowed Vulkan backend",
+                        retainedFailure);
+                rethrowAlgorithmError(retainedFailure);
+                return false;
+            }
+            reserveAlgorithmOwnerCapacity();
+            AbstractAlgorithm previous = currentAlgorithm;
+            if (previous != null) {
+                try {
+                    previous.destroy();
+                    currentAlgorithm = null;
+                } catch (Throwable failure) {
+                    retainAlgorithmOwner(previous);
+                    currentAlgorithm = null;
+                    LOGGER.error(
+                            "Failed to destroy the current algorithm before " +
+                                    "switching to the borrowed Vulkan backend",
+                            failure);
+                    rethrowAlgorithmError(failure);
+                    return false;
+                }
+            }
             algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
             currentAlgorithm = null;
             return true;
         }
+        AbstractAlgorithm previous = currentAlgorithm;
+        AbstractAlgorithm candidate = null;
+        AlgorithmDescription<?> attemptedDescription = null;
         try (GlState ignored = new GlState()) {
             if (minecraft == null) {
                 minecraft = Minecraft.getInstance();
@@ -335,24 +366,39 @@ public final class SuperResolution implements Destroyable {
             if (!isPreInit) {
                 return false;
             }
-            defaultAlgorithm.initialize();
-            algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
-            try {
-                currentAlgorithm = algorithmDescription.createNewInstance();
-                currentAlgorithm.initialize(desc);
-                // 算法创建时已按当前尺寸初始化，同步尺寸缓存避免渲染路径上重复重建。
-                cachedWidth = RenderHandlerManager.getScreenWidth();
-                cachedHeight = RenderHandlerManager.getScreenHeight();
-                SuperResolution.LOGGER.info("Initializing algorithm {}", algorithmDescription.getDisplayName());
-                return true;
-            } catch (Exception e) {
-                SuperResolution.LOGGER.info("Failed to initialize algorithm {}:", algorithmDescription.getDisplayName());
-                LOGGER.error("Algorithm initialization failure details", e);
-                if (currentAlgorithm != null) {
-                    try { currentAlgorithm.destroy(); } catch (Exception ignored2) { }
-                }
-                currentAlgorithm = null;
+            Throwable retainedFailure = retryRetainedAlgorithmOwners(null);
+            if (retainedFailure != null) {
+                LOGGER.error(
+                        "Could not release a previously failed algorithm; " +
+                                "refusing to create another one",
+                        retainedFailure);
+                rethrowAlgorithmError(retainedFailure);
+                return false;
             }
+            reserveAlgorithmOwnerCapacity();
+            defaultAlgorithm.initialize();
+            attemptedDescription = SuperResolutionConfig.getUpscaleAlgorithm();
+            algorithmDescription = attemptedDescription;
+            previous = currentAlgorithm;
+            candidate = algorithmDescription.createNewInstance();
+            candidate.initialize(desc);
+            currentAlgorithm = candidate;
+            // 算法创建时已按当前尺寸初始化，同步尺寸缓存避免渲染路径上重复重建。
+            cachedWidth = RenderHandlerManager.getScreenWidth();
+            cachedHeight = RenderHandlerManager.getScreenHeight();
+            SuperResolution.LOGGER.info("Initializing algorithm {}", algorithmDescription.getDisplayName());
+            return true;
+        } catch (Throwable failure) {
+            if (currentAlgorithm == candidate) {
+                currentAlgorithm = previous;
+            }
+            failure = destroyOrRetainAlgorithm(candidate, failure);
+            String displayName = attemptedDescription != null
+                    ? attemptedDescription.getDisplayName()
+                    : "unknown";
+            SuperResolution.LOGGER.info("Failed to initialize algorithm {}:", displayName);
+            LOGGER.error("Algorithm initialization failure details", failure);
+            rethrowAlgorithmError(failure);
         }
 
         return false;
@@ -385,14 +431,41 @@ public final class SuperResolution implements Destroyable {
 
     public static boolean recreateAlgorithm(InitializationDescription desc) {
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
-            if (currentAlgorithm != null) {
-                currentAlgorithm = null;
+            Throwable retainedFailure = retryRetainedAlgorithmOwners(null);
+            if (retainedFailure != null) {
+                LOGGER.error(
+                        "Could not release a previously failed algorithm before " +
+                                "rebuilding the borrowed Vulkan backend",
+                        retainedFailure);
+                rethrowAlgorithmError(retainedFailure);
+                return false;
             }
+            reserveAlgorithmOwnerCapacity();
+            AbstractAlgorithm previous = currentAlgorithm;
+            if (previous != null) {
+                try {
+                    previous.destroy();
+                } catch (Throwable failure) {
+                    retainAlgorithmOwner(previous);
+                    currentAlgorithm = null;
+                    lastAppliedDesc = null;
+                    lastAppliedAlgorithm = null;
+                    LOGGER.error(
+                            "Failed to destroy the current algorithm before " +
+                                    "rebuilding the borrowed Vulkan backend",
+                            failure);
+                    rethrowAlgorithmError(failure);
+                    return false;
+                }
+            }
+            currentAlgorithm = null;
             algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
             lastAppliedDesc = null;
             lastAppliedAlgorithm = null;
             return true;
         }
+        AbstractAlgorithm candidate = null;
+        AlgorithmDescription<?> attemptedDescription = null;
         try (GlState ignored = new GlState()) {
             if (minecraft == null) {
                 minecraft = Minecraft.getInstance();
@@ -401,33 +474,169 @@ public final class SuperResolution implements Destroyable {
                 return false;
             }
 
+            Throwable retainedFailure = retryRetainedAlgorithmOwners(null);
+            if (retainedFailure != null) {
+                LOGGER.error(
+                        "Could not release a previously failed algorithm; " +
+                                "refusing to rebuild",
+                        retainedFailure);
+                rethrowAlgorithmError(retainedFailure);
+                return false;
+            }
+            reserveAlgorithmOwnerCapacity();
+
             if (currentAlgorithm != null) {
                 VulkanPresentationWindow.flushCapturedFrame();
                 FrameGeneration.invalidateHistory();
-                currentAlgorithm.destroy();
+                AbstractAlgorithm previous = currentAlgorithm;
+                try {
+                    previous.destroy();
+                    currentAlgorithm = null;
+                } catch (Throwable failure) {
+                    retainAlgorithmOwner(previous);
+                    currentAlgorithm = null;
+                    lastAppliedDesc = null;
+                    lastAppliedAlgorithm = null;
+                    LOGGER.error(
+                            "Failed to destroy the current algorithm; " +
+                                    "the owner was retained for a later retry",
+                            failure);
+                    rethrowAlgorithmError(failure);
+                    return false;
+                }
                 LowLatency.onDestructiveRebuild();
             }
 
-            algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
-            try {
-                currentAlgorithm = algorithmDescription.createNewInstance();
-                currentAlgorithm.initialize(desc);
-                cachedWidth = RenderHandlerManager.getScreenWidth();
-                cachedHeight = RenderHandlerManager.getScreenHeight();
-                lastAppliedDesc = desc;
-                lastAppliedAlgorithm = algorithmDescription;
-                return true;
-            } catch (Exception e) {
-                LOGGER.error("Failed to initialize algorithm {}:", algorithmDescription.getDisplayName(), e);
-                if (currentAlgorithm != null) {
-                    try { currentAlgorithm.destroy(); } catch (Exception ignored2) { }
-                }
+            attemptedDescription = SuperResolutionConfig.getUpscaleAlgorithm();
+            algorithmDescription = attemptedDescription;
+            candidate = algorithmDescription.createNewInstance();
+            candidate.initialize(desc);
+            currentAlgorithm = candidate;
+            cachedWidth = RenderHandlerManager.getScreenWidth();
+            cachedHeight = RenderHandlerManager.getScreenHeight();
+            lastAppliedDesc = desc;
+            lastAppliedAlgorithm = algorithmDescription;
+            return true;
+        } catch (Throwable failure) {
+            if (currentAlgorithm == candidate) {
                 currentAlgorithm = null;
-                lastAppliedDesc = null;
-                lastAppliedAlgorithm = null;
             }
+            failure = destroyOrRetainAlgorithm(candidate, failure);
+            String displayName = attemptedDescription != null
+                    ? attemptedDescription.getDisplayName()
+                    : "unknown";
+            LOGGER.error("Failed to initialize algorithm {}:", displayName, failure);
+            lastAppliedDesc = null;
+            lastAppliedAlgorithm = null;
+            rethrowAlgorithmError(failure);
         }
         return false;
+    }
+
+    public static void retainAlgorithmForDestroyRetry(
+            AbstractAlgorithm algorithm,
+            Throwable failure) {
+        if (algorithm == null) {
+            return;
+        }
+        retainAlgorithmOwner(algorithm);
+        LOGGER.error(
+                "Algorithm destruction failed; retaining its owner for a later retry",
+                failure);
+    }
+
+    private static Throwable destroyOrRetainAlgorithm(
+            AbstractAlgorithm algorithm,
+            Throwable failure) {
+        if (algorithm == null) {
+            return failure;
+        }
+        try {
+            algorithm.destroy();
+        } catch (Throwable cleanupFailure) {
+            retainAlgorithmOwner(algorithm);
+            failure = appendAlgorithmFailure(failure, cleanupFailure);
+        }
+        return failure;
+    }
+
+    private static void retainAlgorithmOwner(AbstractAlgorithm algorithm) {
+        for (int index = 0; index < retainedAlgorithmOwners.size(); index++) {
+            if (retainedAlgorithmOwners.get(index) == algorithm) {
+                return;
+            }
+        }
+        retainedAlgorithmOwners.add(algorithm);
+    }
+
+    private static void reserveAlgorithmOwnerCapacity() {
+        retainedAlgorithmOwners.ensureCapacity(Math.addExact(
+                retainedAlgorithmOwners.size(),
+                1));
+    }
+
+    private static Throwable retryRetainedAlgorithmOwners(Throwable failure) {
+        Iterator<AbstractAlgorithm> iterator = retainedAlgorithmOwners.iterator();
+        while (iterator.hasNext()) {
+            AbstractAlgorithm retained = iterator.next();
+            try {
+                retained.destroy();
+                iterator.remove();
+            } catch (Throwable cleanupFailure) {
+                failure = appendAlgorithmFailure(failure, cleanupFailure);
+            }
+        }
+        return failure;
+    }
+
+    private static Throwable appendAlgorithmFailure(
+            Throwable failure,
+            Throwable addition) {
+        if (failure == null) {
+            return addition;
+        }
+        if (failure != addition) {
+            failure.addSuppressed(addition);
+        }
+        return failure;
+    }
+
+    public static void rethrowAlgorithmError(Throwable failure) {
+        Error error = findAlgorithmError(
+                failure,
+                Collections.newSetFromMap(new IdentityHashMap<>()));
+        if (error != null) {
+            throw error;
+        }
+    }
+
+    private static Error findAlgorithmError(
+            Throwable failure,
+            Set<Throwable> visited) {
+        if (failure == null || !visited.add(failure)) {
+            return null;
+        }
+        if (failure instanceof Error error) {
+            return error;
+        }
+        for (Throwable suppressed : failure.getSuppressed()) {
+            Error suppressedError = findAlgorithmError(suppressed, visited);
+            if (suppressedError != null) {
+                return suppressedError;
+            }
+        }
+        return findAlgorithmError(failure.getCause(), visited);
+    }
+
+    private static void throwAlgorithmFailure(Throwable failure) {
+        if (failure == null) {
+            return;
+        }
+        rethrowAlgorithmError(failure);
+        if (failure instanceof RuntimeException runtimeException) {
+            throw runtimeException;
+        }
+        throw new RuntimeException(failure);
     }
 
     public static AbstractAlgorithm getCurrentAlgorithm() {
@@ -517,10 +726,16 @@ public final class SuperResolution implements Destroyable {
             currentAlgorithm.destroy();
             currentAlgorithm = null;
         }
+        throwAlgorithmFailure(retryRetainedAlgorithmOwners(null));
         if (!B3DVulkanBridge.isB3DVulkanBackend()) {
             AlgorithmManager.destroy();
         }
-        SuperResolutionNativeAPI.srShutdown();
+        SRReturnCode shutdownCode = SuperResolutionNativeAPI.srShutdown();
+        if (shutdownCode != SRReturnCode.OK) {
+            throw new IllegalStateException(
+                    "SRAPI shutdown failed and retained provider owners for retry: " +
+                            shutdownCode);
+        }
         Streamline.shutdown();
         NgxInitializer.shutdown();
         // In Vulkan-presentation (interop) mode the hidden OpenGL context and the Vulkan
@@ -538,9 +753,17 @@ public final class SuperResolution implements Destroyable {
         if (graphicsBackendDestroyed) {
             return;
         }
-        graphicsBackendDestroyed = true;
+        Throwable algorithmFailure = retryRetainedAlgorithmOwners(null);
+        if (currentAlgorithm != null) {
+            algorithmFailure = appendAlgorithmFailure(
+                    algorithmFailure,
+                    new IllegalStateException(
+                            "Cannot destroy the graphics backend while an algorithm is active"));
+        }
+        throwAlgorithmFailure(algorithmFailure);
         // GLFW must destroy the hidden OpenGL context before the Vulkan driver is torn down.
         PresentationWindowState.destroyRenderWindow();
         RenderSystems.destroy();
+        graphicsBackendDestroyed = true;
     }
 }

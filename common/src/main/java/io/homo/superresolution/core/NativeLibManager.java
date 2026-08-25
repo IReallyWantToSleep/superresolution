@@ -52,6 +52,11 @@ public class NativeLibManager {
     #endif
     private static final List<NativeLib> libs = new ArrayList<>();
     public static NativeLib LIB_SUPER_RESOLUTION = null;
+    public static NativeLib LIB_SUPER_RESOLUTION_D3D12 = null;
+    /**
+     * @deprecated use {@link #LIB_SUPER_RESOLUTION_D3D12}.
+     */
+    @Deprecated
     public static NativeLib LIB_SUPER_RESOLUTION_D3D12_INTEROP = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR4 = null;
@@ -74,11 +79,12 @@ public class NativeLibManager {
                     true,
                     true
             );
-            LIB_SUPER_RESOLUTION_D3D12_INTEROP = new NativeLib(
-                    "SuperResolutionD3D12Interop",
+            LIB_SUPER_RESOLUTION_D3D12 = new NativeLib(
+                    "SuperResolutionD3D12",
                     true,
                     false
             );
+            LIB_SUPER_RESOLUTION_D3D12_INTEROP = LIB_SUPER_RESOLUTION_D3D12;
             LIB_SUPER_RESOLUTION_FSR = new NativeLib(
                     "SuperResolutionFSR",
                     false,
@@ -106,7 +112,7 @@ public class NativeLibManager {
             );
 
             libs.add(LIB_SUPER_RESOLUTION);
-            libs.add(LIB_SUPER_RESOLUTION_D3D12_INTEROP);
+            libs.add(LIB_SUPER_RESOLUTION_D3D12);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_FSR4);
             libs.add(LIB_SUPER_RESOLUTION_XESS);
@@ -136,9 +142,17 @@ public class NativeLibManager {
         return nativeApiAvailable;
     }
 
+    public static boolean d3d12Available() {
+        return LIB_SUPER_RESOLUTION_D3D12 != null
+                && LIB_SUPER_RESOLUTION_D3D12.available;
+    }
+
+    /**
+     * @deprecated use {@link #d3d12Available()}.
+     */
+    @Deprecated
     public static boolean d3d12InteropAvailable() {
-        return LIB_SUPER_RESOLUTION_D3D12_INTEROP != null
-                && LIB_SUPER_RESOLUTION_D3D12_INTEROP.available;
+        return d3d12Available();
     }
 
     public static void createLibraryDir(Path path) {

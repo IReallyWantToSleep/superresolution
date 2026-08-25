@@ -159,7 +159,7 @@ public class AlgorithmDescriptions {
                                     .requiredGlExtension("GL_EXT_semaphore_win32")
                                     .glMajorVersion(4)
                                     .glMinorVersion(6)
-                                    .isTrue(NativeLibManager::d3d12InteropAvailable)
+                                    .isTrue(NativeLibManager::d3d12Available)
                     )
                     .extraResources(
                             ExtraResources.builder()

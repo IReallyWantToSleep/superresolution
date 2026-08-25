@@ -474,34 +474,52 @@ public class SuperResolutionConfig {
             if (!SuperResolution.createAlgorithm()) {
                 throw new RuntimeException("Failed to create algorithm");
             }
-
-            if (oldAlgorithmInstance != null) {
-                try {
-                    oldAlgorithmInstance.destroy();
-                    return true;
-                } catch (Exception e) {
-                    SuperResolution.LOGGER.error("Error while destroying the old algorithm", e);
-                }
-            }
-
-        } catch (Exception e) {
-            SuperResolution.LOGGER.error("Failed to switch to algorithm {}; attempting rollback", newAlgo.displayName, e);
+        } catch (Throwable failure) {
+            SuperResolution.LOGGER.error(
+                    "Failed to switch to algorithm {}; attempting rollback",
+                    newAlgo.displayName,
+                    failure);
 
             UPSCALE_ALGO.set(oldDescription != null ? oldDescription.codeName : AlgorithmDescriptions.NONE.codeName);
             SuperResolution.algorithmDescription = oldDescription;
-            SuperResolution.currentAlgorithm = oldAlgorithmInstance;
 
-            if (oldAlgorithmInstance == null && oldDescription != null) {
+            if (SuperResolution.currentAlgorithm == null && oldDescription != null) {
+                boolean rollbackSucceeded = false;
                 try {
-                    if (!SuperResolution.createAlgorithm()) {
-                        fallbackToNone();
+                    rollbackSucceeded = SuperResolution.createAlgorithm();
+                } catch (Throwable rollbackFailure) {
+                    if (failure != rollbackFailure) {
+                        failure.addSuppressed(rollbackFailure);
                     }
-                } catch (Exception ex) {
-                    fallbackToNone();
+                }
+                if (!rollbackSucceeded) {
+                    try {
+                        fallbackToNone();
+                    } catch (Throwable fallbackFailure) {
+                        if (failure != fallbackFailure) {
+                            failure.addSuppressed(fallbackFailure);
+                        }
+                    }
                 }
             }
+            SuperResolution.rethrowAlgorithmError(failure);
+            return false;
         }
-        return false;
+
+        AbstractAlgorithm newAlgorithmInstance = SuperResolution.currentAlgorithm;
+        if (oldAlgorithmInstance != null
+                && newAlgorithmInstance != null
+                && newAlgorithmInstance != oldAlgorithmInstance) {
+            try {
+                oldAlgorithmInstance.destroy();
+            } catch (Throwable failure) {
+                SuperResolution.retainAlgorithmForDestroyRetry(
+                        oldAlgorithmInstance,
+                        failure);
+                SuperResolution.rethrowAlgorithmError(failure);
+            }
+        }
+        return true;
     }
 
     private static void fallbackToNone() {

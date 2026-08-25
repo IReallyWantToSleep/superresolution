@@ -13,8 +13,12 @@
 #include <ffx_upscale.h>
 
 #include <cwchar>
+#include <exception>
+#include <memory>
+#include <mutex>
 #include <new>
 #include <string>
+#include <vector>
 
 namespace {
     struct SRFfxApiFunctions {
@@ -28,10 +32,117 @@ namespace {
         HMODULE module = nullptr;
         SRFfxApiFunctions functions = {};
         ffxContext context = nullptr;
+        bool contextCreated = false;
         ffxCreateContextDescUpscale createDesc = {};
         ffxCreateBackendDX12Desc backendDesc = {};
         ffxCreateContextDescUpscaleVersion versionDesc = {};
     };
+
+    struct SRFfxApiModuleSlot {
+        HMODULE module = nullptr;
+        bool reserved = false;
+    };
+
+    std::mutex g_retainedModuleMutex;
+    std::vector<SRFfxApiModuleSlot> g_retainedModuleSlots;
+
+    size_t reserveModuleSlot() {
+        std::lock_guard<std::mutex> lock(g_retainedModuleMutex);
+        for (size_t index = 0; index < g_retainedModuleSlots.size(); ++index) {
+            SRFfxApiModuleSlot &slot = g_retainedModuleSlots[index];
+            if (!slot.reserved && !slot.module) {
+                slot.reserved = true;
+                return index;
+            }
+        }
+        g_retainedModuleSlots.push_back({.reserved = true});
+        return g_retainedModuleSlots.size() - 1;
+    }
+
+    class SRFfxApiModuleGuard {
+    public:
+        SRFfxApiModuleGuard() : slotIndex(reserveModuleSlot()) {
+        }
+
+        ~SRFfxApiModuleGuard() noexcept {
+            close();
+        }
+
+        SRFfxApiModuleGuard(const SRFfxApiModuleGuard &) = delete;
+        SRFfxApiModuleGuard &operator=(const SRFfxApiModuleGuard &) = delete;
+
+        void publish(HMODULE loadedModule) noexcept {
+            if (!loadedModule) {
+                std::terminate();
+            }
+            std::lock_guard<std::mutex> lock(g_retainedModuleMutex);
+            if (!active || slotIndex >= g_retainedModuleSlots.size()) {
+                std::terminate();
+            }
+            SRFfxApiModuleSlot &slot = g_retainedModuleSlots[slotIndex];
+            if (!slot.reserved || slot.module) {
+                std::terminate();
+            }
+            slot.module = loadedModule;
+            module = loadedModule;
+        }
+
+        bool close() noexcept {
+            if (!active) {
+                return true;
+            }
+            const bool closed = !module || FreeLibrary(module) != 0;
+            std::lock_guard<std::mutex> lock(g_retainedModuleMutex);
+            if (slotIndex >= g_retainedModuleSlots.size()) {
+                std::terminate();
+            }
+            SRFfxApiModuleSlot &slot = g_retainedModuleSlots[slotIndex];
+            if (closed) {
+                slot.module = nullptr;
+            }
+            slot.reserved = false;
+            active = false;
+            return closed;
+        }
+
+        void release() noexcept {
+            if (!active) {
+                return;
+            }
+            std::lock_guard<std::mutex> lock(g_retainedModuleMutex);
+            if (slotIndex >= g_retainedModuleSlots.size()) {
+                std::terminate();
+            }
+            SRFfxApiModuleSlot &slot = g_retainedModuleSlots[slotIndex];
+            if (!slot.reserved || slot.module != module) {
+                std::terminate();
+            }
+            slot.module = nullptr;
+            slot.reserved = false;
+            active = false;
+        }
+
+    private:
+        size_t slotIndex = 0;
+        HMODULE module = nullptr;
+        bool active = true;
+    };
+
+    bool retryRetainedModules() noexcept {
+        bool allClosed = true;
+        std::lock_guard<std::mutex> lock(g_retainedModuleMutex);
+        for (SRFfxApiModuleSlot &slot: g_retainedModuleSlots) {
+            if (slot.reserved || !slot.module) {
+                continue;
+            }
+            if (FreeLibrary(slot.module)) {
+                slot.module = nullptr;
+            } else {
+                allClosed = false;
+            }
+        }
+        return allClosed;
+    }
 
     std::wstring utf8ToWide(const char *value) {
         if (!value || !*value) {
@@ -202,7 +313,7 @@ namespace {
 extern "C" {
     SR_API SRReturnCode srFfxApiCreateUpscaleContext(
         SRUpscaleContext *context,
-        const SRCreateUpscaleContextDesc *desc) {
+        const SRCreateUpscaleContextDesc *desc) try {
         if (!context || !desc) {
             return SR_RETURN_CODE_NULL_POINTER;
         }
@@ -227,6 +338,8 @@ extern "C" {
             return SR_RETURN_CODE_INVALID_ARGUMENT;
         }
 
+        SRFfxApiModuleGuard moduleGuard;
+
         HMODULE module = LoadLibraryExW(
             wideDllPath.c_str(),
             nullptr,
@@ -243,18 +356,17 @@ extern "C" {
             report(desc, SR_MESSAGE_TYPE_ERROR, L"Could not load amd_fidelityfx_upscaler_dx12.dll.");
             return SR_RETURN_CODE_CANNOT_FIND_LIBRARY;
         }
+        moduleGuard.publish(module);
 
-        auto *privateData = new(std::nothrow) SRFfxApiPrivateData();
+        std::unique_ptr<SRFfxApiPrivateData> privateData(
+            new(std::nothrow) SRFfxApiPrivateData());
         if (!privateData) {
-            FreeLibrary(module);
             return SR_RETURN_CODE_ERROR;
         }
         privateData->module = module;
 
         if (!loadFunctions(module, &privateData->functions)) {
             report(desc, SR_MESSAGE_TYPE_ERROR, L"The FFX API DLL is missing required exports.");
-            FreeLibrary(module);
-            delete privateData;
             return SR_RETURN_CODE_INVALID_PROVIDER_LIBRARY;
         }
 
@@ -283,19 +395,28 @@ extern "C" {
                     L"FFX API failed to create an upscaling context. Code=" +
                     std::to_wstring(code);
             report(desc, SR_MESSAGE_TYPE_ERROR, message.c_str());
-            FreeLibrary(module);
-            delete privateData;
             return fromFfxReturnCode(code);
         }
+        privateData->contextCreated = true;
 
         context->desc = *desc;
-        context->userContext = privateData;
+        context->userContext = privateData.release();
+        moduleGuard.release();
         return SR_RETURN_CODE_OK;
+    } catch (const std::bad_alloc &) {
+        return SR_RETURN_CODE_ERROR;
+    } catch (...) {
+        return SR_RETURN_CODE_UNEXPECTED_ERROR;
     }
 
     SR_API SRReturnCode srFfxApiInitUpscaleContext(SRUpscaleContext *context) {
         if (!context || !context->userContext) {
             return SR_RETURN_CODE_NULL_POINTER;
+        }
+        const auto *privateData =
+            static_cast<SRFfxApiPrivateData *>(context->userContext);
+        if (!privateData->contextCreated || !privateData->context) {
+            return SR_RETURN_CODE_UNSUPPORTED;
         }
         return SR_RETURN_CODE_OK;
     }
@@ -306,13 +427,23 @@ extern "C" {
         }
 
         auto *privateData = static_cast<SRFfxApiPrivateData *>(context->userContext);
-        const ffxReturnCode_t code = privateData->functions.destroyContext(
-            &privateData->context,
-            nullptr);
-        FreeLibrary(privateData->module);
+        if (privateData->contextCreated) {
+            const ffxReturnCode_t code = privateData->functions.destroyContext(
+                &privateData->context,
+                nullptr);
+            if (code != FFX_API_RETURN_OK) {
+                return fromFfxReturnCode(code);
+            }
+            privateData->contextCreated = false;
+            privateData->context = nullptr;
+        }
+        if (privateData->module && !FreeLibrary(privateData->module)) {
+            return SR_RETURN_CODE_UNEXPECTED_ERROR;
+        }
+        privateData->module = nullptr;
         delete privateData;
         context->userContext = nullptr;
-        return fromFfxReturnCode(code);
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srFfxApiQueryUpscale(
@@ -323,6 +454,9 @@ extern "C" {
             return SR_RETURN_CODE_NULL_POINTER;
         }
         auto *privateData = static_cast<SRFfxApiPrivateData *>(context->userContext);
+        if (!privateData->contextCreated || !privateData->context) {
+            return SR_RETURN_CODE_UNSUPPORTED;
+        }
 
         switch (queryType) {
             case SR_UPSCALE_CONTEXT_QUERY_VERSION_INFO: {
@@ -385,6 +519,9 @@ extern "C" {
         }
 
         auto *privateData = static_cast<SRFfxApiPrivateData *>(context->userContext);
+        if (!privateData->contextCreated || !privateData->context) {
+            return SR_RETURN_CODE_UNSUPPORTED;
+        }
         ffxDispatchDescUpscale dispatchDesc = {};
         dispatchDesc.header.type = FFX_API_DISPATCH_DESC_TYPE_UPSCALE;
         dispatchDesc.commandList = desc->commandList.apiCommandBuffer.d3d12.commandList;
@@ -418,7 +555,9 @@ extern "C" {
     }
 
     SR_API SRReturnCode srFfxApiShutdown() {
-        return SR_RETURN_CODE_OK;
+        return retryRetainedModules()
+                   ? SR_RETURN_CODE_OK
+                   : SR_RETURN_CODE_UNEXPECTED_ERROR;
     }
 
     SR_API SRUpscaleContextCallbacks srGetFfxApiUpscaleCallbacks() {

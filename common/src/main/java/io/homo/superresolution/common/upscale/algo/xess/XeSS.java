@@ -50,11 +50,7 @@ public class XeSS extends SRApiAlgorithm {
             return;
         }
 
-        if (context != null) {
-            if (context.nativePtr > 0) {
-                context.destroy();
-            }
-        }
+        destroySRApiContext();
         SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
                 lib.toAbsolutePath().toString(),
                 "srGetXeSSUpscaleProviders",

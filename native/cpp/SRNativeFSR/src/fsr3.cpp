@@ -12,6 +12,7 @@ struct SRFsr3PrivateData {
     FfxFsr3Context *context;
     void *scratchBuffer;
     uint64_t frameIndex;
+    bool initialized;
 };
 #ifdef __cplusplus
 extern "C" {
@@ -56,6 +57,7 @@ extern "C" {
             }
             return SR_RETURN_CODE_ERROR;
         }
+        privateData->initialized = true;
         return SR_RETURN_CODE_OK;
     }
 
@@ -94,6 +96,7 @@ extern "C" {
         privateData->ffxInterface = ffxInterface;
         privateData->scratchBuffer = scratchBuffer;
         privateData->frameIndex = 0;
+        privateData->initialized = false;
 
         context->desc = *const_cast<SRCreateUpscaleContextDesc *>(desc);
         context->userContext = privateData;
@@ -107,33 +110,25 @@ extern "C" {
 
         auto *privateData = static_cast<SRFsr3PrivateData *>(context->userContext);
 
-        if (!privateData->context) {
-            if (privateData->scratchBuffer) {
-                free(privateData->scratchBuffer);
-                privateData->scratchBuffer = nullptr;
+        if (privateData->initialized) {
+            FfxErrorCode errorCode = ffxFsr3ContextDestroy(privateData->context);
+            if (errorCode != FFX_OK) {
+                if (context->desc.messageCallback) {
+                    context->desc.messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR3 Context destroy failed");
+                    context->desc.messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(errorCode).c_str());
+                }
+                return SR_RETURN_CODE_ERROR;
             }
-            delete privateData->ffxInterface;
-            delete privateData;
-            context->userContext = nullptr;
-            return SR_RETURN_CODE_ERROR;
+            privateData->initialized = false;
         }
 
-        FfxErrorCode errorCode = ffxFsr3ContextDestroy(privateData->context);
-
-        if (errorCode != FFX_OK) {
-            if (context->desc.messageCallback) {
-                context->desc.messageCallback(SR_MESSAGE_TYPE_ERROR, L"FSR3 Context destroy failed");
-                context->desc.messageCallback(SR_MESSAGE_TYPE_ERROR, std::to_wstring(errorCode).c_str());
-            }
-        }
+        delete privateData->context;
+        privateData->context = nullptr;
 
         if (privateData->scratchBuffer) {
             free(privateData->scratchBuffer);
             privateData->scratchBuffer = nullptr;
         }
-
-        delete privateData->context;
-        privateData->context = nullptr;
 
         delete privateData->ffxInterface;
         privateData->ffxInterface = nullptr;
@@ -141,7 +136,7 @@ extern "C" {
         delete privateData;
         context->userContext = nullptr;
 
-        return (errorCode != FFX_OK) ? SR_RETURN_CODE_ERROR : SR_RETURN_CODE_OK;
+        return SR_RETURN_CODE_OK;
     }
 
     SR_API SRReturnCode srFfxFsr3QueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result,

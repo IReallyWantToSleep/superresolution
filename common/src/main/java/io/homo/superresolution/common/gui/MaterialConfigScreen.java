@@ -583,7 +583,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     }
 
     private boolean isExperimentalAlgorithm(AlgorithmDescription<?> algorithmDescription){
-?        return algorithmDescription.equals(AlgorithmDescriptions.FSR4_D3D12) ||
+        return algorithmDescription.equals(AlgorithmDescriptions.FSR4_D3D12) ||
                 algorithmDescription.equals(AlgorithmDescriptions.DLSSRR) ||
                 algorithmDescription.equals(AlgorithmDescriptions.ANIME4K);
     }

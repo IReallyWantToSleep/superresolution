@@ -142,7 +142,14 @@ public final class Streamline {
             return false;
         }
         if (defaultSession != null && defaultSession.isClosed()) {
-            defaultSession.close();
+            int result = defaultSession.shutdown();
+            if (result != 0) {
+                SuperResolution.LOGGER.error(
+                        "Streamline shutdown retry failed. result={} ({})",
+                        StreamlineResult.nameOf(result),
+                        result);
+                return false;
+            }
             defaultSession = null;
             initAttempted = false;
         }
@@ -171,7 +178,10 @@ public final class Streamline {
         if (defaultSession == null) {
             return;
         }
-        defaultSession.close();
+        int result = defaultSession.shutdown();
+        if (result != 0) {
+            throw new StreamlineException("slShutdown", result);
+        }
         defaultSession = null;
         currentFrame = null;
         initAttempted = false;

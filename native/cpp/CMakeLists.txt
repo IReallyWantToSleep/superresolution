@@ -3,7 +3,13 @@ project(SuperResolution)
 
 option(SR_FSR "启用以支持FSR" ON)
 option(SR_FSR4 "启用以支持FSR4（FFX API，仅Windows D3D12）" ON)
-option(SR_D3D12_INTEROP "启用OpenGL与D3D12互操作（仅Windows）" ON)
+if(DEFINED SR_D3D12_INTEROP AND NOT DEFINED SR_D3D12)
+    set(SR_D3D12 "${SR_D3D12_INTEROP}" CACHE BOOL
+        "启用D3D12 RHI（仅Windows）")
+endif()
+option(SR_D3D12 "启用D3D12 RHI（仅Windows）" ON)
+set(SR_D3D12_INTEROP "${SR_D3D12}" CACHE BOOL
+    "已弃用：使用SR_D3D12" FORCE)
 option(SR_XESS "启用以支持XESS" ON)
 option(SR_NGX "启用以支持NGX绑定" ON)
 option(SR_STREAMLINE "启用以支持Streamline" ON)
@@ -79,8 +85,8 @@ include_directories(
 )
 
 add_subdirectory("SRNativeMain")
-if(SR_D3D12_INTEROP AND ON_WINDOWS)
-    add_subdirectory("SRNativeD3D12Interop")
+if(SR_D3D12 AND ON_WINDOWS)
+    add_subdirectory("SRNativeD3D12")
 endif()
 if(SR_FSR)
     add_subdirectory("SRNativeFSR")
