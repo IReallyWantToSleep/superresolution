@@ -28,6 +28,8 @@ import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityBufferBuilderAcce
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityCalc;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityVertexState;
 import net.irisshaders.iris.vertices.MemoryAccess;
+import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -42,28 +44,24 @@ public abstract class BufferBuilderVelocityMixin implements VelocityBufferBuilde
     private int elementsToFill;
     @Shadow
     @Final
-    private VertexFormat.Mode mode;
-    @Shadow
-    @Final
     private VertexFormat format;
 
     @Shadow
     protected abstract long beginElement(VertexFormatElement element);
 
     @Unique
-    private VelocityVertexState[][] irisExt$cubeStates;
+    private final Matrix4f irisExt$delta = new Matrix4f();
+    @Unique
+    private boolean irisExt$hasDelta;
     @Unique
     private VelocityVertexState[] irisExt$quadStates;
-    @Unique
-    private int irisExt$quadIndex;
     @Unique
     private int irisExt$vertexIndex;
 
     @Override
-    public void irisExt$attachCubeStates(VelocityVertexState[][] states) {
-        irisExt$cubeStates = states;
-        irisExt$quadIndex = 0;
-        irisExt$vertexIndex = 0;
+    public void irisExt$attachTransformDelta(Matrix4fc delta) {
+        irisExt$delta.set(delta);
+        irisExt$hasDelta = true;
     }
 
     @Override
@@ -74,9 +72,8 @@ public abstract class BufferBuilderVelocityMixin implements VelocityBufferBuilde
 
     @Override
     public void irisExt$detachStates() {
-        irisExt$cubeStates = null;
+        irisExt$hasDelta = false;
         irisExt$quadStates = null;
-        irisExt$quadIndex = 0;
         irisExt$vertexIndex = 0;
     }
 
@@ -94,21 +91,22 @@ public abstract class BufferBuilderVelocityMixin implements VelocityBufferBuilde
             return;
         }
         long ptr = this.beginElement(IrisExtVertexFormats.VELOCITY_ELEMENT);
-        VelocityVertexState state = null;
-        if (irisExt$quadStates != null && irisExt$vertexIndex < 4) {
-            state = irisExt$quadStates[irisExt$vertexIndex];
-        } else if (irisExt$cubeStates != null && mode == VertexFormat.Mode.QUADS
-                && irisExt$quadIndex < irisExt$cubeStates.length && irisExt$vertexIndex < 4) {
-            state = irisExt$cubeStates[irisExt$quadIndex][irisExt$vertexIndex];
-        }
         float vx = 0.0f;
         float vy = 0.0f;
         float vz = 0.0f;
+        VelocityVertexState state = null;
+        if (irisExt$quadStates != null && irisExt$vertexIndex < 4) {
+            state = irisExt$quadStates[irisExt$vertexIndex];
+        }
         if (state != null) {
             VelocityCalc.compute(state, x, y, z);
             vx = state.velX;
             vy = state.velY;
             vz = state.velZ;
+        } else if (irisExt$hasDelta) {
+            vx = irisExt$delta.m00() * x + irisExt$delta.m10() * y + irisExt$delta.m20() * z + irisExt$delta.m30();
+            vy = irisExt$delta.m01() * x + irisExt$delta.m11() * y + irisExt$delta.m21() * z + irisExt$delta.m31();
+            vz = irisExt$delta.m02() * x + irisExt$delta.m12() * y + irisExt$delta.m22() * z + irisExt$delta.m32();
         }
         MemoryAccess.setFloat(ptr, vx);
         MemoryAccess.setFloat(ptr + 4, vy);
@@ -116,7 +114,6 @@ public abstract class BufferBuilderVelocityMixin implements VelocityBufferBuilde
         irisExt$vertexIndex++;
         if (irisExt$vertexIndex >= 4) {
             irisExt$vertexIndex = 0;
-            irisExt$quadIndex++;
         }
     }
 }

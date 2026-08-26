@@ -24,8 +24,9 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityBufferBuilderAccess;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityCalc;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityRenderContext;
-import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityVertexState;
+import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityTransformState;
 import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
+import net.irisshaders.iris.api.v0.IrisApi;
 import net.minecraft.client.model.geom.ModelPart;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
@@ -35,41 +36,44 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(ModelPart.Cube.class)
-public abstract class ModelPartCubeVelocityMixin {
+import java.util.List;
+
+@Mixin(ModelPart.class)
+public abstract class ModelPartTransformVelocityMixin {
     @Shadow
     @Final
-    public ModelPart.Polygon[] polygons;
+    private List<ModelPart.Cube> cubes;
 
     @Unique
-    private Long2ObjectOpenHashMap<VelocityVertexState[][]> irisExt$velocityCache;
+    private Long2ObjectOpenHashMap<VelocityTransformState> irisExt$velocityCache;
 
     @Inject(method = "compile", at = @At("HEAD"))
     private void irisExt$attach(PoseStack.Pose pose, VertexConsumer builder, int lightCoords, int overlayCoords, int color, CallbackInfo ci) {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;
         }
+        if (this.cubes.isEmpty()) {
+            return;
+        }
         if (!VelocityRenderContext.hasKey || !(builder instanceof VelocityBufferBuilderAccess access)) {
+            return;
+        }
+        if (IrisApi.getInstance().isRenderingShadowPass()) {
             return;
         }
         if (irisExt$velocityCache == null) {
             irisExt$velocityCache = new Long2ObjectOpenHashMap<>();
         }
-        VelocityVertexState[][] states = irisExt$velocityCache.get(VelocityRenderContext.currentKey);
-        if (states == null) {
-            states = new VelocityVertexState[this.polygons.length][4];
-            for (int polygon = 0; polygon < states.length; polygon++) {
-                for (int vertex = 0; vertex < 4; vertex++) {
-                    states[polygon][vertex] = new VelocityVertexState();
-                }
-            }
-            irisExt$velocityCache.put(VelocityRenderContext.currentKey, states);
+        VelocityTransformState state = irisExt$velocityCache.get(VelocityRenderContext.currentKey);
+        if (state == null) {
+            state = new VelocityTransformState();
+            irisExt$velocityCache.put(VelocityRenderContext.currentKey, state);
         } else {
             irisExt$prune();
         }
-        // One bucket shares a single access stamp (all of its states are written together).
-        states[0][0].lastAccessFrame = VelocityCalc.frameId;
-        access.irisExt$attachCubeStates(states);
+        state.lastAccessFrame = VelocityCalc.frameId;
+        VelocityCalc.computeTransformDelta(state, pose.pose());
+        access.irisExt$attachTransformDelta(state.delta);
     }
 
     @Inject(method = "compile", at = @At("RETURN"))
@@ -89,9 +93,8 @@ public abstract class ModelPartCubeVelocityMixin {
         }
         var iterator = irisExt$velocityCache.long2ObjectEntrySet().fastIterator();
         while (iterator.hasNext()) {
-            VelocityVertexState[][] bucket = iterator.next().getValue();
-            if (bucket.length > 0 && bucket[0].length > 0
-                    && VelocityCalc.frameId - bucket[0][0].lastAccessFrame > VelocityCalc.EVICT_AFTER_FRAMES) {
+            VelocityTransformState state = iterator.next().getValue();
+            if (VelocityCalc.frameId - state.lastAccessFrame > VelocityCalc.EVICT_AFTER_FRAMES) {
                 iterator.remove();
             }
         }

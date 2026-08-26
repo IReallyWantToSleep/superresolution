@@ -18,14 +18,12 @@
 
 package io.homo.superresolution.iris_velocity_ext.v26_1;
 
-import org.joml.Matrix4fc;
+import org.joml.Matrix4f;
 
-public interface VelocityBufferBuilderAccess {
-    void irisExt$attachTransformDelta(Matrix4fc delta);
-
-    void irisExt$attachQuadStates(VelocityVertexState[] states);
-
-    void irisExt$detachStates();
-
-    boolean irisExt$isVelocityFormat();
+public final class VelocityTransformState {
+    public final Matrix4f prevModelToView = new Matrix4f();
+    public final Matrix4f delta = new Matrix4f().zero();
+    public int lastFrameId = -1;
+    public boolean valid;
+    public int lastAccessFrame = -1;
 }

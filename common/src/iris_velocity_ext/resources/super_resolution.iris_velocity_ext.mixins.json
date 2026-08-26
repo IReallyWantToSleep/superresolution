@@ -13,7 +13,7 @@
         "EntityRenderDispatcherVelocityMixin",
         "EntityRenderStateKeyMixin",
         "LevelRendererFrameMixin",
-        "ModelPartCubeVelocityMixin",
+        "ModelPartTransformVelocityMixin",
         "RenderPipelineFormatMixin",
         "ShaderCreatorLinkMixin",
         "SubmitKeyStorageMixin",

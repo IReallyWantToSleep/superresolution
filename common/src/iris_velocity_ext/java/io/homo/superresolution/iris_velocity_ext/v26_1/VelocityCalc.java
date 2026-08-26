@@ -20,15 +20,45 @@ package io.homo.superresolution.iris_velocity_ext.v26_1;
 
 import net.irisshaders.iris.apiimpl.IrisApiV0Impl;
 import net.irisshaders.iris.uniforms.CapturedRenderingState;
+import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 
 
 public final class VelocityCalc {
     public static int frameId;
 
-    public static final int EVICT_AFTER_FRAMES = 1200;
+    public static final int EVICT_AFTER_FRAMES = 100;
+
+    private static final Matrix4f scratchInverse = new Matrix4f();
+    private static final Matrix4f scratchPrev = new Matrix4f();
 
     private VelocityCalc() {
+    }
+
+    public static void computeTransformDelta(VelocityTransformState state, Matrix4fc currentPose) {
+        if (state.lastFrameId == frameId) {
+            return;
+        }
+        Matrix4fc modelView = CapturedRenderingState.INSTANCE.getGbufferModelView();
+        if (modelView == null) {
+            state.delta.zero();
+            return;
+        }
+        scratchInverse.set(currentPose).invert();
+        if (!scratchInverse.isFinite()) {
+            state.delta.zero();
+            state.valid = false;
+            return;
+        }
+        if (!state.valid || frameId - state.lastFrameId > 3) {
+            state.delta.zero();
+        } else {
+            scratchPrev.set(state.prevModelToView).mul(scratchInverse);
+            state.delta.set(modelView).sub(scratchPrev);
+        }
+        state.prevModelToView.set(modelView).mul(currentPose);
+        state.valid = true;
+        state.lastFrameId = frameId;
     }
 
     public static void compute(VelocityVertexState state, float x, float y, float z) {
