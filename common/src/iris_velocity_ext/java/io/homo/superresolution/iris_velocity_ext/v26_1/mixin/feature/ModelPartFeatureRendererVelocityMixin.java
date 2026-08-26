@@ -42,7 +42,7 @@ public class ModelPartFeatureRendererVelocityMixin {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;
         }
-        ((VelocitySubmitStorage) (Object) modelSubmit).irisExt$restoreKey();
+        ((VelocitySubmitStorage) (Object) modelSubmit).irisExt$restoreCache();
     }
 
     @Inject(method = "render", at = @At("RETURN"))

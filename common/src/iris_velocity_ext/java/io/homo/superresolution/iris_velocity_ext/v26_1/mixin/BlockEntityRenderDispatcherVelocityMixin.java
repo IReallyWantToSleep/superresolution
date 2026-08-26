@@ -20,25 +20,42 @@ package io.homo.superresolution.iris_velocity_ext.v26_1.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityCacheHolder;
+import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityEntityStateAccess;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityRenderContext;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.blockentity.BlockEntityRenderDispatcher;
 import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
+import net.minecraft.client.renderer.feature.ModelFeatureRenderer;
 import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.world.level.block.entity.BlockEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(BlockEntityRenderDispatcher.class)
 public class BlockEntityRenderDispatcherVelocityMixin {
+    @Inject(method = "tryExtractRenderState", at = @At("RETURN"))
+    private <E extends BlockEntity, S extends BlockEntityRenderState> void irisExt$storeVelocityCache(E blockEntity, float partialTicks, ModelFeatureRenderer.CrumblingOverlay breakProgress, CallbackInfoReturnable<S> cir) {
+        if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
+            return;
+        }
+        S state = cir.getReturnValue();
+        if (state instanceof VelocityEntityStateAccess access && blockEntity instanceof VelocityCacheHolder holder) {
+            access.irisExt$setVelocityCache(holder.irisExt$getOrCreateVelocityCache());
+        }
+    }
+
     @Inject(method = "submit", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/blockentity/BlockEntityRenderDispatcher;getRenderer(Lnet/minecraft/client/renderer/blockentity/state/BlockEntityRenderState;)Lnet/minecraft/client/renderer/blockentity/BlockEntityRenderer;", shift = At.Shift.AFTER))
     private <E extends BlockEntity, S extends BlockEntityRenderState> void irisExt$beginBlockEntityRender(S blockEntityRenderState, PoseStack poseStack, SubmitNodeCollector submitNodeCollector, CameraRenderState cameraRenderState, CallbackInfo ci) {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;
         }
-        VelocityRenderContext.set(blockEntityRenderState.blockPos.asLong());
+        if (blockEntityRenderState instanceof VelocityEntityStateAccess access) {
+            VelocityRenderContext.set(access.irisExt$getVelocityCache());
+        }
     }
 
     @Inject(method = "submit", at = @At("RETURN"))

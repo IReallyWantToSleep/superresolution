@@ -18,23 +18,25 @@
 
 package io.homo.superresolution.iris_velocity_ext.v26_1.mixin;
 
+import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityCache;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityEntityStateAccess;
+import net.minecraft.client.renderer.blockentity.state.BlockEntityRenderState;
 import net.minecraft.client.renderer.entity.state.EntityRenderState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 
-@Mixin(EntityRenderState.class)
-public class EntityRenderStateKeyMixin implements VelocityEntityStateAccess {
+@Mixin({EntityRenderState.class, BlockEntityRenderState.class})
+public class VelocityEntityStateAccessMixin implements VelocityEntityStateAccess {
     @Unique
-    private int irisExt$entityObjectId = -1;
+    private VelocityCache irisExt$velocityCache;
 
     @Override
-    public void irisExt$setEntityObjectId(int id) {
-        irisExt$entityObjectId = id;
+    public void irisExt$setVelocityCache(VelocityCache cache) {
+        irisExt$velocityCache = cache;
     }
 
     @Override
-    public int irisExt$getEntityObjectId() {
-        return irisExt$entityObjectId;
+    public VelocityCache irisExt$getVelocityCache() {
+        return irisExt$velocityCache;
     }
 }

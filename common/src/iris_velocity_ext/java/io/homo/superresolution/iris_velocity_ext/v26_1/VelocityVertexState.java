@@ -27,5 +27,4 @@ public final class VelocityVertexState {
     public float velY;
     public float velZ;
     public boolean valid;
-    public int lastAccessFrame = -1;
 }

@@ -37,7 +37,7 @@ public class ItemFeatureRendererVelocityMixin {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;
         }
-        ((VelocitySubmitStorage) (Object) itemSubmit).irisExt$restoreKey();
+        ((VelocitySubmitStorage) (Object) itemSubmit).irisExt$restoreCache();
     }
 
     @Inject(method = "renderItem", at = @At("RETURN"))

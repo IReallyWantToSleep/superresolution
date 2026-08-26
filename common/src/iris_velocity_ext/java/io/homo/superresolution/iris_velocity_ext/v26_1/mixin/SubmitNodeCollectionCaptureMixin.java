@@ -37,7 +37,7 @@ public class SubmitNodeCollectionCaptureMixin {
     @WrapOperation(method = "submitModel", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/feature/ModelFeatureRenderer$Storage;add(Lnet/minecraft/client/renderer/rendertype/RenderType;Lnet/minecraft/client/renderer/SubmitNodeStorage$ModelSubmit;)V"))
     private <E> void irisExt$capture(ModelFeatureRenderer.Storage instance, RenderType renderType, SubmitNodeStorage.ModelSubmit<?> e, Operation<Void> original) {
         if (SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
-            ((VelocitySubmitStorage) (Object) e).irisExt$captureKey();
+            ((VelocitySubmitStorage) (Object) e).irisExt$captureCache();
         }
         original.call(instance, renderType, e);
     }
@@ -45,7 +45,7 @@ public class SubmitNodeCollectionCaptureMixin {
     @WrapOperation(method = "submitModelPart", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/renderer/feature/ModelPartFeatureRenderer$Storage;add(Lnet/minecraft/client/renderer/rendertype/RenderType;Lnet/minecraft/client/renderer/SubmitNodeStorage$ModelPartSubmit;)V"))
     private <E> void irisExt$capture3(ModelPartFeatureRenderer.Storage instance, RenderType renderType, SubmitNodeStorage.ModelPartSubmit e, Operation<Void> original) {
         if (SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
-            ((VelocitySubmitStorage) (Object) e).irisExt$captureKey();
+            ((VelocitySubmitStorage) (Object) e).irisExt$captureCache();
         }
         original.call(instance, renderType, e);
     }
@@ -53,7 +53,7 @@ public class SubmitNodeCollectionCaptureMixin {
     @WrapOperation(method = "submitItem", at = @At(value = "INVOKE", target = "Ljava/util/List;add(Ljava/lang/Object;)Z"))
     private <E> boolean irisExt$capture4(List instance, E e, Operation<Boolean> original) {
         if (SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
-            ((VelocitySubmitStorage) e).irisExt$captureKey();
+            ((VelocitySubmitStorage) e).irisExt$captureCache();
         }
         return original.call(instance, e);
     }

@@ -33,7 +33,7 @@ public class CustomGeometrySubmitCaptureMixin {
     @Inject(method = "<init>", at = @At("RETURN"))
     private void irisExt$capture(PoseStack.Pose pose, SubmitNodeCollector.CustomGeometryRenderer customGeometryRenderer, CallbackInfo ci) {
         if (SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
-            ((VelocitySubmitStorage) (Object) this).irisExt$captureKey();
+            ((VelocitySubmitStorage) this).irisExt$captureCache();
         }
     }
 }

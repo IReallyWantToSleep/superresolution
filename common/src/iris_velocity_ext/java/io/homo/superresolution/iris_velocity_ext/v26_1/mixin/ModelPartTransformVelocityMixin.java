@@ -22,16 +22,15 @@ import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityBufferBuilderAccess;
+import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityCache;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityCalc;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityRenderContext;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityTransformState;
-import it.unimi.dsi.fastutil.longs.Long2ObjectOpenHashMap;
 import net.irisshaders.iris.api.v0.IrisApi;
 import net.minecraft.client.model.geom.ModelPart;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
-import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -44,9 +43,6 @@ public abstract class ModelPartTransformVelocityMixin {
     @Final
     private List<ModelPart.Cube> cubes;
 
-    @Unique
-    private Long2ObjectOpenHashMap<VelocityTransformState> irisExt$velocityCache;
-
     @Inject(method = "compile", at = @At("HEAD"))
     private void irisExt$attach(PoseStack.Pose pose, VertexConsumer builder, int lightCoords, int overlayCoords, int color, CallbackInfo ci) {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
@@ -55,23 +51,14 @@ public abstract class ModelPartTransformVelocityMixin {
         if (this.cubes.isEmpty()) {
             return;
         }
-        if (!VelocityRenderContext.hasKey || !(builder instanceof VelocityBufferBuilderAccess access)) {
+        VelocityCache cache = VelocityRenderContext.current;
+        if (cache == null || !(builder instanceof VelocityBufferBuilderAccess access)) {
             return;
         }
         if (IrisApi.getInstance().isRenderingShadowPass()) {
             return;
         }
-        if (irisExt$velocityCache == null) {
-            irisExt$velocityCache = new Long2ObjectOpenHashMap<>();
-        }
-        VelocityTransformState state = irisExt$velocityCache.get(VelocityRenderContext.currentKey);
-        if (state == null) {
-            state = new VelocityTransformState();
-            irisExt$velocityCache.put(VelocityRenderContext.currentKey, state);
-        } else {
-            irisExt$prune();
-        }
-        state.lastAccessFrame = VelocityCalc.frameId;
+        VelocityTransformState state = cache.getOrCreatePartState((ModelPart) (Object) this);
         VelocityCalc.computeTransformDelta(state, pose.pose());
         access.irisExt$attachTransformDelta(state.delta);
     }
@@ -83,20 +70,6 @@ public abstract class ModelPartTransformVelocityMixin {
         }
         if (builder instanceof VelocityBufferBuilderAccess access) {
             access.irisExt$detachStates();
-        }
-    }
-
-    @Unique
-    private void irisExt$prune() {
-        if (irisExt$velocityCache.size() < 8) {
-            return;
-        }
-        var iterator = irisExt$velocityCache.long2ObjectEntrySet().fastIterator();
-        while (iterator.hasNext()) {
-            VelocityTransformState state = iterator.next().getValue();
-            if (VelocityCalc.frameId - state.lastAccessFrame > VelocityCalc.EVICT_AFTER_FRAMES) {
-                iterator.remove();
-            }
         }
     }
 }

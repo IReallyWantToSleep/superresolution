@@ -38,7 +38,7 @@ public class CustomFeatureRendererVelocityMixin {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;
         }
-        ((VelocitySubmitStorage) (Object) modelSubmit).irisExt$restoreKey();
+        ((VelocitySubmitStorage) (Object) modelSubmit).irisExt$restoreCache();
     }
 
     @Inject(method = {"renderSolid", "renderTranslucent"}, at = @At("RETURN"))

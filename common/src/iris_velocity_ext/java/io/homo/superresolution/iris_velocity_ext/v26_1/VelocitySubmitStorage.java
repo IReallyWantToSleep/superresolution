@@ -19,7 +19,7 @@
 package io.homo.superresolution.iris_velocity_ext.v26_1;
 
 public interface VelocitySubmitStorage {
-    void irisExt$captureKey();
+    void irisExt$captureCache();
 
-    void irisExt$restoreKey();
+    void irisExt$restoreCache();
 }

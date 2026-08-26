@@ -23,7 +23,7 @@ import com.mojang.blaze3d.vertex.QuadInstance;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityBufferBuilderAccess;
-import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityQuadCacheHolder;
+import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityCache;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityRenderContext;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
 import org.spongepowered.asm.mixin.Mixin;
@@ -54,12 +54,15 @@ public interface VertexConsumerBakedQuadMixin {
     }
 
     default void irisExt$attach(BakedQuad quad) {
-        if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup() || !VelocityRenderContext.hasKey) {
+        if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;
         }
-        if ((Object) this instanceof VelocityBufferBuilderAccess access
-                && (Object) quad instanceof VelocityQuadCacheHolder holder) {
-            access.irisExt$attachQuadStates(holder.irisExt$getOrCreateStates(VelocityRenderContext.currentKey));
+        VelocityCache cache = VelocityRenderContext.current;
+        if (cache == null) {
+            return;
+        }
+        if ((Object) this instanceof VelocityBufferBuilderAccess access) {
+            access.irisExt$attachQuadStates(cache.getOrCreateQuadStates(quad));
         }
     }
 

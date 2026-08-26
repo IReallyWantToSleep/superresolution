@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.iris_velocity_ext.v26_1.mixin;
 
+import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityCache;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityRenderContext;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocitySubmitStorage;
 import org.spongepowered.asm.mixin.Mixin;
@@ -29,24 +30,17 @@ import org.spongepowered.asm.mixin.Unique;
         "net.minecraft.client.renderer.SubmitNodeStorage$ItemSubmit",
         "net.minecraft.client.renderer.SubmitNodeStorage$CustomGeometrySubmit"
 })
-public class SubmitKeyStorageMixin implements VelocitySubmitStorage {
+public class SubmitCacheStorageMixin implements VelocitySubmitStorage {
     @Unique
-    private long irisExt$key;
-    @Unique
-    private boolean irisExt$hasKey;
+    private VelocityCache irisExt$cache;
 
     @Override
-    public void irisExt$captureKey() {
-        irisExt$key = VelocityRenderContext.currentKey;
-        irisExt$hasKey = VelocityRenderContext.hasKey;
+    public void irisExt$captureCache() {
+        irisExt$cache = VelocityRenderContext.current;
     }
 
     @Override
-    public void irisExt$restoreKey() {
-        if (irisExt$hasKey) {
-            VelocityRenderContext.set(irisExt$key);
-        } else {
-            VelocityRenderContext.clear();
-        }
+    public void irisExt$restoreCache() {
+        VelocityRenderContext.set(irisExt$cache);
     }
 }

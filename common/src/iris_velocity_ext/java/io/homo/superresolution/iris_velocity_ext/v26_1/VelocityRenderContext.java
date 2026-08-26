@@ -19,18 +19,16 @@
 package io.homo.superresolution.iris_velocity_ext.v26_1;
 
 public final class VelocityRenderContext {
-    public static long currentKey;
-    public static boolean hasKey;
+    public static VelocityCache current;
 
     private VelocityRenderContext() {
     }
 
-    public static void set(long key) {
-        currentKey = key;
-        hasKey = true;
+    public static void set(VelocityCache cache) {
+        current = cache;
     }
 
     public static void clear() {
-        hasKey = false;
+        current = null;
     }
 }

@@ -42,7 +42,7 @@ public class ModelFeatureRendererVelocityMixin {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;
         }
-        ((VelocitySubmitStorage) (Object) modelSubmit.modelSubmit()).irisExt$restoreKey();
+        ((VelocitySubmitStorage) (Object) modelSubmit.modelSubmit()).irisExt$restoreCache();
     }
 
     @Inject(method = "renderBatch", at = @At(value = "INVOKE", target = "Ljava/util/Map$Entry;getKey()Ljava/lang/Object;", ordinal = 1))
@@ -50,7 +50,7 @@ public class ModelFeatureRendererVelocityMixin {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;
         }
-        ((VelocitySubmitStorage) (Object) modelSubmit).irisExt$restoreKey();
+        ((VelocitySubmitStorage) (Object) modelSubmit).irisExt$restoreCache();
     }
 
     @Inject(method = {"renderTranslucents", "renderBatch"}, at = @At("RETURN"))

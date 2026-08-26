@@ -20,6 +20,7 @@ package io.homo.superresolution.iris_velocity_ext.v26_1.mixin;
 
 import com.mojang.blaze3d.vertex.PoseStack;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityCacheHolder;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityEntityStateAccess;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityRenderContext;
 import net.minecraft.client.renderer.SubmitNodeCollector;
@@ -36,13 +37,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(EntityRenderDispatcher.class)
 public class EntityRenderDispatcherVelocityMixin {
     @Inject(method = "extractEntity", at = @At("RETURN"))
-    private <E extends Entity> void irisExt$storeEntityId(E entity, float partialTicks, CallbackInfoReturnable<EntityRenderState> cir) {
+    private <E extends Entity> void irisExt$storeVelocityCache(E entity, float partialTicks, CallbackInfoReturnable<EntityRenderState> cir) {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;
         }
         EntityRenderState state = cir.getReturnValue();
-        if (state instanceof VelocityEntityStateAccess access) {
-            access.irisExt$setEntityObjectId(entity.getId());
+        if (state instanceof VelocityEntityStateAccess access && entity instanceof VelocityCacheHolder holder) {
+            access.irisExt$setVelocityCache(holder.irisExt$getOrCreateVelocityCache());
         }
     }
 
@@ -51,8 +52,8 @@ public class EntityRenderDispatcherVelocityMixin {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;
         }
-        if (entity instanceof VelocityEntityStateAccess access && access.irisExt$getEntityObjectId() >= 0) {
-            VelocityRenderContext.set(access.irisExt$getEntityObjectId());
+        if (entity instanceof VelocityEntityStateAccess access) {
+            VelocityRenderContext.set(access.irisExt$getVelocityCache());
         }
     }
 

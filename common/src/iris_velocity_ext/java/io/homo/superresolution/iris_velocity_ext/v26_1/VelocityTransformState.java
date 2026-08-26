@@ -25,5 +25,4 @@ public final class VelocityTransformState {
     public final Matrix4f delta = new Matrix4f().zero();
     public int lastFrameId = -1;
     public boolean valid;
-    public int lastAccessFrame = -1;
 }

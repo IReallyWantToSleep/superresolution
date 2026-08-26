@@ -18,6 +18,6 @@
 
 package io.homo.superresolution.iris_velocity_ext.v26_1;
 
-public interface VelocityQuadCacheHolder {
-    VelocityVertexState[] irisExt$getOrCreateStates(long key);
+public interface VelocityCacheHolder {
+    VelocityCache irisExt$getOrCreateVelocityCache();
 }

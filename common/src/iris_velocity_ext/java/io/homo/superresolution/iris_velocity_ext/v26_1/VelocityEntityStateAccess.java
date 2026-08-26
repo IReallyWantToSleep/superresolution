@@ -19,7 +19,7 @@
 package io.homo.superresolution.iris_velocity_ext.v26_1;
 
 public interface VelocityEntityStateAccess {
-    void irisExt$setEntityObjectId(int id);
+    void irisExt$setVelocityCache(VelocityCache cache);
 
-    int irisExt$getEntityObjectId();
+    VelocityCache irisExt$getVelocityCache();
 }

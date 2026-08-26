@@ -27,8 +27,6 @@ import org.joml.Matrix4fc;
 public final class VelocityCalc {
     public static int frameId;
 
-    public static final int EVICT_AFTER_FRAMES = 100;
-
     private static final Matrix4f scratchInverse = new Matrix4f();
     private static final Matrix4f scratchPrev = new Matrix4f();
 
