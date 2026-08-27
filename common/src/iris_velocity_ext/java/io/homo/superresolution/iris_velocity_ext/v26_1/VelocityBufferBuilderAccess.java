@@ -23,8 +23,6 @@ import org.joml.Matrix4fc;
 public interface VelocityBufferBuilderAccess {
     void irisExt$attachTransformDelta(Matrix4fc delta);
 
-    void irisExt$attachQuadStates(VelocityVertexState[] states);
-
     void irisExt$detachStates();
 
     boolean irisExt$isVelocityFormat();

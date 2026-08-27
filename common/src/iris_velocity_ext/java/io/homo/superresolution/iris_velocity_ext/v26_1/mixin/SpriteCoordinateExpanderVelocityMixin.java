@@ -1,0 +1,53 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025-2026. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package io.homo.superresolution.iris_velocity_ext.v26_1.mixin;
+
+import com.mojang.blaze3d.vertex.VertexConsumer;
+import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityBufferBuilderAccess;
+import net.minecraft.client.renderer.SpriteCoordinateExpander;
+import org.joml.Matrix4fc;
+import org.spongepowered.asm.mixin.Final;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Shadow;
+
+@Mixin(SpriteCoordinateExpander.class)
+public abstract class SpriteCoordinateExpanderVelocityMixin implements VelocityBufferBuilderAccess {
+    @Shadow
+    @Final
+    private VertexConsumer delegate;
+
+    @Override
+    public void irisExt$attachTransformDelta(Matrix4fc delta) {
+        if (this.delegate instanceof VelocityBufferBuilderAccess access) {
+            access.irisExt$attachTransformDelta(delta);
+        }
+    }
+
+    @Override
+    public void irisExt$detachStates() {
+        if (this.delegate instanceof VelocityBufferBuilderAccess access) {
+            access.irisExt$detachStates();
+        }
+    }
+
+    @Override
+    public boolean irisExt$isVelocityFormat() {
+        return this.delegate instanceof VelocityBufferBuilderAccess access && access.irisExt$isVelocityFormat();
+    }
+}

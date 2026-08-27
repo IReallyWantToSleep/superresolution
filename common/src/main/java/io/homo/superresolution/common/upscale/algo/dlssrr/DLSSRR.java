@@ -258,8 +258,9 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
             create.feature.height = RenderHandlerManager.getRenderHeight();
             create.feature.targetWidth = RenderHandlerManager.getScreenWidth();
             create.feature.targetHeight = RenderHandlerManager.getScreenHeight();
-            create.featureCreateFlags = NgxConstants.DLSS_FLAG_MV_LOW_RES
-                    | NgxConstants.DLSS_FLAG_HDR
+            create.featureCreateFlags =
+                    NgxConstants.DLSS_FLAG_MV_LOW_RES |
+                            NgxConstants.DLSS_FLAG_HDR
                     | (initDesc.isMotionJittered() ? NgxConstants.DLSS_FLAG_MV_JITTERED : 0);
             create.roughnessMode = requestedRoughnessMode;
             create.depthType = requestedDepthType;

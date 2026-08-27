@@ -26,19 +26,13 @@ import java.util.Map;
 
 public final class VelocityCache {
     private final Map<ModelPart, VelocityTransformState> parts = new Reference2ObjectOpenHashMap<>();
-    private final Map<BakedQuad, VelocityVertexState[]> quads = new Reference2ObjectOpenHashMap<>();
+    private final Map<BakedQuad, VelocityTransformState> quads = new Reference2ObjectOpenHashMap<>();
 
     public VelocityTransformState getOrCreatePartState(ModelPart part) {
         return parts.computeIfAbsent(part, key -> new VelocityTransformState());
     }
 
-    public VelocityVertexState[] getOrCreateQuadStates(BakedQuad quad) {
-        return quads.computeIfAbsent(quad, key -> {
-            VelocityVertexState[] states = new VelocityVertexState[4];
-            for (int vertex = 0; vertex < 4; vertex++) {
-                states[vertex] = new VelocityVertexState();
-            }
-            return states;
-        });
+    public VelocityTransformState getOrCreateQuadState(BakedQuad quad) {
+        return quads.computeIfAbsent(quad, key -> new VelocityTransformState());
     }
 }

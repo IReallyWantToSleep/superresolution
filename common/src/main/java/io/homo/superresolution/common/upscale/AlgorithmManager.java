@@ -68,6 +68,13 @@ public class AlgorithmManager {
         if (!supportsJitter(type)) {
             return 0;
         }
+
+        if (SuperResolution.algorithmDescription.equals(AlgorithmDescriptions.DLSSRR)){
+            return Math.max(Fsr2Utils.ffxFsr2GetJitterPhaseCount(
+                    RenderHandlerManager.getRenderWidth(),
+                    RenderHandlerManager.getScreenWidth()),32
+            );
+        }
         return Fsr2Utils.ffxFsr2GetJitterPhaseCount(
                 RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getScreenWidth()

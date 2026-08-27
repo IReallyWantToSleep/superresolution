@@ -23,10 +23,14 @@ import com.mojang.blaze3d.vertex.QuadInstance;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityBufferBuilderAccess;
-import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityCache;
+import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityCalc;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityRenderContext;
+import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityTransformState;
+import net.irisshaders.iris.api.v0.IrisApi;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
+import org.joml.Matrix4fc;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
@@ -35,7 +39,13 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public interface VertexConsumerBakedQuadMixin {
     @Inject(method = "putBakedQuad", at = @At("HEAD"))
     default void irisExt$attachQuad(PoseStack.Pose pose, BakedQuad quad, QuadInstance instance, CallbackInfo ci) {
-        irisExt$attach(quad);
+        VelocityBufferBuilderAccess access = irisExt$velocityAccess();
+        if (access == null) {
+            return;
+        }
+        VelocityTransformState state = VelocityRenderContext.current.getOrCreateQuadState(quad);
+        VelocityCalc.computeTransformDelta(state, pose.pose());
+        access.irisExt$attachTransformDelta(state.delta);
     }
 
     @Inject(method = "putBakedQuad", at = @At("RETURN"))
@@ -45,7 +55,13 @@ public interface VertexConsumerBakedQuadMixin {
 
     @Inject(method = "putBlockBakedQuad", at = @At("HEAD"))
     default void irisExt$attachBlockQuad(float x, float y, float z, BakedQuad quad, QuadInstance instance, CallbackInfo ci) {
-        irisExt$attach(quad);
+        VelocityBufferBuilderAccess access = irisExt$velocityAccess();
+        if (access == null) {
+            return;
+        }
+        VelocityTransformState state = VelocityRenderContext.current.getOrCreateQuadState(quad);
+        VelocityCalc.computeOffsetDelta(state, x, y, z);
+        access.irisExt$attachTransformDelta(state.delta);
     }
 
     @Inject(method = "putBlockBakedQuad", at = @At("RETURN"))
@@ -53,19 +69,20 @@ public interface VertexConsumerBakedQuadMixin {
         irisExt$detach();
     }
 
-    default void irisExt$attach(BakedQuad quad) {
-        if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
-            return;
-        }
-        VelocityCache cache = VelocityRenderContext.current;
-        if (cache == null) {
-            return;
+    @Unique
+    default VelocityBufferBuilderAccess irisExt$velocityAccess() {
+        if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()
+                || VelocityRenderContext.current == null
+                || IrisApi.getInstance().isRenderingShadowPass()) {
+            return null;
         }
         if ((Object) this instanceof VelocityBufferBuilderAccess access) {
-            access.irisExt$attachQuadStates(cache.getOrCreateQuadStates(quad));
+            return access;
         }
+        return null;
     }
 
+    @Unique
     default void irisExt$detach() {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;

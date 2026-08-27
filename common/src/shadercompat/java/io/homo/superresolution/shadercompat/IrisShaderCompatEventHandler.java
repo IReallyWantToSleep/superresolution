@@ -23,6 +23,7 @@ import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.UniformRegistrar;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRCompatProcessor;
@@ -145,7 +146,16 @@ public class IrisShaderCompatEventHandler {
     }
 
     private static void onMacroRegistration(MacroRegistrationEvent event) {
-
+        if (SuperResolutionConfig.isIrisExtensionEnabledAtStartup()){
+            event.registerMacro(
+                    "SR_IRIS_EXT_ENABLED",
+                    "1"
+            );
+            event.registerMacro(
+                    "SR_IRIS_EXT_VELOCITY",
+                    "1"
+            );
+        }
         SRShaderCompatData config = IrisShaderCompatUtils.getCurrentShaderPackConfig().orElse(null);
         if (config == null) return;
         AbstractAlgorithm algorithm = SuperResolutionAPI.getCurrentAlgorithm();

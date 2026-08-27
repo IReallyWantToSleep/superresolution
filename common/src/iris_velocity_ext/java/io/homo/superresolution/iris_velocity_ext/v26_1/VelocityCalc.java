@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.iris_velocity_ext.v26_1;
 
-import net.irisshaders.iris.apiimpl.IrisApiV0Impl;
 import net.irisshaders.iris.uniforms.CapturedRenderingState;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
@@ -29,6 +28,7 @@ public final class VelocityCalc {
 
     private static final Matrix4f scratchInverse = new Matrix4f();
     private static final Matrix4f scratchPrev = new Matrix4f();
+    private static final Matrix4f scratchPose = new Matrix4f();
 
     private VelocityCalc() {
     }
@@ -59,36 +59,7 @@ public final class VelocityCalc {
         state.lastFrameId = frameId;
     }
 
-    public static void compute(VelocityVertexState state, float x, float y, float z) {
-        if (state.lastFrameId == frameId) {
-            return;
-        }
-        if (IrisApiV0Impl.INSTANCE.isRenderingShadowPass()) {
-            return;
-        }
-        Matrix4fc modelView = CapturedRenderingState.INSTANCE.getGbufferModelView();
-        if (modelView == null) {
-            state.velX = 0.0f;
-            state.velY = 0.0f;
-            state.velZ = 0.0f;
-            return;
-        }
-        float viewX = modelView.m00() * x + modelView.m10() * y + modelView.m20() * z + modelView.m30();
-        float viewY = modelView.m01() * x + modelView.m11() * y + modelView.m21() * z + modelView.m31();
-        float viewZ = modelView.m02() * x + modelView.m12() * y + modelView.m22() * z + modelView.m32();
-        if (!state.valid || frameId - state.lastFrameId > 3) {
-            state.velX = 0.0f;
-            state.velY = 0.0f;
-            state.velZ = 0.0f;
-        } else {
-            state.velX = (viewX - state.prevX) * 1;
-            state.velY = (viewY - state.prevY) * 1;
-            state.velZ = (viewZ - state.prevZ) * 1;
-        }
-        state.prevX = viewX;
-        state.prevY = viewY;
-        state.prevZ = viewZ;
-        state.valid = true;
-        state.lastFrameId = frameId;
+    public static void computeOffsetDelta(VelocityTransformState state, float x, float y, float z) {
+        computeTransformDelta(state, scratchPose.translation(x, y, z));
     }
 }
