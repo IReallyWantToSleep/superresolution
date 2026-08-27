@@ -54,7 +54,7 @@ public class GlImportableTexture2D extends GlTexture2D {
             boolean imported = false;
 
             try {
-                SuperResolution.LOGGER.info(
+                SuperResolution.LOGGER.debug(
                         "OpenGL-Vulkan interop texture: MemoryHandle {} MemorySize {}bits Size {}x{}px PixelSize {} Levels {} Format {}",
                         handle,
                         size,

@@ -406,7 +406,7 @@ public class SuperResolutionConfig {
             }
         }
 
-        SuperResolution.LOGGER.info("Your hardware does not support all algorithms."); //最逆天的一集
+        SuperResolution.LOGGER.info("WHAT? Your hardware does not support all algorithms?"); //WHAT?
         return AlgorithmDescriptions.NONE;
     }
 
@@ -423,8 +423,6 @@ public class SuperResolutionConfig {
             UPSCALE_ALGO.set(algo.codeName);
         }
 
-        // rendering 初始化前不做 support 检查——Vulkan/GL caps 未就绪会误报，
-        // 旧实现里还会 setUpscaleAlgorithm 触发 createAlgorithm 级联失败。
         if (!SuperResolution.isRenderingInitialized) {
             return algo;
         }
@@ -436,13 +434,11 @@ public class SuperResolutionConfig {
             return defaultAlgo;
         }
 
-        // 光影包禁用的算法只在运行期回退，不写回配置——卸载光影包后恢复用户原选择
         if (SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algo.codeName)) {
             SuperResolution.LOGGER.warn("Algorithm {} is disabled by the current shader pack; falling back to the default algorithm", algo.displayName);
             return getDefaultAlgorithm();
         }
 
-        // None（仅帧生成模式）仅在光影包声明支持时可用；不写回配置，切换光影后自动恢复
         if (AlgorithmDescriptions.NONE.equals(algo)
                 && !SRWorkModeManager.getCurrentState().supportsFrameGeneration()) {
             SuperResolution.LOGGER.warn("The current shader pack does not support frame-generation-only mode; the None algorithm is unavailable. Falling back to the default algorithm.");
