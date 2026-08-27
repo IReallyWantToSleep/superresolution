@@ -177,14 +177,4 @@ namespace sr::d3d12 {
                                        SharedFence *sharedFence,
                                        uint64_t waitValue,
                                        uint64_t signalValue) noexcept;
-
-#if defined(SR_D3D12_TEST_HOOKS)
-    namespace testing {
-        void failNextFenceWait(HRESULT failure) noexcept;
-        void failNextInternalCompletionSignal(HRESULT failure) noexcept;
-        void failNextQueueSharedFenceSignal(HRESULT failure) noexcept;
-        void failNextCpuSharedFenceSignal(HRESULT failure) noexcept;
-        size_t quarantinedSubmissionCount(Device *device) noexcept;
-    } // namespace testing
-#endif
 } // namespace sr::d3d12

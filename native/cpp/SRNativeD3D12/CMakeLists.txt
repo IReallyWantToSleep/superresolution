@@ -70,26 +70,3 @@ if(DEFINED LIB_PLATFORM AND DEFINED SR_BUILD_TYPE)
 else()
     set_target_properties(SR_D3D12_LIB PROPERTIES OUTPUT_NAME "SuperResolutionD3D12")
 endif()
-
-if(SR_D3D12_BUILD_SMOKE)
-    target_compile_definitions(SR_D3D12_CORE PRIVATE SR_D3D12_TEST_HOOKS)
-
-    add_executable(SR_D3D12_SMOKE tests/d3d12_smoke.cpp)
-    target_include_directories(SR_D3D12_SMOKE PRIVATE
-        ${CMAKE_CURRENT_SOURCE_DIR}/include
-        ${CMAKE_CURRENT_SOURCE_DIR}/../SRNativeMain/include
-    )
-    target_compile_definitions(SR_D3D12_SMOKE PRIVATE
-        WIN32_LEAN_AND_MEAN
-        NOMINMAX
-        UNICODE
-        _UNICODE
-        SR_D3D12_TEST_HOOKS
-    )
-    target_compile_options(SR_D3D12_SMOKE PRIVATE
-        $<$<CXX_COMPILER_ID:MSVC>:/W4>
-        $<$<CXX_COMPILER_ID:MSVC>:/permissive->
-        $<$<CXX_COMPILER_ID:MSVC>:/utf-8>
-    )
-    target_link_libraries(SR_D3D12_SMOKE PRIVATE SR_D3D12_CORE)
-endif()

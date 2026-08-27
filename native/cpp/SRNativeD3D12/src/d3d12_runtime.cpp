@@ -183,8 +183,6 @@ namespace sr::d3d12 {
             std::vector<QuarantinedSubmission> quarantinedSubmissions;
         };
 
-        struct AllocatorState;
-
         struct TextureStateCell {
             std::mutex mutex;
             ResourceState committed = ResourceState::Common;
@@ -210,13 +208,6 @@ namespace sr::d3d12 {
             std::shared_ptr<DeviceState> owner;
             ID3D12Resource *resource = nullptr;
         };
-
-#if defined(SR_D3D12_TEST_HOOKS)
-        std::atomic<HRESULT> g_nextFenceWaitFailure{S_OK};
-        std::atomic<HRESULT> g_nextInternalCompletionSignalFailure{S_OK};
-        std::atomic<HRESULT> g_nextQueueSharedFenceSignalFailure{S_OK};
-        std::atomic<HRESULT> g_nextCpuSharedFenceSignalFailure{S_OK};
-#endif
 
         std::string hresultText(HRESULT hr) {
             char *message = nullptr;
@@ -598,15 +589,6 @@ namespace sr::d3d12 {
                 return S_OK;
             }
 
-#if defined(SR_D3D12_TEST_HOOKS)
-            const HRESULT injected =
-                g_nextFenceWaitFailure.exchange(S_OK, std::memory_order_acq_rel);
-            if (FAILED(injected)) {
-                setHresultError("Injected D3D12 fence wait", injected, device);
-                return injected;
-            }
-#endif
-
             const uint64_t completed = fence->GetCompletedValue();
             if (completed == std::numeric_limits<uint64_t>::max()) {
                 const HRESULT removed = device ? device->GetDeviceRemovedReason()
@@ -656,41 +638,17 @@ namespace sr::d3d12 {
 
         HRESULT signalSubmissionCompletion(DeviceState *state,
                                            uint64_t value) noexcept {
-#if defined(SR_D3D12_TEST_HOOKS)
-            const HRESULT injected =
-                g_nextInternalCompletionSignalFailure.exchange(
-                    S_OK, std::memory_order_acq_rel);
-            if (FAILED(injected)) {
-                return injected;
-            }
-#endif
             return state->queue->Signal(state->completionFence.get(), value);
         }
 
         HRESULT signalSharedFenceOnQueue(DeviceState *state,
                                          ID3D12Fence *fence,
                                          uint64_t value) noexcept {
-#if defined(SR_D3D12_TEST_HOOKS)
-            const HRESULT injected =
-                g_nextQueueSharedFenceSignalFailure.exchange(
-                    S_OK, std::memory_order_acq_rel);
-            if (FAILED(injected)) {
-                return injected;
-            }
-#endif
             return state->queue->Signal(fence, value);
         }
 
         HRESULT signalCpuSharedFence(ID3D12Fence *fence,
                                      uint64_t value) noexcept {
-#if defined(SR_D3D12_TEST_HOOKS)
-            const HRESULT injected =
-                g_nextCpuSharedFenceSignalFailure.exchange(
-                    S_OK, std::memory_order_acq_rel);
-            if (FAILED(injected)) {
-                return injected;
-            }
-#endif
             return fence->Signal(value);
         }
 
@@ -1212,38 +1170,6 @@ namespace sr::d3d12 {
         return hr;
     }
 
-#if defined(SR_D3D12_TEST_HOOKS)
-    namespace testing {
-        void failNextFenceWait(HRESULT failure) noexcept {
-            g_nextFenceWaitFailure.store(
-                FAILED(failure) ? failure : E_FAIL, std::memory_order_release);
-        }
-
-        void failNextInternalCompletionSignal(HRESULT failure) noexcept {
-            g_nextInternalCompletionSignalFailure.store(
-                FAILED(failure) ? failure : E_FAIL, std::memory_order_release);
-        }
-
-        void failNextQueueSharedFenceSignal(HRESULT failure) noexcept {
-            g_nextQueueSharedFenceSignalFailure.store(
-                FAILED(failure) ? failure : E_FAIL, std::memory_order_release);
-        }
-
-        void failNextCpuSharedFenceSignal(HRESULT failure) noexcept {
-            g_nextCpuSharedFenceSignalFailure.store(
-                FAILED(failure) ? failure : E_FAIL, std::memory_order_release);
-        }
-
-        size_t quarantinedSubmissionCount(Device *device) noexcept {
-            device = requireObject(device, ObjectKind::Device, "D3D12 device");
-            if (!device || !device->state) {
-                return 0;
-            }
-            std::lock_guard<std::mutex> lock(device->state->submitMutex);
-            return device->state->quarantinedSubmissions.size();
-        }
-    } // namespace testing
-#endif
 
     SharedFence *createSharedFence(Device *device,
                                    uint64_t initialValue) noexcept {
