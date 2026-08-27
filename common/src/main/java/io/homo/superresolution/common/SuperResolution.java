@@ -36,6 +36,7 @@ import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.optiscaler.OptiScalerLoader;
+import io.homo.superresolution.common.presentation.DLSSNRPostProcessor;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
@@ -317,6 +318,7 @@ public final class SuperResolution implements Destroyable {
             AlgorithmManager.init();
             isRenderingInitialized = true;
             algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
+            DLSSNRPostProcessor.initialize();
         }
     }
 

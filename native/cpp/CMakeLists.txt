@@ -12,6 +12,7 @@ set(SR_D3D12_INTEROP "${SR_D3D12}" CACHE BOOL
     "已弃用：使用SR_D3D12" FORCE)
 option(SR_XESS "启用以支持XESS" ON)
 option(SR_NGX "启用以支持NGX绑定" ON)
+option(SR_DLSSNR "启用以支持DLSSNR(直载 nvngx_dlssnr.dll,仅Windows Vulkan)" ON)
 option(SR_STREAMLINE "启用以支持Streamline" ON)
 
 set(CMAKE_CXX_STANDARD 20)
@@ -97,6 +98,10 @@ endif()
 
 if(SR_NGX)
     add_subdirectory("SRNativeNGX")
+endif()
+
+if(SR_DLSSNR AND ON_WINDOWS)
+    add_subdirectory("SRNativeDLSSNR")
 endif()
 
 if(SR_FSR4 AND ON_WINDOWS)

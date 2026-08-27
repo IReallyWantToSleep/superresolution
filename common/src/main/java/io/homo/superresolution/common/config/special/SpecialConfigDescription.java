@@ -40,6 +40,7 @@ public class SpecialConfigDescription<T> {
 
     protected Class<? extends Enum<?>> clazz = null;
     protected Pair<Float, Float> valueRange = null;
+    protected Float step = null;
     protected Consumer<T> saveConsumer;
     protected boolean valueNameIsSupplier = false;
     protected Supplier<T> valueSupplier = null;
@@ -96,6 +97,16 @@ public class SpecialConfigDescription<T> {
 
     public SpecialConfigDescription<T> setValueRange(Pair<Float, Float> valueRange) {
         this.valueRange = valueRange;
+        return this;
+    }
+
+    /** Custom slider step for FLOAT options; null falls back to the UI default (0.01). */
+    public Float getStep() {
+        return step;
+    }
+
+    public SpecialConfigDescription<T> setStep(Float step) {
+        this.step = step;
         return this;
     }
 

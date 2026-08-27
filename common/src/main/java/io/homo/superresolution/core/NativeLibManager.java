@@ -61,6 +61,7 @@ public class NativeLibManager {
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR4 = null;
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
+    public static NativeLib LIB_SUPER_RESOLUTION_DLSSNR = null;
     public static NativeLib LIB_SUPER_RESOLUTION_NGX = null;
     public static NativeLib LIB_SUPER_RESOLUTION_STREAMLINE = null;
     public static NativeLib LIB_NGX_DLSSG_SNIPPET = null;
@@ -87,6 +88,11 @@ public class NativeLibManager {
             LIB_SUPER_RESOLUTION_D3D12_INTEROP = LIB_SUPER_RESOLUTION_D3D12;
             LIB_SUPER_RESOLUTION_FSR = new NativeLib(
                     "SuperResolutionFSR",
+                    false,
+                    false
+            );
+            LIB_SUPER_RESOLUTION_DLSSNR = new NativeLib(
+                    "SuperResolutionDLSSNR",
                     false,
                     false
             );
@@ -118,6 +124,7 @@ public class NativeLibManager {
             libs.add(LIB_SUPER_RESOLUTION_XESS);
             libs.add(LIB_SUPER_RESOLUTION_NGX);
             libs.add(LIB_SUPER_RESOLUTION_STREAMLINE);
+            libs.add(LIB_SUPER_RESOLUTION_DLSSNR);
         } else if (operatingSystem.type == OperatingSystemType.ANDROID && operatingSystem.arch == SystemArchitecture.AARCH64) {
             LIB_SUPER_RESOLUTION = new NativeLib("SuperResolution", true, true);
             libs.add(LIB_SUPER_RESOLUTION);

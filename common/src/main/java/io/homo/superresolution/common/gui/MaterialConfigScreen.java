@@ -1709,21 +1709,21 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                                 floatDesc.getValueRange().right(),
                                 floatDesc.getValueRange().left()
                         )
-                        .setStep(0.01)
+                        .setStep(floatDesc.getStep() != null ? floatDesc.getStep().floatValue() : 0.01)
                         .setDefaultValue(() -> floatDesc.getDefaultValue())
                         .setSaveConsumer((v) -> {
                             floatDesc.getSaveConsumer().accept(v.floatValue());
                             runAfterSave(afterSave);
                             return true;
                         });
-                if (floatDesc.isValueNameIsSupplier()) {
+                if ((floatDesc.isValueNameIsSupplier()) && false) {
                     opt.setValueFormater(v ->
                             floatDesc.getValueNameSupplierAsObject().apply(v)
                                     .map(c -> c.getString())
-                                    .orElse(String.format("%.2f", v.doubleValue()))
+                                    .orElse(String.format("%.2f", v.floatValue()))
                     );
                 } else {
-                    opt.setValueFormater(v -> String.format("%.2f", v.doubleValue()));
+                    opt.setValueFormater(v -> String.format("%.2f", v.floatValue()));
                 }
                 if (tooltip.isPresent()) {
                     opt.setDescription(Text.literal(tooltip.get().getString()));

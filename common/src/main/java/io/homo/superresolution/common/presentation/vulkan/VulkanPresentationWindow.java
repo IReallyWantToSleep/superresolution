@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.common.lowlatency.LowLatency;
+import io.homo.superresolution.common.presentation.DLSSNRPostProcessor;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
@@ -129,6 +130,7 @@ public final class VulkanPresentationWindow {
 			presentationContext.destroy();
 		}
 		FrameCaptureManager.shutdown();
+		DLSSNRPostProcessor.shutdown();
 		context = null;
 		surface = null;
 		shown = false;
