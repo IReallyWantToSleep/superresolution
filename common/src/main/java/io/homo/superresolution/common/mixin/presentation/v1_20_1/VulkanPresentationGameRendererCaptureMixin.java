@@ -27,7 +27,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = GameRenderer.class, priority = 900)
+@Mixin(value = GameRenderer.class)
 public abstract class VulkanPresentationGameRendererCaptureMixin {
     @Inject(
             method = "render",
@@ -48,7 +48,7 @@ public abstract class VulkanPresentationGameRendererCaptureMixin {
         }
     }
 
-    @Inject(method = "render", at = @At("RETURN"))
+    @Inject(method = "render", at = @At("RETURN"),order = 2000)
     private void super_resolution$captureFinalColor(
             float partialTicks,
             long nanoTime,

@@ -28,7 +28,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = GameRenderer.class, priority = 900)
+@Mixin(value = GameRenderer.class)
 public abstract class VulkanPresentationGameRendererCaptureMixin {
     @Inject(
             method = "render(Lnet/minecraft/client/DeltaTracker;Z)V",
@@ -48,7 +48,7 @@ public abstract class VulkanPresentationGameRendererCaptureMixin {
         }
     }
 
-    @Inject(method = "render(Lnet/minecraft/client/DeltaTracker;Z)V", at = @At("RETURN"))
+    @Inject(method = "render(Lnet/minecraft/client/DeltaTracker;Z)V", at = @At("RETURN"),order = 2000)
     private void super_resolution$captureFinalColor(
             DeltaTracker deltaTracker,
             boolean advanceGameTime,
