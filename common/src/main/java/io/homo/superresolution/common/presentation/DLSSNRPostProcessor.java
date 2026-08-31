@@ -57,6 +57,8 @@ public final class DLSSNRPostProcessor {
     private static boolean registered;
 
     private static ITexture colorTexture;
+    private static ITexture hdrOutputTexture;
+    private static IFrameBuffer hdrOutputFrameBuffer;
     private static ITexture depthTexture;
     private static ITexture motionVectorTexture;
     private static int cachedScreenWidth = -1;
@@ -98,14 +100,23 @@ public final class DLSSNRPostProcessor {
         if (color == null) {
             return;
         }
-        GlTextureCopier.copy(
-                CopyOperation.create()
-                        .src(color)
-                        .dst(colorTexture)
-                        .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
-                        .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
-                        .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B)
-        );
+        if (color.getWidth() != RenderHandlerManager.getScreenWidth()
+                || color.getHeight() != RenderHandlerManager.getScreenHeight()) {
+            SuperResolution.LOGGER.warn("Skipping DLSSNR frame: color dimensions do not match screen size");
+            return;
+        }
+        boolean hdrInput = color.getTextureFormat().getDataType() == TextureFormat.DataType.FLOAT;
+        // nvngx_dlssnr.dll exposes no HDR-input contract. Use reversible AgX Log
+        // around the network, leaving the game's AgX display look to its own pass.
+        if (hdrInput) {
+            DLSSNRHdrColorTransform.compress(color, colorTexture);
+        } else {
+            GlTextureCopier.copy(CopyOperation.create()
+                    .src(color).dst(colorTexture)
+                    .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
+                    .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
+                    .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B));
+        }
         DispatchResource dispatchResource = AlgorithmManager.getDispatchResource(
                 colorTexture,
                 depthTexture,
@@ -117,8 +128,22 @@ public final class DLSSNRPostProcessor {
             return;
         }
         IFrameBuffer outFbo = dlssnr.getOutputFrameBuffer();
+        ITexture output = outFbo == null ? null : outFbo.getTexture(FrameBufferAttachmentType.Color);
+        if (output == null) {
+            SuperResolution.LOGGER.warn("Skipping DLSSNR frame: output color texture is unavailable");
+            return;
+        }
+        if (hdrInput) {
+            DLSSNRHdrColorTransform.expand(output, hdrOutputTexture);
+        } else {
+            GlTextureCopier.copy(CopyOperation.create()
+                    .src(output).dst(hdrOutputTexture)
+                    .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
+                    .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
+                    .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B));
+        }
         Gl.DSA.blitFramebuffer(
-                (int) outFbo.handle(),
+                (int) hdrOutputFrameBuffer.handle(),
                 (int) RenderHandlerManager.getOriginRenderTarget().handle(),
                 0, 0, outFbo.getWidth(), outFbo.getHeight(),
                 0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(),
@@ -140,19 +165,29 @@ public final class DLSSNRPostProcessor {
             inputsCaptured = false;
             return;
         }
+        ITexture depth = resources.get(InputResourceType.Depth);
+        ITexture motionVectors = resources.get(InputResourceType.MotionVectors);
+        if (depth.getWidth() != RenderHandlerManager.getRenderWidth()
+                || depth.getHeight() != RenderHandlerManager.getRenderHeight()
+                || motionVectors.getWidth() != RenderHandlerManager.getRenderWidth()
+                || motionVectors.getHeight() != RenderHandlerManager.getRenderHeight()) {
+            SuperResolution.LOGGER.warn("Skipping DLSSNR frame: depth or motion-vector dimensions do not match render size");
+            inputsCaptured = false;
+            return;
+        }
         if (!ensureReady()) {
             inputsCaptured = false;
             return;
         }
         GlTextureCopier.copy(
                 CopyOperation.create()
-                        .src(resources.get(InputResourceType.Depth))
+                        .src(depth)
                         .dst(depthTexture)
                         .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
         );
         GlTextureCopier.copy(
                 CopyOperation.create()
-                        .src(resources.get(InputResourceType.MotionVectors))
+                        .src(motionVectors)
                         .dst(motionVectorTexture)
                         .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
                         .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
@@ -227,7 +262,7 @@ public final class DLSSNRPostProcessor {
         colorTexture = RenderSystems.current().device().createTexture(
                 TextureDescription.create()
                         .label("SRDLSSNRPostColorTexture")
-                        .format(SuperResolutionConfig.getInternalTextureFormat())
+                        .format(TextureFormat.RGBA16F)
                         .type(TextureType.Texture2D)
                         .usages(TextureUsages.create().storage().sampler())
                         .mipmapsDisabled()
@@ -254,6 +289,21 @@ public final class DLSSNRPostProcessor {
                         .size(renderWidth, renderHeight)
                         .build()
         );
+        hdrOutputTexture = RenderSystems.current().device().createTexture(
+                TextureDescription.create()
+                        .label("SRDLSSNRPostHdrOutputTexture")
+                        .format(TextureFormat.RGBA16F)
+                        .type(TextureType.Texture2D)
+                        .usages(TextureUsages.create().storage().sampler().attachmentColor())
+                        .mipmapsDisabled()
+                        .size(screenWidth, screenHeight)
+                        .build()
+        );
+        hdrOutputFrameBuffer = RenderSystems.current().device().createFramebuffer(
+                io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription.create()
+                        .colorAttachment(hdrOutputTexture)
+                        .build()
+        );
         cachedScreenWidth = screenWidth;
         cachedScreenHeight = screenHeight;
         cachedRenderWidth = renderWidth;
@@ -264,6 +314,14 @@ public final class DLSSNRPostProcessor {
         if (colorTexture != null) {
             colorTexture.destroy();
             colorTexture = null;
+        }
+        if (hdrOutputFrameBuffer != null) {
+            hdrOutputFrameBuffer.destroy();
+            hdrOutputFrameBuffer = null;
+        }
+        if (hdrOutputTexture != null) {
+            hdrOutputTexture.destroy();
+            hdrOutputTexture = null;
         }
         if (depthTexture != null) {
             depthTexture.destroy();
