@@ -99,7 +99,11 @@ public class DLSSNR extends SRApiAlgorithm {
                 upscaleContextDesc.setExtraParams(extraParams);
                 extraParams.setString(
                         "DLSSNR_DLL_PATH",
-                        SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().resolve("nvngx_dlssnr.dll").toAbsolutePath().toString()
+                        SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath().resolve("nvngx.dll").toAbsolutePath().toString()
+                );
+                extraParams.setString(
+                        "DLSSNR_APP_DATA_PATH",
+                        SuperResolutionConstants.DATA_DIR.getPath().toAbsolutePath().toString()
                 );
                 extraParams.setFloat(
                         "DLSSNR_SCALING_RATIO",
