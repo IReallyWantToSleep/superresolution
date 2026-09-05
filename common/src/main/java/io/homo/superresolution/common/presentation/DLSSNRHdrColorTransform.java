@@ -33,15 +33,29 @@ final class DLSSNRHdrColorTransform {
     }
 
     static void compress(ITexture source, ITexture destination) {
-        dispatch(source, destination, "COMPRESS_HDR");
+        dispatch(source, null, destination, "COMPRESS_HDR", 1.0f);
     }
 
-    static void expand(ITexture source, ITexture destination) {
-        dispatch(source, destination, "EXPAND_HDR");
+    static void finish(
+            ITexture original,
+            ITexture neural,
+            ITexture destination,
+            boolean hdr,
+            float colorStrength
+    ) {
+        dispatch(neural, original, destination, hdr ? "FINISH_HDR" : "FINISH_SDR", colorStrength);
     }
 
-    private static void dispatch(ITexture source, ITexture destination, String operation) {
-        if (source.getWidth() != destination.getWidth() || source.getHeight() != destination.getHeight()) {
+    private static void dispatch(
+            ITexture source,
+            ITexture original,
+            ITexture destination,
+            String operation,
+            float colorStrength
+    ) {
+        if (source.getWidth() != destination.getWidth() || source.getHeight() != destination.getHeight()
+                || (original != null && (original.getWidth() != destination.getWidth()
+                || original.getHeight() != destination.getHeight()))) {
             throw new IllegalArgumentException("DLSS NR HDR transform requires equally sized textures");
         }
         String format = destination.getTextureFormat().getGlslFormatQualifier();
@@ -53,8 +67,19 @@ final class DLSSNRHdrColorTransform {
         if (sampler == null) {
             sampler = GlSampler.create(GlSampler.SamplerType.NearestClamp);
         }
-        GL43.glBindSampler(0, (int) sampler.handle());
-        pipeline.descriptorSet().samplerTexture("sourceColor", source).storageImage("destinationColor", destination);
+        pipeline.descriptorSet().samplerTexture("sourceColor", source, sampler);
+        if (original != null) {
+            pipeline.descriptorSet().samplerTexture("originalColor", original, sampler);
+            int location = GL43.glGetUniformLocation((int) pipeline.shader().handle(), "colorStrength");
+            if (location >= 0) {
+                GL43.glProgramUniform1f(
+                        (int) pipeline.shader().handle(),
+                        location,
+                        Math.max(0.0f, Math.min(2.0f, colorStrength))
+                );
+            }
+        }
+        pipeline.descriptorSet().storageImage("destinationColor", destination);
         pipeline.descriptorSet().update();
         ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
         commandBuffer.begin();
@@ -62,7 +87,6 @@ final class DLSSNRHdrColorTransform {
         commandBuffer.dispatch((destination.getWidth() + 15) / 16, (destination.getHeight() + 15) / 16, 1);
         commandBuffer.end();
         RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
-        GL43.glBindSampler(0, 0);
     }
 
     private static GlComputePipeline createPipeline(String operation, String format) {
@@ -71,6 +95,9 @@ final class DLSSNRHdrColorTransform {
                 .name("dlssnr_hdr_" + operation.toLowerCase())
                 .uniformSamplerTexture("sourceColor", 0)
                 .uniformStorageTexture("destinationColor", ShaderResourceAccess.Write, 0);
+        if (operation.startsWith("FINISH_")) {
+            builder.uniformSamplerTexture("originalColor", 1);
+        }
         builder.addDefine("OUTPUT_FORMAT", format);
         builder.addDefine(operation, "1");
         GlShaderProgram program = RenderSystems.opengl().device().createShaderProgram(builder.build());

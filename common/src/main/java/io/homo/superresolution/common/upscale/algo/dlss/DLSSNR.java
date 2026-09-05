@@ -29,6 +29,7 @@ import io.homo.superresolution.core.SuperResolutionConstants;
 import io.homo.superresolution.core.graphics.vulkan.VkReflectionHelper;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.srapi.*;
 import org.joml.Vector2f;
 import org.joml.Vector2i;
@@ -37,6 +38,21 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 
 public class DLSSNR extends SRApiAlgorithm {
+    /**
+     * Allows post-processing cascades to taper later stages without changing the
+     * user-facing primary intensity. A standalone DLSS NR instance remains at 1.
+     */
+    protected float getIntensityScale() {
+        return 1.0f;
+    }
+
+    @Override
+    protected TextureFormat getInteropColorTextureFormat() {
+        // The signed DLSS NR runtime and multi-pass intermediates are most stable
+        // with a shader-readable FP16 working surface.
+        return TextureFormat.RGBA16F;
+    }
+
     @Override
     protected void recreateSRApiContext(InitializationDescription desc) {
         if (NativeLibManager.LIB_SUPER_RESOLUTION_DLSSNR == null) {
@@ -171,7 +187,10 @@ public class DLSSNR extends SRApiAlgorithm {
             desc.setReset(consumeHistoryReset());
             desc.setFlags(0);
             SRContextExtraParams dispatchParams = desc.getExtraParams();
-            dispatchParams.setFloat("DLSSNR_INTENSITY", SuperResolutionConfig.SPECIAL.DLSSNR.INTENSITY.get());
+            dispatchParams.setFloat(
+                    "DLSSNR_INTENSITY",
+                    SuperResolutionConfig.SPECIAL.DLSSNR.INTENSITY.get() * getIntensityScale()
+            );
             dispatchParams.setFloat("DLSSNR_LOCAL_TONE_STRENGTH", SuperResolutionConfig.SPECIAL.DLSSNR.LOCAL_TONE_STRENGTH.get());
             dispatchParams.setFloat("DLSSNR_LOCAL_STRUCTURE_STRENGTH", SuperResolutionConfig.SPECIAL.DLSSNR.LOCAL_STRUCTURE_STRENGTH.get());
             dispatchParams.setFloat("DLSSNR_SKIN_STRUCTURE_STRENGTH", SuperResolutionConfig.SPECIAL.DLSSNR.SKIN_STRUCTURE_STRENGTH.get());

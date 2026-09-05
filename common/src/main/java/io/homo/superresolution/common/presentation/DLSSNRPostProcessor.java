@@ -45,16 +45,22 @@ import org.joml.Vector2f;
 import org.lwjgl.opengl.GL46;
 
 /**
- * Drives a private {@link DLSSNR} instance as a post processor inside the Vulkan
+ * Drives private {@link DLSSNR} instances as a post processor inside the Vulkan
  * presentation pipeline. Depth/motion vectors are snapshotted on {@link AlgorithmDispatchEvent};
  * at the hudless-color capture point (world done, HUD not yet drawn) the main target color is
  * copied, fed through DLSSNR, and the result is blitted back to the main target so that the
  * following {@code FrameCaptureManager.captureHudlessColor} picks up the DLSSNR output.
  */
 public final class DLSSNRPostProcessor {
-    private static DLSSNR dlssnr;
+    private static final int MAX_PASS_COUNT = 4;
+    private static final float[] PASS_INTENSITY_SCALES = {1.0f, 0.60f, 0.35f, 0.20f};
+    private static final DLSSNR[] dlssnrPasses = new DLSSNR[MAX_PASS_COUNT];
     private static boolean broken;
     private static boolean registered;
+    private static int activePassCount;
+    private static int configuredPassCount = -1;
+    private static int dlssnrSettingsSignature;
+    private static boolean historyResetPending = true;
 
     private static ITexture colorTexture;
     private static ITexture hdrOutputTexture;
@@ -78,17 +84,22 @@ public final class DLSSNRPostProcessor {
     }
 
     public static synchronized void shutdown() {
-        if (dlssnr != null) {
-            dlssnr.destroy();
-            dlssnr = null;
-        }
+        destroyPassesFrom(0);
         destroyTextures();
         broken = false;
+        activePassCount = 0;
+        configuredPassCount = -1;
+        dlssnrSettingsSignature = 0;
+        historyResetPending = true;
         inputsCaptured = false;
     }
 
     public static void processHudlessColor() {
-        if (!isActive() || !inputsCaptured) {
+        boolean active = isActive();
+        if (!active || !inputsCaptured) {
+            if (!active) {
+                historyResetPending = true;
+            }
             inputsCaptured = false;
             return;
         }
@@ -117,31 +128,39 @@ public final class DLSSNRPostProcessor {
                     .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
                     .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B));
         }
-        DispatchResource dispatchResource = AlgorithmManager.getDispatchResource(
-                colorTexture,
-                depthTexture,
-                motionVectorTexture,
-                new Vector2f(0),
-                0
+        ITexture passInput = colorTexture;
+        IFrameBuffer outFbo = null;
+        ITexture output = null;
+        for (int pass = 0; pass < activePassCount; pass++) {
+            DispatchResource dispatchResource = AlgorithmManager.getDispatchResource(
+                    passInput,
+                    depthTexture,
+                    motionVectorTexture,
+                    new Vector2f(0),
+                    0
+            );
+            DLSSNR stage = dlssnrPasses[pass];
+            if (stage == null || !stage.dispatch(dispatchResource)) {
+                SuperResolution.LOGGER.warn("Skipping DLSSNR frame: pass {} is unavailable", pass + 1);
+                return;
+            }
+            outFbo = stage.getOutputFrameBuffer();
+            output = outFbo == null ? null : outFbo.getTexture(FrameBufferAttachmentType.Color);
+            if (output == null) {
+                SuperResolution.LOGGER.warn("Skipping DLSSNR frame: output color texture is unavailable after pass {}", pass + 1);
+                return;
+            }
+            // The serial interop path has completed and exposed this pass's GL output here.
+            // Feeding that texture back makes pass N+1 process the actual result of pass N.
+            passInput = output;
+        }
+        DLSSNRHdrColorTransform.finish(
+                color,
+                output,
+                hdrOutputTexture,
+                hdrInput,
+                SuperResolutionConfig.SPECIAL.DLSSNR.COLOR_STRENGTH.get()
         );
-        if (!dlssnr.dispatch(dispatchResource)) {
-            return;
-        }
-        IFrameBuffer outFbo = dlssnr.getOutputFrameBuffer();
-        ITexture output = outFbo == null ? null : outFbo.getTexture(FrameBufferAttachmentType.Color);
-        if (output == null) {
-            SuperResolution.LOGGER.warn("Skipping DLSSNR frame: output color texture is unavailable");
-            return;
-        }
-        if (hdrInput) {
-            DLSSNRHdrColorTransform.expand(output, hdrOutputTexture);
-        } else {
-            GlTextureCopier.copy(CopyOperation.create()
-                    .src(output).dst(hdrOutputTexture)
-                    .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
-                    .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
-                    .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B));
-        }
         Gl.DSA.blitFramebuffer(
                 (int) hdrOutputFrameBuffer.handle(),
                 (int) RenderHandlerManager.getOriginRenderTarget().handle(),
@@ -153,7 +172,11 @@ public final class DLSSNRPostProcessor {
     }
 
     private static void onAlgorithmDispatch(AlgorithmDispatchEvent event) {
-        if (!isActive() || event == null) {
+        boolean active = isActive();
+        if (!active || event == null) {
+            if (!active) {
+                historyResetPending = true;
+            }
             inputsCaptured = false;
             return;
         }
@@ -217,44 +240,132 @@ public final class DLSSNRPostProcessor {
                 || screenHeight != cachedScreenHeight
                 || renderWidth != cachedRenderWidth
                 || renderHeight != cachedRenderHeight;
-        if (dlssnr == null) {
-            try {
-                DLSSNR instance = new DLSSNR() {
-                    @Override
-                    protected int getInputColorWidth() {
-                        return RenderHandlerManager.getScreenWidth();
-                    }
-
-                    @Override
-                    protected int getInputColorHeight() {
-                        return RenderHandlerManager.getScreenHeight();
-                    }
-
-                    @Override
-                    protected boolean useSerialSyncMode() {
-                        return true;
-                    }
-                };
-                instance.initialize(InitializationDescription.defaults());
-                dlssnr = instance;
-            } catch (Throwable t) {
-                SuperResolution.LOGGER.error("Failed to initialize DLSSNR post processor", t);
-                broken = true;
-                return false;
-            }
-            sizeChanged = true;
-        }
+        int requestedPassCount = configuredPassCount();
+        boolean passCountChanged = requestedPassCount != configuredPassCount;
         if (sizeChanged) {
             try {
                 createTextures(screenWidth, screenHeight, renderWidth, renderHeight);
-                dlssnr.resize(screenWidth, screenHeight);
             } catch (Throwable t) {
-                SuperResolution.LOGGER.error("Failed to resize DLSSNR post processor", t);
+                SuperResolution.LOGGER.error("Failed to resize DLSSNR post-process textures", t);
                 broken = true;
                 return false;
             }
         }
-        return true;
+
+        if (requestedPassCount < activePassCount) {
+            destroyPassesFrom(requestedPassCount);
+            activePassCount = requestedPassCount;
+        }
+
+        for (int pass = 0; pass < requestedPassCount; pass++) {
+            try {
+                if (dlssnrPasses[pass] == null) {
+                    // A failed optional stage is retried after a size or pass-count change,
+                    // not every frame (feature creation is expensive and may wait for the GPU).
+                    if (pass > 0 && !sizeChanged && !passCountChanged) {
+                        break;
+                    }
+                    dlssnrPasses[pass] = createPass(pass);
+                } else if (sizeChanged) {
+                    dlssnrPasses[pass].resize(screenWidth, screenHeight);
+                }
+                activePassCount = pass + 1;
+            } catch (Throwable t) {
+                if (pass == 0) {
+                    SuperResolution.LOGGER.error("Failed to initialize primary DLSSNR post-process pass", t);
+                    broken = true;
+                    return false;
+                }
+                destroyPassesFrom(pass);
+                activePassCount = pass;
+                SuperResolution.LOGGER.warn(
+                        "DLSSNR pass {} initialization failed; falling back to {} pass(es)",
+                        pass + 1,
+                        activePassCount,
+                        t
+                );
+                break;
+            }
+        }
+
+        int settingsSignature = settingsSignature();
+        if (historyResetPending || sizeChanged || passCountChanged
+                || settingsSignature != dlssnrSettingsSignature) {
+            invalidateAllPassHistories();
+            dlssnrSettingsSignature = settingsSignature;
+            historyResetPending = false;
+        }
+        configuredPassCount = requestedPassCount;
+        return activePassCount > 0;
+    }
+
+    private static DLSSNR createPass(int passIndex) throws Throwable {
+        DLSSNR instance = new DLSSNR() {
+            @Override
+            protected int getInputColorWidth() {
+                return RenderHandlerManager.getScreenWidth();
+            }
+
+            @Override
+            protected int getInputColorHeight() {
+                return RenderHandlerManager.getScreenHeight();
+            }
+
+            @Override
+            protected boolean useSerialSyncMode() {
+                return true;
+            }
+
+            @Override
+            protected float getIntensityScale() {
+                return PASS_INTENSITY_SCALES[passIndex];
+            }
+        };
+        try {
+            instance.initialize(InitializationDescription.defaults());
+            return instance;
+        } catch (Throwable t) {
+            try {
+                instance.destroy();
+            } catch (Throwable cleanupFailure) {
+                t.addSuppressed(cleanupFailure);
+            }
+            throw t;
+        }
+    }
+
+    private static int configuredPassCount() {
+        return Math.max(1, Math.min(MAX_PASS_COUNT,
+                Math.round(SuperResolutionConfig.SPECIAL.DLSSNR.PASS_COUNT.get())));
+    }
+
+    private static int settingsSignature() {
+        int result = Float.floatToIntBits(SuperResolutionConfig.SPECIAL.DLSSNR.INTENSITY.get());
+        result = 31 * result + Float.floatToIntBits(SuperResolutionConfig.SPECIAL.DLSSNR.LOCAL_TONE_STRENGTH.get());
+        result = 31 * result + Float.floatToIntBits(SuperResolutionConfig.SPECIAL.DLSSNR.LOCAL_STRUCTURE_STRENGTH.get());
+        result = 31 * result + Float.floatToIntBits(SuperResolutionConfig.SPECIAL.DLSSNR.SKIN_STRUCTURE_STRENGTH.get());
+        result = 31 * result + Float.floatToIntBits(SuperResolutionConfig.SPECIAL.DLSSNR.STYLE.get());
+        result = 31 * result + Boolean.hashCode(SuperResolutionConfig.SPECIAL.DLSSNR.USE_AUTO_MASK.get());
+        result = 31 * result + Boolean.hashCode(SuperResolutionConfig.SPECIAL.DLSSNR.UI_CORRECTION.get());
+        result = 31 * result + Boolean.hashCode(SuperResolutionConfig.SPECIAL.DLSSNR.DEPTH_INVERTED.get());
+        return result;
+    }
+
+    private static void invalidateAllPassHistories() {
+        for (int pass = 0; pass < activePassCount; pass++) {
+            if (dlssnrPasses[pass] != null) {
+                dlssnrPasses[pass].invalidateHistory();
+            }
+        }
+    }
+
+    private static void destroyPassesFrom(int firstPass) {
+        for (int pass = Math.max(0, firstPass); pass < MAX_PASS_COUNT; pass++) {
+            if (dlssnrPasses[pass] != null) {
+                dlssnrPasses[pass].destroy();
+                dlssnrPasses[pass] = null;
+            }
+        }
     }
 
     private static void createTextures(int screenWidth, int screenHeight, int renderWidth, int renderHeight) {
