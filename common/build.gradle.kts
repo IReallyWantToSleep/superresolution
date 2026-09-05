@@ -176,6 +176,7 @@ val javaToolchains = extensions.getByType(JavaToolchainService::class.java)
 val mainSourceSet = sourceSets.getByName("main")
 val irisapiSourceSet = sourceSets.maybeCreate("irisapi")
 val sharedSourceSet = sourceSets.maybeCreate("shared")
+val materialSourceSet = sourceSets.maybeCreate("material")
 val hackSourceSet = sourceSets.maybeCreate("hack")
 val shaderCompatSourceSet = sourceSets.maybeCreate("shadercompat")
 
@@ -215,6 +216,10 @@ sharedSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
 sharedSourceSet.compileClasspath += mainSourceSet.compileClasspath
 sharedSourceSet.runtimeClasspath += mainSourceSet.runtimeClasspath
 
+materialSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
+materialSourceSet.compileClasspath += mainSourceSet.compileClasspath
+materialSourceSet.runtimeClasspath += mainSourceSet.runtimeClasspath
+
 irisapiSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
 irisapiSourceSet.compileClasspath += mainSourceSet.compileClasspath
 irisapiSourceSet.runtimeClasspath += mainSourceSet.runtimeClasspath
@@ -225,6 +230,8 @@ mainSourceSet.compileClasspath += irisapiSourceSet.output
 mainSourceSet.runtimeClasspath += irisapiSourceSet.output
 mainSourceSet.compileClasspath += sharedSourceSet.output
 mainSourceSet.runtimeClasspath += sharedSourceSet.output
+mainSourceSet.compileClasspath += materialSourceSet.output
+mainSourceSet.runtimeClasspath += materialSourceSet.output
 
 hackSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
 hackSourceSet.compileClasspath += mainSourceSet.compileClasspath
@@ -247,12 +254,13 @@ shaderCompatSourceSet.runtimeClasspath += irisapiSourceSet.output
 tasks.named<Jar>("jar") {
     from(irisapiSourceSet.output)
     from(sharedSourceSet.output)
+    from(materialSourceSet.output)
     from(hackSourceSet.output)
     from(shaderCompatSourceSet.output)
 }
 
 artifacts {
-    listOf(mainSourceSet, irisapiSourceSet, sharedSourceSet, hackSourceSet, shaderCompatSourceSet).forEach { sourceSet ->
+    listOf(mainSourceSet, irisapiSourceSet, sharedSourceSet, materialSourceSet, hackSourceSet, shaderCompatSourceSet).forEach { sourceSet ->
         sourceSet.java.sourceDirectories.files.forEach { dir ->
             add("commonJava", dir)
         }
