@@ -20,9 +20,14 @@ static constexpr NVSDK_NGX_Feature kFeatureDLSSNR = static_cast<NVSDK_NGX_Featur
 // ---------------------------------------------------------------------------
 typedef NVSDK_NGX_Result(NVSDK_CONV *PFN_NVGX_GetAPIVersion)(NVSDK_NGX_Version *);
 typedef unsigned int (NVSDK_CONV *PFN_NVGX_GetSnippetVersion)();
+typedef unsigned long long (NVSDK_CONV *PFN_NVGX_GetApplicationId)();
 typedef NVSDK_NGX_Result(NVSDK_CONV *PFN_NVGX_VULKAN_Init_Ext2)(
     unsigned long long, const wchar_t *, VkInstance, VkPhysicalDevice, VkDevice,
     PFN_vkGetInstanceProcAddr, PFN_vkGetDeviceProcAddr, NVSDK_NGX_Version, const NVSDK_NGX_Parameter *);
+typedef NVSDK_NGX_Result(NVSDK_CONV *PFN_NVGX_VULKAN_Init_with_ProjectID)(
+    const char *, NVSDK_NGX_EngineType, const char *, const wchar_t *,
+    VkInstance, VkPhysicalDevice, VkDevice, PFN_vkGetInstanceProcAddr, PFN_vkGetDeviceProcAddr,
+    const NVSDK_NGX_FeatureCommonInfo *, NVSDK_NGX_Version);
 typedef NVSDK_NGX_Result(NVSDK_CONV *PFN_NVGX_VULKAN_Shutdown1)(VkDevice);
 typedef NVSDK_NGX_Result(NVSDK_CONV *PFN_NVGX_VULKAN_CreateFeature1)(
     VkDevice, VkCommandBuffer, NVSDK_NGX_Feature, NVSDK_NGX_Parameter *, NVSDK_NGX_Handle **);
@@ -35,7 +40,9 @@ typedef NVSDK_NGX_Result(NVSDK_CONV *PFN_NVGX_VULKAN_GetFeatureRequirements)(
 struct SRDLSSNRFunctionsTable {
     PFN_NVGX_GetAPIVersion GetAPIVersion;
     PFN_NVGX_GetSnippetVersion GetSnippetVersion;
+    PFN_NVGX_GetApplicationId GetApplicationId;
     PFN_NVGX_VULKAN_Init_Ext2 InitExt2;
+    PFN_NVGX_VULKAN_Init_with_ProjectID InitWithProjectID;
     PFN_NVGX_VULKAN_Shutdown1 Shutdown1;
     PFN_NVGX_VULKAN_CreateFeature1 CreateFeature1;
     PFN_NVGX_VULKAN_EvaluateFeature EvaluateFeature;
@@ -50,6 +57,9 @@ static size_t g_contextCount = 0;
 static bool g_ngxInited = false;
 static VkDevice g_ngxDevice = nullptr;
 static std::mutex g_ngxMutex;
+
+static constexpr const char *kDLSSNRProjectId = "3a799712-b54a-407c-82b0-eb3366f0f1e3";
+static constexpr const char *kDLSSNREngineVersion = "11.45.14";
 
 // SRGetFuncAddress (void*(*)(void*,const char*)) 到 vkGet*ProcAddr 的适配
 static SRGetFuncAddress g_srInstanceProcAddr = nullptr;
@@ -66,6 +76,43 @@ static void *VKAPI_CALL srGdpaTrampoline(VkDevice, const char *pName) {
 
 static void srDLSSNRLog(SRMessageCallback cb, SRMessageType type, const wchar_t *msg) {
     if (cb && msg) cb(type, msg);
+}
+
+static std::wstring srDLSSNRUtf8ToWide(const char *value) {
+    if (!value || std::strlen(value) == 0) {
+        return {};
+    }
+    int wideLen = MultiByteToWideChar(CP_UTF8, 0, value, -1, nullptr, 0);
+    if (wideLen <= 0) {
+        return {};
+    }
+    std::wstring out;
+    out.resize(static_cast<size_t>(wideLen));
+    MultiByteToWideChar(CP_UTF8, 0, value, -1, out.data(), wideLen);
+    if (!out.empty() && out.back() == L'\0') {
+        out.pop_back();
+    }
+    return out;
+}
+
+static void srDLSSNRLogNgxResult(
+    SRMessageCallback cb,
+    SRMessageType type,
+    const wchar_t *operation,
+    NVSDK_NGX_Result result
+) {
+    std::wstring msg = operation ? operation : L"DLSSNR NGX operation";
+    msg += L" failed. NGX result: ";
+    msg += std::to_wstring(static_cast<int>(result));
+    srDLSSNRLog(cb, type, msg.c_str());
+}
+
+static std::wstring srDLSSNRParentPath(const std::wstring &path) {
+    size_t sep = path.find_last_of(L"\\/");
+    if (sep == std::wstring::npos) {
+        return {};
+    }
+    return path.substr(0, sep);
 }
 
 template<typename T>
@@ -100,16 +147,13 @@ SR_API SRReturnCode srDLSSNRLoadFunctionsFromDll(const char *dllPath, SRMessageC
 
     const char *effectivePath = (dllPath && std::strlen(dllPath) > 0) ? dllPath : "nvngx_dlssnr.dll";
 
-    int wideLen = MultiByteToWideChar(CP_UTF8, 0, effectivePath, -1, nullptr, 0);
-    if (wideLen <= 0) {
+    std::wstring widePath = srDLSSNRUtf8ToWide(effectivePath);
+    if (widePath.empty()) {
         lock.unlock();
         srDLSSNRLog(messageCallback, SR_MESSAGE_TYPE_ERROR, L"Failed to convert DLSSNR dll path to wide string.");
         return SR_RETURN_CODE_CANNOT_FIND_LIBRARY;
     }
 
-    std::wstring widePath;
-    widePath.resize(static_cast<size_t>(wideLen));
-    MultiByteToWideChar(CP_UTF8, 0, effectivePath, -1, widePath.data(), wideLen);
     g_ngxModule = LoadLibraryW(widePath.c_str());
 
     if (!g_ngxModule) {
@@ -124,7 +168,10 @@ SR_API SRReturnCode srDLSSNRLoadFunctionsFromDll(const char *dllPath, SRMessageC
     std::wstring resolveError;
     resolved &= srDLSSNRResolve(g_ngx.GetAPIVersion, "NVSDK_NGX_GetAPIVersion", resolveError);
     resolved &= srDLSSNRResolve(g_ngx.GetSnippetVersion, "NVSDK_NGX_GetSnippetVersion", resolveError);
+    resolved &= srDLSSNRResolve(g_ngx.GetApplicationId, "NVSDK_NGX_GetApplicationId", resolveError);
     resolved &= srDLSSNRResolve(g_ngx.InitExt2, "NVSDK_NGX_VULKAN_Init_Ext2", resolveError);
+    g_ngx.InitWithProjectID = reinterpret_cast<PFN_NVGX_VULKAN_Init_with_ProjectID>(
+        GetProcAddress(g_ngxModule, "NVSDK_NGX_VULKAN_Init_with_ProjectID"));
     resolved &= srDLSSNRResolve(g_ngx.Shutdown1, "NVSDK_NGX_VULKAN_Shutdown1", resolveError);
     resolved &= srDLSSNRResolve(g_ngx.CreateFeature1, "NVSDK_NGX_VULKAN_CreateFeature1", resolveError);
     resolved &= srDLSSNRResolve(g_ngx.EvaluateFeature, "NVSDK_NGX_VULKAN_EvaluateFeature", resolveError);
@@ -230,15 +277,71 @@ extern "C" {
         g_srInstanceForGipa = (void *) vk.instance;
         g_srDeviceForGdpa = (void *) vk.device;
 
+        const char *appDataPath = ".";
+        const SRContextExtraParam *appDataPathParam = srFindParam(&desc->extraParams, "DLSSNR_APP_DATA_PATH");
+        if (appDataPathParam
+            && appDataPathParam->valueType == SR_PARAM_VALUE_TYPE_STRING
+            && appDataPathParam->value.stringValue) {
+            appDataPath = appDataPathParam->value.stringValue;
+        }
+        std::wstring wideAppDataPath = srDLSSNRUtf8ToWide(appDataPath);
+        const wchar_t *ngxAppDataPath = wideAppDataPath.empty() ? L"." : wideAppDataPath.c_str();
+
         if (!g_ngxInited) {
-            NVSDK_NGX_Result r = g_ngx.InitExt2(
-                0, L".",
-                (VkInstance) vk.instance, (VkPhysicalDevice) vk.physicalDevice, (VkDevice) vk.device,
-                (PFN_vkGetInstanceProcAddr) srGipaTrampoline, (PFN_vkGetDeviceProcAddr) srGdpaTrampoline,
-                NVSDK_NGX_Version_API, nullptr);
+            NVSDK_NGX_Result r = NVSDK_NGX_Result_FAIL_NotImplemented;
+            if (g_ngx.InitWithProjectID) {
+                const char *dllPath = "nvngx_dlssnr.dll";
+                const SRContextExtraParam *dllPathParam = srFindParam(&desc->extraParams, "DLSSNR_DLL_PATH");
+                if (dllPathParam && dllPathParam->valueType == SR_PARAM_VALUE_TYPE_STRING && dllPathParam->value.stringValue) {
+                    dllPath = dllPathParam->value.stringValue;
+                }
+                std::wstring wideDllPath = srDLSSNRUtf8ToWide(dllPath);
+                std::wstring featurePath = srDLSSNRParentPath(wideDllPath);
+                const wchar_t *featurePaths[] = { featurePath.c_str() };
+                NVSDK_NGX_FeatureCommonInfo featureInfo = {};
+                if (!featurePath.empty()) {
+                    featureInfo.PathListInfo.Path = featurePaths;
+                    featureInfo.PathListInfo.Length = 1;
+                }
+
+                r = g_ngx.InitWithProjectID(
+                    kDLSSNRProjectId,
+                    NVSDK_NGX_ENGINE_TYPE_CUSTOM,
+                    kDLSSNREngineVersion,
+                    ngxAppDataPath,
+                    (VkInstance) vk.instance, (VkPhysicalDevice) vk.physicalDevice, (VkDevice) vk.device,
+                    (PFN_vkGetInstanceProcAddr) srGipaTrampoline, (PFN_vkGetDeviceProcAddr) srGdpaTrampoline,
+                    featurePath.empty() ? nullptr : &featureInfo,
+                    NVSDK_NGX_Version_API);
+                if (NVSDK_NGX_FAILED(r)) {
+                    srDLSSNRLogNgxResult(
+                        desc->messageCallback,
+                        SR_MESSAGE_TYPE_WARNING,
+                        L"DLSSNR NVSDK_NGX_VULKAN_Init_with_ProjectID",
+                        r
+                    );
+                }
+            }
+
+            if (!g_ngx.InitWithProjectID || NVSDK_NGX_FAILED(r)) {
+                unsigned long long applicationId = g_ngx.GetApplicationId ? g_ngx.GetApplicationId() : 0;
+                std::wstring appIdMessage = L"DLSSNR using NGX application id: ";
+                appIdMessage += std::to_wstring(applicationId);
+                srDLSSNRLog(desc->messageCallback, SR_MESSAGE_TYPE_INFO, appIdMessage.c_str());
+                r = g_ngx.InitExt2(
+                    applicationId, ngxAppDataPath,
+                    (VkInstance) vk.instance, (VkPhysicalDevice) vk.physicalDevice, (VkDevice) vk.device,
+                    (PFN_vkGetInstanceProcAddr) srGipaTrampoline, (PFN_vkGetDeviceProcAddr) srGdpaTrampoline,
+                    NVSDK_NGX_Version_API, nullptr);
+            }
             if (NVSDK_NGX_FAILED(r)) {
                 lock.unlock();
-                srDLSSNRLog(desc->messageCallback, SR_MESSAGE_TYPE_ERROR, L"DLSSNR NVSDK_NGX_VULKAN_Init_Ext2 failed");
+                srDLSSNRLogNgxResult(
+                    desc->messageCallback,
+                    SR_MESSAGE_TYPE_ERROR,
+                    L"DLSSNR NVSDK_NGX_VULKAN_Init_Ext2",
+                    r
+                );
                 return SR_RETURN_CODE_ERROR;
             }
             g_ngxInited = true;
@@ -276,7 +379,12 @@ extern "C" {
             &privateData->ngxHandle);
         if (NVSDK_NGX_FAILED(r) || !privateData->ngxHandle) {
             lock.unlock();
-            srDLSSNRLog(desc->messageCallback, SR_MESSAGE_TYPE_ERROR, L"DLSSNR CreateFeature1 failed");
+            srDLSSNRLogNgxResult(
+                desc->messageCallback,
+                SR_MESSAGE_TYPE_ERROR,
+                L"DLSSNR CreateFeature1",
+                r
+            );
             return SR_RETURN_CODE_ERROR;
         }
         privateData->featureCreated = true;
@@ -351,7 +459,16 @@ extern "C" {
                     disc.FeatureID = kFeatureDLSSNR;
                     disc.Identifier.IdentifierType = NVSDK_NGX_Application_Identifier_Type_Application_Id;
                     disc.Identifier.v.ApplicationId = 0;
-                    disc.ApplicationDataPath = L".";
+                    const char *appDataPath = ".";
+                    const SRContextExtraParam *appDataPathParam =
+                        srFindParam(&context->desc.extraParams, "DLSSNR_APP_DATA_PATH");
+                    if (appDataPathParam
+                        && appDataPathParam->valueType == SR_PARAM_VALUE_TYPE_STRING
+                        && appDataPathParam->value.stringValue) {
+                        appDataPath = appDataPathParam->value.stringValue;
+                    }
+                    std::wstring wideAppDataPath = srDLSSNRUtf8ToWide(appDataPath);
+                    disc.ApplicationDataPath = wideAppDataPath.empty() ? L"." : wideAppDataPath.c_str();
                     disc.FeatureInfo = nullptr;
                     NVSDK_NGX_FeatureRequirement req = {};
                     NVSDK_NGX_Result r = g_ngx.GetFeatureRequirements(
@@ -442,7 +559,12 @@ extern "C" {
             nullptr);
         if (NVSDK_NGX_FAILED(r)) {
             lock.unlock();
-            srDLSSNRLog(privateData->messageCallback, SR_MESSAGE_TYPE_ERROR, L"DLSSNR EvaluateFeature failed");
+            srDLSSNRLogNgxResult(
+                privateData->messageCallback,
+                SR_MESSAGE_TYPE_ERROR,
+                L"DLSSNR EvaluateFeature",
+                r
+            );
             return SR_RETURN_CODE_ERROR;
         }
         return SR_RETURN_CODE_OK;

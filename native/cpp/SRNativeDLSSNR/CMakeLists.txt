@@ -25,6 +25,7 @@ include_directories(
 
 aux_source_directory(${PROJECT_SOURCE_DIR}/src ALL_SRC)
 add_library(SR_DLSSNR_LIB SHARED ${ALL_SRC})
+add_library(SR_DLSSNR_NGX_PROXY SHARED ${PROJECT_SOURCE_DIR}/proxy/nvngx_proxy.cpp)
 
 target_compile_definitions(SR_DLSSNR_LIB PRIVATE
         ON_WIN64
@@ -33,8 +34,13 @@ target_compile_definitions(SR_DLSSNR_LIB PRIVATE
 )
 
 set_target_properties(SR_DLSSNR_LIB PROPERTIES OUTPUT_NAME "libSuperResolutionDLSSNR+${LIB_PLATFORM}+${SR_BUILD_TYPE}")
+set_target_properties(SR_DLSSNR_NGX_PROXY PROPERTIES OUTPUT_NAME "nvngx")
 
 target_link_libraries(SR_DLSSNR_LIB
         SR_MAIN_LIB
+        ${Vulkan_LIBRARIES}
+)
+
+target_link_libraries(SR_DLSSNR_NGX_PROXY
         ${Vulkan_LIBRARIES}
 )

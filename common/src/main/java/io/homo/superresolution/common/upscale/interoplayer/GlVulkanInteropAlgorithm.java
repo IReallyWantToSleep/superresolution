@@ -92,6 +92,10 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
         return RenderHandlerManager.getRenderHeight();
     }
 
+    protected TextureFormat getInteropColorTextureFormat() {
+        return SuperResolutionConfig.getInternalTextureFormat();
+    }
+
     protected void onInteropResourcesCreated() {
     }
 
@@ -111,7 +115,11 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
         for (int i = 0; i < (syncSerialMode ? 1 : MAX_IN_FLIGHT_FRAME); i++) {
             inFlightFrames[i] = new InFlightFrameResourcesSet();
             inFlightFrames[i].index = i;
-            inFlightFrames[i].initialize(getInputColorWidth(), getInputColorHeight());
+            inFlightFrames[i].initialize(
+                    getInputColorWidth(),
+                    getInputColorHeight(),
+                    getInteropColorTextureFormat()
+            );
         }
         builtRenderWidth = RenderHandlerManager.getRenderWidth();
         builtRenderHeight = RenderHandlerManager.getRenderHeight();
@@ -634,14 +642,14 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
             }
         }
 
-        public void initialize(int inputColorWidth, int inputColorHeight) {
+        public void initialize(int inputColorWidth, int inputColorHeight, TextureFormat colorFormat) {
             VulkanDevice vkDevice = RenderSystems.vulkan().device();
             GlDevice glDevice = RenderSystems.opengl().device();
             vkDevice.getMainQueue().waitIdle();
             this.inputColorVkTexture = vkDevice.createTextureExportable(
                     TextureDescription.create()
                             .usages(TextureUsages.create().sampler().storage().transferSource())
-                            .format(SuperResolutionConfig.getInternalTextureFormat())
+                            .format(colorFormat)
                             .type(TextureType.Texture2D)
                             .width(inputColorWidth)
                             .height(inputColorHeight)
@@ -690,7 +698,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                     TextureDescription.create()
                             .type(TextureType.Texture2D)
                             .usages(TextureUsages.create().sampler().storage().transferDestination())
-                            .format(SuperResolutionConfig.getInternalTextureFormat())
+                            .format(colorFormat)
                             .width(RenderHandlerManager.getScreenWidth())
                             .height(RenderHandlerManager.getScreenHeight())
                             .label("SRUpscaleOutputColorVkTexture-%s".formatted(index))
@@ -702,7 +710,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                     TextureDescription.create()
                             .type(TextureType.Texture2D)
                             .usages(TextureUsages.create().sampler().storage().transferDestination())
-                            .format(SuperResolutionConfig.getInternalTextureFormat())
+                            .format(colorFormat)
                             .width(RenderHandlerManager.getScreenWidth())
                             .height(RenderHandlerManager.getScreenHeight())
                             .label("SRUpscaleFlippedOutputGlTexture-%s".formatted(index))

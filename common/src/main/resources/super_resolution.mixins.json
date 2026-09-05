@@ -71,6 +71,7 @@
         "presentation.v26_1_x.VulkanPresentationMinecraftCaptureMixin",
         "presentation.v26_1_x.VulkanPresentationWindowCloseMixin",
         "presentation.v26_2.VulkanPresentationGameRendererCaptureMixin",
+        "presentation.v26_2.VulkanPresentationGameRendererDLSSNRMixin",
         "presentation.v26_2.VulkanPresentationGlDeviceMixin",
         "presentation.v26_2.VulkanPresentationMinecraftBackendMixin",
         "presentation.v26_2.VulkanPresentationMinecraftCaptureMixin",
