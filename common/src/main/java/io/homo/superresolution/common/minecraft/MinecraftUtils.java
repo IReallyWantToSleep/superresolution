@@ -95,6 +95,10 @@ public class MinecraftUtils {
         return 0.05F;
     }
 
+    public static boolean isInWorld() {
+        return Minecraft.getInstance().level != null;
+    }
+
     private static int _getFramerateLimit() {
         #if MC_VER >= MC_1_21_11
         return Minecraft.getInstance().getFramerateLimitTracker().getFramerateLimit();

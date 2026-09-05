@@ -27,6 +27,8 @@ import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.utils.Color;
 
+import java.util.function.BooleanSupplier;
+
 public class ScrollableFrameWithScrollBar extends ScrollableFrame {
     private static final float SCROLLBAR_WIDTH = 8f;
     private static final float THUMB_WIDTH = 6f;
@@ -53,6 +55,10 @@ public class ScrollableFrameWithScrollBar extends ScrollableFrame {
     private boolean scrollbarDragging;
     private int pressedArrow;
     private float thumbGrabOffsetY;
+
+    protected boolean shouldRenderTrackBackground() {
+        return false;
+    }
 
     @Override
     public void setVerticalScrollEnabled(boolean enabled) {
@@ -83,9 +89,31 @@ public class ScrollableFrameWithScrollBar extends ScrollableFrame {
         );
 
         Color primary = MaterialUI.Scheme.primary();
-        Color thumbColor = primary.copy().alpha((int) (primary.alpha() * thumbAlphaAnimator.get()));
+        Color thumbColor = Color.rgb(
+                primary.red() / 255f * thumbAlphaAnimator.get(),
+                primary.green() / 255f * thumbAlphaAnimator.get(),
+                primary.blue() / 255f * thumbAlphaAnimator.get()
+        );
+
+        float contentViewportHeight = Math.max(
+                0f,
+                ctx.viewportHeight() - getContentPaddingTop() - getContentPaddingBottom()
+        );
 
         ctx.save();
+
+        if (shouldRenderTrackBackground()){
+            ctx.roundedRect(
+                    geometry.upArrow.x,
+                    geometry.upArrow.y,
+                    geometry.track.width,
+                    contentViewportHeight,
+                    geometry.thumb.width / 2f,
+                    MaterialUI.Scheme.surfaceVariant(),
+                    true
+            );
+        }
+
         ctx.roundedRect(
                 geometry.thumb.x,
                 geometry.thumb.y,

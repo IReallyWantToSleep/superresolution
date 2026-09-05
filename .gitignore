@@ -150,6 +150,6 @@ __pycache__
 .gradle*
 /AGENTS.md.bak
 /.codemoss/
-/agents.md
+/AGENTS.md
 /docs/agents
 /.workdir

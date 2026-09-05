@@ -562,7 +562,12 @@ public class ConfigPageContext {
 
 
     public ScrollableFrame createStandardScrollableFrame() {
-        ScrollableFrame frame = new ScrollableFrameWithScrollBar();
+        ScrollableFrame frame = new ScrollableFrameWithScrollBar(){
+            @Override
+            public boolean shouldRenderTrackBackground(){
+                return MinecraftUtils.isInWorld();
+            }
+        };
         frame.setContentPadding(20, 0, 20, 0);
         frame.setVerticalScrollEnabled(true);
         frame.setHorizontalScrollEnabled(false);
