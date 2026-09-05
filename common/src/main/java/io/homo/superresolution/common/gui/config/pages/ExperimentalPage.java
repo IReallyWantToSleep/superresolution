@@ -118,11 +118,20 @@ public final class ExperimentalPage implements ConfigPage {
         OptionBuilder builder = context.createOptionBuilder(Text.translatable("superresolution.screen.config.category.experimental"));
 
         builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.enable_experimental_features"),
-                        SuperResolutionConfig.isEnableExperimentalFeatures())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_experimental_features"))
+                        Text.translatable("superresolution.screen.config.options.label.enable_experimental_algorithms"),
+                        SuperResolutionConfig.isEnableExperimentalAlgorithms())
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_experimental_algorithms"))
                 .setDefaultValue(() -> false)
-                .setSaveConsumer(SuperResolutionConfig::setEnableExperimentalFeatures)
+                .setSaveConsumer(SuperResolutionConfig::setEnableExperimentalAlgorithms)
+                .build();
+
+        builder.booleanOption(
+                        Text.translatable("superresolution.screen.config.options.label.enable_dlss_ray_reconstruction"),
+                        SuperResolutionConfig.isEnableDlssRayReconstruction())
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_dlss_ray_reconstruction"))
+                .setDefaultValue(() -> false)
+                .setSaveConsumer(SuperResolutionConfig::setEnableDlssRayReconstruction)
+                .setRequireRestartGame(true)
                 .build();
 
         context.addOptionGroupToContainer(container, builder);

@@ -180,6 +180,13 @@ public final class GeneralPage implements ConfigPage {
                             Text.translatable("superresolution.screen.config.options.label.algo_type"),
                             SuperResolutionConfig.getUpscaleAlgorithm(),
                             AlgorithmRegistry.getAlgorithmMap().values().toArray())
+                    .setValuesSupplier(() -> AlgorithmRegistry.getAlgorithmMap().values().stream()
+                            .filter(algorithmDescription -> AlgorithmDescriptions.NONE.equals(algorithmDescription)
+                                    || !SuperResolutionConfig.isAutoHideShaderpackDisabledAlgorithms()
+                                    || !SRWorkModeManager.getCurrentState().disabledAlgorithms()
+                                    .contains(algorithmDescription.getCodeName()))
+                            .map(algorithmDescription -> (Object) algorithmDescription)
+                            .toList())
                     .setNameProvider(algo -> ((AlgorithmDescription<?>) algo).getBriefName())
                     .setDefaultValue(SuperResolutionConfig::getDefaultAlgorithm)
                     .setSaveConsumer((obj) -> {
@@ -225,7 +232,7 @@ public final class GeneralPage implements ConfigPage {
                         return OptionRequirement.all(
                                 () -> AlgorithmRegistry.isAlgorithmSupported(algorithmDescription),
                                 () -> {
-                                    if (context.isExperimentalAlgorithm(algorithmDescription)) return SuperResolutionConfig.isEnableExperimentalFeatures();
+                                    if (context.isExperimentalAlgorithm(algorithmDescription)) return SuperResolutionConfig.isEnableExperimentalAlgorithms();
                                     return true;
 
                                 },
@@ -248,11 +255,11 @@ public final class GeneralPage implements ConfigPage {
                             sb.append("\n");
                             sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.none_requires_frame_generation_only").getString());
                         }
-                        if (context.isExperimentalAlgorithm(algorithmDescription) && SuperResolutionConfig.isEnableExperimentalFeatures()){
+                        if (context.isExperimentalAlgorithm(algorithmDescription) && SuperResolutionConfig.isEnableExperimentalAlgorithms()){
                             sb.append("\n");
                             sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.experimental_warning").getString());
                             if (!result.support()) sb.append("\n");
-                        } else if(context.isExperimentalAlgorithm(algorithmDescription) && !SuperResolutionConfig.isEnableExperimentalFeatures()){
+                        } else if(context.isExperimentalAlgorithm(algorithmDescription) && !SuperResolutionConfig.isEnableExperimentalAlgorithms()){
                             sb.append("\n");
                             sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.experimental_disabled_hint").getString());
                             if (!result.support()) sb.append("\n");
@@ -545,6 +552,12 @@ public final class GeneralPage implements ConfigPage {
                                     SuperResolutionConfig.isPauseGameOnGui())
                             .setDefaultValue(() -> false)
                             .setSaveConsumer(SuperResolutionConfig::setPauseGameOnGui)
+                            .build();
+                    builder.booleanOption(
+                                    Text.translatable("superresolution.screen.config.options.label.auto_hide_shaderpack_disabled_algorithms"),
+                                    SuperResolutionConfig.isAutoHideShaderpackDisabledAlgorithms())
+                            .setDefaultValue(() -> false)
+                            .setSaveConsumer(SuperResolutionConfig::setAutoHideShaderpackDisabledAlgorithms)
                             .build();
                 }
         );

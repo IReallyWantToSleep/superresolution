@@ -30,6 +30,7 @@ import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.api.registry.ExtraResource;
 import io.homo.superresolution.api.registry.ExtraResources;
 import io.homo.superresolution.api.utils.Requirement;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.upscale.algo.dlss.DLSS;
 import io.homo.superresolution.common.upscale.algo.dlss.NgxDlssLatestProvider;
 import io.homo.superresolution.common.upscale.algo.dlssrr.DLSSRR;
@@ -396,7 +397,9 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(FSR4_D3D12);
         AlgorithmRegistry.registry(XESS);
         AlgorithmRegistry.registry(DLSS);
-        AlgorithmRegistry.registry(DLSSRR);
+        if (SuperResolutionConfig.isEnableDlssRayReconstruction()) {
+            AlgorithmRegistry.registry(DLSSRR);
+        }
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
         if (Platform.currentPlatform.isDevelopmentEnvironment()) {

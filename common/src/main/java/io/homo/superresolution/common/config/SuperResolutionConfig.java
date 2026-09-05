@@ -80,6 +80,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue ENABLE_PRESENT_INDICATOR;
     public static final BooleanValue GENERATE_MOTION_VECTORS;
     public static final BooleanValue PAUSE_GAME_ON_GUI;
+    public static final BooleanValue AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS;
     public static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
     public static final BooleanValue ENABLE_COMPAT_SHADER_COMPILER;
     public static final BooleanValue ENABLE_DETAILED_PROFILING;
@@ -96,7 +97,8 @@ public class SuperResolutionConfig {
     public static final StringValue FRAME_GENERATION_PROVIDER;
     public static final StringValue FRAME_GENERATION_BACKEND;
     public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
-    public static final BooleanValue ENABLE_EXPERIMENTAL_FEATURES;
+    public static final BooleanValue ENABLE_EXPERIMENTAL_ALGORITHMS;
+    public static final BooleanValue ENABLE_DLSS_RAY_RECONSTRUCTION;
     public static final BooleanValue ENABLE_OPTISCALER;
     public static final StringValue OPTISCALER_DLL_PATH;
 
@@ -160,6 +162,12 @@ public class SuperResolutionConfig {
                 "pause_game_on_gui",
                 () -> false,
                 "Pause game when GUI is open"
+        );
+
+        AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS = builder.defineBoolean(
+                "auto_hide_shaderpack_disabled_algorithms",
+                () -> false,
+                "Hide algorithms explicitly disabled by the active V3 shader pack from the algorithm selector"
         );
 
         INJECT_POST_CHAIN_BLACKLIST = builder.defineStringList(
@@ -238,10 +246,15 @@ public class SuperResolutionConfig {
                 () -> false,
                 "Stamp a small square onto every presented frame (white = rendered, cyan = generated) to visualize frame generation cadence"
         );
-        ENABLE_EXPERIMENTAL_FEATURES = builder.defineBoolean(
-                "experiment/enable_experimental_features",
+        ENABLE_EXPERIMENTAL_ALGORITHMS = builder.defineBoolean(
+                "experiment/enable_experimental_algorithms",
                 () -> false,
-                "Enable experimental features"
+                "Enable experimental algorithms"
+        );
+        ENABLE_DLSS_RAY_RECONSTRUCTION = builder.defineBoolean(
+                "experiment/enable_dlss_ray_reconstruction",
+                () -> false,
+                "Register NVIDIA DLSS Ray Reconstruction during startup"
         );
 
         ENABLE_OPTISCALER = builder.defineBoolean(
@@ -650,6 +663,14 @@ public class SuperResolutionConfig {
         PAUSE_GAME_ON_GUI.set(value);
     }
 
+    public static boolean isAutoHideShaderpackDisabledAlgorithms() {
+        return AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS.get();
+    }
+
+    public static void setAutoHideShaderpackDisabledAlgorithms(boolean value) {
+        AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS.set(value);
+    }
+
     public static List<String> getInjectPostChainBlackList() {
         return INJECT_POST_CHAIN_BLACKLIST.get();
     }
@@ -684,12 +705,20 @@ public class SuperResolutionConfig {
         VulkanDebug.setEnabled(value);
     }
 
-    public static boolean isEnableExperimentalFeatures() {
-        return ENABLE_EXPERIMENTAL_FEATURES.get();
+    public static boolean isEnableExperimentalAlgorithms() {
+        return ENABLE_EXPERIMENTAL_ALGORITHMS.get();
     }
 
-    public static void setEnableExperimentalFeatures(boolean value) {
-        ENABLE_EXPERIMENTAL_FEATURES.set(value);
+    public static void setEnableExperimentalAlgorithms(boolean value) {
+        ENABLE_EXPERIMENTAL_ALGORITHMS.set(value);
+    }
+
+    public static boolean isEnableDlssRayReconstruction() {
+        return ENABLE_DLSS_RAY_RECONSTRUCTION.get();
+    }
+
+    public static void setEnableDlssRayReconstruction(boolean value) {
+        ENABLE_DLSS_RAY_RECONSTRUCTION.set(value);
     }
 
     public static boolean isEnableOptiScaler() {
