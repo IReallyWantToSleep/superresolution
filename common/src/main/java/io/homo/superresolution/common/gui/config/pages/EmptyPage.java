@@ -21,6 +21,7 @@ package io.homo.superresolution.common.gui.config.pages;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
+import io.homo.superresolution.core.gui.core.frame.ScrollableFrameWithScrollBar;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 
 public final class EmptyPage implements ConfigPage {
@@ -31,7 +32,7 @@ public final class EmptyPage implements ConfigPage {
 
     @Override
     public Frame create(ConfigPageContext context) {
-        ScrollableFrame frame = new ScrollableFrame();
+        ScrollableFrame frame = new ScrollableFrameWithScrollBar();
         ContainerWidget container = new ContainerWidget();
         container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
         container.layout().setWidthPercent(100);

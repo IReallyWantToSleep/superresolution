@@ -71,6 +71,7 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
+import io.homo.superresolution.core.gui.core.frame.ScrollableFrameWithScrollBar;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import io.homo.superresolution.core.gui.widgets.MaterialContainerWidget;
@@ -561,7 +562,7 @@ public class ConfigPageContext {
 
 
     public ScrollableFrame createStandardScrollableFrame() {
-        ScrollableFrame frame = new ScrollableFrame();
+        ScrollableFrame frame = new ScrollableFrameWithScrollBar();
         frame.setContentPadding(20, 0, 20, 0);
         frame.setVerticalScrollEnabled(true);
         frame.setHorizontalScrollEnabled(false);
