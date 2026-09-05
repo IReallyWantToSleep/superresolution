@@ -8,6 +8,8 @@ layout(binding = 0) uniform sampler2D sourceColor;
 #if defined(FINISH_HDR) || defined(FINISH_SDR)
 layout(binding = 1) uniform sampler2D originalColor;
 layout(location = 0) uniform float colorStrength;
+layout(location = 1) uniform float highlightProtection;
+layout(location = 2) uniform float highlightProtectionThreshold;
 #endif
 layout(binding = 0, OUTPUT_FORMAT) uniform writeonly image2D destinationColor;
 
@@ -62,6 +64,8 @@ void main() {
     color.rgb = max(agxInset * max(color.rgb, vec3(0.0)), vec3(1e-6));
     color.rgb = clamp(log2(color.rgb), vec3(-12.47393), vec3(4.026069));
     color.rgb = (color.rgb + 12.47393) / (4.026069 + 12.47393);
+#elif defined(PREPARE_LINEAR)
+    color = vec4(max(color.rgb, vec3(0.0)), 1.0);
 #elif defined(FINISH_HDR)
     const mat3 agxOutset = mat3(
         1.19687900512017, -0.0528968517574562, -0.0529716355144438,
@@ -75,6 +79,14 @@ void main() {
 #if defined(FINISH_HDR) || defined(FINISH_SDR)
     vec4 original = texelFetch(originalColor, pixel, 0);
     color.rgb = applyColorTransfer(original.rgb, color.rgb, colorStrength);
+    const vec3 luminanceWeights = vec3(0.2126, 0.7152, 0.0722);
+    float originalLuminance = dot(max(original.rgb, vec3(0.0)), luminanceWeights);
+    float highlightMask = smoothstep(
+        highlightProtectionThreshold,
+        highlightProtectionThreshold + 0.35,
+        originalLuminance
+    ) * highlightProtection;
+    color.rgb = mix(color.rgb, original.rgb, highlightMask);
     color.a = original.a;
 #endif
     imageStore(destinationColor, pixel, color);

@@ -122,11 +122,7 @@ public final class DLSSNRPostProcessor {
         if (hdrInput) {
             DLSSNRHdrColorTransform.compress(color, colorTexture);
         } else {
-            GlTextureCopier.copy(CopyOperation.create()
-                    .src(color).dst(colorTexture)
-                    .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
-                    .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
-                    .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B));
+            DLSSNRHdrColorTransform.prepareLinear(color, colorTexture);
         }
         ITexture passInput = colorTexture;
         IFrameBuffer outFbo = null;
@@ -159,7 +155,9 @@ public final class DLSSNRPostProcessor {
                 output,
                 hdrOutputTexture,
                 hdrInput,
-                SuperResolutionConfig.SPECIAL.DLSSNR.COLOR_STRENGTH.get()
+                SuperResolutionConfig.SPECIAL.DLSSNR.COLOR_STRENGTH.get(),
+                SuperResolutionConfig.SPECIAL.DLSSNR.HIGHLIGHT_PROTECTION.get(),
+                SuperResolutionConfig.SPECIAL.DLSSNR.HIGHLIGHT_PROTECTION_THRESHOLD.get()
         );
         Gl.DSA.blitFramebuffer(
                 (int) hdrOutputFrameBuffer.handle(),

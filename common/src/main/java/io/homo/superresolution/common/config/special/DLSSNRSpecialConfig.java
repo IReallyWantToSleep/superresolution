@@ -57,6 +57,16 @@ public class DLSSNRSpecialConfig extends SpecialConfig {
             () -> 1.0f,
             v -> v >= 0.0f && v <= 2.0f
     );
+    public FloatValue HIGHLIGHT_PROTECTION = specBuilder.defineFloat(
+            "special/dlssnr/highlight_protection",
+            () -> 1.0f,
+            v -> v >= 0.0f && v <= 1.0f
+    );
+    public FloatValue HIGHLIGHT_PROTECTION_THRESHOLD = specBuilder.defineFloat(
+            "special/dlssnr/highlight_protection_threshold",
+            () -> 0.65f,
+            v -> v >= 0.0f && v <= 1.0f
+    );
     public FloatValue SKIN_STRUCTURE_STRENGTH = specBuilder.defineFloat(
             "special/dlssnr/skin_structure_strength",
             () -> 0.5f
@@ -114,6 +124,14 @@ public class DLSSNRSpecialConfig extends SpecialConfig {
         map.put(
                 "color_strength",
                 floatSlider("color_strength", COLOR_STRENGTH, Pair.of(0.0f, 2.0f), 1.0f, null)
+        );
+        map.put(
+                "highlight_protection",
+                floatSlider("highlight_protection", HIGHLIGHT_PROTECTION, Pair.of(0.0f, 1.0f), 1.0f, null)
+        );
+        map.put(
+                "highlight_protection_threshold",
+                floatSlider("highlight_protection_threshold", HIGHLIGHT_PROTECTION_THRESHOLD, Pair.of(0.0f, 1.0f), 0.65f, null)
         );
         map.put(
                 "skin_structure_strength",

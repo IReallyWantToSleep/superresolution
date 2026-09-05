@@ -33,7 +33,11 @@ final class DLSSNRHdrColorTransform {
     }
 
     static void compress(ITexture source, ITexture destination) {
-        dispatch(source, null, destination, "COMPRESS_HDR", 1.0f);
+        dispatch(source, null, destination, "COMPRESS_HDR", 1.0f, 0.0f, 0.65f);
+    }
+
+    static void prepareLinear(ITexture source, ITexture destination) {
+        dispatch(source, null, destination, "PREPARE_LINEAR", 1.0f, 0.0f, 0.65f);
     }
 
     static void finish(
@@ -41,9 +45,19 @@ final class DLSSNRHdrColorTransform {
             ITexture neural,
             ITexture destination,
             boolean hdr,
-            float colorStrength
+            float colorStrength,
+            float highlightProtection,
+            float highlightProtectionThreshold
     ) {
-        dispatch(neural, original, destination, hdr ? "FINISH_HDR" : "FINISH_SDR", colorStrength);
+        dispatch(
+                neural,
+                original,
+                destination,
+                hdr ? "FINISH_HDR" : "FINISH_SDR",
+                colorStrength,
+                highlightProtection,
+                highlightProtectionThreshold
+        );
     }
 
     private static void dispatch(
@@ -51,7 +65,9 @@ final class DLSSNRHdrColorTransform {
             ITexture original,
             ITexture destination,
             String operation,
-            float colorStrength
+            float colorStrength,
+            float highlightProtection,
+            float highlightProtectionThreshold
     ) {
         if (source.getWidth() != destination.getWidth() || source.getHeight() != destination.getHeight()
                 || (original != null && (original.getWidth() != destination.getWidth()
@@ -76,6 +92,28 @@ final class DLSSNRHdrColorTransform {
                         (int) pipeline.shader().handle(),
                         location,
                         Math.max(0.0f, Math.min(2.0f, colorStrength))
+                );
+            }
+            int highlightProtectionLocation = GL43.glGetUniformLocation(
+                    (int) pipeline.shader().handle(),
+                    "highlightProtection"
+            );
+            if (highlightProtectionLocation >= 0) {
+                GL43.glProgramUniform1f(
+                        (int) pipeline.shader().handle(),
+                        highlightProtectionLocation,
+                        Math.max(0.0f, Math.min(1.0f, highlightProtection))
+                );
+            }
+            int highlightProtectionThresholdLocation = GL43.glGetUniformLocation(
+                    (int) pipeline.shader().handle(),
+                    "highlightProtectionThreshold"
+            );
+            if (highlightProtectionThresholdLocation >= 0) {
+                GL43.glProgramUniform1f(
+                        (int) pipeline.shader().handle(),
+                        highlightProtectionThresholdLocation,
+                        Math.max(0.0f, Math.min(1.0f, highlightProtectionThreshold))
                 );
             }
         }
