@@ -26,7 +26,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 import io.homo.superresolution.core.streamline.Streamline;
 import net.minecraft.client.Minecraft;
@@ -171,8 +171,7 @@ public final class LowLatency {
     }
 
     public static boolean isAvailable() {
-        return SuperResolutionConfig.isEnableVulkanPresentation()
-                && VulkanPresentationFeature.isAvailable();
+        return PresentationBackendManager.isVulkanPresentationAvailable();
     }
 
     public static boolean isPclAvailable() {

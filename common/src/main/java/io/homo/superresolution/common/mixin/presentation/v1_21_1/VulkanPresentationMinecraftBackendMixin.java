@@ -20,7 +20,7 @@ package io.homo.superresolution.common.mixin.presentation.v1_21_1;
 
 #if MC_VER >= MC_1_21 && MC_VER < MC_1_21_2
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -30,7 +30,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class VulkanPresentationMinecraftBackendMixin {
     @Inject(method = "flipFrame", at = @At("HEAD"), cancellable = true,remap = false)
     private static void super_resolution$skipOpenGlPresentation(CallbackInfo ci) {
-        if (VulkanPresentationFeature.isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             RenderSystem.replayQueue();
             ci.cancel();
         }

@@ -33,7 +33,7 @@ import io.homo.superresolution.common.framegeneration.constants.FGConstants;
 import io.homo.superresolution.common.framegeneration.constants.FGConstantsFeature;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
 import io.homo.superresolution.core.RenderSystems;
@@ -58,7 +58,7 @@ import java.util.Objects;
  * <p>
  * The FG group and concrete backend preference are latched at startup — together with the
  * LL group configuration they decide whether Streamline is initialized (see
- * {@code VulkanPresentationFeature.shouldInitializeStreamline}) — so changing either takes
+ * {@code PresentationBackendManager.shouldInitializeStreamline}) — so changing either takes
  * effect after a restart. Runtime availability and low-latency bindings are still
  * re-negotiated as needed.
  */
@@ -79,12 +79,12 @@ public final class FrameGeneration {
     }
 
     public static synchronized void initialize() {
-        if (initialized || !VulkanPresentationFeature.isRequested()) {
+        if (initialized || !PresentationBackendManager.isVulkanPresentationRequested()) {
             return;
         }
         FGConstantsFeature.initialize();
         FGConstantsFeature.register();
-        startupStreamlineRequested = VulkanPresentationFeature.shouldInitializeStreamline();
+        startupStreamlineRequested = PresentationBackendManager.shouldInitializeStreamline();
         startupPreferredFgBackendId = SuperResolutionConfig.getFrameGenerationBackend();
         for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
             if (description.isAutomatic() || !FrameGenerationRegistry.isSupported(description)) {
@@ -128,7 +128,7 @@ public final class FrameGeneration {
         }
 
         for (ApplicationManagedShutdown shutdown : applicationManagedShutdowns) {
-            VulkanPresentationFeature.shutdownApplicationManagedProvider(
+            PresentationBackendManager.shutdownApplicationManagedProvider(
                     shutdown.providerId(),
                     shutdown.provider()::shutdownOnFrameGenerationThread
             );
@@ -500,7 +500,7 @@ public final class FrameGeneration {
         if (startupStreamlineRequested == null) {
             return;
         }
-        boolean streamlineRequested = VulkanPresentationFeature.shouldInitializeStreamline();
+        boolean streamlineRequested = PresentationBackendManager.shouldInitializeStreamline();
         if (streamlineRequested == startupStreamlineRequested
                 || Boolean.valueOf(streamlineRequested).equals(loggedRestartStreamlineRequest)
                 || (!streamlineRequested && !Streamline.isInterposerLoaded())) {
@@ -631,7 +631,7 @@ public final class FrameGeneration {
     }
 
     private static boolean presentationDependenciesSatisfied() {
-        return SuperResolutionConfig.isEnableVulkanPresentation()
+        return PresentationBackendManager.isVulkanPresentationRequested()
                 && SuperResolutionConfig.getInteropSyncMode() == InteropSyncMode.LowLatency;
     }
 

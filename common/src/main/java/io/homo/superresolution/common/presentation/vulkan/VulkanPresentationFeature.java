@@ -18,18 +18,16 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
-import io.homo.superresolution.api.platform.OperatingSystemType;
-import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.core.graphics.GraphicsDevice;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanQueueUtils;
-import net.minecraft.client.Minecraft;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
@@ -52,8 +50,7 @@ import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceQueueFamilyProperties;
 public final class VulkanPresentationFeature {
     private static final VulkanSurface SURFACE = new VulkanSurface();
     private static VkRenderSystem renderSystem;
-    private static boolean configLoaded;
-    private static Boolean startupRequested;
+
 
     public static boolean isAvailable() {
         return isAvailable;
@@ -84,39 +81,12 @@ public final class VulkanPresentationFeature {
     private VulkanPresentationFeature() {
     }
 
-    public static boolean isRequested() {
-        #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1 || MC_VER == MC_26_2
-        ensureConfigLoaded();
-        if (startupRequested == null) {
-            startupRequested = SuperResolutionConfig.isEnableVulkanPresentation()
-                    && !SuperResolutionConfig.isSkipInitVulkan();
-        }
-        return startupRequested;
-        #else
-        return false;
-        #endif
-    }
-
-    private static synchronized void ensureConfigLoaded() {
-        if (!configLoaded) {
-            SuperResolutionConfig.SPEC.load();
-            configLoaded = true;
-        }
-    }
-
     public static boolean shouldInitializeStreamline() {
-        // Streamline is Windows-only, and it must not be initialized when a backend that
-        // does not use it is selected (those drive Reflex through Vulkan instead). This
-        // is read once at startup, so switching the provider needs a restart. The
-        // automatic entry keeps Streamline on Windows.
-        return isRequested()
-                && SuperResolutionConfig.CURRENT_OS_TYPE == OperatingSystemType.WINDOWS
-                && FrameGenerationDescriptions.mayUseStreamline(
-                        SuperResolutionConfig.getFrameGenerationProvider());
+        return PresentationBackendManager.shouldInitializeStreamline();
     }
 
     public static synchronized void prepare(VkRenderSystem target) {
-        if (!isRequested() || renderSystem != null) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested() || renderSystem != null) {
             return;
         }
         isAvailable = true;
@@ -138,7 +108,7 @@ public final class VulkanPresentationFeature {
     }
 
     public static void createSurface(VkRenderSystem target) {
-        if (isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             SURFACE.createSurface(target.getVulkanInstance());
         }
     }
@@ -148,7 +118,7 @@ public final class VulkanPresentationFeature {
             int queueType,
             VkPhysicalDevice physicalDevice
     ) {
-        if (!isRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
             return VulkanQueueUtils.findQueueFamilyIndex(stack, queueType, physicalDevice);
         }
         IntBuffer count = stack.ints(0);
@@ -175,7 +145,7 @@ public final class VulkanPresentationFeature {
     }
 
     public static void validateDevice(VkRenderSystem target, VkPhysicalDevice physicalDevice) {
-        if (!isRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
             return;
         }
         if (!target.getCapabilities().getDeviceExtensions().contains(VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
@@ -210,7 +180,7 @@ public final class VulkanPresentationFeature {
     }
 
     public static synchronized void completeInitialization(VkRenderSystem target) {
-        if (!isRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
             return;
         }
         if (target.device() == null || target.getVulkanInstance() == null || SURFACE.surface() == 0L) {
@@ -219,28 +189,13 @@ public final class VulkanPresentationFeature {
         VulkanPresentationWindow.initialize(VulkanPresentationContext.initialize(SURFACE), SURFACE);
     }
 
-    public static boolean shutdownApplicationManagedProvider(
-            String providerId,
-            Runnable teardown
-    ) {
-        return VulkanPresentationWindow.shutdownApplicationManagedProvider(providerId, teardown);
-    }
-
     public static synchronized void shutdown() {
         VulkanPresentationWindow.shutdown();
         if (renderSystem != null && SURFACE.surface() != 0L && renderSystem.getVulkanInstance() != null) {
             SURFACE.destroySurface(renderSystem.getVulkanInstance());
         }
         renderSystem = null;
+        isAvailable = false;
     }
 
-    public static synchronized void disableAfterFailure(Throwable failure) {
-        SuperResolution.LOGGER.error("Vulkan presentation initialization failed; disabling it for the next launch", failure);
-        try {
-            SuperResolutionConfig.setEnableVulkanPresentation(false);
-            SuperResolutionConfig.SPEC.save();
-        } catch (Throwable saveFailure) {
-            failure.addSuppressed(saveFailure);
-        }
-    }
 }

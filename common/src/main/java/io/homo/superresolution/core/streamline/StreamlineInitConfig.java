@@ -23,6 +23,8 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
+
 public final class StreamlineInitConfig {
     public final boolean showConsole;
     public final int logLevel;
@@ -58,7 +60,7 @@ public final class StreamlineInitConfig {
         Builder builder = builder()
                 .pluginPath(pluginPath)
                 .logPath(logPath);
-        if (io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature.shouldInitializeStreamline()) {
+        if (PresentationBackendManager.shouldInitializeStreamline()) {
             builder.features(StreamlineFeature.DLSS_G, StreamlineFeature.PCL, StreamlineFeature.REFLEX);
         } else {
             builder.features(StreamlineFeature.PCL, StreamlineFeature.REFLEX);

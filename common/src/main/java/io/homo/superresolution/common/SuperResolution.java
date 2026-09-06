@@ -36,8 +36,7 @@ import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.optiscaler.OptiScalerLoader;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
@@ -157,7 +156,7 @@ public final class SuperResolution implements Destroyable {
         }
 
         OptiScalerLoader.loadConfiguredDll();
-        if (VulkanPresentationFeature.shouldInitializeStreamline() && !Streamline.prepareEarly()) {
+        if (PresentationBackendManager.shouldInitializeStreamline() && !Streamline.prepareEarly()) {
             LOGGER.warn("Streamline is unavailable; falling back to non-Streamline backends.");
         }
     }
@@ -486,7 +485,7 @@ public final class SuperResolution implements Destroyable {
             reserveAlgorithmOwnerCapacity();
 
             if (currentAlgorithm != null) {
-                VulkanPresentationWindow.flushCapturedFrame();
+                PresentationBackendManager.flushCapturedFrame();
                 FrameGeneration.invalidateHistory();
                 AbstractAlgorithm previous = currentAlgorithm;
                 try {
@@ -696,7 +695,7 @@ public final class SuperResolution implements Destroyable {
         if (currentAlgorithm == null || !SuperResolutionConfig.isEnableUpscaleOriginal()) {
             return;
         }
-        VulkanPresentationWindow.flushCapturedFrame();
+        PresentationBackendManager.flushCapturedFrame();
         SuperResolutionAPI.EVENT_BUS.post(
                 new AlgorithmResizeEvent(
                         currentAlgorithm,
@@ -720,7 +719,7 @@ public final class SuperResolution implements Destroyable {
         isRenderingInitialized = false;
         graphicsBackendDestroyed = false;
         FrameGeneration.shutdown();
-        VulkanPresentationFeature.shutdown();
+        PresentationBackendManager.shutdown();
         LowLatency.shutdown();
         if (currentAlgorithm != null) {
             currentAlgorithm.destroy();
@@ -744,7 +743,7 @@ public final class SuperResolution implements Destroyable {
         // GL resource cleanup) still has a current GL context. Destroying them here left
         // that rendering without a context and aborted the JVM on exit. Without the
         // interop presentation there is no shared context to protect, so tear down now.
-        if (!VulkanPresentationFeature.isRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
             destroyGraphicsBackend();
         }
     }

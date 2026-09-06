@@ -20,7 +20,7 @@ package io.homo.superresolution.common.mixin.presentation.v1_20_1;
 
 #if MC_VER == MC_1_20_1
 import com.mojang.blaze3d.platform.Window;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import org.lwjgl.glfw.GLFW;
@@ -53,7 +53,7 @@ public abstract class VulkanPresentationWindowMixin {
 
     @Inject(method = "close", at = @At("TAIL"))
     private void super_resolution$clearPresentationHandle(CallbackInfo ci) {
-        if (VulkanPresentationFeature.isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             PresentationWindowState.clearPresentationAfterWindowClose();
         }
     }
@@ -66,7 +66,7 @@ public abstract class VulkanPresentationWindowMixin {
             )
     )
     private int super_resolution$redirectWindow(int constant) {
-        if (VulkanPresentationFeature.isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             GLFW.glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             GLFW.glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         }
@@ -81,7 +81,7 @@ public abstract class VulkanPresentationWindowMixin {
             )
     )
     private long super_resolution$createRenderContext(long window) {
-        if (!VulkanPresentationFeature.isRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
             GLFW.glfwMakeContextCurrent(window);
             return window;
         }
@@ -109,7 +109,7 @@ public abstract class VulkanPresentationWindowMixin {
                 GLFW.glfwDestroyWindow(openglWindow);
             }
             PresentationWindowState.resetAfterStartupFailure();
-            VulkanPresentationFeature.disableAfterFailure(throwable);
+            PresentationBackendManager.disableAfterFailure(throwable);
             if (throwable instanceof RuntimeException runtimeException) {
                 throw runtimeException;
             }

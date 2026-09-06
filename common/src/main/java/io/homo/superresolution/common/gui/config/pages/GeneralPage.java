@@ -51,6 +51,8 @@ import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
+import io.homo.superresolution.common.presentation.api.PresentationBackendType;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
@@ -429,28 +431,47 @@ public final class GeneralPage implements ConfigPage {
         );
 
         if (CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION) {
+            PresentationBackendType configuredPresentationBackend = SuperResolutionConfig.getPresentationBackend();
+            PresentationBackendType displayedPresentationBackend =
+                    configuredPresentationBackend == PresentationBackendType.VULKAN
+                            ? PresentationBackendType.VULKAN
+                            : PresentationBackendType.OPENGL;
             context.addLabeledOptionGroup(
                 container,
                 Text.translatable("superresolution.screen.config.category.presentation"),
-                builder -> builder.booleanOption(
-                                Text.translatable("superresolution.screen.config.options.label.enable_vulkan_presentation"),
-                                SuperResolutionConfig.isEnableVulkanPresentation())
-                        .setDefaultValue(() -> false)
+                builder -> builder.selectorOption(
+                                Text.translatable("superresolution.screen.config.options.label.presentation_backend"),
+                                displayedPresentationBackend,
+                                new PresentationBackendType[]{
+                                        PresentationBackendType.OPENGL,
+                                        PresentationBackendType.VULKAN
+                                })
+                        .setNameProvider(backend -> Text.translatable(
+                                "superresolution.enum.presentationbackendtype." + backend.name().toLowerCase(Locale.ROOT)
+                        ).getString())
+                        .setDefaultValue(() -> PresentationBackendType.OPENGL)
                         .setRequireRestartGame(true)
                         .setDescription(Text.translatable(
-                                "superresolution.screen.config.options.tooltip.enable_vulkan_presentation"
+                                "superresolution.screen.config.options.tooltip.presentation_backend"
                         ))
-                        .setEnableRequirement(OptionRequirement.all(
-                                () -> !SuperResolutionConfig.isSkipInitVulkan()
-                        ))
+                        .setItemEnableRequirement(backend -> backend == PresentationBackendType.OPENGL
+                                ? () -> true
+                                : OptionRequirement.isFalse(SuperResolutionConfig::isSkipInitVulkan))
+                        .setMenuItemTooltipSupplier(backend -> backend == PresentationBackendType.VULKAN
+                                && SuperResolutionConfig.isSkipInitVulkan()
+                                ? Optional.of(Tooltip.withContext(Text.translatable(
+                                        "superresolution.screen.config.options.tooltip.presentation_backend.vulkan_unavailable"
+                                ).getString()))
+                                : Optional.empty())
                         .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
                                 Text.translatable(
-                                        SuperResolutionConfig.isSkipInitVulkan()
-                                                ? "superresolution.screen.config.options.tooltip.enable_vulkan_presentation.vulkan_disabled"
-                                                : "superresolution.screen.config.options.tooltip.enable_vulkan_presentation"
+                                        value == PresentationBackendType.VULKAN
+                                                && SuperResolutionConfig.isSkipInitVulkan()
+                                                ? "superresolution.screen.config.options.tooltip.presentation_backend.vulkan_unavailable"
+                                                : "superresolution.screen.config.options.tooltip.presentation_backend"
                                 ).getString()
                         )))
-                        .setSaveConsumer(SuperResolutionConfig::setEnableVulkanPresentation)
+                        .setSaveConsumer(SuperResolutionConfig::setPresentationBackend)
                         .build()
         );
 
@@ -470,10 +491,10 @@ public final class GeneralPage implements ConfigPage {
                             .setNameProvider(g -> g.getDisplayName().getString())
                             .setValuesSupplier(context::lowLatencyGroups)
                             .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.low_latency_mode"))
-                            .setEnableRequirement(SuperResolutionConfig::isEnableVulkanPresentation)
+                            .setEnableRequirement(() -> PresentationBackendManager.isVulkanPresentationRequested())
                             .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
                                     Text.translatable(
-                                            SuperResolutionConfig.isEnableVulkanPresentation()
+                                            PresentationBackendManager.isVulkanPresentationRequested()
                                                     ? "superresolution.screen.config.options.tooltip.low_latency_mode"
                                                     : "superresolution.screen.config.options.tooltip.low_latency_mode.vulkan_presentation_required"
                                     ).getString()

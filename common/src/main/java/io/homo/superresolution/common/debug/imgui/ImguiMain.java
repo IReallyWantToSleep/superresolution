@@ -32,7 +32,6 @@ import imgui.glfw.ImGuiImplGlfw;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.impl.Destroyable;
 import org.lwjgl.glfw.GLFW;
 

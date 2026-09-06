@@ -22,7 +22,7 @@ package io.homo.superresolution.common.mixin.presentation.v1_21_11;
 import com.mojang.blaze3d.opengl.GlDevice;
 import com.mojang.blaze3d.shaders.ShaderSource;
 import com.mojang.blaze3d.systems.RenderSystem;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -34,7 +34,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public abstract class VulkanPresentationMinecraftBackendMixin {
     @Inject(method = "flipFrame", at = @At("HEAD"), cancellable = true)
     private static void super_resolution$skipOpenGlPresentation(CallbackInfo ci) {
-        if (VulkanPresentationFeature.isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             ci.cancel();
         }
     }

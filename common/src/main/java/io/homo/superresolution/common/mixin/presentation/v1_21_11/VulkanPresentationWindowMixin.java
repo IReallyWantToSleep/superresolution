@@ -23,7 +23,7 @@ import com.mojang.blaze3d.platform.DisplayData;
 import com.mojang.blaze3d.platform.ScreenManager;
 import com.mojang.blaze3d.platform.Window;
 import com.mojang.blaze3d.platform.WindowEventHandler;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import org.lwjgl.glfw.GLFW;
@@ -47,7 +47,7 @@ public abstract class VulkanPresentationWindowMixin {
 
     @Inject(method = "close", at = @At("TAIL"))
     private void super_resolution$clearPresentationHandle(CallbackInfo ci) {
-        if (VulkanPresentationFeature.isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             PresentationWindowState.clearPresentationAfterWindowClose();
         }
     }
@@ -61,7 +61,7 @@ public abstract class VulkanPresentationWindowMixin {
             )
     )
     private void super_resolution$redirectWindow(WindowEventHandler eventHandler, ScreenManager screenManager, DisplayData displayData, String preferredFullscreenVideoMode, String title, CallbackInfo ci) {
-        if (VulkanPresentationFeature.isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             GLFW.glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
             GLFW.glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         }
@@ -76,7 +76,7 @@ public abstract class VulkanPresentationWindowMixin {
             )
     )
     private void super_resolution$createRenderContext(WindowEventHandler eventHandler, ScreenManager screenManager, DisplayData displayData, String preferredFullscreenVideoMode, String title, CallbackInfo ci) {
-        if (!VulkanPresentationFeature.isRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
             return;
         }
 
@@ -102,7 +102,7 @@ public abstract class VulkanPresentationWindowMixin {
                 GLFW.glfwDestroyWindow(openglWindow);
             }
             PresentationWindowState.resetAfterStartupFailure();
-            VulkanPresentationFeature.disableAfterFailure(throwable);
+            PresentationBackendManager.disableAfterFailure(throwable);
             if (throwable instanceof RuntimeException runtimeException) {
                 throw runtimeException;
             }

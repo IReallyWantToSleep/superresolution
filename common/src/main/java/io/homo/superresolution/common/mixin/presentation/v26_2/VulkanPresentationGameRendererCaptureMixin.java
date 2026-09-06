@@ -20,7 +20,7 @@ package io.homo.superresolution.common.mixin.presentation.v26_2;
 
 #if MC_VER >= MC_26_2
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -43,7 +43,7 @@ public abstract class VulkanPresentationGameRendererCaptureMixin {
             boolean advanceGameTime,
             CallbackInfo ci
     ) {
-        if (VulkanPresentationFeature.isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             FrameCaptureManager.captureHudlessColor();
         }
     }
@@ -54,7 +54,7 @@ public abstract class VulkanPresentationGameRendererCaptureMixin {
             boolean advanceGameTime,
             CallbackInfo ci
     ) {
-        if (VulkanPresentationFeature.isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             FrameCaptureManager.captureFinalColor();
         }
     }

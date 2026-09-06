@@ -30,7 +30,7 @@ import io.homo.superresolution.common.config.special.SpecialConfigDescription;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexVulkanProvider;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import net.minecraft.network.chat.Component;
 
 import java.util.Optional;
@@ -102,7 +102,7 @@ public final class LowLatencyDescriptions {
                         .priority(100)
                         .requirement(
                                 Requirement.nothing()
-                                        .isTrue(() -> VulkanPresentationFeature.isAvailable()
+                                        .isTrue(() -> PresentationBackendManager.isVulkanPresentationAvailable()
                                                 && NVIDIAReflexVulkanProvider.isSupported())
                         )
                         .providerFactory(NVIDIAReflexVulkanProvider::new)

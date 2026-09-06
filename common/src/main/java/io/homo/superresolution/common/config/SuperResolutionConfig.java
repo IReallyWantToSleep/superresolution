@@ -44,6 +44,7 @@ import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.presentation.api.PresentationBackendType;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
@@ -68,7 +69,7 @@ public class SuperResolutionConfig {
     public static final ModConfigSpec SPEC;
     public static final SpecialConfigs SPECIAL;
     public static final BooleanValue ENABLE_UPSCALE;
-    public static final BooleanValue ENABLE_VULKAN_PRESENTATION;
+    public static final EnumValue<PresentationBackendType> PRESENTATION_BACKEND;
     public static final FloatValue UPSCALE_RATIO;
     public static final StringValue UPSCALE_ALGO;
     public static final FloatValue SHARPNESS;
@@ -117,15 +118,12 @@ public class SuperResolutionConfig {
                 () -> true,
                 "Enable super-resolution upscaling"
         );
-        #if (MC_VER >= MC_1_21_11 && MC_VER <= MC_26_2) || MC_VER == MC_1_21_1  || MC_VER == MC_1_20_1
-        ENABLE_VULKAN_PRESENTATION = builder.defineBoolean(
-                "enable_vulkan_presentation",
-                () -> false,
-                "Present Minecraft through a Vulkan swapchain. Requires a game restart."
+        PRESENTATION_BACKEND = builder.defineEnum(
+                "presentation/backend",
+                PresentationBackendType.class,
+                () -> PresentationBackendType.OPENGL,
+                "Presentation backend. Requires a game restart."
         );
-        #else
-        ENABLE_VULKAN_PRESENTATION = null;
-        #endif
         UPSCALE_RATIO = builder.defineFloat(
                 "upscale_ratio",
                 () -> 1.7f,
@@ -633,18 +631,12 @@ public class SuperResolutionConfig {
         ENABLE_PRESENT_INDICATOR.set(value);
     }
 
-    public static boolean isEnableVulkanPresentation() {
-        #if (MC_VER >= MC_1_21_11 && MC_VER <= MC_26_2) || MC_VER == MC_1_21_1 || MC_VER == MC_1_20_1
-        return ENABLE_VULKAN_PRESENTATION.get();
-        #else
-        return false;
-        #endif
+    public static PresentationBackendType getPresentationBackend() {
+        return PRESENTATION_BACKEND.get();
     }
 
-    public static void setEnableVulkanPresentation(boolean value) {
-        #if (MC_VER >= MC_1_21_11 && MC_VER <= MC_26_2) || MC_VER == MC_1_21_1 || MC_VER == MC_1_20_1
-        ENABLE_VULKAN_PRESENTATION.set(value);
-        #endif
+    public static void setPresentationBackend(PresentationBackendType value) {
+        PRESENTATION_BACKEND.set(value);
     }
 
     public static boolean isGenerateMotionVectors() {

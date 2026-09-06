@@ -28,7 +28,7 @@ import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.InteropResourcesPreprocessor;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
@@ -395,7 +395,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
             InFlightFrameResourcesSet inFlight,
             DispatchResource dispatchResource
     ) {
-        if (!VulkanPresentationFeature.isRequested()
+        if (!PresentationBackendManager.isVulkanPresentationRequested()
                 || !FrameCaptureManager.isInitialized()
                 // Real-only presentation does not consume these borrowed textures.
                 || !FrameGeneration.isFrameGenerationEnabled()
@@ -704,7 +704,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
 
             this.glFinish = VkGlInteropSemaphore.create(vkDevice);
             this.upscaleVkFinish = VkGlInteropSemaphore.create(vkDevice);
-            if (VulkanPresentationFeature.isRequested()) {
+            if (PresentationBackendManager.isVulkanPresentationRequested()) {
                 this.captureDepthReady = VkGlInteropSemaphore.create(vkDevice);
                 this.captureDepthRelease = VkGlInteropSemaphore.create(vkDevice);
                 this.captureMotionReady = VkGlInteropSemaphore.create(vkDevice);

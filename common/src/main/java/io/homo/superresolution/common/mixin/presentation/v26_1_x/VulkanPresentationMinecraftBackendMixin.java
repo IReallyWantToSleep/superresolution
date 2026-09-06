@@ -20,7 +20,7 @@ package io.homo.superresolution.common.mixin.presentation.v26_1_x;
 
 #if MC_VER >= MC_26_1 && MC_VER < MC_26_2
 import com.mojang.blaze3d.opengl.GlBackend;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.presentation.window.VulkanPresentationGlBackend;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
@@ -34,7 +34,7 @@ public abstract class VulkanPresentationMinecraftBackendMixin {
             at = @At(value = "NEW", target = "com/mojang/blaze3d/opengl/GlBackend")
     )
     private GlBackend super_resolution$createPresentationBackend() {
-        return VulkanPresentationFeature.isRequested()
+        return PresentationBackendManager.isVulkanPresentationRequested()
                 ? new VulkanPresentationGlBackend()
                 : new GlBackend();
     }
