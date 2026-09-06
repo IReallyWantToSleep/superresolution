@@ -31,6 +31,7 @@ import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexVulkanProvider;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
+import io.homo.superresolution.common.presentation.api.PresentationBackendType;
 import net.minecraft.network.chat.Component;
 
 import java.util.Optional;
@@ -78,10 +79,15 @@ public final class LowLatencyDescriptions {
                                                 ConfigSpecType.ENUM,
                                                 NVIDIAReflexMode.OFF
                                         )
-                                        .setName(Component.translatable("superresolution.screen.config.options.label.nv_reflex_mode"))
-                                        .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.nv_reflex_mode"))
-                                        .setClazz(NVIDIAReflexMode.class)
-                                        .setValueNameSupplier((v) -> Optional.of(Component.translatable("superresolution.enum.nvreflexmode." + v.name().toLowerCase())))
+                                         .setName(Component.translatable("superresolution.screen.config.options.label.nv_reflex_mode"))
+                                         .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.nv_reflex_mode"))
+                                         .setClazz(NVIDIAReflexMode.class)
+                                         .setRequirement(Requirement.nothing().isTrue(
+                                                 () -> PresentationBackendManager.isPresentationBackendAvailable(
+                                                         PresentationBackendType.VULKAN
+                                                 )
+                                         ))
+                                         .setValueNameSupplier((v) -> Optional.of(Component.translatable("superresolution.enum.nvreflexmode." + v.name().toLowerCase())))
                                         .setValueSupplier(SuperResolutionConfig::getNVIDIAReflexMode)
                                         // Frame generation rides on Reflex, so it must not be
                                         // switched off while frame generation is running.
@@ -102,8 +108,10 @@ public final class LowLatencyDescriptions {
                         .priority(100)
                         .requirement(
                                 Requirement.nothing()
-                                        .isTrue(() -> PresentationBackendManager.isVulkanPresentationAvailable()
-                                                && NVIDIAReflexVulkanProvider.isSupported())
+                                        .isTrue(() -> PresentationBackendManager.isPresentationBackendAvailable(
+                                                PresentationBackendType.VULKAN
+                                        ))
+                                        .isTrue(NVIDIAReflexVulkanProvider::isSupported)
                         )
                         .providerFactory(NVIDIAReflexVulkanProvider::new)
                         .build()

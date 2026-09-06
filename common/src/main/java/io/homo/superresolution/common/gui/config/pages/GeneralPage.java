@@ -51,7 +51,6 @@ import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.presentation.api.PresentationBackendType;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
@@ -491,14 +490,6 @@ public final class GeneralPage implements ConfigPage {
                             .setNameProvider(g -> g.getDisplayName().getString())
                             .setValuesSupplier(context::lowLatencyGroups)
                             .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.low_latency_mode"))
-                            .setEnableRequirement(() -> PresentationBackendManager.isVulkanPresentationRequested())
-                            .setTooltipSupplier(value -> Optional.of(Tooltip.withContext(
-                                    Text.translatable(
-                                            PresentationBackendManager.isVulkanPresentationRequested()
-                                                    ? "superresolution.screen.config.options.tooltip.low_latency_mode"
-                                                    : "superresolution.screen.config.options.tooltip.low_latency_mode.vulkan_presentation_required"
-                                    ).getString()
-                            )))
                             .setItemEnableRequirement(context::getLowLatencyGroupItemRequirement)
                             .setSaveConsumer((Consumer<BackendGroup>) group -> {
                                 SuperResolutionConfig.setLowLatencyMode(group.getId());

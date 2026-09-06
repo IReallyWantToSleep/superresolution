@@ -38,7 +38,6 @@ import io.homo.superresolution.common.framegeneration.FrameGenerationDescription
 import io.homo.superresolution.api.registry.FrameGenerationDescription;
 import io.homo.superresolution.api.registry.FrameGenerationRegistry;
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
-import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 import io.homo.superresolution.api.registry.LowLatencyDescription;
 import io.homo.superresolution.api.registry.LowLatencyRegistry;
@@ -269,7 +268,7 @@ public class ConfigPageContext {
         if (group.equals(LowLatencyGroups.NONE)) {
             return () -> !FrameGeneration.isFrameGenerationEnabled();
         }
-        return () -> LowLatency.isAvailable() && lowLatencyGroupHasUsableBackend(group);
+        return () -> lowLatencyGroupHasUsableBackend(group);
     }
 
     public boolean lowLatencyGroupHasUsableBackend(BackendGroup group) {
@@ -667,6 +666,10 @@ public class ConfigPageContext {
     ) {
         Text optionName = Text.literal(desc.getName().getString());
         Optional<Component> tooltip = desc.getTooltip();
+        OptionRequirement configEnableRequirement = () -> desc.getRequirement().check().support();
+        OptionRequirement combinedEnableRequirement = enableRequirement == null
+                ? configEnableRequirement
+                : OptionRequirement.all(configEnableRequirement, enableRequirement);
 
         switch (desc.getType()) {
             case BOOLEAN: {
@@ -680,9 +683,7 @@ public class ConfigPageContext {
                 if (tooltip.isPresent()) {
                     opt.setDescription(Text.literal(tooltip.get().getString()));
                 }
-                if (enableRequirement != null) {
-                    opt.setEnableRequirement(enableRequirement);
-                }
+                opt.setEnableRequirement(combinedEnableRequirement);
                 if (displayRequirement != null) {
                     opt.setDisplayRequirement(displayRequirement);
                 }
@@ -713,9 +714,7 @@ public class ConfigPageContext {
                 if (tooltip.isPresent()) {
                     opt.setDescription(Text.literal(tooltip.get().getString()));
                 }
-                if (enableRequirement != null) {
-                    opt.setEnableRequirement(enableRequirement);
-                }
+                opt.setEnableRequirement(combinedEnableRequirement);
                 if (displayRequirement != null) {
                     opt.setDisplayRequirement(displayRequirement);
                 }
@@ -750,9 +749,7 @@ public class ConfigPageContext {
                 if (tooltip.isPresent()) {
                     opt.setDescription(Text.literal(tooltip.get().getString()));
                 }
-                if (enableRequirement != null) {
-                    opt.setEnableRequirement(enableRequirement);
-                }
+                opt.setEnableRequirement(combinedEnableRequirement);
                 if (displayRequirement != null) {
                     opt.setDisplayRequirement(displayRequirement);
                 }

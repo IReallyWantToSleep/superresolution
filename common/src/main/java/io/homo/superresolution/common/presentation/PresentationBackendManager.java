@@ -37,9 +37,13 @@ public final class PresentationBackendManager {
         return type() == PresentationBackendType.VULKAN;
     }
 
-    public static boolean isVulkanPresentationAvailable() {
+    public static boolean isPresentationBackendAvailable(PresentationBackendType type) {
         PresentationBackend current = backend();
-        return current.type() == PresentationBackendType.VULKAN && current.isAvailable();
+        return current.type() == type && current.isAvailable();
+    }
+
+    public static boolean isVulkanPresentationAvailable() {
+        return isPresentationBackendAvailable(PresentationBackendType.VULKAN);
     }
 
     public static boolean isInitialized() {
