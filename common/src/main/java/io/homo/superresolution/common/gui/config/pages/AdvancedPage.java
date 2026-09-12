@@ -170,6 +170,19 @@ public final class AdvancedPage implements ConfigPage {
                             })
                             .build();
 
+                    builder.booleanOption(
+                                    Text.translatable("superresolution.screen.config.options.label.flip_vk_gl_interop_resources_y"),
+                                    SuperResolutionConfig.isFlipVkGlInteropResourcesY())
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.flip_vk_gl_interop_resources_y"))
+                            .setDefaultValue(() -> true)
+                            .setSaveConsumer(value -> {
+                                SuperResolutionConfig.setFlipVkGlInteropResourcesY(value);
+                                if (SuperResolution.currentAlgorithm instanceof GlVulkanInteropAlgorithm) {
+                                    SuperResolution.recreateAlgorithm();
+                                }
+                            })
+                            .build();
+
                     builder.enumSelectorOption(
                                     Text.translatable("superresolution.screen.config.options.label.internal_texture_format"),
                                     InternalTextureFormat.class,

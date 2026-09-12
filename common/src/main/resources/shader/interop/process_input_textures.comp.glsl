@@ -25,7 +25,11 @@ void main() {
 
     ivec2 colorSize = imageSize(outputColor);
     if (texelCoord.x < colorSize.x && texelCoord.y < colorSize.y) {
+        #ifdef FLIP_Y
         int flippedY = colorSize.y - 1 - texelCoord.y;
+        #else
+        int flippedY = texelCoord.y;
+        #endif
 
         vec4 color = texelFetch(inputColor, ivec2(texelCoord.x, flippedY), 0);
         imageStore(outputColor, texelCoord, color);
@@ -37,7 +41,9 @@ void main() {
 
         #ifdef HAS_MOTION_VECTOR
         vec2 mv = texelFetch(inputMotionVectors, ivec2(texelCoord.x, flippedY), 0).rg;
+        #ifdef FLIP_Y
         mv.y = -mv.y;
+        #endif
         #ifdef MOTION_VECTOR_PREPROCESSING_FUNCTION_INJECTED
         mv = motionVectorPreprocessing(mv);
         #endif

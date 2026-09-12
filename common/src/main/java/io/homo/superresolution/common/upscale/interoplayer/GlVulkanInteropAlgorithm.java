@@ -59,6 +59,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
     protected InFlightFrameResourcesSet[] inFlightFrames = new InFlightFrameResourcesSet[MAX_IN_FLIGHT_FRAME];
 
     protected boolean syncSerialMode;
+    private boolean flipInteropResourcesY;
 
     // 部分模组会跳过世界渲染，但全局 GameFrameIndex 仍会推进。
     // interop 流水线只按实际 dispatch 推进，避免三缓冲资源错位。
@@ -80,6 +81,10 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
         return true;
     }
 
+    protected final boolean shouldFlipInteropResourcesY() {
+        return flipInteropResourcesY;
+    }
+
     protected void onInteropResourcesCreated() {
     }
 
@@ -97,7 +102,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
         VulkanDevice vkDevice = RenderSystems.vulkan().device();
         vkDevice.getMainQueue().waitIdle();
         for (int i = 0; i < (syncSerialMode ? 1 : MAX_IN_FLIGHT_FRAME); i++) {
-            inFlightFrames[i] = new InFlightFrameResourcesSet();
+            inFlightFrames[i] = new InFlightFrameResourcesSet(flipInteropResourcesY);
             inFlightFrames[i].index = i;
             inFlightFrames[i].initialize();
         }
@@ -119,6 +124,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
     @Override
     public void initialize(InitializationDescription desc) {
         syncSerialMode = SuperResolutionConfig.getInteropSyncMode() == InteropSyncMode.LowLatency;
+        flipInteropResourcesY = SuperResolutionConfig.isFlipVkGlInteropResourcesY();
         this.initDesc = desc;
         createResources();
         onInteropResourcesCreated();
@@ -149,7 +155,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
             publishCaptureInputs(inFlight, dispatchResource);
 
             VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
-            inFlight.frameData = FrameData.from(dispatchResource);
+            inFlight.frameData = FrameData.from(dispatchResource, flipInteropResourcesY);
 
             VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
             // 构建第N-1帧的Cmdbuf
@@ -179,14 +185,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                     new int[]{},
                     new int[]{GL_LAYOUT_GENERAL_EXT}
             );
-            PerformanceTracker.push(PerformanceTracker.GL_INTEROP_FLIP);
-            try {
-                InteropResourcesPreprocessor.flipY(
-                        inFlight.outputColorGlTexture,
-                        inFlight.flippedOutputGlTexture);
-            } finally {
-                PerformanceTracker.pop(PerformanceTracker.GL_INTEROP_FLIP);
-            }
+            flipOutputIfEnabled(inFlight);
         } else {
             int currentFrameIndex = interopFrameSequence;
             {
@@ -195,7 +194,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                 // =============== 处理第N帧还未完成的GL渲染结果 ================
                 inFlight = inFlightFrames[currentFrameIndex % MAX_IN_FLIGHT_FRAME];
                 glFinishSemaphore = inFlight.glFinish;
-                inFlight.frameData = FrameData.from(dispatchResource);
+                inFlight.frameData = FrameData.from(dispatchResource, flipInteropResourcesY);
                 // Do NOT wait on upscaleVkFinish here. This slot's upscale output is consumed -- with
                 // its own waitOpenGL -- in the third stage below, so an extra GL wait on the same binary
                 // semaphore makes it two waits per one signal each cycle, and on the first cycle a wait
@@ -291,20 +290,27 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                             new int[]{GL_LAYOUT_GENERAL_EXT}
                     );
 
-                    //把第N-2帧的Upscale结果从OpenGL共享纹理翻转到最终输出纹理
-                    PerformanceTracker.push(PerformanceTracker.GL_INTEROP_FLIP);
-                    try {
-                        InteropResourcesPreprocessor.flipY(
-                                inFlight.outputColorGlTexture,
-                                inFlight.flippedOutputGlTexture);
-                    } finally {
-                        PerformanceTracker.pop(PerformanceTracker.GL_INTEROP_FLIP);
-                    }
+                    //把第N-2帧的Upscale结果交给最终输出纹理
+                    flipOutputIfEnabled(inFlight);
                 }
                 // =================================================================
             }
         }
         return true;
+    }
+
+    private void flipOutputIfEnabled(InFlightFrameResourcesSet inFlight) {
+        if (!flipInteropResourcesY) {
+            return;
+        }
+        PerformanceTracker.push(PerformanceTracker.GL_INTEROP_FLIP);
+        try {
+            InteropResourcesPreprocessor.flipY(
+                    inFlight.outputColorGlTexture,
+                    inFlight.flippedOutputGlTexture);
+        } finally {
+            PerformanceTracker.pop(PerformanceTracker.GL_INTEROP_FLIP);
+        }
     }
 
     @Override
@@ -370,7 +376,8 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                     dispatchResource.resources().get(InputResourceType.Depth), inFlight.inputDepthGlTexture,
                     dispatchResource.resources().get(InputResourceType.MotionVectors), inFlight.inputMotionVectorsGlTexture,
                     dispatchResource.resources().get(InputResourceType.Exposure), inFlight.inputExposureGlTexture,
-                    motionVectorPreprocessingFunction
+                    motionVectorPreprocessingFunction,
+                    flipInteropResourcesY
             );
         } finally {
             PerformanceTracker.pop(PerformanceTracker.GL_INPUT_CONVERT);
@@ -496,7 +503,11 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
             float preExposure
 
     ) {
-        public static FrameData from(DispatchResource dispatchResource) {
+        public static FrameData from(DispatchResource dispatchResource, boolean flipY) {
+            Vector2f jitterOffset = new Vector2f(dispatchResource.jitterOffset());
+            if (!flipY) {
+                jitterOffset.y *= -1.0f;
+            }
             return new FrameData(
                     dispatchResource.renderWidth(),
                     dispatchResource.renderHeight(),
@@ -510,7 +521,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                     dispatchResource.horizontalFov(),
                     dispatchResource.cameraNear(),
                     dispatchResource.cameraFar(),
-                    dispatchResource.jitterOffset(),
+                    jitterOffset,
                     dispatchResource.jitterSequenceLength(),
                     new Matrix4f(dispatchResource.modelViewMatrix()),
                     new Matrix4f(dispatchResource.projectionMatrix()),
@@ -526,6 +537,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
     }
 
     public static class InFlightFrameResourcesSet {
+        private final boolean flipInteropResourcesY;
         public GlImportableTexture2D inputColorGlTexture;
         public VulkanTexture inputColorVkTexture;
 
@@ -558,6 +570,10 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
         private boolean captureDepthPending;
         private boolean captureMotionPending;
         private FrameResources captureInputsFrame;
+
+        public InFlightFrameResourcesSet(boolean flipInteropResourcesY) {
+            this.flipInteropResourcesY = flipInteropResourcesY;
+        }
 
         public void destroy() {
             awaitCaptureRelease();
@@ -686,20 +702,24 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
             );
             this.outputColorGlTexture = glDevice.createTextureImportable(this.outputColorVkTexture);
 
-            this.flippedOutputGlTexture = (GlTexture2D) glDevice.createTexture(
-                    TextureDescription.create()
-                            .type(TextureType.Texture2D)
-                            .usages(TextureUsages.create().sampler().storage().transferDestination())
-                            .format(SuperResolutionConfig.getInternalTextureFormat())
-                            .width(RenderHandlerManager.getScreenWidth())
-                            .height(RenderHandlerManager.getScreenHeight())
-                            .label("SRUpscaleFlippedOutputGlTexture-%s".formatted(index))
-                            .build()
-            );
+            if (flipInteropResourcesY) {
+                this.flippedOutputGlTexture = (GlTexture2D) glDevice.createTexture(
+                        TextureDescription.create()
+                                .type(TextureType.Texture2D)
+                                .usages(TextureUsages.create().sampler().storage().transferDestination())
+                                .format(SuperResolutionConfig.getInternalTextureFormat())
+                                .width(RenderHandlerManager.getScreenWidth())
+                                .height(RenderHandlerManager.getScreenHeight())
+                                .label("SRUpscaleFlippedOutputGlTexture-%s".formatted(index))
+                                .build()
+                );
+            }
 
             this.outputFrameBuffer = RenderSystems.current().device().createFramebuffer(
                     FramebufferDescription.create()
-                            .colorAttachment(this.flippedOutputGlTexture)
+                            .colorAttachment(flipInteropResourcesY
+                                    ? this.flippedOutputGlTexture
+                                    : this.outputColorGlTexture)
                             .build());
 
             this.glFinish = VkGlInteropSemaphore.create(vkDevice);

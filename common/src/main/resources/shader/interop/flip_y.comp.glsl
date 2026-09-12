@@ -11,8 +11,11 @@ void main() {
     if (texelCoord.x >= texSize.x || texelCoord.y >= texSize.y) {
         return;
     }
-    int flippedY = texSize.y - 1 - texelCoord.y;
-    ivec2 flippedCoord = ivec2(texelCoord.x, flippedY);
-    vec4 color = texelFetch(inputTexture, flippedCoord, 0);
+    #ifdef FLIP_Y
+    int sourceY = texSize.y - 1 - texelCoord.y;
+    #else
+    int sourceY = texelCoord.y;
+    #endif
+    vec4 color = texelFetch(inputTexture, ivec2(texelCoord.x, sourceY), 0);
     imageStore(outputTexture, texelCoord, color);
 }

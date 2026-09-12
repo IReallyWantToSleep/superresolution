@@ -180,7 +180,9 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
             for (InputResourceType type : inputs.present) {
                 ITexture source = resources.get(type);
                 GlImportableTexture2D destination = inputs.glTextures.get(type);
-                if (type == InputResourceType.SpecularMotionVectors) {
+                if (!shouldFlipInteropResourcesY()) {
+                    InteropResourcesPreprocessor.copyTexture(commandBuffer, source, destination);
+                } else if (type == InputResourceType.SpecularMotionVectors) {
                     InteropResourcesPreprocessor.flipMotionVectorY(commandBuffer, source, destination);
                 } else {
                     InteropResourcesPreprocessor.flipY(commandBuffer, source, destination);

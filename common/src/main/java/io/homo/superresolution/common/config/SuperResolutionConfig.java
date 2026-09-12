@@ -98,6 +98,7 @@ public class SuperResolutionConfig {
     public static final StringValue FRAME_GENERATION_PROVIDER;
     public static final StringValue FRAME_GENERATION_BACKEND;
     public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
+    public static final BooleanValue FLIP_VK_GL_INTEROP_RESOURCES_Y;
     public static final BooleanValue ENABLE_EXPERIMENTAL_ALGORITHMS;
     public static final BooleanValue ENABLE_DLSS_RAY_RECONSTRUCTION;
     public static final BooleanValue ENABLE_OPTISCALER;
@@ -180,6 +181,12 @@ public class SuperResolutionConfig {
                 InteropSyncMode.class,
                 () -> InteropSyncMode.LowLatency,
                 ""
+        );
+
+        FLIP_VK_GL_INTEROP_RESOURCES_Y = builder.defineBoolean(
+                "flip_vk_gl_interop_resources_y",
+                () -> true,
+                "Flip Vulkan-OpenGL interop upscaling resources on the Y axis"
         );
 
         THEME = builder.defineEnum(
@@ -761,6 +768,14 @@ public class SuperResolutionConfig {
 
     public static void setInteropSyncMode(InteropSyncMode value) {
         INTEROP_SYNC_MODE.set(value);
+    }
+
+    public static boolean isFlipVkGlInteropResourcesY() {
+        return FLIP_VK_GL_INTEROP_RESOURCES_Y.get();
+    }
+
+    public static void setFlipVkGlInteropResourcesY(boolean value) {
+        FLIP_VK_GL_INTEROP_RESOURCES_Y.set(value);
     }
 
     public static float getMinUpscaleRatio() {

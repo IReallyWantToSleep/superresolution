@@ -46,7 +46,7 @@ import java.util.Map;
 
 
 public class InteropResourcesPreprocessor {
-    private static final Map<String, ComputePipeline> flipYPipelineCache = new HashMap<>();
+    private static final Map<String, ComputePipeline> textureCopyPipelineCache = new HashMap<>();
     private static final Map<ProcessInputKey, ComputePipeline> processInputPipelineCache = new HashMap<>();
     private static ComputePipeline flipMotionVectorYPipeline;
     private static IShaderProgram flipMotionVectorYShader;
@@ -76,24 +76,27 @@ public class InteropResourcesPreprocessor {
         shader.destroy();
     }
 
-    private static ComputePipeline getOrCreateFlipYPipeline(TextureFormat format) {
+    private static ComputePipeline getOrCreateTextureCopyPipeline(TextureFormat format, boolean flipY) {
         String formatQualifier = format.getGlslFormatQualifier();
         if (formatQualifier == null) {
-            throw new IllegalArgumentException("Unsupported texture format for flipY: " + format);
+            throw new IllegalArgumentException("Unsupported texture format for texture copy: " + format);
         }
 
-        String key = "flipY_" + format.name();
-        if (flipYPipelineCache.containsKey(key)) {
-            return flipYPipelineCache.get(key);
+        String key = (flipY ? "flipY_" : "copy_") + format.name();
+        if (textureCopyPipelineCache.containsKey(key)) {
+            return textureCopyPipelineCache.get(key);
         }
 
         ShaderDescription.Builder builder = ShaderDescription.create()
                 .compute(new ShaderSource(ShaderType.Compute, "/shader/interop/flip_y.comp.glsl", true))
-                .name("interop_flip_y_" + format.name())
+                .name("interop_" + key)
                 .uniformSamplerTexture("inputTexture", 0)
                 .uniformStorageTexture("outputTexture", 1);
 
         builder.addDefine("OUTPUT_FORMAT", formatQualifier);
+        if (flipY) {
+            builder.addDefine("FLIP_Y", "1");
+        }
 
         IShaderProgram shader = RenderSystems.current().device().createShaderProgram(builder.build());
         shader.compile();
@@ -101,7 +104,7 @@ public class InteropResourcesPreprocessor {
                 .shader(shader)
                 .build(RenderSystems.current().device());
 
-        flipYPipelineCache.put(key, computePipeline);
+        textureCopyPipelineCache.put(key, computePipeline);
         return computePipeline;
     }
 
@@ -174,12 +177,24 @@ public class InteropResourcesPreprocessor {
     }
 
     public static void flipY(ICommandBuffer commandBuffer, ITexture input, ITexture output) {
+        copyTexture(commandBuffer, input, output, true);
+    }
+
+    public static void copyTexture(ICommandBuffer commandBuffer, ITexture input, ITexture output) {
+        copyTexture(commandBuffer, input, output, false);
+    }
+
+    private static void copyTexture(
+            ICommandBuffer commandBuffer,
+            ITexture input,
+            ITexture output,
+            boolean flipY) {
         if (!isInit) {
             init();
         }
 
         TextureFormat outputFormat = output.getTextureFormat();
-        ComputePipeline computePipeline = getOrCreateFlipYPipeline(outputFormat);
+        ComputePipeline computePipeline = getOrCreateTextureCopyPipeline(outputFormat, flipY);
         computePipeline.descriptorSet().samplerTexture("inputTexture", input);
         computePipeline.descriptorSet().storageImage("outputTexture", output);
         computePipeline.descriptorSet().update();
@@ -205,10 +220,10 @@ public class InteropResourcesPreprocessor {
     }
 
     public static void destroy() {
-        for (ComputePipeline pipeline : flipYPipelineCache.values()) {
+        for (ComputePipeline pipeline : textureCopyPipelineCache.values()) {
             destroyPipeline(pipeline);
         }
-        flipYPipelineCache.clear();
+        textureCopyPipelineCache.clear();
 
         for (ComputePipeline pipeline : processInputPipelineCache.values()) {
             destroyPipeline(pipeline);
@@ -255,6 +270,18 @@ public class InteropResourcesPreprocessor {
             ITexture inputMotionVectors, ITexture outputMotionVectors,
             ITexture inputExposure, ITexture outputExposure,
             @Nullable String motionVectorPreprocessingFunction) {
+        processInputTextures(inputColor, outputColor, inputDepth, outputDepth,
+                inputMotionVectors, outputMotionVectors, inputExposure, outputExposure,
+                motionVectorPreprocessingFunction, true);
+    }
+
+    public static void processInputTextures(
+            ITexture inputColor, ITexture outputColor,
+            ITexture inputDepth, ITexture outputDepth,
+            ITexture inputMotionVectors, ITexture outputMotionVectors,
+            ITexture inputExposure, ITexture outputExposure,
+            @Nullable String motionVectorPreprocessingFunction,
+            boolean flipY) {
         if (!isInit) {
             init();
         }
@@ -277,7 +304,8 @@ public class InteropResourcesPreprocessor {
                 hasDepth,
                 hasMV,
                 hasExposure,
-                hasMVPreprocessing ? motionVectorPreprocessingFunction : null
+                hasMVPreprocessing ? motionVectorPreprocessingFunction : null,
+                flipY
         );
 
         ComputePipeline pipeline = processInputPipelineCache.get(key);
@@ -299,6 +327,9 @@ public class InteropResourcesPreprocessor {
                     .uniformSamplerTexture("inputColor", 0)
                     .uniformStorageTexture("outputColor", 1);
             builder.addDefine("COLOR_FORMAT", colorFormatQualifier);
+            if (flipY) {
+                builder.addDefine("FLIP_Y", "1");
+            }
 
             if (hasDepth) {
                 builder.uniformSamplerTexture("inputDepth", 2)
@@ -365,13 +396,15 @@ public class InteropResourcesPreprocessor {
             boolean hasDepth,
             boolean hasMotionVectors,
             boolean hasExposure,
-            @Nullable String motionVectorPreprocessingFunction
+            @Nullable String motionVectorPreprocessingFunction,
+            boolean flipY
     ) {
         private String shaderName() {
             return "processInput_" + colorFormat.name()
                     + (hasDepth ? "_D" : "")
                     + (hasMotionVectors ? "_MV" : "")
                     + (hasExposure ? "_E" : "")
+                    + (flipY ? "_FlipY" : "_NoFlipY")
                     + (motionVectorPreprocessingFunction == null
                             ? ""
                             : "_MVP" + motionVectorPreprocessingFunction.hashCode());
