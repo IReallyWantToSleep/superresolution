@@ -103,6 +103,7 @@ fun DependencyHandler.modCompileOnlyCompat(notation: Any) =
 
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
     compileOnly("org.anarres:jcpp:1.4.14")
     compileOnly("org.spongepowered:mixin:0.8.7")
     compileOnly("io.github.spair:imgui-java-app:$imguiVersion")
@@ -174,6 +175,8 @@ configurations {
 val sourceSets = extensions.getByType(SourceSetContainer::class.java)
 val javaToolchains = extensions.getByType(JavaToolchainService::class.java)
 val mainSourceSet = sourceSets.getByName("main")
+val testSourceSet = sourceSets.getByName("test")
+testSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
 val irisapiSourceSet = sourceSets.maybeCreate("irisapi")
 val sharedSourceSet = sourceSets.maybeCreate("shared")
 val materialSourceSet = sourceSets.maybeCreate("material")

@@ -36,6 +36,7 @@ import org.joml.Vector2i;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
+import static io.homo.superresolution.api.interop.InteropResourceType.*;
 
 public class XeSS extends SRApiAlgorithm {
 
@@ -145,11 +146,13 @@ public class XeSS extends SRApiAlgorithm {
     ) {
         try (SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc()) {
             desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(commandBuffer.getNativeCommandBuffer()));
-            desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
-            desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
-            desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
-            desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
-            desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
+            desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.vulkan(Color)));
+            desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.vulkan(Depth)));
+            desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.vulkan(MotionVectors)));
+            if (inFlightFrameResourcesSet.has(Exposure)) {
+                desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.vulkan(Exposure)));
+            }
+            desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.vulkan(OutputColor)));
             desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
             desc.setMotionVectorScale(new Vector2f(inFlightFrameResourcesSet.frameData.renderSize()));
             desc.setRenderSize(new Vector2i(inFlightFrameResourcesSet.frameData.renderWidth(), inFlightFrameResourcesSet.frameData.renderHeight()));

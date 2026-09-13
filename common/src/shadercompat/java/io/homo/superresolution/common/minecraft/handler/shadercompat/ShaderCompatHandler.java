@@ -427,6 +427,7 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
 
     @Override
     public void destroy() {
+        io.homo.superresolution.shadercompat.IrisShaderCompatUpscaleDispatcher.clearInteropResourceContext();
         renderTargets.clear();
         InteropResourcesPreprocessor.destroy();
         SRCompatV2Processor.destroyPipelineCache();

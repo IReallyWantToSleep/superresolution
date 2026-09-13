@@ -1,6 +1,7 @@
 package io.homo.superresolution.shadercompat;
 
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.api.interop.InteropResourceContext;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.debug.imgui.ImGuiDebugContext;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
@@ -21,6 +22,11 @@ public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
     @Override
     public String id() {
         return SRWorkModeManager.SHADER_COMPAT;
+    }
+
+    @Override
+    public InteropResourceContext getInteropResourceContext() {
+        return IrisShaderCompatUpscaleDispatcher.getInteropResourceContext();
     }
 
     @Override

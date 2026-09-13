@@ -20,6 +20,7 @@ package io.homo.superresolution.common.workmode;
 
 import io.homo.superresolution.common.debug.imgui.ImGuiDebugContext;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
+import io.homo.superresolution.api.interop.InteropResourceContext;
 
 public interface SRWorkModeProvider {
     String id();
@@ -29,6 +30,10 @@ public interface SRWorkModeProvider {
     IMinecraftRenderHandler createRenderHandler();
 
     SRWorkModeState getState();
+
+    default InteropResourceContext getInteropResourceContext() {
+        return InteropResourceContext.empty();
+    }
 
     default void onClientSetup() {
     }

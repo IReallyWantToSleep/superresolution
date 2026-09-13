@@ -33,6 +33,7 @@ import io.homo.superresolution.core.ngx.*;
 
 import java.util.IdentityHashMap;
 import java.util.Map;
+import static io.homo.superresolution.api.interop.InteropResourceType.*;
 
 public class DLSS extends GlVulkanInteropAlgorithm {
     private final Map<InFlightFrameResourcesSet, NgxDispatchResources> ngxDispatchResources =
@@ -242,6 +243,9 @@ public class DLSS extends GlVulkanInteropAlgorithm {
     }
 
     private NgxResourceVK createNgxTextureResource(VulkanTexture texture, boolean readWrite) {
+        if (texture == null) {
+            return null;
+        }
         NgxImageSubresourceRange subresourceRange = new NgxImageSubresourceRange();
         subresourceRange.aspectMask = texture.getAspectMask();
         subresourceRange.baseMipLevel = 0;
@@ -269,11 +273,11 @@ public class DLSS extends GlVulkanInteropAlgorithm {
 
         private NgxDispatchResources(InFlightFrameResourcesSet inFlightFrame) {
             try {
-                color = createNgxTextureResource(inFlightFrame.inputColorVkTexture, true);
-                depth = createNgxTextureResource(inFlightFrame.inputDepthVkTexture, false);
-                motionVectors = createNgxTextureResource(inFlightFrame.inputMotionVectorsVkTexture, true);
-                exposure = createNgxTextureResource(inFlightFrame.inputExposureVkTexture, false);
-                output = createNgxTextureResource(inFlightFrame.outputColorVkTexture, true);
+                color = createNgxTextureResource(inFlightFrame.vulkan(Color), true);
+                depth = createNgxTextureResource(inFlightFrame.vulkan(Depth), false);
+                motionVectors = createNgxTextureResource(inFlightFrame.vulkan(MotionVectors), true);
+                exposure = createNgxTextureResource(inFlightFrame.vulkan(Exposure), false);
+                output = createNgxTextureResource(inFlightFrame.vulkan(OutputColor), true);
 
                 evalParams.feature.inputColor = color;
                 evalParams.feature.output = output;

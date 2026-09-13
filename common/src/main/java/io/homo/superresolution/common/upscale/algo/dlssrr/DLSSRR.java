@@ -20,19 +20,15 @@ package io.homo.superresolution.common.upscale.algo.dlssrr;
 
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.InputResourceType;
+import io.homo.superresolution.api.interop.InteropResourceRequirement;
+import io.homo.superresolution.api.interop.InteropResourceType;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.InteropResourcesPreprocessor;
 import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.ITexture;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
-import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
-import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
@@ -53,6 +49,13 @@ import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.IdentityHashMap;
 import java.util.Map;
+import java.util.List;
+import java.util.ArrayList;
+
+import static io.homo.superresolution.api.interop.InteropResourceRequirement.FormatSource.SourceTexture;
+import static io.homo.superresolution.api.interop.InteropResourceRequirement.SizeSource.SourceSize;
+import static io.homo.superresolution.api.interop.InteropResourceRequirement.Presence.Optional;
+import static io.homo.superresolution.api.interop.InteropResourceType.OutputColor;
 
 /** NVIDIA DLSS Ray Reconstruction implementation. */
 public class DLSSRR extends GlVulkanInteropAlgorithm {
@@ -76,7 +79,16 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
     private int roughnessMode = -1;
     private int depthType = -1;
     private final Map<InFlightFrameResourcesSet, NgxDispatchResources> dispatchResources = new IdentityHashMap<>();
-    private final Map<InFlightFrameResourcesSet, SupplementalInputs> supplementalInputs = new IdentityHashMap<>();
+
+    @Override
+    protected List<InteropResourceRequirement> getInteropResourceRequirements() {
+        List<InteropResourceRequirement> requirements = new ArrayList<>(super.getInteropResourceRequirements());
+        for (InputResourceType type : SUPPLEMENTAL_TYPES) {
+            requirements.add(InteropResourceRequirement.input(
+                    InteropResourceType.fromInput(type), Optional, SourceSize, SourceTexture, null));
+        }
+        return List.copyOf(requirements);
+    }
 
     @Override
     protected boolean isVulkanInteropReady() {
@@ -84,11 +96,7 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
     }
 
     @Override
-    public boolean dispatch(DispatchResource resource) {
-        if (resource.resources() == null || !hasRequiredInputResources(resource.resources())) {
-            return false;
-        }
-
+    protected boolean prepareVulkanDispatch(DispatchResource resource) {
         int requestedRoughnessMode = resource.resources().has(InputResourceType.NormalRoughness)
                 ? NgxConstants.DLSS_ROUGHNESS_MODE_PACKED
                 : NgxConstants.DLSS_ROUGHNESS_MODE_UNPACKED;
@@ -109,13 +117,12 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
                 throw error;
             }
         }
-        return super.dispatch(resource);
+        return isVulkanInteropReady();
     }
 
-    private boolean hasRequiredInputResources(InputResourceSet resources) {
-        return resources.has(InputResourceType.Color)
-                && resources.has(InputResourceType.Depth)
-                && resources.has(InputResourceType.MotionVectors)
+    @Override
+    protected boolean validateInputResources(InputResourceSet resources) {
+        return super.validateInputResources(resources)
                 && resources.has(InputResourceType.DiffuseAlbedo)
                 && resources.has(InputResourceType.SpecularAlbedo)
                 && (resources.has(InputResourceType.NormalRoughness)
@@ -135,79 +142,6 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
     protected void onBeforeInteropResourcesDestroyed() {
         destroyDispatchResources();
         destroyNgxContext();
-        destroySupplementalInputs();
-    }
-
-    @Override
-    protected void processAdditionalInputResources(InFlightFrameResourcesSet inFlight, DispatchResource dispatchResource) {
-        SupplementalInputs inputs = supplementalInputs.computeIfAbsent(inFlight, key -> new SupplementalInputs());
-        InputResourceSet resources = dispatchResource.resources();
-        inputs.present.clear();
-        for (InputResourceType type : SUPPLEMENTAL_TYPES) {
-            ITexture source = resources.get(type);
-            if (source == null) {
-                inputs.destroy(type);
-                continue;
-            }
-            inputs.present.add(type);
-            VulkanTexture existing = inputs.vkTextures.get(type);
-            if (existing != null
-                    && existing.getTextureFormat() == source.getTextureFormat()
-                    && existing.getWidth() == source.getWidth()
-                    && existing.getHeight() == source.getHeight()) {
-                continue;
-            }
-            inputs.destroy(type);
-            VulkanTexture vkTexture = RenderSystems.vulkan().device().createTextureExportable(
-                    TextureDescription.create()
-                            .type(source.getTextureType())
-                            .usages(TextureUsages.create().sampler().storage().transferSource().transferDestination())
-                            .format(source.getTextureFormat())
-                            .width(source.getWidth())
-                            .height(source.getHeight())
-                            .label("DLSSRR-%s-%s".formatted(type, System.identityHashCode(inFlight)))
-                            .build());
-            inputs.vkTextures.put(type, vkTexture);
-            inputs.glTextures.put(type, RenderSystems.opengl().device().createTextureImportable(vkTexture));
-        }
-        inputs.exposurePresent = resources.has(InputResourceType.Exposure);
-        if (inputs.present.isEmpty()) {
-            return;
-        }
-        ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
-        try {
-            commandBuffer.begin();
-            for (InputResourceType type : inputs.present) {
-                ITexture source = resources.get(type);
-                GlImportableTexture2D destination = inputs.glTextures.get(type);
-                if (!shouldFlipInteropResourcesY()) {
-                    InteropResourcesPreprocessor.copyTexture(commandBuffer, source, destination);
-                } else if (type == InputResourceType.SpecularMotionVectors) {
-                    InteropResourcesPreprocessor.flipMotionVectorY(commandBuffer, source, destination);
-                } else {
-                    InteropResourcesPreprocessor.flipY(commandBuffer, source, destination);
-                }
-            }
-            commandBuffer.end();
-            RenderSystems.current().device().submitCommandBuffer(commandBuffer);
-            commandBuffer.waitForFence();
-        } finally {
-            commandBuffer.destroy();
-        }
-    }
-
-    @Override
-    protected int[] getAdditionalInputSignalTextureHandles(InFlightFrameResourcesSet inFlight) {
-        SupplementalInputs inputs = supplementalInputs.get(inFlight);
-        if (inputs == null || inputs.present.isEmpty()) {
-            return new int[0];
-        }
-        int[] handles = new int[inputs.present.size()];
-        int index = 0;
-        for (InputResourceType type : inputs.present) {
-            handles[index++] = Math.toIntExact(inputs.glTextures.get(type).handle());
-        }
-        return handles;
     }
 
     @Override
@@ -216,7 +150,7 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
             return;
         }
         NgxDispatchResources resources = dispatchResources.computeIfAbsent(frame, key -> new NgxDispatchResources());
-        resources.update(frame, supplementalInputs.get(frame));
+        resources.update(frame);
         NgxVKDLSSDEvalParams eval = resources.eval;
         eval.jitterOffsetX = frame.frameData.jitterOffset().x;
         eval.jitterOffsetY = frame.frameData.jitterOffset().y;
@@ -316,13 +250,6 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
         dispatchResources.clear();
     }
 
-    private void destroySupplementalInputs() {
-        for (SupplementalInputs inputs : supplementalInputs.values()) {
-            inputs.destroyAll();
-        }
-        supplementalInputs.clear();
-    }
-
     private static NgxResourceVK createResource(VulkanTexture texture, boolean readWrite) {
         NgxImageSubresourceRange range = new NgxImageSubresourceRange();
         range.aspectMask = texture.getAspectMask();
@@ -340,30 +267,6 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
         }
     }
 
-    private static final class SupplementalInputs {
-        private final EnumMap<InputResourceType, GlImportableTexture2D> glTextures = new EnumMap<>(InputResourceType.class);
-        private final EnumMap<InputResourceType, VulkanTexture> vkTextures = new EnumMap<>(InputResourceType.class);
-        private final EnumSet<InputResourceType> present = EnumSet.noneOf(InputResourceType.class);
-        private boolean exposurePresent;
-
-        private void destroy(InputResourceType type) {
-            GlImportableTexture2D gl = glTextures.remove(type);
-            VulkanTexture vk = vkTextures.remove(type);
-            if (gl != null) {
-                gl.destroy();
-            }
-            if (vk != null) {
-                vk.destroy();
-            }
-        }
-
-        private void destroyAll() {
-            for (InputResourceType type : SUPPLEMENTAL_TYPES) {
-                destroy(type);
-            }
-        }
-    }
-
     private static final class NgxDispatchResources implements AutoCloseable {
         private final NgxVKDLSSDEvalParams eval = new NgxVKDLSSDEvalParams();
         private final EnumMap<InputResourceType, NgxResourceVK> resources = new EnumMap<>(InputResourceType.class);
@@ -377,20 +280,11 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
             eval.viewToClipMatrix = viewToClip;
         }
 
-        private void update(InFlightFrameResourcesSet frame, SupplementalInputs supplemental) {
+        private void update(InFlightFrameResourcesSet frame) {
             EnumMap<InputResourceType, VulkanTexture> presentTextures = new EnumMap<>(InputResourceType.class);
-            presentTextures.put(InputResourceType.Color, frame.inputColorVkTexture);
-            presentTextures.put(InputResourceType.Depth, frame.inputDepthVkTexture);
-            presentTextures.put(InputResourceType.MotionVectors, frame.inputMotionVectorsVkTexture);
-            if (supplemental != null) {
-                if (supplemental.exposurePresent) {
-                    presentTextures.put(InputResourceType.Exposure, frame.inputExposureVkTexture);
-                }
-                for (InputResourceType type : supplemental.present) {
-                    VulkanTexture texture = supplemental.vkTextures.get(type);
-                    if (texture != null) {
-                        presentTextures.put(type, texture);
-                    }
+            for (InteropResourceType type : frame.resourceTypes()) {
+                if (type.isInput()) {
+                    presentTextures.put(type.inputType(), frame.vulkan(type));
                 }
             }
             for (InputResourceType type : InputResourceType.values()) {
@@ -416,7 +310,7 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
                 }
             }
             if (output == null) {
-                output = createResource(frame.outputColorVkTexture, true);
+                output = createResource(frame.vulkan(OutputColor), true);
             }
             eval.feature.inputColor = resources.get(InputResourceType.Color);
             eval.feature.output = output;

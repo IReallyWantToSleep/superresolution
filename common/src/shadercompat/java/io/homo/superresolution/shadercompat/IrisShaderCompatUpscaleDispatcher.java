@@ -26,6 +26,7 @@ import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.SuperResolutionAPI;
+import io.homo.superresolution.api.interop.InteropResourceContext;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
@@ -65,6 +66,16 @@ import java.util.Set;
 import static io.homo.superresolution.common.upscale.AlgorithmManager.param;
 
 public class IrisShaderCompatUpscaleDispatcher {
+    private static InteropResourceContext interopResourceContext = InteropResourceContext.empty();
+
+    public static InteropResourceContext getInteropResourceContext() {
+        return interopResourceContext;
+    }
+
+    public static void clearInteropResourceContext() {
+        interopResourceContext = InteropResourceContext.empty();
+    }
+
     public static Map<String, Object> debugInfo = new HashMap<>();
 
     public static ShaderCompatTextureInfo colorTexture;
@@ -274,6 +285,7 @@ public class IrisShaderCompatUpscaleDispatcher {
     }
 
     public static void reset(){
+        clearInteropResourceContext();
         if (colorTexture != null) {
             colorTexture.destroy();
         }
@@ -517,6 +529,7 @@ public class IrisShaderCompatUpscaleDispatcher {
                 needsPreProcessDepth,
                 needsPreProcessMotionVectors
         );
+        interopResourceContext = InteropResourceContext.fromInputs(dispatchResource.resources());
         if (SuperResolution.currentAlgorithm != null) {
             SuperResolutionAPI.EVENT_BUS.post(
                     new AlgorithmDispatchEvent(
