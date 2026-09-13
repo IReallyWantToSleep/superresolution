@@ -185,7 +185,7 @@ public class SuperResolutionConfig {
 
         FLIP_VK_GL_INTEROP_RESOURCES_Y = builder.defineBoolean(
                 "flip_vk_gl_interop_resources_y",
-                () -> true,
+                () -> false,
                 "Flip Vulkan-OpenGL interop upscaling resources on the Y axis"
         );
 
