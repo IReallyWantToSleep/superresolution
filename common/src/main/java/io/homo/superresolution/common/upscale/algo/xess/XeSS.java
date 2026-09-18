@@ -23,7 +23,6 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.SRApiAlgorithm;
-import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
@@ -141,29 +140,29 @@ public class XeSS extends SRApiAlgorithm {
     @Override
     public void dispatchSRApiContext(
             VulkanCommandBuffer commandBuffer,
-            GlVulkanInteropAlgorithm.InFlightFrameResourcesSet inFlightFrameResourcesSet
+            FrameResourcesSet frameResourcesSet
 
     ) {
         try (SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc()) {
             desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(commandBuffer.getNativeCommandBuffer()));
-            desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.vulkan(Color)));
-            desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.vulkan(Depth)));
-            desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.vulkan(MotionVectors)));
-            if (inFlightFrameResourcesSet.has(Exposure)) {
-                desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.vulkan(Exposure)));
+            desc.setColor(new SRTextureResource(frameResourcesSet.vulkan(Color)));
+            desc.setDepth(new SRTextureResource(frameResourcesSet.vulkan(Depth)));
+            desc.setMotionVectors(new SRTextureResource(frameResourcesSet.vulkan(MotionVectors)));
+            if (frameResourcesSet.has(Exposure)) {
+                desc.setExposure(new SRTextureResource(frameResourcesSet.vulkan(Exposure)));
             }
-            desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.vulkan(OutputColor)));
-            desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
-            desc.setMotionVectorScale(new Vector2f(inFlightFrameResourcesSet.frameData.renderSize()));
-            desc.setRenderSize(new Vector2i(inFlightFrameResourcesSet.frameData.renderWidth(), inFlightFrameResourcesSet.frameData.renderHeight()));
-            desc.setUpscaleSize(new Vector2i(inFlightFrameResourcesSet.frameData.screenWidth(), inFlightFrameResourcesSet.frameData.screenHeight()));
-            desc.setFrameTimeDelta(inFlightFrameResourcesSet.frameData.frameTimeDelta());
+            desc.setOutput(new SRTextureResource(frameResourcesSet.vulkan(OutputColor)));
+            desc.setJitterOffset(new Vector2f(frameResourcesSet.frameData.jitterOffset()));
+            desc.setMotionVectorScale(new Vector2f(frameResourcesSet.frameData.renderSize()));
+            desc.setRenderSize(new Vector2i(frameResourcesSet.frameData.renderWidth(), frameResourcesSet.frameData.renderHeight()));
+            desc.setUpscaleSize(new Vector2i(frameResourcesSet.frameData.screenWidth(), frameResourcesSet.frameData.screenHeight()));
+            desc.setFrameTimeDelta(frameResourcesSet.frameData.frameTimeDelta());
             desc.setEnableSharpening(true);
             desc.setSharpness(SuperResolutionConfig.getSharpness());
-            desc.setPreExposure(inFlightFrameResourcesSet.frameData.preExposure());
-            desc.setCameraNear(inFlightFrameResourcesSet.frameData.cameraNear());
-            desc.setCameraFar(inFlightFrameResourcesSet.frameData.cameraFar());
-            desc.setCameraFovAngleVertical(inFlightFrameResourcesSet.frameData.verticalFov());
+            desc.setPreExposure(frameResourcesSet.frameData.preExposure());
+            desc.setCameraNear(frameResourcesSet.frameData.cameraNear());
+            desc.setCameraFar(frameResourcesSet.frameData.cameraFar());
+            desc.setCameraFovAngleVertical(frameResourcesSet.frameData.verticalFov());
             desc.setViewSpaceToMetersFactor(1.0f);
             desc.setReset(consumeHistoryReset());
             desc.setFlags(0);

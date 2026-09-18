@@ -78,7 +78,7 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
     private NgxParameters parameters;
     private int roughnessMode = -1;
     private int depthType = -1;
-    private final Map<InFlightFrameResourcesSet, NgxDispatchResources> dispatchResources = new IdentityHashMap<>();
+    private final Map<FrameResourcesSet, NgxDispatchResources> dispatchResources = new IdentityHashMap<>();
 
     @Override
     protected List<InteropResourceRequirement> getInteropResourceRequirements() {
@@ -145,7 +145,7 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
     }
 
     @Override
-    protected void dispatchVulkanUpscale(VulkanCommandBuffer commandBuffer, InFlightFrameResourcesSet frame) {
+    protected void dispatchVulkanUpscale(VulkanCommandBuffer commandBuffer, FrameResourcesSet frame) {
         if (feature == null || parameters == null || frame.frameData == null) {
             return;
         }
@@ -280,7 +280,7 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
             eval.viewToClipMatrix = viewToClip;
         }
 
-        private void update(InFlightFrameResourcesSet frame) {
+        private void update(FrameResourcesSet frame) {
             EnumMap<InputResourceType, VulkanTexture> presentTextures = new EnumMap<>(InputResourceType.class);
             for (InteropResourceType type : frame.resourceTypes()) {
                 if (type.isInput()) {

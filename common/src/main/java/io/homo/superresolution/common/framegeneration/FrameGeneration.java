@@ -631,8 +631,7 @@ public final class FrameGeneration {
     }
 
     private static boolean presentationDependenciesSatisfied() {
-        return PresentationBackendManager.isVulkanPresentationRequested()
-                && SuperResolutionConfig.getInteropSyncMode() == InteropSyncMode.LowLatency;
+        return PresentationBackendManager.isVulkanPresentationRequested();
     }
 
     private static boolean isSupportedWith(@Nullable FrameGenerationProvider provider) {

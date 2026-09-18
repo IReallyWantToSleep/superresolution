@@ -1,20 +1,18 @@
 package io.homo.superresolution.common.upscale.interoplayer;
 
 import io.homo.superresolution.api.InputResourceSet;
-import io.homo.superresolution.api.interop.*;
+import io.homo.superresolution.api.interop.InteropResourceContext;
+import io.homo.superresolution.api.interop.InteropResourceDescription;
+import io.homo.superresolution.api.interop.InteropResourceRequirement;
+import io.homo.superresolution.api.interop.InteropResourceType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 
-import java.util.Collections;
-import java.util.EnumMap;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
 
 import static io.homo.superresolution.api.interop.InteropResourceRequirement.Presence.Optional;
 
-/** Pure layout resolution; does not query GL or create GPU objects. */
 public record InteropResourceLayout(Map<InteropResourceType, InteropResourceDescription> resources) {
     public InteropResourceLayout {
         EnumMap<InteropResourceType, InteropResourceDescription> copy = new EnumMap<>(InteropResourceType.class);
@@ -55,9 +53,18 @@ public record InteropResourceLayout(Map<InteropResourceType, InteropResourceDesc
             int width;
             int height;
             switch (requirement.sizeSource()) {
-                case RenderSize -> { width = renderWidth; height = renderHeight; }
-                case OutputSize -> { width = outputWidth; height = outputHeight; }
-                case OneByOne -> { width = 1; height = 1; }
+                case RenderSize -> {
+                    width = renderWidth;
+                    height = renderHeight;
+                }
+                case OutputSize -> {
+                    width = outputWidth;
+                    height = outputHeight;
+                }
+                case OneByOne -> {
+                    width = 1;
+                    height = 1;
+                }
                 case SourceSize -> {
                     if (source == null) {
                         throw new IllegalArgumentException("Source-sized interop resource is missing: " + type);

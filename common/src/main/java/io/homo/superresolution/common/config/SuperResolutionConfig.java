@@ -97,7 +97,6 @@ public class SuperResolutionConfig {
     public static final EnumValue<FrameGenerationMode> FRAME_GENERATION_MODE;
     public static final StringValue FRAME_GENERATION_PROVIDER;
     public static final StringValue FRAME_GENERATION_BACKEND;
-    public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
     public static final BooleanValue FLIP_VK_GL_INTEROP_RESOURCES_Y;
     public static final BooleanValue ENABLE_EXPERIMENTAL_ALGORITHMS;
     public static final BooleanValue ENABLE_DLSS_RAY_RECONSTRUCTION;
@@ -174,13 +173,6 @@ public class SuperResolutionConfig {
                 ArrayList::new,
                 "List of post-processing chains to skip injection",
                 value -> value != null && !value.isEmpty()
-        );
-
-        INTEROP_SYNC_MODE = builder.defineEnum(
-                "interop_sync_mode",
-                InteropSyncMode.class,
-                () -> InteropSyncMode.LowLatency,
-                ""
         );
 
         FLIP_VK_GL_INTEROP_RESOURCES_Y = builder.defineBoolean(
@@ -760,14 +752,6 @@ public class SuperResolutionConfig {
 
     public static void setTheme(MaterialTheme value) {
         THEME.set(value);
-    }
-
-    public static InteropSyncMode getInteropSyncMode() {
-        return INTEROP_SYNC_MODE.get();
-    }
-
-    public static void setInteropSyncMode(InteropSyncMode value) {
-        INTEROP_SYNC_MODE.set(value);
     }
 
     public static boolean isFlipVkGlInteropResourcesY() {

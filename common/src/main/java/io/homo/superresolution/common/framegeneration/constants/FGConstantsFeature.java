@@ -34,7 +34,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class FGConstantsFeature {
-    private static final int CONSTANTS_CAPACITY = Math.max(16, GlVulkanInteropAlgorithm.MAX_IN_FLIGHT_FRAME * 4);
+    private static final int CONSTANTS_CAPACITY = 8;
     private static final Map<Integer, FGConstants> CONSTANTS = new LinkedHashMap<>();
 
     private static boolean registered;

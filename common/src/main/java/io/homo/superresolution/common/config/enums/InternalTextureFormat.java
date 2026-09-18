@@ -21,9 +21,9 @@ package io.homo.superresolution.common.config.enums;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 
 public enum InternalTextureFormat {
+    AUTO(null),
     RGBA8(TextureFormat.RGBA8),
     RGBA16F(TextureFormat.RGBA16F),
-    AUTO(null),
     R11B11G10F(TextureFormat.R11G11B10F);
 
     private final TextureFormat format;

@@ -153,23 +153,6 @@ public final class AdvancedPage implements ConfigPage {
                             .setSaveConsumer(SuperResolutionConfig::setEnableCompatShaderCompiler)
                             .build();
 
-                    builder.enumSelectorOption(
-                                    Text.translatable("superresolution.screen.config.options.label.interop_sync_mode"),
-                                    InteropSyncMode.class,
-                                    SuperResolutionConfig.getInteropSyncMode())
-                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.interop_sync_mode"))
-                            .setDefaultValue(() -> InteropSyncMode.LowLatency)
-                            .setEnumNameProvider(mode -> ((InteropSyncMode) mode).toString())
-                            .setItemEnableRequirement(context::getInteropSyncModeItemRequirement)
-                            .setSaveConsumer((value) -> {
-                                SuperResolutionConfig.setInteropSyncMode(value);
-                                if (SuperResolution.currentAlgorithm instanceof GlVulkanInteropAlgorithm) {
-                                    SuperResolution.recreateAlgorithm();
-                                }
-                                context.refreshFrameGenerationOptions();
-                            })
-                            .build();
-
                     builder.booleanOption(
                                     Text.translatable("superresolution.screen.config.options.label.flip_vk_gl_interop_resources_y"),
                                     SuperResolutionConfig.isFlipVkGlInteropResourcesY())

@@ -35,7 +35,7 @@ public abstract class SRApiAlgorithm extends GlVulkanInteropAlgorithm {
 
     protected abstract void dispatchSRApiContext(
             VulkanCommandBuffer commandBuffer,
-            InFlightFrameResourcesSet inFlightFrameResourcesSet
+            FrameResourcesSet frameResourcesSet
     );
 
     @Override
@@ -57,8 +57,8 @@ public abstract class SRApiAlgorithm extends GlVulkanInteropAlgorithm {
     @Override
     protected final void dispatchVulkanUpscale(
             VulkanCommandBuffer commandBuffer,
-            InFlightFrameResourcesSet inFlightFrameResourcesSet
+            FrameResourcesSet frameResourcesSet
     ) {
-        dispatchSRApiContext(commandBuffer, inFlightFrameResourcesSet);
+        dispatchSRApiContext(commandBuffer, frameResourcesSet);
     }
 }
