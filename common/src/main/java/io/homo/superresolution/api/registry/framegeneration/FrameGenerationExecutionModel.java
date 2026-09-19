@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.api.registry;
+package io.homo.superresolution.api.registry.framegeneration;
 
 /**
  * Declares who owns frame-generation dispatch and presentation.

@@ -19,17 +19,16 @@
 package io.homo.superresolution.common.framegeneration;
 
 import io.homo.superresolution.api.registry.BackendGroup;
-import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchRequest;
-import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchResult;
-import io.homo.superresolution.api.registry.FrameGenerationDescription;
-import io.homo.superresolution.api.registry.FrameGenerationExecutionModel;
-import io.homo.superresolution.api.registry.FrameGenerationProvider;
-import io.homo.superresolution.api.registry.FrameGenerationRegistry;
-import io.homo.superresolution.api.registry.ProviderInputSnapshot;
+import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchRequest;
+import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchResult;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDescription;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationExecutionModel;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationProvider;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationRegistry;
+import io.homo.superresolution.api.registry.framegeneration.ProviderInputSnapshot;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.config.enums.InteropSyncMode;
-import io.homo.superresolution.common.framegeneration.constants.FGConstants;
+import io.homo.superresolution.common.framegeneration.constants.FrameGenerationConstants;
 import io.homo.superresolution.common.framegeneration.constants.FGConstantsFeature;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
@@ -174,7 +173,7 @@ public final class FrameGeneration {
             return FramePresentPlan.none();
         }
 
-        FGConstants constants = FGConstantsFeature.getConstants(frameResources.logicalFrameIndex());
+        FrameGenerationConstants constants = FGConstantsFeature.getConstants(frameResources.logicalFrameIndex());
         if (constants == null) {
             disableFrameGeneration();
             return FramePresentPlan.none();
@@ -235,7 +234,7 @@ public final class FrameGeneration {
             return null;
         }
 
-        FGConstants constants = FGConstantsFeature.getConstants(frameResources.logicalFrameIndex());
+        FrameGenerationConstants constants = FGConstantsFeature.getConstants(frameResources.logicalFrameIndex());
         if (constants == null) {
             return null;
         }
@@ -649,7 +648,7 @@ public final class FrameGeneration {
     private static boolean dependenciesSatisfiedWith(@Nullable FrameGenerationProvider provider) {
         return presentationDependenciesSatisfied()
                 && provider != null
-                && provider.dependenciesSatisfied();
+                && provider.isDependenciesSatisfied();
     }
 
     // FG only under shader_compat + loaded pack; vanilla/hack breaks UI presentation

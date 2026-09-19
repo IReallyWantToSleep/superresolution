@@ -16,15 +16,17 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.api.registry;
+package io.homo.superresolution.api.registry.lowlatency;
 
-public enum LowLatencyMarker {
-    SIMULATION_START,
-    SIMULATION_END,
-    RENDER_SUBMIT_START,
-    RENDER_SUBMIT_END,
-    PRESENT_START,
-    PRESENT_END,
-    TRIGGER_FLASH,
-    LATENCY_PING
+public interface LowLatencyProvider {
+    void setMarker(LowLatencyMarker marker);
+
+    void release();
+
+    void refresh();
+
+    void sleep();
+
+    default void invalidatePacing() {
+    }
 }

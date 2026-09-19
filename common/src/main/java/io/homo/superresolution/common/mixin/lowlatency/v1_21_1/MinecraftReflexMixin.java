@@ -21,7 +21,7 @@ package io.homo.superresolution.common.mixin.lowlatency.v1_21_1;
 
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.api.registry.LowLatencyDescription;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyDescription;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;

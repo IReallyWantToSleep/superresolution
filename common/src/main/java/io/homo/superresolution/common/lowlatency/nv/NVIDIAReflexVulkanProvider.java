@@ -18,8 +18,8 @@
 
 package io.homo.superresolution.common.lowlatency.nv;
 
-import io.homo.superresolution.api.registry.LowLatencyMarker;
-import io.homo.superresolution.api.registry.LowLatencyProvider;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyMarker;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyProvider;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;

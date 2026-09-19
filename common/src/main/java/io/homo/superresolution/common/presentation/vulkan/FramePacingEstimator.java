@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
-import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchResult;
+import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchResult;
 import io.homo.superresolution.common.SuperResolution;
 
 import javax.annotation.Nullable;

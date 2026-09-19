@@ -18,9 +18,9 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
-import io.homo.superresolution.api.registry.FrameGenerationDispatchCompletion;
-import io.homo.superresolution.api.registry.ProviderInputSnapshot;
-import io.homo.superresolution.api.registry.ProviderOutputLease;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispatchCompletion;
+import io.homo.superresolution.api.registry.framegeneration.ProviderInputSnapshot;
+import io.homo.superresolution.api.registry.framegeneration.ProviderOutputLease;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.lowlatency.LowLatency;

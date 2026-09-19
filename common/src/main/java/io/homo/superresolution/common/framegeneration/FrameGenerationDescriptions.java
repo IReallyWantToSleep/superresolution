@@ -21,9 +21,9 @@ package io.homo.superresolution.common.framegeneration;
 import io.homo.superresolution.api.StreamlineDistribution;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.FrameGenerationRegisterEvent;
-import io.homo.superresolution.api.registry.FrameGenerationDescription;
-import io.homo.superresolution.api.registry.FrameGenerationGroups;
-import io.homo.superresolution.api.registry.FrameGenerationRegistry;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDescription;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationGroups;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationRegistry;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 

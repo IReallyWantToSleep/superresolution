@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
-import io.homo.superresolution.api.registry.ProviderInputSnapshot;
+import io.homo.superresolution.api.registry.framegeneration.ProviderInputSnapshot;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;

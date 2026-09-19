@@ -20,7 +20,7 @@ package io.homo.superresolution.common.mixin.lowlatency.v26_2;
 
 #if MC_VER >= MC_26_2
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.api.registry.LowLatencyDescription;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyDescription;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import net.minecraft.client.FramerateLimiter;
 import net.minecraft.client.Minecraft;

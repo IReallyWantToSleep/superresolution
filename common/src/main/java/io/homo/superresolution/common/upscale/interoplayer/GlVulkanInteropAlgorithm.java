@@ -97,7 +97,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm impleme
         return List.of(
                 InteropResourceRequirement.input(
                         Color,
-                        Required, RenderSize, Context,
+                        Required, RenderSize, InternalColorConfigOrContext,
                         SuperResolutionConfig.getInternalTextureFormat()
                 ),
                 InteropResourceRequirement.input(
@@ -107,7 +107,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm impleme
                 ),
                 InteropResourceRequirement.input(
                         MotionVectors,
-                        Required, RenderSize, Context,
+                        Required, RenderSize, Fixed,
                         TextureFormat.RG16F
                 ),
                 InteropResourceRequirement.input(
@@ -348,11 +348,12 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm impleme
         inFlight.awaitCaptureRelease();
         String motionVectorPreprocessingFunction =
                 SRWorkModeManager.getCurrentState().motionVectorPreprocessingFunction();
-        InteropInputWriteSession session = new InteropInputWriteSession(inFlight.glTextures,
-                (type, source) -> transferInput(
-                        type, source, inFlight.openGl(type), motionVectorPreprocessingFunction));
-        PerformanceTracker.push(PerformanceTracker.GL_INPUT_CONVERT);
-        try {
+        try (
+                InteropInputWriteSession session = new InteropInputWriteSession(inFlight.glTextures,
+                        (type, source) -> transferInput(
+                                type, source, inFlight.openGl(type), motionVectorPreprocessingFunction))
+        ) {
+            PerformanceTracker.push(PerformanceTracker.GL_INPUT_CONVERT);
             if (writer != null) {
                 writer.accept(session);
                 session.requireHealthy();
@@ -392,7 +393,6 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm impleme
                 }
             }
         } finally {
-            session.close();
             PerformanceTracker.pop(PerformanceTracker.GL_INPUT_CONVERT);
         }
     }
@@ -549,9 +549,6 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm impleme
     ) {
         public static FrameData from(DispatchResource dispatchResource, boolean flipY) {
             Vector2f jitterOffset = new Vector2f(dispatchResource.jitterOffset());
-            if (!flipY) {
-                jitterOffset.y *= -1.0f;
-            }
             return new FrameData(
                     dispatchResource.renderWidth(),
                     dispatchResource.renderHeight(),

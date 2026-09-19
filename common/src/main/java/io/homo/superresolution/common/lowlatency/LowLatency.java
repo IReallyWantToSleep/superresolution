@@ -18,10 +18,10 @@
 
 package io.homo.superresolution.common.lowlatency;
 
-import io.homo.superresolution.api.registry.LowLatencyDescription;
-import io.homo.superresolution.api.registry.LowLatencyMarker;
-import io.homo.superresolution.api.registry.LowLatencyProvider;
-import io.homo.superresolution.api.registry.LowLatencyRegistry;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyDescription;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyMarker;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyProvider;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;

@@ -645,6 +645,10 @@ public final class SuperResolution implements Destroyable {
         return defaultAlgorithm;
     }
 
+    public static AlgorithmDescription<?> getAlgorithmDescription() {
+        return algorithmDescription;
+    }
+
     public static InitializationDescription getInitializationDescription() {
         return SRWorkModeManager.getCurrentState().initializationDescription();
     }

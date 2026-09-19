@@ -5,6 +5,8 @@ import io.homo.superresolution.api.interop.InteropResourceContext;
 import io.homo.superresolution.api.interop.InteropResourceDescription;
 import io.homo.superresolution.api.interop.InteropResourceRequirement;
 import io.homo.superresolution.api.interop.InteropResourceType;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
@@ -43,6 +45,10 @@ public record InteropResourceLayout(Map<InteropResourceType, InteropResourceDesc
                 case Context -> context.formats().get(type);
                 case SourceTexture -> source == null ? null : source.getTextureFormat();
                 case InternalColorConfig -> internalColorFormat;
+                case InternalColorConfigOrContext ->
+                        SuperResolutionConfig.INTERNAL_TEXTURE_FORMAT.get() == InternalTextureFormat.AUTO ?
+                                context.formats().get(type) :
+                                SuperResolutionConfig.getInternalTextureFormat();
             };
             if (format == null) {
                 format = requirement.fallbackFormat();

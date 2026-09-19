@@ -20,7 +20,7 @@ package io.homo.superresolution.common.framegeneration.constants;
 
 import java.util.Arrays;
 
-public final class FGConstants {
+public final class FrameGenerationConstants {
     private final float[] cameraViewToClip;
     private final float[] clipToCameraView;
     private final float[] clipToLensClip;
@@ -58,7 +58,7 @@ public final class FGConstants {
     private final byte motionVectorsJittered;
     private final float minRelativeLinearDepthObjectSeparation;
 
-    public FGConstants(
+    public FrameGenerationConstants(
             float[] cameraViewToClip,
             float[] clipToCameraView,
             float[] clipToLensClip,

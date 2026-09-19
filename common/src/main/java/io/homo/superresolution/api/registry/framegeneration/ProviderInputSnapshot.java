@@ -16,10 +16,10 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.api.registry;
+package io.homo.superresolution.api.registry.framegeneration;
 
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
-import io.homo.superresolution.common.framegeneration.constants.FGConstants;
+import io.homo.superresolution.common.framegeneration.constants.FrameGenerationConstants;
 
 import java.util.Objects;
 
@@ -38,7 +38,7 @@ public interface ProviderInputSnapshot {
 
     FrameGenerationMode mode();
 
-    FGConstants constants();
+    FrameGenerationConstants constants();
 
     boolean historyResetRequested();
 
@@ -46,7 +46,7 @@ public interface ProviderInputSnapshot {
             String providerId,
             int logicalFrameIndex,
             FrameGenerationMode mode,
-            FGConstants constants,
+            FrameGenerationConstants constants,
             boolean historyResetRequested
     ) {
         return new StandardProviderInputSnapshot(
@@ -62,7 +62,7 @@ public interface ProviderInputSnapshot {
             String providerId,
             int logicalFrameIndex,
             FrameGenerationMode mode,
-            FGConstants constants,
+            FrameGenerationConstants constants,
             boolean historyResetRequested
     ) implements ProviderInputSnapshot {
         public StandardProviderInputSnapshot {

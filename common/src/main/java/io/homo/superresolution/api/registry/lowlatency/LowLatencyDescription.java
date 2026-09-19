@@ -16,8 +16,9 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.api.registry;
+package io.homo.superresolution.api.registry.lowlatency;
 
+import io.homo.superresolution.api.registry.BackendGroup;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.special.SpecialConfigDescription;
 import net.minecraft.network.chat.Component;

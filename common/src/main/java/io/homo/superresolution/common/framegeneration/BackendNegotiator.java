@@ -19,13 +19,13 @@
 package io.homo.superresolution.common.framegeneration;
 
 import io.homo.superresolution.api.registry.BackendGroup;
-import io.homo.superresolution.api.registry.FrameGenerationDescription;
-import io.homo.superresolution.api.registry.FrameGenerationProvider;
-import io.homo.superresolution.api.registry.FrameGenerationRegistry;
-import io.homo.superresolution.api.registry.LowLatencyBinding;
-import io.homo.superresolution.api.registry.LowLatencyDescription;
-import io.homo.superresolution.api.registry.LowLatencyGroups;
-import io.homo.superresolution.api.registry.LowLatencyRegistry;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDescription;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationProvider;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationRegistry;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyBinding;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyDescription;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyGroups;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyRegistry;
 
 import javax.annotation.Nullable;
 
@@ -151,7 +151,7 @@ public final class BackendNegotiator {
                 continue;
             }
             FrameGenerationProvider provider = providerLookup.apply(description.getId());
-            if (provider == null || !provider.isAvailable() || !provider.dependenciesSatisfied()) {
+            if (provider == null || !provider.isAvailable() || !provider.isDependenciesSatisfied()) {
                 continue;
             }
             out.add(description);

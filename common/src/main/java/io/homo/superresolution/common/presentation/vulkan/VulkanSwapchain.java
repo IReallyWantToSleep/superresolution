@@ -18,16 +18,16 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
-import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchRequest;
-import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchResult;
-import io.homo.superresolution.api.registry.FrameGenerationDispatchCompletion;
+import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchRequest;
+import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchResult;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispatchCompletion;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.framegeneration.FramePresentPlan;
-import io.homo.superresolution.api.registry.ProviderInputSnapshot;
-import io.homo.superresolution.api.registry.ProviderOutputLease;
+import io.homo.superresolution.api.registry.framegeneration.ProviderInputSnapshot;
+import io.homo.superresolution.api.registry.framegeneration.ProviderOutputLease;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;

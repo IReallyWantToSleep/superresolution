@@ -69,7 +69,7 @@ public class SRCompatV1Processor implements SRCompatProcessor {
 
     @Override
     public boolean needsAdaptJitter(SRShaderCompatData config, AbstractAlgorithm algorithm, AlgorithmDescription<?> description) {
-        return false;
+        return true;
     }
 
     @Override
@@ -80,11 +80,15 @@ public class SRCompatV1Processor implements SRCompatProcessor {
 
     @Override
     public Vector2f adaptJitterForAlgorithm(Vector2f rawJitter, AbstractAlgorithm algorithm, SRShaderCompatData config, AlgorithmDescription<?> description) {
+        if (!SuperResolutionConfig.isFlipVkGlInteropResourcesY() && !description.equals(AlgorithmDescriptions.FSR4_D3D12)) {
+            return rawJitter.mul(1,-1);
+        }
         return rawJitter;
     }
 
     @Override
     public Vector2f adaptJitterForShaderpack(Vector2f rawJitter, AbstractAlgorithm algorithm, SRShaderCompatData config, AlgorithmDescription<?> description) {
+
         return rawJitter;
     }
 

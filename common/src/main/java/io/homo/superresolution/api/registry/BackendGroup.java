@@ -18,6 +18,8 @@
 
 package io.homo.superresolution.api.registry;
 
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDescription;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyDescription;
 import net.minecraft.network.chat.Component;
 
 import java.util.Objects;

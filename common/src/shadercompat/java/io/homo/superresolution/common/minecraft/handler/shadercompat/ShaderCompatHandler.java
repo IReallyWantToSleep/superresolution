@@ -19,8 +19,8 @@
 package io.homo.superresolution.common.minecraft.handler.shadercompat;
 
 import com.google.common.collect.ImmutableList;
-import io.homo.superresolution.common.debug.imgui.ImGuiDebugContext;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.debug.imgui.ImGuiDebugContext;
 import io.homo.superresolution.common.minecraft.CallType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetType;
 import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
@@ -33,6 +33,8 @@ import io.homo.superresolution.core.graphics.impl.framebuffer.IBindableFrameBuff
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
+import io.homo.superresolution.shadercompat.IrisShaderCompatUpscaleDispatcher;
+import io.homo.superresolution.shadercompat.IrisShaderCompatUtils;
 import net.irisshaders.iris.helpers.StringPair;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
@@ -242,11 +244,10 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
     }
 
 
-
     public static void loadConfig(
             Path root,
             ImmutableList<?> environmentDefines
-    ){
+    ) {
         try {
             Path srConfigPath = null;
             for (int ver = SRCompatConfigParser.LATEST_CONFIG_VERSION; ver >= 1; ver--) {
@@ -400,7 +401,9 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         }
         try {
             ShaderCompatTextureInfo textureInfo = ((ShaderCompatTextureInfo) shaderCompatColorTextureField.get(null));
-            if (textureInfo == null) return null;
+            if (textureInfo == null) {
+                return null;
+            }
             return textureInfo.getInternalTexture();
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
@@ -418,20 +421,13 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
         }
         try {
             ShaderCompatTextureInfo textureInfo = ((ShaderCompatTextureInfo) shaderCompatDepthTextureField.get(null));
-            if (textureInfo == null) return null;
+            if (textureInfo == null) {
+                return null;
+            }
             return textureInfo.getInternalTexture();
         } catch (IllegalAccessException e) {
             throw new RuntimeException(e);
         }
-    }
-
-    @Override
-    public void destroy() {
-        io.homo.superresolution.shadercompat.IrisShaderCompatUpscaleDispatcher.clearInteropResourceContext();
-        renderTargets.clear();
-        InteropResourcesPreprocessor.destroy();
-        SRCompatV2Processor.destroyPipelineCache();
-        SRCompatV3Processor.destroyPipelineCache();
     }
 
     @Override
@@ -448,32 +444,79 @@ public class ShaderCompatHandler implements IMinecraftRenderHandler {
 
     @Override
     public void collectDebugTextures(ImGuiDebugContext ctx) {
-        ctx.addFramebufferTextures("origin_render_target", "Origin Render Target", getFullSizeRenderTarget());
-        ctx.addFramebufferTextures("scaled_render_target", "Scaled Render Target", getScaledRenderTarget());
-
         ShaderCompatTextureInfo colorInfo = getTextureInfo("colorTexture");
         ShaderCompatTextureInfo depthInfo = getTextureInfo("depthTexture");
         ShaderCompatTextureInfo motionVectorsInfo = getTextureInfo("motionVectorsTexture");
         ShaderCompatTextureInfo exposureInfo = getTextureInfo("exposureTexture");
 
         if (colorInfo != null) {
-            addTextureInfo(ctx, "dispatcher_color", "Dispatcher Color", colorInfo);
+            if (IrisShaderCompatUtils.getCurrentShaderPackConfig().isPresent() &&
+                    IrisShaderCompatUtils.getCurrentShaderPackConfig().get().getProcessor().needsPreProcessColor(
+                            IrisShaderCompatUtils.getCurrentShaderPackConfig().get(),
+                            SuperResolution.getCurrentAlgorithm(),
+                            SuperResolution.getAlgorithmDescription()
+                    )) {
+                addTextureInfoWithPreprocessResources(ctx, "dispatcher_color", "Color", colorInfo);
+            } else {
+                addTextureInfo(ctx, "dispatcher_color", "Color", colorInfo);
+            }
         }
         if (depthInfo != null) {
-            addTextureInfo(ctx, "dispatcher_depth", "Dispatcher Depth", depthInfo);
+            if (IrisShaderCompatUtils.getCurrentShaderPackConfig().isPresent() &&
+                    IrisShaderCompatUtils.getCurrentShaderPackConfig().get().getProcessor().needsPreProcessDepth(
+                            IrisShaderCompatUtils.getCurrentShaderPackConfig().get(),
+                            SuperResolution.getCurrentAlgorithm(),
+                            SuperResolution.getAlgorithmDescription()
+                    )) {
+                addTextureInfoWithPreprocessResources(ctx, "dispatcher_depth", "Depth", depthInfo);
+            } else {
+                addTextureInfo(ctx, "dispatcher_depth", "Depth", depthInfo);
+            }
         }
         if (motionVectorsInfo != null) {
-            addTextureInfo(ctx, "dispatcher_mv", "Dispatcher Motion Vectors", motionVectorsInfo);
+            if (IrisShaderCompatUtils.getCurrentShaderPackConfig().isPresent() &&
+                    IrisShaderCompatUtils.getCurrentShaderPackConfig().get().getProcessor().needsPreProcessMotionVectors(
+                            IrisShaderCompatUtils.getCurrentShaderPackConfig().get(),
+                            SuperResolution.getCurrentAlgorithm(),
+                            SuperResolution.getAlgorithmDescription()
+                    )) {
+                addTextureInfoWithPreprocessResources(ctx, "dispatcher_mv", "Motion Vectors", motionVectorsInfo);
+            } else {
+                addTextureInfo(ctx, "dispatcher_mv", "Motion Vectors", motionVectorsInfo);
+            }
         }
         if (exposureInfo != null) {
-            addTextureInfo(ctx, "dispatcher_exposure", "Dispatcher Exposure", exposureInfo);
+            if (IrisShaderCompatUtils.getCurrentShaderPackConfig().isPresent() &&
+                    IrisShaderCompatUtils.getCurrentShaderPackConfig().get().getProcessor().needsPreProcessExposure(
+                            IrisShaderCompatUtils.getCurrentShaderPackConfig().get(),
+                            SuperResolution.getCurrentAlgorithm(),
+                            SuperResolution.getAlgorithmDescription()
+                    )) {
+                addTextureInfoWithPreprocessResources(ctx, "dispatcher_exposure", "Exposure", exposureInfo);
+
+            } else {
+                addTextureInfo(ctx, "dispatcher_exposure", "Exposure", exposureInfo);
+
+            }
         }
 
     }
 
+    @Override
+    public void destroy() {
+        IrisShaderCompatUpscaleDispatcher.clearInteropResourceContext();
+        renderTargets.clear();
+        InteropResourcesPreprocessor.destroy();
+        SRCompatV2Processor.destroyPipelineCache();
+        SRCompatV3Processor.destroyPipelineCache();
+    }
+
     private void addTextureInfo(ImGuiDebugContext ctx, String id, String label, ShaderCompatTextureInfo info) {
-        ctx.addTexture(id + ".source", label + " Source", info.getSourceTexture(), "Source Texture", true);
-        ctx.addTexture(id + ".internal", label + " Internal", info.getInternalTexture(), "Internal Texture", true);
+        ctx.addTexture(id, label, info.getInternalTexture(), "Internal Texture", true);
+    }
+
+    private void addTextureInfoWithPreprocessResources(ImGuiDebugContext ctx, String id, String label, ShaderCompatTextureInfo info) {
+        ctx.addTexture(id, label, info.getInternalTexture(), "Internal Texture", true);
         ctx.addTexture(id + ".preprocess_in", label + " PreProcess Input", info.getPreProcessInputTexture(), "PreProcess Input", true);
         ctx.addTexture(id + ".preprocess_out", label + " PreProcess Output", info.getPreProcessOutputTexture(), "PreProcess Output", true);
     }

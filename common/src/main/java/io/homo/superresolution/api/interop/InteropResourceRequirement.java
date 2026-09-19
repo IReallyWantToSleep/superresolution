@@ -17,7 +17,7 @@ public record InteropResourceRequirement(
 ) {
     public enum Presence { Required, Optional }
     public enum SizeSource { RenderSize, OutputSize, OneByOne, SourceSize }
-    public enum FormatSource { Fixed, Context, SourceTexture, InternalColorConfig }
+    public enum FormatSource { Fixed, Context, SourceTexture, InternalColorConfig, InternalColorConfigOrContext }
 
     public InteropResourceRequirement {
         Objects.requireNonNull(type);

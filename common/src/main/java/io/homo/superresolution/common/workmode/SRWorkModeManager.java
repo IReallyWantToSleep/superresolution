@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.workmode;
 
+import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import org.jetbrains.annotations.Nullable;
@@ -50,6 +51,7 @@ public final class SRWorkModeManager {
             return;
         }
         for (String className : BOOTSTRAP_CLASSES) {
+            if (className.contains("shadercompat") && !Platform.currentPlatform.isInstallIris()) continue;
             try {
                 Class<?> clazz = Class.forName(className);
                 Method register = clazz.getMethod("register");

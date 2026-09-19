@@ -16,11 +16,11 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.api.registry;
+package io.homo.superresolution.api.registry.framegeneration;
 
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.framegeneration.FramePresentPlan;
-import io.homo.superresolution.common.framegeneration.constants.FGConstants;
+import io.homo.superresolution.common.framegeneration.constants.FrameGenerationConstants;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 
 /**
@@ -92,7 +92,7 @@ public interface FrameGenerationProvider {
      * Backend-specific runtime prerequisites, checked in addition to the shared
      * presentation requirements. Consulted only for the active backend.
      */
-    boolean dependenciesSatisfied();
+    boolean isDependenciesSatisfied();
 
     /**
      * External-interposer compatibility entry point. Records or configures this frame and
@@ -106,13 +106,13 @@ public interface FrameGenerationProvider {
      */
     default FramePresentPlan prepareFrame(
             FrameResources frameResources,
-            FGConstants constants,
+            FrameGenerationConstants constants,
             FrameGenerationMode mode,
             int colorWidth,
             int colorHeight,
             int colorFormat,
             int backBufferCount,
-            long commandBuffer
+            long vkCommandBuffer
     ) {
         return FramePresentPlan.none();
     }
@@ -125,7 +125,7 @@ public interface FrameGenerationProvider {
     default ProviderInputSnapshot captureInputSnapshot(
             String providerId,
             FrameResources frameResources,
-            FGConstants constants,
+            FrameGenerationConstants constants,
             FrameGenerationMode mode
     ) {
         return ProviderInputSnapshot.of(
