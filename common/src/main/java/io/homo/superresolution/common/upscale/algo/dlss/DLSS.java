@@ -142,6 +142,9 @@ public class DLSS extends GlVulkanInteropAlgorithm {
         if (desc.isMotionJittered()) {
             flags |= NgxConstants.DLSS_FLAG_MV_JITTERED;
         }
+        if (desc.isDepthInverted()) {
+            flags |= NgxConstants.DLSS_FLAG_DEPTH_INVERTED;
+        }
         return flags;
     }
 

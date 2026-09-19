@@ -125,7 +125,9 @@ public final class FfxFSR4D3D12 extends GlD3D12InteropAlgorithm<FfxFSR4D3D12.Con
                 if (desc.isMotionJittered()) {
                     flags.add(SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED);
                 }
-
+                if (desc.isDepthInverted()) {
+                    flags.add(SRUpscaleContextCreateFlags.ENABLE_DEPTH_INVERTED);
+                }
                 try (
                         SRCreateUpscaleContextDesc createDesc = SRCreateUpscaleContextDesc.createD3D12(
                                 new SRD3D12DeviceInfo(device.nativeDevice()),

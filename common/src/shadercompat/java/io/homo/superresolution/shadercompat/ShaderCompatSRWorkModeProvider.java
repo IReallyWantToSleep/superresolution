@@ -59,7 +59,8 @@ public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
             SRShaderCompatData.UpscaleConfig upscale = profile.get().upscale;
             desc.setHdrInput(upscale.isHdrInput)
                     .setAutoExposure(upscale.isAutoExposure)
-                    .setMotionJittered(upscale.isMotionJittered);
+                    .setMotionJittered(upscale.isMotionJittered)
+                    .setDepthInverted(isHasDepthTransform());
             internalFormat = upscale.internalFormat;
             if (upscale.customs != null) {
                 motionVectorPreprocessingFunction = upscale.customs.motionVectorPreprocessingFunction;
@@ -117,5 +118,14 @@ public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
             ctx.property("Auto Exposure", upscale.isAutoExposure);
             ctx.property("Motion Jittered", upscale.isMotionJittered);
         }
+    }
+
+    private boolean isHasDepthTransform(){
+        try {
+            Class.forName("net.irisshaders.iris.pipeline.transform.transformer.DepthTransformer");
+        } catch (ClassNotFoundException e) {
+            return false;
+        }
+        return true;
     }
 }

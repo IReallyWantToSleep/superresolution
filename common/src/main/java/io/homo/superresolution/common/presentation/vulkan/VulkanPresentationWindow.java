@@ -69,7 +69,6 @@ public final class VulkanPresentationWindow {
 			consumeRenderedFrame(presentationContext, frameResources);
 			throw new IllegalStateException("Vulkan presentation frame is missing final color");
 		}
-		// MINIMIZE GUARD: Consume captured resources without acquiring or presenting a swapchain image.
 		if (!presentationSurface.shouldClose()
 			&& !presentationSurface.isMinimized()) {
 			boolean presented = presentationContext.present(frameResources);

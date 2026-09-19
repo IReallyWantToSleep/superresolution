@@ -18,39 +18,28 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
-import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchRequest;
-import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchResult;
-import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispatchCompletion;
+import io.homo.superresolution.api.registry.framegeneration.*;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.framegeneration.FramePresentPlan;
-import io.homo.superresolution.api.registry.framegeneration.ProviderInputSnapshot;
-import io.homo.superresolution.api.registry.framegeneration.ProviderOutputLease;
 import io.homo.superresolution.common.lowlatency.LowLatency;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
-import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
-import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBufferRing;
-import io.homo.superresolution.core.graphics.vulkan.VulkanBinarySemaphorePool;
-import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
-import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
-import io.homo.superresolution.core.graphics.vulkan.VulkanQueue;
-import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
-import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
+import io.homo.superresolution.core.graphics.vulkan.*;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.LongConsumer;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
@@ -79,11 +68,11 @@ final class VulkanSwapchain {
             new VulkanCommandBufferRing(MAX_IN_FLIGHT_FRAMES);
     private final PresentPacer pacer = new PresentPacer();
     private final Object fgToMainSemaphoreLock = new Object();
-    private long[] fgToMainSemaphorePool = new long[MAX_IN_FLIGHT_FRAMES];
-    private int fgToMainSemaphorePoolSize;
     private final Object swapchainLock = new Object();
     private final Object applicationManagedTargetLock = new Object();
     private final long[] imageAvailable = new long[ACQUIRE_SYNC_SLOTS];
+    private long[] fgToMainSemaphorePool = new long[MAX_IN_FLIGHT_FRAMES];
+    private int fgToMainSemaphorePoolSize;
     private long[] renderFinished = new long[0];
     private VulkanCommandBufferRing generatedBlitCommandBuffers;
     private VulkanCommandBufferRing applicationManagedCommandBuffers;
@@ -166,6 +155,57 @@ final class VulkanSwapchain {
         if (result != VK_SUCCESS) {
             throw new IllegalStateException("Failed to " + operation + ", VkResult=" + result);
         }
+    }
+
+    private static FrameBatch createRealOnlyBatch(
+            FramePacingEstimator framePacingEstimator,
+            RealFrameJob job,
+            long batchId,
+            PresentFrame realFrame
+    ) {
+        framePacingEstimator.onBatchResult(0, null);
+        return FrameBatch.realOnly(
+                job.realIndex(),
+                batchId,
+                job.latencyFrameId(),
+                realFrame.presentId(),
+                realFrame.batchIntervalNanos(),
+                realFrame,
+                realFrame.sourceCompletion()
+        );
+    }
+
+    private static void cancelFgTimestamp(VulkanTimestampProfiler profiler, int slot) {
+        if (profiler != null && slot >= 0) {
+            profiler.cancelRegion(slot);
+        }
+    }
+
+    private static void resetCommandBuffers(
+            List<VulkanCommandBuffer> commandBuffers,
+            int fromIndex
+    ) {
+        for (int index = fromIndex; index < commandBuffers.size(); index++) {
+            commandBuffers.get(index).reset();
+        }
+    }
+
+    private static long batchIntervalNanos(long realPeriodNanos, int generatedCount) {
+        long interval = realPeriodNanos / Math.max(1L, generatedCount + 1L);
+        return Math.max(
+                MIN_APPLICATION_MANAGED_PRESENT_INTERVAL_NANOS,
+                Math.min(MAX_APPLICATION_MANAGED_PRESENT_INTERVAL_NANOS, interval)
+        );
+    }
+
+    private static String presentModeName(int presentMode) {
+        return switch (presentMode) {
+            case VK_PRESENT_MODE_IMMEDIATE_KHR -> "IMMEDIATE";
+            case VK_PRESENT_MODE_MAILBOX_KHR -> "MAILBOX";
+            case VK_PRESENT_MODE_FIFO_KHR -> "FIFO";
+            case VK_PRESENT_MODE_FIFO_RELAXED_KHR -> "FIFO_RELAXED";
+            default -> Integer.toString(presentMode);
+        };
     }
 
     public void requestRecreate() {
@@ -335,9 +375,9 @@ final class VulkanSwapchain {
         int requestedGeneratedCount = snapshot == null
                 ? 0
                 : Math.min(
-                        snapshot.mode().generatedFrameCount(),
-                        AsyncFrameGenerationScheduler.MAX_GENERATED_FRAMES
-                );
+                snapshot.mode().generatedFrameCount(),
+                AsyncFrameGenerationScheduler.MAX_GENERATED_FRAMES
+        );
         if (requestedGeneratedCount > 0
                 && imageCount < requestedGeneratedCount + 2) {
             requestRecreate();
@@ -372,28 +412,10 @@ final class VulkanSwapchain {
         return realFrame == null
                 ? null
                 : createRealOnlyBatch(
-                        framePacingEstimator,
-                        job,
-                        batchId,
-                        realFrame
-                );
-    }
-
-    private static FrameBatch createRealOnlyBatch(
-            FramePacingEstimator framePacingEstimator,
-            RealFrameJob job,
-            long batchId,
-            PresentFrame realFrame
-    ) {
-        framePacingEstimator.onBatchResult(0, null);
-        return FrameBatch.realOnly(
-                        job.realIndex(),
-                        batchId,
-                        job.latencyFrameId(),
-                        realFrame.presentId(),
-                        realFrame.batchIntervalNanos(),
-                        realFrame,
-                        realFrame.sourceCompletion()
+                framePacingEstimator,
+                job,
+                batchId,
+                realFrame
         );
     }
 
@@ -458,9 +480,9 @@ final class VulkanSwapchain {
                 int fgTimestampSlot = fgProfiler == null || commandBuffers.isEmpty()
                         ? -1
                         : fgProfiler.beginRegion(
-                                commandBuffers.get(0).getNativeCommandBuffer(),
-                                PerformanceTracker.VK_FRAME_GEN
-                        );
+                        commandBuffers.get(0).getNativeCommandBuffer(),
+                        PerformanceTracker.VK_FRAME_GEN
+                );
                 AsyncFrameGenerationDispatchRequest request =
                         new AsyncFrameGenerationDispatchRequest(
                                 job.frameResources(),
@@ -741,9 +763,9 @@ final class VulkanSwapchain {
                     // stall the render thread on the previous batch's GPU work.
                     FrameGenerationDispatchCompletion acquireCompletion = generated
                             ? new SubmittedCommandBufferCompletion(
-                                    commandBuffers.get(index),
-                                    submissionGenerations[index]
-                            )
+                            commandBuffers.get(index),
+                            submissionGenerations[index]
+                    )
                             : realAcquireCompletion;
                     presentFrames.add(new PresentFrame(
                             firstDisplayIndex + index,
@@ -851,12 +873,6 @@ final class VulkanSwapchain {
             requestRecreate();
         }
         return null;
-    }
-
-    private static void cancelFgTimestamp(VulkanTimestampProfiler profiler, int slot) {
-        if (profiler != null && slot >= 0) {
-            profiler.cancelRegion(slot);
-        }
     }
 
     private PresentFrame submitRealOnly(
@@ -1254,6 +1270,9 @@ final class VulkanSwapchain {
             long immutablePresentId,
             boolean applicationManaged
     ) {
+        if (!surface.isShown()) {
+            return VK_SUCCESS;
+        }
         return VulkanLowLatency.synchronizedSwapchainOperation(() -> {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack)
@@ -1725,15 +1744,6 @@ final class VulkanSwapchain {
         }
     }
 
-    private static void resetCommandBuffers(
-            List<VulkanCommandBuffer> commandBuffers,
-            int fromIndex
-    ) {
-        for (int index = fromIndex; index < commandBuffers.size(); index++) {
-            commandBuffers.get(index).reset();
-        }
-    }
-
     private void abortProviderLease(ProviderOutputLease outputLease) {
         if (outputLease != null && !outputLease.isReleased()) {
             outputLease.abort();
@@ -1811,14 +1821,6 @@ final class VulkanSwapchain {
             return "Provider output texture format does not match its lease key";
         }
         return null;
-    }
-
-    private static long batchIntervalNanos(long realPeriodNanos, int generatedCount) {
-        long interval = realPeriodNanos / Math.max(1L, generatedCount + 1L);
-        return Math.max(
-                MIN_APPLICATION_MANAGED_PRESENT_INTERVAL_NANOS,
-                Math.min(MAX_APPLICATION_MANAGED_PRESENT_INTERVAL_NANOS, interval)
-        );
     }
 
     private void recordBlit(
@@ -2182,10 +2184,10 @@ final class VulkanSwapchain {
             int presentMode = (vsync && !frameGenerationActive)
                     ? VK_PRESENT_MODE_FIFO_KHR
                     : chooseNonVsyncPresentMode(
-                            stack,
-                            context.physicalDevice(),
-                            frameGenerationActive
-                    );
+                    stack,
+                    context.physicalDevice(),
+                    frameGenerationActive
+            );
             int[] extent = chooseExtent(capabilities);
             int requestedImageCount = chooseImageCount(capabilities);
 
@@ -2300,16 +2302,6 @@ final class VulkanSwapchain {
             throw new IllegalStateException("Vulkan surface has no usable transfer destination format");
         }
         return fallback;
-    }
-
-    private static String presentModeName(int presentMode) {
-        return switch (presentMode) {
-            case VK_PRESENT_MODE_IMMEDIATE_KHR -> "IMMEDIATE";
-            case VK_PRESENT_MODE_MAILBOX_KHR -> "MAILBOX";
-            case VK_PRESENT_MODE_FIFO_KHR -> "FIFO";
-            case VK_PRESENT_MODE_FIFO_RELAXED_KHR -> "FIFO_RELAXED";
-            default -> Integer.toString(presentMode);
-        };
     }
 
     private int chooseNonVsyncPresentMode(
@@ -2490,10 +2482,15 @@ final class VulkanSwapchain {
 
     private record ScheduledPresentTarget(
             int imageIndex,
+
             long swapchainHandle,
+
             long imageHandle,
+
             int layoutAtAcquire,
+
             long renderFinishedSemaphore,
+
             VulkanBinarySemaphorePool.Lease acquireLease
     ) {
         private ScheduledPresentTarget {
@@ -2635,6 +2632,10 @@ final class VulkanSwapchain {
         }
     }
 
-    private record PresentSubmission(int imageIndex, FramePresentPlan plan, boolean paced) {
+    private record PresentSubmission(int imageIndex,
+
+                                     FramePresentPlan plan,
+
+                                     boolean paced) {
     }
 }

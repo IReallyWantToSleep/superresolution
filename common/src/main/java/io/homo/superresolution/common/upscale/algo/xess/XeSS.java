@@ -67,19 +67,16 @@ public class XeSS extends SRApiAlgorithm {
             VulkanCommandBuffer commandBuffer = vulkanDevice.createCommandBuffer();
             EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
             if (desc.isAutoExposure()) {
-                flags.add(
-                        SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
-                );
+                flags.add(SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE);
             }
             if (desc.isHdrInput()) {
-                flags.add(
-                        SRUpscaleContextCreateFlags.ENABLE_HDR
-                );
+                flags.add(SRUpscaleContextCreateFlags.ENABLE_HDR);
             }
             if (desc.isMotionJittered()) {
-                flags.add(
-                        SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
-                );
+                flags.add(SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED);
+            }
+            if (desc.isDepthInverted()) {
+                flags.add(SRUpscaleContextCreateFlags.ENABLE_DEPTH_INVERTED);
             }
             try (
                     SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
