@@ -231,7 +231,9 @@ public class DLSS extends GlVulkanInteropAlgorithm {
     }
 
     private void destroyNgxDispatchResources() {
-        ngxDispatchResource.close();
+        if (ngxDispatchResource != null){
+            ngxDispatchResource.close();
+        }
     }
 
     private NgxResourceVK createNgxTextureResource(VulkanTexture texture, boolean readWrite) {
