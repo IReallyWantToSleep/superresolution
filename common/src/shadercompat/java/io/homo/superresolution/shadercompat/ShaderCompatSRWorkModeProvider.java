@@ -18,7 +18,10 @@ import java.util.Optional;
 
 public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
     private boolean listenersRegistered;
-
+    // 0 - unchecked
+    // 1 - true
+    // -1 - false
+    private int depthTransformStatus = 0;
     @Override
     public String id() {
         return SRWorkModeManager.SHADER_COMPAT;
@@ -121,9 +124,12 @@ public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
     }
 
     private boolean isHasDepthTransform(){
+        if (depthTransformStatus != 0) return depthTransformStatus == 1;
         try {
             Class.forName("net.irisshaders.iris.pipeline.transform.transformer.DepthTransformer");
+            depthTransformStatus = 1;
         } catch (ClassNotFoundException e) {
+            depthTransformStatus = -1;
             return false;
         }
         return true;

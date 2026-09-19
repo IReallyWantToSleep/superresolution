@@ -54,10 +54,6 @@
                 }
             ],
             "local": [
-                {
-                    "name": "batcher-1.0.2",
-                    "isMod": true
-                }
             ]
         },
         "modmenu_version": "18.0.0-alpha.8"
