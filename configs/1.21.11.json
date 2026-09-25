@@ -1,7 +1,7 @@
 {
     "skip_build": false,
     "common": {
-        "java_version": 21,
+        "java_version": 25,
         "minecraft_version": "1.21.11",
         "parchment_version": "1.21.11:2025.12.20",
         "platforms": [
@@ -48,9 +48,14 @@
             ],
             "local": [
                 {
-                    "name": "iris-fabric-1.10.6-snapshot+mc1.21.11-local",
+                    "name": "iris-fabric-1.10.6-vibris.1+mc1.21.11",
+                    "isMod": true
+                },
+                {
+                    "name": "vibris-fabric-0.1.0-alpha.1",
                     "isMod": true
                 }
+
             ]
         },
         "modmenu_version": "17.0.0-beta.1"

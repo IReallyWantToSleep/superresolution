@@ -69,7 +69,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {
@@ -88,7 +87,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {
@@ -109,7 +107,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {
@@ -129,7 +126,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {
@@ -149,7 +145,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {
@@ -170,7 +165,6 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
             int i,
             int passesSize
     ) {
@@ -191,9 +185,7 @@ public class CompositeRendererMixin {
             RenderTarget main,
             GpuBuffer indices,
             VertexFormat.IndexType type,
-            RenderPass renderPass,
-            int i,
-            int passesSize
+            int i
     ) {
         int passIndex = Math.max(i, 0);
         if (IrisReflectionUtils.getCompositePassType(this.passes.get(passIndex)) == IrisCompositePassType.ComputeOnly) {

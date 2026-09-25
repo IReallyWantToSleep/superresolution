@@ -4,7 +4,7 @@ import utils.MinecraftVersion
 
 plugins {
     id("multiloader-loader")
-    id("net.fabricmc.fabric-loom") version "1.18.2"
+    id("net.fabricmc.fabric-loom-remap") version "1.18.2"
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -222,7 +222,7 @@ loom {
             programArguments.add("--graphicsBackend=opengl")
             programArguments.add("--renderDebugLabels=true")
 
-            runDirectory.dir("../runs/fabric")
+            runDirectory.set(File("../runs/fabric"))
         }
     }
 }

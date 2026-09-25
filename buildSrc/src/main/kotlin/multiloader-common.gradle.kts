@@ -14,7 +14,7 @@ base {
 }
 
 java {
-    toolchain.languageVersion.set(JavaLanguageVersion.of(currentVersionConfig.common.javaVersion))
+    toolchain.languageVersion.set(JavaLanguageVersion.of(25))
     withSourcesJar()
     withJavadocJar()
 }
