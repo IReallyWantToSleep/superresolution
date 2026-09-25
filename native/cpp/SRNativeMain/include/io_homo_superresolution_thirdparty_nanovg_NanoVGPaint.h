@@ -6,16 +6,16 @@
 #define _Included_io_homo_superresolution_thirdparty_nanovg_NanoVGPaint
 #ifdef __cplusplus
 extern "C" {
-#endif
-/*
- * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGPaint
- * Method:    nDelete
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGPaint_nDelete
-  (JNIEnv *, jobject, jlong);
+    #endif
+    /*
+     * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGPaint
+     * Method:    nDelete
+     * Signature: (J)V
+     */
+    JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGPaint_nDelete
+    (JNIEnv *, jobject, jlong);
 
-#ifdef __cplusplus
+    #ifdef __cplusplus
 }
 #endif
 #endif

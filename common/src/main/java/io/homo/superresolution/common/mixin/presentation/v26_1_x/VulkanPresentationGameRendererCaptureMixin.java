@@ -20,7 +20,7 @@ package io.homo.superresolution.common.mixin.presentation.v26_1_x;
 
 #if MC_VER >= MC_26_1 && MC_VER < MC_26_2
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
@@ -28,7 +28,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(value = GameRenderer.class, priority = 900)
+@Mixin(value = GameRenderer.class)
 public abstract class VulkanPresentationGameRendererCaptureMixin {
     @Inject(
             method = "render(Lnet/minecraft/client/DeltaTracker;Z)V",
@@ -43,18 +43,18 @@ public abstract class VulkanPresentationGameRendererCaptureMixin {
             boolean advanceGameTime,
             CallbackInfo ci
     ) {
-        if (VulkanPresentationFeature.isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             FrameCaptureManager.captureHudlessColor();
         }
     }
 
-    @Inject(method = "render(Lnet/minecraft/client/DeltaTracker;Z)V", at = @At("RETURN"))
+    @Inject(method = "render(Lnet/minecraft/client/DeltaTracker;Z)V", at = @At("RETURN"),order = 2000)
     private void super_resolution$captureFinalColor(
             DeltaTracker deltaTracker,
             boolean advanceGameTime,
             CallbackInfo ci
     ) {
-        if (VulkanPresentationFeature.isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             FrameCaptureManager.captureFinalColor();
         }
     }

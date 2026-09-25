@@ -4,7 +4,7 @@ import utils.MinecraftVersion
 
 plugins {
     id("multiloader-loader")
-    id("net.fabricmc.fabric-loom-remap") version "1.16.3"
+    id("net.fabricmc.fabric-loom") version "1.18.2"
 }
 
 @Suppress("UNCHECKED_CAST")
@@ -206,24 +206,23 @@ loom {
     }
     runs {
         named("client") {
-            vmArg("-XX:+CreateMinidumpOnCrash")
+            jvmArguments.add("-XX:+CreateMinidumpOnCrash")
 
-            vmArg("--enable-preview")
-            vmArg("--enable-native-access=ALL-UNNAMED")
+            jvmArguments.add("--enable-preview")
+            jvmArguments.add("--enable-native-access=ALL-UNNAMED")
 
-            vmArg("-Dmixin.debug.export=true")
+            jvmArguments.add("-Dmixin.debug.export=true")
 
             // We force set the lwjgl version to versionConfig.common.lwjglVersion
             // Sodium will check the lwjgl version,ensure it equals the lwjgl version of corresponding Minecraft version
             // We must disable the check,otherwise sodium will crash the game.
-            vmArg("-Dsodium.checks.issue2561=false")
+            jvmArguments.add("-Dsodium.checks.issue2561=false")
 
             // Only effective in 1.21.5+
-            programArg("--graphicsBackend=opengl")
-            programArg("--renderDebugLabels=true")
+            programArguments.add("--graphicsBackend=opengl")
+            programArguments.add("--renderDebugLabels=true")
 
-            ideConfigGenerated(true)
-            runDir("../runs/fabric")
+            runDirectory.dir("../runs/fabric")
         }
     }
 }

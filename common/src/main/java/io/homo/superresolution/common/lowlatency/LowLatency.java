@@ -6,19 +6,27 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.homo.superresolution.common.lowlatency;
 
-import io.homo.superresolution.api.registry.LowLatencyDescription;
-import io.homo.superresolution.api.registry.LowLatencyMarker;
-import io.homo.superresolution.api.registry.LowLatencyProvider;
-import io.homo.superresolution.api.registry.LowLatencyRegistry;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyDescription;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyMarker;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyProvider;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 import io.homo.superresolution.core.streamline.Streamline;
 import net.minecraft.client.Minecraft;
@@ -163,8 +171,7 @@ public final class LowLatency {
     }
 
     public static boolean isAvailable() {
-        return SuperResolutionConfig.isEnableVulkanPresentation()
-                && VulkanPresentationFeature.isAvailable();
+        return PresentationBackendManager.isVulkanPresentationAvailable();
     }
 
     public static boolean isPclAvailable() {

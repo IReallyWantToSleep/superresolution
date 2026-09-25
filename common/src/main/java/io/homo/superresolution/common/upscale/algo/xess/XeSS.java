@@ -23,7 +23,6 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.SRApiAlgorithm;
-import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.SuperResolutionConstants;
@@ -36,6 +35,7 @@ import org.joml.Vector2i;
 
 import java.nio.file.Path;
 import java.util.EnumSet;
+import static io.homo.superresolution.api.interop.InteropResourceType.*;
 
 public class XeSS extends SRApiAlgorithm {
 
@@ -50,11 +50,7 @@ public class XeSS extends SRApiAlgorithm {
             return;
         }
 
-        if (context != null) {
-            if (context.nativePtr > 0) {
-                context.destroy();
-            }
-        }
+        destroySRApiContext();
         SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
                 lib.toAbsolutePath().toString(),
                 "srGetXeSSUpscaleProviders",
@@ -71,19 +67,16 @@ public class XeSS extends SRApiAlgorithm {
             VulkanCommandBuffer commandBuffer = vulkanDevice.createCommandBuffer();
             EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
             if (desc.isAutoExposure()) {
-                flags.add(
-                        SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE
-                );
+                flags.add(SRUpscaleContextCreateFlags.ENABLE_AUTO_EXPOSURE);
             }
             if (desc.isHdrInput()) {
-                flags.add(
-                        SRUpscaleContextCreateFlags.ENABLE_HDR
-                );
+                flags.add(SRUpscaleContextCreateFlags.ENABLE_HDR);
             }
             if (desc.isMotionJittered()) {
-                flags.add(
-                        SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED
-                );
+                flags.add(SRUpscaleContextCreateFlags.ENABLE_MOTION_VECTORS_JITTERED);
+            }
+            if (desc.isDepthInverted()) {
+                flags.add(SRUpscaleContextCreateFlags.ENABLE_DEPTH_INVERTED);
             }
             try (
                     SRCreateUpscaleContextDesc upscaleContextDesc = SRCreateUpscaleContextDesc.createVulkan(
@@ -144,27 +137,29 @@ public class XeSS extends SRApiAlgorithm {
     @Override
     public void dispatchSRApiContext(
             VulkanCommandBuffer commandBuffer,
-            GlVulkanInteropAlgorithm.InFlightFrameResourcesSet inFlightFrameResourcesSet
+            FrameResourcesSet frameResourcesSet
 
     ) {
         try (SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc()) {
             desc.setCommandBuffer(SRDispatchCommandBufferInfo.createVulkan(commandBuffer.getNativeCommandBuffer()));
-            desc.setColor(new SRTextureResource(inFlightFrameResourcesSet.inputColorVkTexture));
-            desc.setDepth(new SRTextureResource(inFlightFrameResourcesSet.inputDepthVkTexture));
-            desc.setMotionVectors(new SRTextureResource(inFlightFrameResourcesSet.inputMotionVectorsVkTexture));
-            desc.setExposure(new SRTextureResource(inFlightFrameResourcesSet.inputExposureVkTexture));
-            desc.setOutput(new SRTextureResource(inFlightFrameResourcesSet.outputColorVkTexture));
-            desc.setJitterOffset(new Vector2f(inFlightFrameResourcesSet.frameData.jitterOffset()));
-            desc.setMotionVectorScale(new Vector2f(inFlightFrameResourcesSet.frameData.renderSize()));
-            desc.setRenderSize(new Vector2i(inFlightFrameResourcesSet.frameData.renderWidth(), inFlightFrameResourcesSet.frameData.renderHeight()));
-            desc.setUpscaleSize(new Vector2i(inFlightFrameResourcesSet.frameData.screenWidth(), inFlightFrameResourcesSet.frameData.screenHeight()));
-            desc.setFrameTimeDelta(inFlightFrameResourcesSet.frameData.frameTimeDelta());
+            desc.setColor(new SRTextureResource(frameResourcesSet.vulkan(Color)));
+            desc.setDepth(new SRTextureResource(frameResourcesSet.vulkan(Depth)));
+            desc.setMotionVectors(new SRTextureResource(frameResourcesSet.vulkan(MotionVectors)));
+            if (frameResourcesSet.has(Exposure)) {
+                desc.setExposure(new SRTextureResource(frameResourcesSet.vulkan(Exposure)));
+            }
+            desc.setOutput(new SRTextureResource(frameResourcesSet.vulkan(OutputColor)));
+            desc.setJitterOffset(new Vector2f(frameResourcesSet.frameData.jitterOffset()));
+            desc.setMotionVectorScale(new Vector2f(frameResourcesSet.frameData.renderSize()));
+            desc.setRenderSize(new Vector2i(frameResourcesSet.frameData.renderWidth(), frameResourcesSet.frameData.renderHeight()));
+            desc.setUpscaleSize(new Vector2i(frameResourcesSet.frameData.screenWidth(), frameResourcesSet.frameData.screenHeight()));
+            desc.setFrameTimeDelta(frameResourcesSet.frameData.frameTimeDelta());
             desc.setEnableSharpening(true);
             desc.setSharpness(SuperResolutionConfig.getSharpness());
-            desc.setPreExposure(inFlightFrameResourcesSet.frameData.preExposure());
-            desc.setCameraNear(inFlightFrameResourcesSet.frameData.cameraNear());
-            desc.setCameraFar(inFlightFrameResourcesSet.frameData.cameraFar());
-            desc.setCameraFovAngleVertical(inFlightFrameResourcesSet.frameData.verticalFov());
+            desc.setPreExposure(frameResourcesSet.frameData.preExposure());
+            desc.setCameraNear(frameResourcesSet.frameData.cameraNear());
+            desc.setCameraFar(frameResourcesSet.frameData.cameraFar());
+            desc.setCameraFovAngleVertical(frameResourcesSet.frameData.verticalFov());
             desc.setViewSpaceToMetersFactor(1.0f);
             desc.setReset(consumeHistoryReset());
             desc.setFlags(0);

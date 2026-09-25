@@ -129,12 +129,12 @@ public class TooltipRenderer {
         if (!tooltip.isEmpty()) {
             widthAnimator
                     .fromTo(widthAnimator.get() == null ? 0f : widthAnimator.get(), width)
-                    .duration(250)
+                    .duration(150)
                     .timeInterpolator(TimeInterpolator.easeOutQuint())
                     .start();
             heightAnimator
                     .fromTo(heightAnimator.get() == null ? 0f : heightAnimator.get(), height)
-                    .duration(250)
+                    .duration(150)
                     .timeInterpolator(TimeInterpolator.easeOutQuint())
                     .start();
         }
@@ -215,7 +215,7 @@ public class TooltipRenderer {
         this.isHiding = false;
         alphaAnimator
                 .fromTo(alphaAnimator.get() == null ? 0f : alphaAnimator.get(), 1f)
-                .duration(150)
+                .duration(100)
                 .timeInterpolator(TimeInterpolator.linear())
                 .start();
     }
@@ -228,7 +228,7 @@ public class TooltipRenderer {
         this.isHiding = true;
         alphaAnimator
                 .fromTo(alphaAnimator.get() == null ? 1f : alphaAnimator.get(), 0f)
-                .duration(150)
+                .duration(100)
                 .timeInterpolator(TimeInterpolator.linear())
                 .start();
     }

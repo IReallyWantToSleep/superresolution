@@ -20,6 +20,7 @@
 #define FONS_H
 #define FONS_USE_FREETYPE
 #define FONS_INVALID -1
+
 enum FONSflags {
     FONS_ZERO_TOPLEFT = 1,
     FONS_ZERO_BOTTOMLEFT = 2,
@@ -164,8 +165,11 @@ void fonsDrawDebug(FONScontext *s, float x, float y);
 
 // Variation axis support (FreeType backend only)
 int fonsSetVariationAxis(FONScontext *s, int font, const char *axisTag, float value);
+
 int fonsGetVariationAxisCount(FONScontext *s, int font);
+
 int fonsGetVariationAxisName(FONScontext *s, int font, int index, char *nameOut, int nameOutSize);
+
 int fonsGetVariationAxisValue(FONScontext *s, int font, const char *axisTag, float *outValue);
 
 #endif // FONTSTASH_H
@@ -186,6 +190,7 @@ int fonsGetVariationAxisValue(FONScontext *s, int font, const char *axisTag, flo
 struct FONSttFontImpl {
     FT_Face font;
 };
+
 typedef struct FONSttFontImpl FONSttFontImpl;
 
 #else
@@ -265,6 +270,7 @@ struct FONSglyph {
     short xadv, xoff, yoff;
     unsigned int variationHash;
 };
+
 typedef struct FONSglyph FONSglyph;
 
 struct FONSfont {
@@ -288,6 +294,7 @@ struct FONSfont {
     int nvarAxes;
     int cvarAxes;
 };
+
 typedef struct FONSfont FONSfont;
 
 struct FONSstate {
@@ -298,11 +305,13 @@ struct FONSstate {
     float blur;
     float spacing;
 };
+
 typedef struct FONSstate FONSstate;
 
 struct FONSatlasNode {
     short x, y, width;
 };
+
 typedef struct FONSatlasNode FONSatlasNode;
 
 struct FONSatlas {
@@ -311,6 +320,7 @@ struct FONSatlas {
     int nnodes;
     int cnodes;
 };
+
 typedef struct FONSatlas FONSatlas;
 
 struct FONScontext {
@@ -334,18 +344,19 @@ struct FONScontext {
     void (*handleError)(void *uptr, int error, int val);
 
     void *errorUptr;
-#ifdef FONS_USE_FREETYPE
-FT_Library ftLibrary;
-#endif
+    #ifdef FONS_USE_FREETYPE
+    FT_Library ftLibrary;
+    #endif
 };
+
 static unsigned int fons__computeVariationHash(FONSfont *font) {
     unsigned int h = 0;
     int i;
     for (i = 0; i < font->nvarAxes; i++) {
         h ^= fons__hashString(font->varAxisTags[i]);
         // Quantize float value to 1e-3 to avoid cache misses from tiny differences
-        int quantized = (int)(font->varAxisValues[i] * 1000.0f + 0.5f);
-        h ^= fons__hashint((unsigned int)quantized);
+        int quantized = (int) (font->varAxisValues[i] * 1000.0f + 0.5f);
+        h ^= fons__hashint((unsigned int) quantized);
     }
     return h;
 }
@@ -833,6 +844,7 @@ void fonsResetFallbackFont(FONScontext *stash, int base) {
     for (i = 0; i < FONS_HASH_LUT_SIZE; i++)
         baseFont->lut[i] = -1;
 }
+
 // fontstash.h
 int fonsSetVariationAxis(FONScontext *stash, int font, const char *axisTag, float value) {
     FONSfont *f;
@@ -843,7 +855,7 @@ int fonsSetVariationAxis(FONScontext *stash, int font, const char *axisTag, floa
     f = stash->fonts[font];
     if (f->data == NULL) return 0;
 
-#ifdef FONS_USE_FREETYPE
+    #ifdef FONS_USE_FREETYPE
     // Apply to FreeType face
     FT_Face ftFace = f->font.font;
     if (ftFace == NULL) return 0;
@@ -853,7 +865,7 @@ int fonsSetVariationAxis(FONScontext *stash, int font, const char *axisTag, floa
     for (i = 0; i < f->nvarAxes; i++) {
         if (strcmp(f->varAxisTags[i], axisTag) == 0) {
             if (f->varAxisValues[i] == value) {
-                return 1; 
+                return 1;
             }
             f->varAxisValues[i] = value;
             goto apply_and_rehash;
@@ -863,8 +875,8 @@ int fonsSetVariationAxis(FONScontext *stash, int font, const char *axisTag, floa
     // Add new axis
     if (f->nvarAxes + 1 > f->cvarAxes) {
         int newCap = f->cvarAxes == 0 ? 4 : f->cvarAxes * 2;
-        char **newTags = (char **)realloc(f->varAxisTags, sizeof(char *) * newCap);
-        float *newVals = (float *)realloc(f->varAxisValues, sizeof(float) * newCap);
+        char **newTags = (char **) realloc(f->varAxisTags, sizeof(char *) * newCap);
+        float *newVals = (float *) realloc(f->varAxisValues, sizeof(float) * newCap);
         if (newTags == NULL || newVals == NULL) {
             if (newTags) free(newTags);
             if (newVals) free(newVals);
@@ -881,10 +893,10 @@ int fonsSetVariationAxis(FONScontext *stash, int font, const char *axisTag, floa
 apply_and_rehash:
     // Apply all axes to FreeType
     {
-        FT_Fixed *coords = (FT_Fixed *)malloc(sizeof(FT_Fixed) * f->nvarAxes);
+        FT_Fixed *coords = (FT_Fixed *) malloc(sizeof(FT_Fixed) * f->nvarAxes);
         if (coords == NULL) return 0;
         for (i = 0; i < f->nvarAxes; i++) {
-            coords[i] = (FT_Fixed)(f->varAxisValues[i] * 65536.0f);
+            coords[i] = (FT_Fixed) (f->varAxisValues[i] * 65536.0f);
         }
         FT_Set_Var_Design_Coordinates(ftFace, f->nvarAxes, coords);
         free(coords);
@@ -892,15 +904,15 @@ apply_and_rehash:
 
     // Recompute variation hash
     f->variationHash = fons__computeVariationHash(f);
-    
+
 
     return 1;
-#else
+    #else
     FONS_NOTUSED(axisTag);
     FONS_NOTUSED(value);
     FONS_NOTUSED(i);
     return 0;
-#endif
+    #endif
 }
 
 int fonsGetVariationAxisCount(FONScontext *stash, int font) {

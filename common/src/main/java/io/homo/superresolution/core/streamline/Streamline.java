@@ -22,7 +22,7 @@ import io.homo.superresolution.api.StreamlineDistribution;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import org.lwjgl.system.Configuration;
@@ -85,7 +85,7 @@ public final class Streamline {
     }
 
     public static synchronized boolean prepareEarly() {
-        if (!VulkanPresentationFeature.shouldInitializeStreamline()) {
+        if (!PresentationBackendManager.shouldInitializeStreamline()) {
             return false;
         }
         Path pluginDir = StreamlineDistribution.pluginDirectory();
@@ -102,7 +102,7 @@ public final class Streamline {
         if (!isSupportedOnCurrentVersion() || !isSupportedPlatform()) {
             return false;
         }
-        if (!VulkanPresentationFeature.shouldInitializeStreamline()) {
+        if (!PresentationBackendManager.shouldInitializeStreamline()) {
             return false;
         }
         Path pluginDir = StreamlineDistribution.pluginDirectory();
@@ -142,7 +142,14 @@ public final class Streamline {
             return false;
         }
         if (defaultSession != null && defaultSession.isClosed()) {
-            defaultSession.close();
+            int result = defaultSession.shutdown();
+            if (result != 0) {
+                SuperResolution.LOGGER.error(
+                        "Streamline shutdown retry failed. result={} ({})",
+                        StreamlineResult.nameOf(result),
+                        result);
+                return false;
+            }
             defaultSession = null;
             initAttempted = false;
         }
@@ -171,7 +178,10 @@ public final class Streamline {
         if (defaultSession == null) {
             return;
         }
-        defaultSession.close();
+        int result = defaultSession.shutdown();
+        if (result != 0) {
+            throw new StreamlineException("slShutdown", result);
+        }
         defaultSession = null;
         currentFrame = null;
         initAttempted = false;

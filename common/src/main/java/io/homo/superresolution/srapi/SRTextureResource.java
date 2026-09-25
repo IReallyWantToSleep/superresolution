@@ -22,6 +22,7 @@ import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 
 import java.util.EnumSet;
+import java.util.Objects;
 
 public class SRTextureResource {
     public SRTextureResourceDescription description;
@@ -32,7 +33,7 @@ public class SRTextureResource {
 
 
     public SRTextureResource(ITexture texture) {
-        this.texture = texture;
+        this.texture = Objects.requireNonNull(texture, "texture");
         this.description = new SRTextureResourceDescription(texture);
         this.handle = texture.handle();
         if (texture instanceof VulkanTexture) {
@@ -42,21 +43,24 @@ public class SRTextureResource {
 
     /**
      * Creates an SRAPI resource around an opaque native graphics resource.
-     * This is used by APIs such as D3D12 that do not yet implement ITexture.
+     * Prefer {@link #SRTextureResource(ITexture)} for project-owned textures.
      */
+    @Deprecated
     public SRTextureResource(long handle, SRTextureResourceDescription description) {
         this(handle, description, EnumSet.of(SRResourceStates.COMPUTE_READ));
     }
 
+    @Deprecated
     public SRTextureResource(
             long handle,
             SRTextureResourceDescription description,
             EnumSet<SRResourceStates> states) {
         this.texture = null;
-        this.description = description;
+        this.description = Objects.requireNonNull(description, "description");
         this.handle = handle;
         this.imageView = 0;
-        this.state = SRResourceStates.toBitmask(states);
+        this.state = SRResourceStates.toBitmask(
+                Objects.requireNonNull(states, "states"));
     }
 
     public long getHandle() {

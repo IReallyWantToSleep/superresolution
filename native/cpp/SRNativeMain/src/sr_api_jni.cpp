@@ -8,6 +8,7 @@
 #include <codecvt>
 #include <locale>
 #include <cstring>
+#include <new>
 #include "io_homo_superresolution_core_SuperResolutionNative.h"
 static JNIEnv *g_envForCallback = nullptr;
 
@@ -151,6 +152,25 @@ extern "C" {
         g_envForCallback = env;
         init_java_bridge(env);
 
+        if (!outContextObj || provider == 0) {
+            return SR_RETURN_CODE_NULL_POINTER;
+        }
+        jclass contextClass = env->GetObjectClass(outContextObj);
+        if (!contextClass) {
+            return SR_RETURN_CODE_ERROR;
+        }
+        jfieldID nativePtrField = env->GetFieldID(
+            contextClass, "nativePtr", "J");
+        if (!nativePtrField) {
+            env->DeleteLocalRef(contextClass);
+            return SR_RETURN_CODE_ERROR;
+        }
+        if (env->GetLongField(outContextObj, nativePtrField) != 0) {
+            env->DeleteLocalRef(contextClass);
+            return SR_RETURN_CODE_INVALID_ARGUMENT;
+        }
+        env->DeleteLocalRef(contextClass);
+
         SRCreateUpscaleContextDesc desc = {};
         desc.renderApiType = static_cast<SRRenderApiType>(renderApiType);
         desc.renderSize = {static_cast<uint32_t>(renderSizeX), static_cast<uint32_t>(renderSizeY)};
@@ -231,7 +251,10 @@ extern "C" {
             return SR_RETURN_CODE_INVALID_ARGUMENT;
         }
 
-        SRUpscaleContext *context = new SRUpscaleContext();
+        SRUpscaleContext *context = new(std::nothrow) SRUpscaleContext();
+        if (!context) {
+            return SR_RETURN_CODE_ERROR;
+        }
         SRReturnCode rc = srCreateUpscaleContext(
             context,
             reinterpret_cast<SRUpscaleProvider *>(provider),
@@ -241,8 +264,6 @@ extern "C" {
             delete context;
             return rc;
         }
-        jclass cls = env->GetObjectClass(outContextObj);
-        jfieldID nativePtrField = env->GetFieldID(cls, "nativePtr", "J");
         env->SetLongField(outContextObj, nativePtrField, reinterpret_cast<jlong>(context));
 
         return rc;
@@ -260,8 +281,9 @@ extern "C" {
         }
 
         SRReturnCode rc = srDestroyUpscaleContext(context);
-
-        delete context;
+        if (rc == SR_RETURN_CODE_OK) {
+            delete context;
+        }
 
         return rc;
     }

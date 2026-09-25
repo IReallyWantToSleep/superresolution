@@ -1188,6 +1188,9 @@ extern "C" {
             return static_cast<jint>(sl::Result::eErrorInvalidParameter);
         }
         sl::Result result = g_streamlineInitialized ? callShutdown() : sl::Result::eOk;
+        if (result != sl::Result::eOk) {
+            return static_cast<jint>(result);
+        }
         g_streamlineInitialized = false;
         g_dlssOptionsInitialized = false;
         releaseJavaSessionRefs(env, g_javaSession.get());
@@ -1217,11 +1220,11 @@ extern "C" {
             return SR_RETURN_CODE_OK;
         }
         sl::Result result = callShutdown();
-        g_streamlineInitialized = false;
-        g_dlssOptionsInitialized = false;
         if (result != sl::Result::eOk) {
             return resultToReturnCode(result);
         }
+        g_streamlineInitialized = false;
+        g_dlssOptionsInitialized = false;
         return SR_RETURN_CODE_OK;
     }
 
@@ -1342,11 +1345,16 @@ extern "C" {
         if (!context) {
             return SR_RETURN_CODE_NULL_POINTER;
         }
+        auto *privateData = reinterpret_cast<StreamlineDLSSPrivateData *>(context->userContext);
         if (g_streamlineInitialized) {
             sl::ViewportHandle viewport(kViewportId);
-            callFreeResources(sl::kFeatureDLSS, viewport);
+            sl::Result result = callFreeResources(sl::kFeatureDLSS, viewport);
+            if (result != sl::Result::eOk) {
+                reportResult(privateData, L"slFreeResources", result);
+                return resultToReturnCode(result);
+            }
         }
-        delete reinterpret_cast<StreamlineDLSSPrivateData *>(context->userContext);
+        delete privateData;
         context->userContext = nullptr;
         return SR_RETURN_CODE_OK;
     }

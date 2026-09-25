@@ -18,7 +18,10 @@
 
 package io.homo.superresolution.srapi;
 
+import io.homo.superresolution.core.graphics.d3d12.D3D12CommandBuffer;
 import org.lwjgl.vulkan.VkCommandBuffer;
+
+import java.util.Objects;
 
 public class SRDispatchCommandBufferInfo {
     public SRRenderApiType renderApiType;
@@ -50,6 +53,17 @@ public class SRDispatchCommandBufferInfo {
         return info;
     }
 
+    public static SRDispatchCommandBufferInfo createD3D12(
+            D3D12CommandBuffer.NativeCommandListLease commandListLease) {
+        return createD3D12(
+                Objects.requireNonNull(commandListLease, "commandListLease")
+                        .handle());
+    }
+
+    /**
+     * @deprecated use the typed native command-list lease overload.
+     */
+    @Deprecated
     public static SRDispatchCommandBufferInfo createD3D12(long commandList) {
         SRDispatchCommandBufferInfo info = new SRDispatchCommandBufferInfo();
         info.renderApiType = SRRenderApiType.D3D12;

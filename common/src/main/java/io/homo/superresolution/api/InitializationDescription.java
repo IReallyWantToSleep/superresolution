@@ -23,12 +23,22 @@ public class InitializationDescription {
     private boolean isHdrInput;
     private boolean isAutoExposure;
     private boolean isMotionJittered;
+    private boolean isDepthInverted;
 
     public InitializationDescription() {
     }
 
     public static InitializationDescription defaults() {
         return new InitializationDescription();
+    }
+
+    public boolean isDepthInverted() {
+        return isDepthInverted;
+    }
+
+    public InitializationDescription setDepthInverted(boolean depthInverted) {
+        isDepthInverted = depthInverted;
+        return this;
     }
 
     public boolean isMotionJittered() {
@@ -59,16 +69,20 @@ public class InitializationDescription {
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (!(o instanceof InitializationDescription that)) return false;
-        return isHdrInput == that.isHdrInput
-                && isAutoExposure == that.isAutoExposure
-                && isMotionJittered == that.isMotionJittered;
+    public int hashCode() {
+        return java.util.Objects.hash(isHdrInput, isAutoExposure, isMotionJittered);
     }
 
     @Override
-    public int hashCode() {
-        return java.util.Objects.hash(isHdrInput, isAutoExposure, isMotionJittered);
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (!(o instanceof InitializationDescription that)) {
+            return false;
+        }
+        return isHdrInput == that.isHdrInput
+                && isAutoExposure == that.isAutoExposure
+                && isMotionJittered == that.isMotionJittered;
     }
 }

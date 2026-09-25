@@ -18,8 +18,8 @@
 
 package io.homo.superresolution.common.lowlatency;
 
-import io.homo.superresolution.api.registry.LowLatencyMarker;
-import io.homo.superresolution.api.registry.LowLatencyProvider;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyMarker;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyProvider;
 
 public class NoneLowLatency implements LowLatencyProvider {
     @Override

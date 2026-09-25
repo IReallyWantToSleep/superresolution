@@ -6,18 +6,26 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.homo.superresolution.common.framegeneration;
 
 import io.homo.superresolution.api.registry.BackendGroup;
-import io.homo.superresolution.api.registry.FrameGenerationDescription;
-import io.homo.superresolution.api.registry.FrameGenerationProvider;
-import io.homo.superresolution.api.registry.FrameGenerationRegistry;
-import io.homo.superresolution.api.registry.LowLatencyBinding;
-import io.homo.superresolution.api.registry.LowLatencyDescription;
-import io.homo.superresolution.api.registry.LowLatencyGroups;
-import io.homo.superresolution.api.registry.LowLatencyRegistry;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDescription;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationProvider;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationRegistry;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyBinding;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyDescription;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyGroups;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyRegistry;
 
 import javax.annotation.Nullable;
 
@@ -143,7 +151,7 @@ public final class BackendNegotiator {
                 continue;
             }
             FrameGenerationProvider provider = providerLookup.apply(description.getId());
-            if (provider == null || !provider.isAvailable() || !provider.dependenciesSatisfied()) {
+            if (provider == null || !provider.isAvailable() || !provider.isDependenciesSatisfied()) {
                 continue;
             }
             out.add(description);

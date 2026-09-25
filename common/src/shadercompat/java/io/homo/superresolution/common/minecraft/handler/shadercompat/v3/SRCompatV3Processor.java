@@ -110,6 +110,9 @@ public class SRCompatV3Processor implements SRCompatProcessor {
 
     @Override
     public Vector2f adaptJitterForAlgorithm(Vector2f rawJitter, AbstractAlgorithm algorithm, SRShaderCompatData config, AlgorithmDescription<?> description) {
+        if (!SuperResolutionConfig.isFlipVkGlInteropResourcesY() && !description.equals(AlgorithmDescriptions.FSR4_D3D12)) {
+            return rawJitter.mul(1,-1);
+        }
         return rawJitter;
     }
 

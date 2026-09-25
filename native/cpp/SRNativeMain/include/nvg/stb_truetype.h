@@ -1949,12 +1949,12 @@ static int stbtt__GetGlyphShapeTT(const stbtt_fontinfo *info, int glyph_index, s
                     stbtt_vertex_type x, y;
                     x = v->x;
                     y = v->y;
-                    v->x = (stbtt_vertex_type)(m * (mtx[0] * x + mtx[2] * y + mtx[4]));
-                    v->y = (stbtt_vertex_type)(n * (mtx[1] * x + mtx[3] * y + mtx[5]));
+                    v->x = (stbtt_vertex_type) (m * (mtx[0] * x + mtx[2] * y + mtx[4]));
+                    v->y = (stbtt_vertex_type) (n * (mtx[1] * x + mtx[3] * y + mtx[5]));
                     x = v->cx;
                     y = v->cy;
-                    v->cx = (stbtt_vertex_type)(m * (mtx[0] * x + mtx[2] * y + mtx[4]));
-                    v->cy = (stbtt_vertex_type)(n * (mtx[1] * x + mtx[3] * y + mtx[5]));
+                    v->cx = (stbtt_vertex_type) (m * (mtx[0] * x + mtx[2] * y + mtx[4]));
+                    v->cy = (stbtt_vertex_type) (n * (mtx[1] * x + mtx[3] * y + mtx[5]));
                 }
                 // Append vertices.
                 tmp = (stbtt_vertex *) STBTT_malloc((num_vertices + comp_num_verts) * sizeof(stbtt_vertex),
@@ -2392,9 +2392,10 @@ STBTT_DEF void stbtt_GetGlyphHMetrics(const stbtt_fontinfo *info, int glyph_inde
         if (leftSideBearing) *leftSideBearing = ttSHORT(info->data + info->hmtx + 4 * glyph_index + 2);
     } else {
         if (advanceWidth) *advanceWidth = ttSHORT(info->data + info->hmtx + 4 * (numOfLongHorMetrics - 1));
-        if (leftSideBearing) *leftSideBearing = ttSHORT(
-                                 info->data + info->hmtx + 4 * numOfLongHorMetrics + 2 * (
-                                     glyph_index - numOfLongHorMetrics));
+        if (leftSideBearing)
+            *leftSideBearing = ttSHORT(
+                info->data + info->hmtx + 4 * numOfLongHorMetrics + 2 * (
+                    glyph_index - numOfLongHorMetrics));
     }
 }
 

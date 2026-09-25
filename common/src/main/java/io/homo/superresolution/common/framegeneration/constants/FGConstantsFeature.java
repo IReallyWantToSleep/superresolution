@@ -6,6 +6,14 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.homo.superresolution.common.framegeneration.constants;
@@ -15,7 +23,6 @@ import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeProvider;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
@@ -26,8 +33,8 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 
 public final class FGConstantsFeature {
-    private static final int CONSTANTS_CAPACITY = Math.max(16, GlVulkanInteropAlgorithm.MAX_IN_FLIGHT_FRAME * 4);
-    private static final Map<Integer, FGConstants> CONSTANTS = new LinkedHashMap<>();
+    private static final int CONSTANTS_CAPACITY = 8;
+    private static final Map<Integer, FrameGenerationConstants> CONSTANTS = new LinkedHashMap<>();
 
     private static boolean registered;
     private static boolean initialized;
@@ -71,7 +78,7 @@ public final class FGConstantsFeature {
         }
     }
 
-    public static synchronized FGConstants getConstants(int frameIndex) {
+    public static synchronized FrameGenerationConstants getConstants(int frameIndex) {
         return CONSTANTS.get(frameIndex);
     }
 
@@ -144,7 +151,7 @@ public final class FGConstantsFeature {
                     || dispatch.frameCount() != previousCameraFrame.frame.frameIndex() + 1
                     || !continuityKey.equals(previousCameraFrame.continuityKey);
 
-            FGConstants constants = FGConstantsBuilder.build(
+            FrameGenerationConstants constants = FGConstantsBuilder.build(
                     cameraFrame,
                     reset ? null : previousCameraFrame.frame,
                     reset,

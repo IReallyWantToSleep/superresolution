@@ -22,10 +22,9 @@ import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 
 import java.util.IdentityHashMap;
-import java.util.Map;
 
 public class ResourceStateTracker {
-    private final Map<Object, ResourceState> states = new IdentityHashMap<>();
+    private final IdentityHashMap<Object, ResourceState> states = new IdentityHashMap<>();
 
     public ResourceState getState(ITexture texture) {
         return states.getOrDefault(texture, ResourceState.UNDEFINED);
@@ -39,6 +38,18 @@ public class ResourceStateTracker {
         states.put(texture, state);
     }
 
+    public boolean hasState(ITexture texture) {
+        return states.containsKey(texture);
+    }
+
+    public boolean replaceState(ITexture texture, ResourceState state) {
+        if (!states.containsKey(texture)) {
+            return false;
+        }
+        states.put(texture, state);
+        return true;
+    }
+
     public void setState(IBuffer buffer, ResourceState state) {
         states.put(buffer, state);
     }
@@ -49,5 +60,11 @@ public class ResourceStateTracker {
 
     public void clear() {
         states.clear();
+    }
+
+    public ResourceStateTracker snapshot() {
+        ResourceStateTracker snapshot = new ResourceStateTracker();
+        snapshot.states.putAll(states);
+        return snapshot;
     }
 }

@@ -87,9 +87,10 @@ public class ShaderCompatTextureInfo {
         }
         int[] resolvedRegion = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize());
         return resolvedRegion[0] == 0 &&
-                resolvedRegion[1] == 0 &&
+                resolvedRegion[1] == 0
+                /*&&
                 resolvedRegion[2] == sourceTexture.getWidth() &&
-                resolvedRegion[3] == sourceTexture.getHeight();
+                resolvedRegion[3] == sourceTexture.getHeight()*/;
     }
 
     public ITexture getAlgorithmTexture(boolean forceInternalTexture) {

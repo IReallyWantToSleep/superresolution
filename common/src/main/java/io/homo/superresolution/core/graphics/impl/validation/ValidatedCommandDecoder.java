@@ -97,6 +97,11 @@ public class ValidatedCommandDecoder implements ICommandDecoder {
         }
     }
 
+    private static boolean rangeFits(long offset, long size, long capacity) {
+        return offset >= 0 && size >= 0 && offset <= capacity &&
+                size <= capacity - offset;
+    }
+
     private static void requireRangeInclusive(float value, float min, float max, String action, String name) {
         if (value < min || value > max) {
             throw new IllegalArgumentException(action + ": " + name + " out of range [" + min + "," + max + "]");
@@ -289,10 +294,10 @@ public class ValidatedCommandDecoder implements ICommandDecoder {
         requireNonNegative(dstOffset, "copyBuffer", "dstOffset");
         requirePositive(size, "copyBuffer", "size");
 
-        if (srcOffset + size > src.getSize()) {
+        if (!rangeFits(srcOffset, size, src.getSize())) {
             throw new IllegalArgumentException("copyBuffer: source range exceeds buffer size");
         }
-        if (dstOffset + size > dst.getSize()) {
+        if (!rangeFits(dstOffset, size, dst.getSize())) {
             throw new IllegalArgumentException("copyBuffer: destination range exceeds buffer size");
         }
 
@@ -314,7 +319,7 @@ public class ValidatedCommandDecoder implements ICommandDecoder {
         if (size <= 0) {
             return;
         }
-        if (dstOffset + size > dst.getSize()) {
+        if (!rangeFits(dstOffset, size, dst.getSize())) {
             throw new IllegalArgumentException("writeToBuffer: write range exceeds buffer size");
         }
 

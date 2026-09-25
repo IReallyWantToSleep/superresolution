@@ -26,8 +26,11 @@ import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.SuperResolutionAPI;
+import io.homo.superresolution.api.interop.InteropInputDispatch;
+import io.homo.superresolution.api.interop.InteropResourceContext;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
+import io.homo.superresolution.api.interop.InteropResourceType;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
@@ -63,8 +66,20 @@ import java.util.Map;
 import java.util.Set;
 
 import static io.homo.superresolution.common.upscale.AlgorithmManager.param;
+import static org.lwjgl.opengl.GL11.GL_TEXTURE_2D;
+import static org.lwjgl.opengl.GL43.glCopyImageSubData;
 
 public class IrisShaderCompatUpscaleDispatcher {
+    private static InteropResourceContext interopResourceContext = InteropResourceContext.empty();
+
+    public static InteropResourceContext getInteropResourceContext() {
+        return interopResourceContext;
+    }
+
+    public static void clearInteropResourceContext() {
+        interopResourceContext = InteropResourceContext.empty();
+    }
+
     public static Map<String, Object> debugInfo = new HashMap<>();
 
     public static ShaderCompatTextureInfo colorTexture;
@@ -274,6 +289,7 @@ public class IrisShaderCompatUpscaleDispatcher {
     }
 
     public static void reset(){
+        clearInteropResourceContext();
         if (colorTexture != null) {
             colorTexture.destroy();
         }
@@ -503,7 +519,6 @@ public class IrisShaderCompatUpscaleDispatcher {
         升采样阶段开始
          */
         AlgorithmManager.update();
-        // MotionVectorsGenerator 已被弃用
         Vector2f rawJitter = getJitterOffset();
         Vector2f adaptedJitter = (processor != null && processor.needsAdaptJitter(shaderCompatData, algorithm, description))
                 ? processor.adaptJitterForAlgorithm(rawJitter, algorithm, shaderCompatData, description)
@@ -517,6 +532,7 @@ public class IrisShaderCompatUpscaleDispatcher {
                 needsPreProcessDepth,
                 needsPreProcessMotionVectors
         );
+        interopResourceContext = InteropResourceContext.fromInputs(dispatchResource.resources());
         if (SuperResolution.currentAlgorithm != null) {
             SuperResolutionAPI.EVENT_BUS.post(
                     new AlgorithmDispatchEvent(

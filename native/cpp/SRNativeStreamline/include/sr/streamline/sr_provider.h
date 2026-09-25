@@ -6,9 +6,9 @@
 extern "C" {
     #endif
 
-    SR_API SRReturnCode srGetStreamlineUpscaleProviders(SRUpscaleProvider *outProvider);
+    SR_API SRReturnCode srGetStreamlineUpscaleProviders(SRUpscaleProvider * outProvider);
 
-    SR_API SRReturnCode srGetStreamlineUpscaleProvidersCount(uint32_t *outCount);
+    SR_API SRReturnCode srGetStreamlineUpscaleProvidersCount(uint32_t * outCount);
 
     #ifdef __cplusplus
 }

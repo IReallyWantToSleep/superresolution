@@ -22,21 +22,21 @@ import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
-import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.ngx.*;
 
-import java.util.IdentityHashMap;
-import java.util.Map;
+import java.util.Objects;
+
+import static io.homo.superresolution.api.interop.InteropResourceType.*;
 
 public class DLSS extends GlVulkanInteropAlgorithm {
-    private final Map<InFlightFrameResourcesSet, NgxDispatchResources> ngxDispatchResources =
-            new IdentityHashMap<>();
+    private NgxDispatchResources ngxDispatchResource;
     private NgxFeature ngxDlssFeature;
     private NgxParameters ngxParameters;
 
@@ -55,9 +55,9 @@ public class DLSS extends GlVulkanInteropAlgorithm {
     @Override
     protected void dispatchVulkanUpscale(
             VulkanCommandBuffer commandBuffer,
-            InFlightFrameResourcesSet inFlightFrameResourcesSet
+            FrameResourcesSet frameResourcesSet
     ) {
-        dispatchNgxContext(commandBuffer, inFlightFrameResourcesSet);
+        dispatchNgxContext(commandBuffer, frameResourcesSet);
     }
 
     @Override
@@ -142,6 +142,9 @@ public class DLSS extends GlVulkanInteropAlgorithm {
         if (desc.isMotionJittered()) {
             flags |= NgxConstants.DLSS_FLAG_MV_JITTERED;
         }
+        if (desc.isDepthInverted()) {
+            flags |= NgxConstants.DLSS_FLAG_DEPTH_INVERTED;
+        }
         return flags;
     }
 
@@ -174,38 +177,38 @@ public class DLSS extends GlVulkanInteropAlgorithm {
 
     private void dispatchNgxContext(
             VulkanCommandBuffer commandBuffer,
-            InFlightFrameResourcesSet inFlightFrameResourcesSet
+            FrameResourcesSet frameResourcesSet
     ) {
         if (ngxDlssFeature == null || ngxParameters == null) {
             return;
         }
 
-        NgxDispatchResources dispatchResources = ngxDispatchResources.get(inFlightFrameResourcesSet);
+        NgxDispatchResources dispatchResources = ngxDispatchResource;
         if (dispatchResources == null) {
             return;
         }
 
         NgxVKDLSSEvalParams evalParams = dispatchResources.evalParams;
         evalParams.feature.sharpness = SuperResolutionConfig.getSharpness();
-        evalParams.jitterOffsetX = inFlightFrameResourcesSet.frameData.jitterOffset().x;
-        evalParams.jitterOffsetY = inFlightFrameResourcesSet.frameData.jitterOffset().y;
-        evalParams.renderSubrectDimensions.width = inFlightFrameResourcesSet.frameData.renderWidth();
-        evalParams.renderSubrectDimensions.height = inFlightFrameResourcesSet.frameData.renderHeight();
-        evalParams.motionVectorScaleX = inFlightFrameResourcesSet.frameData.renderSize().x;
-        evalParams.motionVectorScaleY = inFlightFrameResourcesSet.frameData.renderSize().y;
+        evalParams.jitterOffsetX = frameResourcesSet.frameData.jitterOffset().x;
+        evalParams.jitterOffsetY = frameResourcesSet.frameData.jitterOffset().y;
+        evalParams.renderSubrectDimensions.width = frameResourcesSet.frameData.renderWidth();
+        evalParams.renderSubrectDimensions.height = frameResourcesSet.frameData.renderHeight();
+        evalParams.motionVectorScaleX = frameResourcesSet.frameData.renderSize().x;
+        evalParams.motionVectorScaleY = frameResourcesSet.frameData.renderSize().y;
         evalParams.reset = consumeHistoryReset() ? 1 : 0;
-        evalParams.preExposure = inFlightFrameResourcesSet.frameData.preExposure();
+        evalParams.preExposure = frameResourcesSet.frameData.preExposure();
         evalParams.exposureScale = 1.0f;
-        evalParams.frameTimeDeltaInMsec = inFlightFrameResourcesSet.frameData.frameTimeDelta();
+        evalParams.frameTimeDeltaInMsec = frameResourcesSet.frameData.frameTimeDelta();
 
         VulkanTimestampProfiler profiler =
                 RenderSystems.vulkan().device().timestampProfiler();
         int timestampSlot = profiler == null
                 ? -1
                 : profiler.beginRegion(
-                        commandBuffer.getNativeCommandBuffer(),
-                        PerformanceTracker.VK_UPSCALE
-                );
+                commandBuffer.getNativeCommandBuffer(),
+                PerformanceTracker.VK_UPSCALE
+        );
         int evaluateResult = NgxVulkan.evaluateDLSS(
                 commandBuffer.getNativeCommandBuffer().address(),
                 ngxDlssFeature,
@@ -223,11 +226,7 @@ public class DLSS extends GlVulkanInteropAlgorithm {
     private void createNgxDispatchResources() {
         destroyNgxDispatchResources();
         try {
-            for (InFlightFrameResourcesSet inFlightFrame : inFlightFrames) {
-                if (inFlightFrame != null) {
-                    ngxDispatchResources.put(inFlightFrame, new NgxDispatchResources(inFlightFrame));
-                }
-            }
+            ngxDispatchResource = new NgxDispatchResources(Objects.requireNonNull(frameResourcesSet));
         } catch (RuntimeException | Error e) {
             destroyNgxDispatchResources();
             throw e;
@@ -235,13 +234,15 @@ public class DLSS extends GlVulkanInteropAlgorithm {
     }
 
     private void destroyNgxDispatchResources() {
-        for (NgxDispatchResources dispatchResources : ngxDispatchResources.values()) {
-            dispatchResources.close();
+        if (ngxDispatchResource != null){
+            ngxDispatchResource.close();
         }
-        ngxDispatchResources.clear();
     }
 
     private NgxResourceVK createNgxTextureResource(VulkanTexture texture, boolean readWrite) {
+        if (texture == null) {
+            return null;
+        }
         NgxImageSubresourceRange subresourceRange = new NgxImageSubresourceRange();
         subresourceRange.aspectMask = texture.getAspectMask();
         subresourceRange.baseMipLevel = 0;
@@ -267,13 +268,13 @@ public class DLSS extends GlVulkanInteropAlgorithm {
         private NgxResourceVK exposure;
         private NgxResourceVK output;
 
-        private NgxDispatchResources(InFlightFrameResourcesSet inFlightFrame) {
+        private NgxDispatchResources(FrameResourcesSet frameResourcesSet) {
             try {
-                color = createNgxTextureResource(inFlightFrame.inputColorVkTexture, true);
-                depth = createNgxTextureResource(inFlightFrame.inputDepthVkTexture, false);
-                motionVectors = createNgxTextureResource(inFlightFrame.inputMotionVectorsVkTexture, true);
-                exposure = createNgxTextureResource(inFlightFrame.inputExposureVkTexture, false);
-                output = createNgxTextureResource(inFlightFrame.outputColorVkTexture, true);
+                color = createNgxTextureResource(frameResourcesSet.vulkan(Color), true);
+                depth = createNgxTextureResource(frameResourcesSet.vulkan(Depth), false);
+                motionVectors = createNgxTextureResource(frameResourcesSet.vulkan(MotionVectors), true);
+                exposure = createNgxTextureResource(frameResourcesSet.vulkan(Exposure), false);
+                output = createNgxTextureResource(frameResourcesSet.vulkan(OutputColor), true);
 
                 evalParams.feature.inputColor = color;
                 evalParams.feature.output = output;

@@ -60,13 +60,14 @@ public class GuiScaleManager {
         return guiScale;
     }
 
+
     public void setGuiScale(float scale) {
         this.autoScale = false;
         this.guiScale = Math.max(minScale, Math.min(maxScale, scale));
     }
 
     public float dpiScale() {
-        return dpiScale;
+        return dpiScale * 2.0f;
     }
 
     public void setDpiScale(float dpi) {

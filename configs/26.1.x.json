@@ -32,11 +32,11 @@
             "modrinth": [
                 {
                     "name": "iris",
-                    "version": "1.10.9+26.1-fabric"
+                    "version": "1.11.4+26.1-fabric"
                 },
                 {
                     "name": "sodium",
-                    "version": "0.8.10+mc26.1.2"
+                    "version": "0.9.1+mc26.1.2"
                 },
                 {
                     "name": "spark",
@@ -54,10 +54,6 @@
                 }
             ],
             "local": [
-                {
-                    "name": "batcher-1.0.2",
-                    "isMod": true
-                }
             ]
         },
         "modmenu_version": "18.0.0-alpha.8"
@@ -72,11 +68,11 @@
                 },
                 {
                     "name": "sodium",
-                    "version": "0.8.10+mc26.1.2"
+                    "version": "0.9.1+mc26.1.2"
                 },
                 {
                     "name": "iris",
-                    "version": "1.10.9+26.1-neoforge"
+                    "version": "1.11.4+26.1-neoforge"
                 },
                 {
                     "name": "distanthorizons",
