@@ -1,5 +1,4 @@
-#define NANOVG_GL3_IMPLEMENTATION
-#include "nvg/all.h"
+#include "nvg/nanovg_cpp.h"
 
 void NanoVGContext::BeginFrame(float windowWidth, float windowHeight, float devicePixelRatio) {
     nvgBeginFrame(ctx, windowWidth, windowHeight, devicePixelRatio);
@@ -125,7 +124,7 @@ std::array<float, 6> NanoVGContext::CurrentTransform() {
 }
 
 int NanoVGContext::CreateImageFromHandle(int textureId, int w, int h, int imageFlags) {
-    return nvglCreateImageFromHandleGL3(ctx, textureId, w, h, imageFlags);
+    return nvSrRhiCreateImageFromHandleRHI(ctx, textureId, w, h, imageFlags);
 }
 
 void NanoVGContext::DeleteImage(int image) {
@@ -355,7 +354,7 @@ std::vector<NVGglyphPosition> NanoVGContext::TextGlyphPositions(float x, float y
 }
 
 TextMetricsResult NanoVGContext::TextMetrics() {
-    TextMetricsResult result;
+    TextMetricsResult result{};
     nvgTextMetrics(ctx, &result.ascender, &result.descender, &result.lineHeight);
     return result;
 }

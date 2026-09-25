@@ -16,20 +16,13 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <math.h>
-#include <memory.h>
-#include <string.h>
+#include <cstdio>
+#include <cstring>
+#include <vector>
 
 #include "nvg/nanovg.h"
 #define FONTSTASH_IMPLEMENTATION
 #include "nvg/fontstash.h"
-
-#ifndef NVG_NO_STB
-// #define STB_IMAGE_IMPLEMENTATION
-// #include "stb_image.h"
-#endif
 
 #ifdef _MSC_VER
 #pragma warning(disable : 4100) // unreferenced formal parameter
@@ -153,9 +146,7 @@ enum NVGcodepointType {
     NVG_CHAR,
     NVG_CJK_CHAR,
 };
-#ifdef __cplusplus
-extern "C" {
-    #endif
+
     static float nvg__sqrtf(float a) { return sqrtf(a); }
     static float nvg__modf(float a, float b) { return fmodf(a, b); }
     static float nvg__sinf(float a) { return sinf(a); }
@@ -3070,14 +3061,7 @@ extern "C" {
         if (lineh != NULL)
             *lineh *= invscale;
     }
-
-    #ifdef __cplusplus
-} // extern "C"
-#endif
-
-#ifdef __cplusplus
-#include <vector>
-
+    
 std::vector<NVGtextRow> nvgTextBreakLines(NVGcontext *ctx, const char *string, const char *end, float breakRowWidth) {
     std::vector<NVGtextRow> rows;
     const char *rowStart = string;
@@ -3100,4 +3084,3 @@ std::vector<NVGtextRow> nvgTextBreakLines(NVGcontext *ctx, const char *string, c
 
     return rows;
 }
-#endif

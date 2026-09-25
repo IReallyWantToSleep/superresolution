@@ -1,5 +1,7 @@
+#pragma once
+
 #include "nanovg.h"
-#include "nanovg_gl.h"
+#include "nanovg_rhi.h"
 #include <vector>
 #include <string>
 #include <array>
@@ -33,26 +35,17 @@ private:
     NVGcontext *ctx;
 
 public:
-    NanoVGContext(int flags, GlFunctionTable glFuncTable) {
-        ctx = nvgCreateGL3Ex(flags, glFuncTable, NVG_BACKEND_GL_LEGACY, nullptr, nullptr);
-        if (!ctx) {
-            throw std::runtime_error("Failed to create NanoVG context");
-        }
-    }
-
     NanoVGContext(int flags,
-                  int backendMode,
-                  GlFunctionTable glFuncTable,
                   const NVGRHICallbacks *rhiCallbacks,
                   void *rhiUserPtr) {
-        ctx = nvgCreateGL3Ex(flags, glFuncTable, backendMode, rhiCallbacks, rhiUserPtr);
+        ctx = nvgCreateRHI(flags, rhiCallbacks, rhiUserPtr);
         if (!ctx) {
             throw std::runtime_error("Failed to create NanoVG context");
         }
     }
 
     ~NanoVGContext() {
-        nvgDeleteGL3(ctx);
+        nvgDeleteRHI(ctx);
     }
 
     void *GetContext() {
