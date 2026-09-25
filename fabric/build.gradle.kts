@@ -222,7 +222,7 @@ loom {
             programArguments.add("--graphicsBackend=opengl")
             programArguments.add("--renderDebugLabels=true")
 
-            runDirectory.dir("../runs/fabric")
+            runDirectory.set(File("../runs/fabric"))
         }
     }
 }
