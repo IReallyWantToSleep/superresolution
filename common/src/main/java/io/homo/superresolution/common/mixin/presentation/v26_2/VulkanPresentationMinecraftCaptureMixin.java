@@ -23,8 +23,7 @@ import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.GpuSurface;
 import com.mojang.blaze3d.systems.SurfaceException;
 import com.mojang.blaze3d.textures.GpuTextureView;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -45,8 +44,8 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
     private void super_resolution$renderAndPresent(
             boolean advanceGameTime, CallbackInfo ci
     ) {
-        if (VulkanPresentationFeature.isRequested()) {
-            VulkanPresentationWindow.endMinecraftFrame();
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
+            PresentationBackendManager.endMinecraftFrame();
         }
     }
 
@@ -58,7 +57,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             )
     )
     private void super_resolution$skipOpenGlBlit(GpuSurface instance, CommandEncoder commandEncoder, GpuTextureView textureView) {
-        if (!VulkanPresentationFeature.isRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
             instance.blitFromTexture(commandEncoder, textureView);
         }
     }
@@ -71,7 +70,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             )
     )
     private void super_resolution$skipOpenGlPresent(GpuSurface instance) {
-        if (!VulkanPresentationFeature.isRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
             instance.present();
         }
     }
@@ -84,7 +83,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             )
     )
     private boolean super_resolution$isAcquired(GpuSurface instance) {
-        if (!VulkanPresentationFeature.isRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
             return instance.isAcquired();
         }
         return false;
@@ -98,7 +97,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             )
     )
     private void super_resolution$acquireNextTexture(GpuSurface instance) throws SurfaceException {
-        if (!VulkanPresentationFeature.isRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
             instance.acquireNextTexture();
         }
     }

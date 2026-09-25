@@ -23,7 +23,7 @@ import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.core.graphics.d3d12.D3D12OpenGlInterop;
 import io.homo.superresolution.core.graphics.d3d12.D3D12RenderSystem;
 import io.homo.superresolution.core.graphics.opengl.GlRenderSystem;
@@ -179,8 +179,8 @@ public class RenderSystems {
             if (message == null || !message.contains("Vulkan has already been created")) {
                 VkRenderSystem.LOGGER.error("Vulkan initialization failed; the Vulkan runtime may be missing. Error: {}", e.getMessage());
                 VkRenderSystem.LOGGER.error("Vulkan initialization failure details", e);
-                if (VulkanPresentationFeature.isRequested()) {
-                    VulkanPresentationFeature.disableAfterFailure(e);
+                if (PresentationBackendManager.isVulkanPresentationRequested()) {
+                    PresentationBackendManager.disableAfterFailure(e);
                     throw new RuntimeException("Vulkan presentation requires a working Vulkan loader", e);
                 }
                 return;
@@ -221,14 +221,14 @@ public class RenderSystems {
             return;
         } catch (VulkanException vkException) {
             VkRenderSystem.LOGGER.error("Vulkan initialization failed; Vulkan has been disabled", vkException);
-            if (VulkanPresentationFeature.isRequested()) {
-                VulkanPresentationFeature.disableAfterFailure(vkException);
+            if (PresentationBackendManager.isVulkanPresentationRequested()) {
+                PresentationBackendManager.disableAfterFailure(vkException);
                 throw vkException;
             }
         } catch (Throwable e) {
             VkRenderSystem.LOGGER.error("Vulkan initialization failed with an unknown error; Vulkan has been disabled", e);
-            if (VulkanPresentationFeature.isRequested()) {
-                VulkanPresentationFeature.disableAfterFailure(e);
+            if (PresentationBackendManager.isVulkanPresentationRequested()) {
+                PresentationBackendManager.disableAfterFailure(e);
                 throw new RuntimeException("Vulkan presentation initialization failed", e);
             }
         }

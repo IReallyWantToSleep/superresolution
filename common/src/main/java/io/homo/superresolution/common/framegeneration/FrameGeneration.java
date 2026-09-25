@@ -6,26 +6,33 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.homo.superresolution.common.framegeneration;
 
 import io.homo.superresolution.api.registry.BackendGroup;
-import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchRequest;
-import io.homo.superresolution.api.registry.AsyncFrameGenerationDispatchResult;
-import io.homo.superresolution.api.registry.FrameGenerationDescription;
-import io.homo.superresolution.api.registry.FrameGenerationExecutionModel;
-import io.homo.superresolution.api.registry.FrameGenerationProvider;
-import io.homo.superresolution.api.registry.FrameGenerationRegistry;
-import io.homo.superresolution.api.registry.ProviderInputSnapshot;
+import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchRequest;
+import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchResult;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDescription;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationExecutionModel;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationProvider;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationRegistry;
+import io.homo.superresolution.api.registry.framegeneration.ProviderInputSnapshot;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.config.enums.InteropSyncMode;
-import io.homo.superresolution.common.framegeneration.constants.FGConstants;
+import io.homo.superresolution.common.framegeneration.constants.FrameGenerationConstants;
 import io.homo.superresolution.common.framegeneration.constants.FGConstantsFeature;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
 import io.homo.superresolution.core.RenderSystems;
@@ -50,7 +57,7 @@ import java.util.Objects;
  * <p>
  * The FG group and concrete backend preference are latched at startup — together with the
  * LL group configuration they decide whether Streamline is initialized (see
- * {@code VulkanPresentationFeature.shouldInitializeStreamline}) — so changing either takes
+ * {@code PresentationBackendManager.shouldInitializeStreamline}) — so changing either takes
  * effect after a restart. Runtime availability and low-latency bindings are still
  * re-negotiated as needed.
  */
@@ -71,12 +78,12 @@ public final class FrameGeneration {
     }
 
     public static synchronized void initialize() {
-        if (initialized || !VulkanPresentationFeature.isRequested()) {
+        if (initialized || !PresentationBackendManager.isVulkanPresentationRequested()) {
             return;
         }
         FGConstantsFeature.initialize();
         FGConstantsFeature.register();
-        startupStreamlineRequested = VulkanPresentationFeature.shouldInitializeStreamline();
+        startupStreamlineRequested = PresentationBackendManager.shouldInitializeStreamline();
         startupPreferredFgBackendId = SuperResolutionConfig.getFrameGenerationBackend();
         for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
             if (description.isAutomatic() || !FrameGenerationRegistry.isSupported(description)) {
@@ -120,7 +127,7 @@ public final class FrameGeneration {
         }
 
         for (ApplicationManagedShutdown shutdown : applicationManagedShutdowns) {
-            VulkanPresentationFeature.shutdownApplicationManagedProvider(
+            PresentationBackendManager.shutdownApplicationManagedProvider(
                     shutdown.providerId(),
                     shutdown.provider()::shutdownOnFrameGenerationThread
             );
@@ -166,7 +173,7 @@ public final class FrameGeneration {
             return FramePresentPlan.none();
         }
 
-        FGConstants constants = FGConstantsFeature.getConstants(frameResources.logicalFrameIndex());
+        FrameGenerationConstants constants = FGConstantsFeature.getConstants(frameResources.logicalFrameIndex());
         if (constants == null) {
             disableFrameGeneration();
             return FramePresentPlan.none();
@@ -227,7 +234,7 @@ public final class FrameGeneration {
             return null;
         }
 
-        FGConstants constants = FGConstantsFeature.getConstants(frameResources.logicalFrameIndex());
+        FrameGenerationConstants constants = FGConstantsFeature.getConstants(frameResources.logicalFrameIndex());
         if (constants == null) {
             return null;
         }
@@ -492,7 +499,7 @@ public final class FrameGeneration {
         if (startupStreamlineRequested == null) {
             return;
         }
-        boolean streamlineRequested = VulkanPresentationFeature.shouldInitializeStreamline();
+        boolean streamlineRequested = PresentationBackendManager.shouldInitializeStreamline();
         if (streamlineRequested == startupStreamlineRequested
                 || Boolean.valueOf(streamlineRequested).equals(loggedRestartStreamlineRequest)
                 || (!streamlineRequested && !Streamline.isInterposerLoaded())) {
@@ -623,8 +630,7 @@ public final class FrameGeneration {
     }
 
     private static boolean presentationDependenciesSatisfied() {
-        return SuperResolutionConfig.isEnableVulkanPresentation()
-                && SuperResolutionConfig.getInteropSyncMode() == InteropSyncMode.LowLatency;
+        return PresentationBackendManager.isVulkanPresentationRequested();
     }
 
     private static boolean isSupportedWith(@Nullable FrameGenerationProvider provider) {
@@ -642,7 +648,7 @@ public final class FrameGeneration {
     private static boolean dependenciesSatisfiedWith(@Nullable FrameGenerationProvider provider) {
         return presentationDependenciesSatisfied()
                 && provider != null
-                && provider.dependenciesSatisfied();
+                && provider.isDependenciesSatisfied();
     }
 
     // FG only under shader_compat + loaded pack; vanilla/hack breaks UI presentation

@@ -20,25 +20,24 @@ package io.homo.superresolution.common.upscale.interoplayer;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.InputResourceType;
+import io.homo.superresolution.api.interop.*;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.InteropResourcesPreprocessor;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
-import io.homo.superresolution.core.graphics.impl.texture.TextureType;
-import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.GlDevice;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
@@ -46,24 +45,28 @@ import io.homo.superresolution.core.graphics.vulkan.*;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 
-import java.util.Arrays;
+import java.util.*;
+import java.util.function.Consumer;
 
+import static io.homo.superresolution.api.interop.InteropResourceRequirement.FormatSource.*;
+import static io.homo.superresolution.api.interop.InteropResourceRequirement.Presence.Optional;
+import static io.homo.superresolution.api.interop.InteropResourceRequirement.Presence.Required;
+import static io.homo.superresolution.api.interop.InteropResourceRequirement.SizeSource.*;
+import static io.homo.superresolution.api.interop.InteropResourceType.*;
 import static org.lwjgl.opengl.EXTSemaphore.*;
+import static org.lwjgl.opengl.GL11.glFinish;
 import static org.lwjgl.vulkan.VK10.VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 
-public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
-    public static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 5;
-    public static final int MAX_IN_FLIGHT_FRAME = 3;
+public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm implements InteropInputDispatch {
+    public static final int INITIAL_COMMAND_BUFFER_RING_SIZE = 4;
     private final VulkanCommandBufferRing commandBufferRing = new VulkanCommandBufferRing(
             INITIAL_COMMAND_BUFFER_RING_SIZE);
-    protected InFlightFrameResourcesSet[] inFlightFrames = new InFlightFrameResourcesSet[MAX_IN_FLIGHT_FRAME];
+    protected FrameResourcesSet frameResourcesSet = null;
 
-    protected boolean syncSerialMode;
-
-    // 部分模组会跳过世界渲染，但全局 GameFrameIndex 仍会推进。
-    // interop 流水线只按实际 dispatch 推进，避免三缓冲资源错位。
-    protected int interopFrameSequence = 0;
-
+    private boolean flipInteropResourcesY;
+    private InteropResourceLayout builtLayout;
+    private boolean destroyed;
+    private boolean initialized;
     // Resolution the interop resources were last built at, to skip redundant resize() rebuilds.
     // (Iris/forceResize call resize() on every pipeline reload even when nothing changed).
     private int builtRenderWidth = -1;
@@ -73,11 +76,15 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
 
     protected abstract void dispatchVulkanUpscale(
             VulkanCommandBuffer commandBuffer,
-            InFlightFrameResourcesSet inFlightFrameResourcesSet
+            FrameResourcesSet frameResourcesSet
     );
 
     protected boolean isVulkanInteropReady() {
         return true;
+    }
+
+    protected final boolean shouldFlipInteropResourcesY() {
+        return flipInteropResourcesY;
     }
 
     protected void onInteropResourcesCreated() {
@@ -86,237 +93,133 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
     protected void onBeforeInteropResourcesDestroyed() {
     }
 
-    protected void processAdditionalInputResources(InFlightFrameResourcesSet inFlight, DispatchResource dispatchResource) {
+    protected List<InteropResourceRequirement> getInteropResourceRequirements() {
+        return List.of(
+                InteropResourceRequirement.input(
+                        Color,
+                        Required, RenderSize, InternalColorConfigOrContext,
+                        SuperResolutionConfig.getInternalTextureFormat()
+                ),
+                InteropResourceRequirement.input(
+                        Depth,
+                        Required, RenderSize, Fixed,
+                        TextureFormat.R32F
+                ),
+                InteropResourceRequirement.input(
+                        MotionVectors,
+                        Required, RenderSize, Fixed,
+                        TextureFormat.RG16F
+                ),
+                InteropResourceRequirement.input(
+                        Exposure,
+                        Optional, OneByOne, Fixed,
+                        TextureFormat.R32F
+                ),
+                InteropResourceRequirement.output(
+                        OutputColor,
+                        OutputSize, InternalColorConfig, null
+                )
+        );
     }
 
-    protected int[] getAdditionalInputSignalTextureHandles(InFlightFrameResourcesSet inFlight) {
-        return new int[0];
+    protected boolean validateInputResources(InputResourceSet inputs) {
+        if (inputs == null) {
+            return false;
+        }
+        for (InteropResourceRequirement requirement : getInteropResourceRequirements()) {
+            if (requirement.type().isInput() && requirement.presence() == Required
+                    && !inputs.has(requirement.type().inputType())) {
+                return false;
+            }
+        }
+        return true;
     }
 
-    protected void createResources() {
+    /** Called after layout preparation, also for dispatches using an external input writer. */
+    protected boolean prepareVulkanDispatch(DispatchResource resource) {
+        return isVulkanInteropReady();
+    }
+
+    @Override
+    public final Map<InteropResourceType, InteropResourceDescription> getInteropResourceDescriptions() {
+        return builtLayout == null ? Map.of() : builtLayout.resources();
+    }
+
+    @Override
+    public final boolean dispatchWithInputWriter(
+            DispatchResource dispatchResource, Consumer<InteropInputWriter> writer) {
+        if (!initialized || destroyed) {
+            throw new IllegalStateException("Interop algorithm is uninitialized or destroyed");
+        }
+        return dispatchInternal(Objects.requireNonNull(dispatchResource), writer);
+    }
+
+    private InteropResourceLayout resolveLayout(InputResourceSet inputs) {
+        return InteropResourceLayout.resolve(getInteropResourceRequirements(),
+                InteropResourceContextManager.getCurrentContext(), inputs,
+                SuperResolutionConfig.getInternalTextureFormat(),
+                RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight(),
+                RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
+    }
+
+    private void createResources(InteropResourceLayout layout) {
         VulkanDevice vkDevice = RenderSystems.vulkan().device();
         vkDevice.getMainQueue().waitIdle();
-        for (int i = 0; i < (syncSerialMode ? 1 : MAX_IN_FLIGHT_FRAME); i++) {
-            inFlightFrames[i] = new InFlightFrameResourcesSet();
-            inFlightFrames[i].index = i;
-            inFlightFrames[i].initialize();
-        }
+        frameResourcesSet = new FrameResourcesSet(flipInteropResourcesY);
+        frameResourcesSet.initialize(layout);
+        builtLayout = layout;
         builtRenderWidth = RenderHandlerManager.getRenderWidth();
         builtRenderHeight = RenderHandlerManager.getRenderHeight();
         builtScreenWidth = RenderHandlerManager.getScreenWidth();
         builtScreenHeight = RenderHandlerManager.getScreenHeight();
     }
 
-    protected void destroyResources() {
+    private void destroyResources() {
         RenderSystems.vulkan().device().getMainQueue().waitIdle();
-        for (int i = 0; i < (syncSerialMode ? 1 : MAX_IN_FLIGHT_FRAME); i++) {
-            if (inFlightFrames[i] != null) {
-                inFlightFrames[i].destroy();
-            }
+        if (frameResourcesSet != null) {
+            frameResourcesSet.destroy();
+            frameResourcesSet = null;
         }
+        builtLayout = null;
     }
 
     @Override
-    public void initialize(InitializationDescription desc) {
-        syncSerialMode = SuperResolutionConfig.getInteropSyncMode() == InteropSyncMode.LowLatency;
-        this.initDesc = desc;
-        createResources();
+    public final void initialize(InitializationDescription desc) {
+        if (initialized || frameResourcesSet != null) {
+            throw new IllegalStateException("Interop algorithm still owns resources");
+        }
+        flipInteropResourcesY = SuperResolutionConfig.isFlipVkGlInteropResourcesY();
+        this.initDesc = Objects.requireNonNull(desc);
+        destroyed = false;
+        invalidateHistory();
+        createResources(resolveLayout(null));
         onInteropResourcesCreated();
+        initialized = true;
     }
 
     @Override
-    public boolean dispatch(DispatchResource dispatchResource) {
-        super.dispatch(dispatchResource);
-
-        if (!isVulkanInteropReady()) {
-            return false;
-        }
-        interopFrameSequence++;
-        if (syncSerialMode) {
-            int currentFrameIndex = 0;
-            InFlightFrameResourcesSet inFlight;
-            VkGlInteropSemaphore upscaleFinishSemaphore;
-            VkGlInteropSemaphore glFinishSemaphore;
-            inFlight = inFlightFrames[currentFrameIndex];
-            upscaleFinishSemaphore = inFlight.upscaleVkFinish;
-            glFinishSemaphore = inFlight.glFinish;
-            // commandBufferRing的acquire会帮我们waitForFence
-            //if (inFlight.commandBuffer != null) {
-            //    inFlight.commandBuffer.waitForFence();
-            //}
-            processInputResources(inFlight, dispatchResource);
-            signalInputTexturesReady(inFlight);
-            publishCaptureInputs(inFlight, dispatchResource);
-
-            VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
-            inFlight.frameData = FrameData.from(dispatchResource);
-
-            VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
-            // 构建第N-1帧的Cmdbuf
-            commandBuffer.begin();
-            dispatchVulkanUpscale(
-                    commandBuffer,
-                    inFlight
-            );
-            commandBuffer.end();
-
-            // 提交第N-1帧的Cmdbuf
-            // 在第N-1帧的GL渲染结果准备好后（ginishSemaphore）
-            // 执行Upscale
-            // 并在Upscale完成后（upscaleFinishSemaphore）通知GL Queue
-            inFlight.fence = vulkanDevice.submitCommandBuffer(
-                    commandBuffer,
-                    new long[]{glFinishSemaphore.getVkSemaphoreHandle()},
-                    new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
-                    new long[]{upscaleFinishSemaphore.getVkSemaphoreHandle()}
-            );
-
-            // 存一下第N-1帧的Cmdbuf
-            inFlight.commandBuffer = commandBuffer;
-
-            upscaleFinishSemaphore.waitVulkanSignal(
-                    new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
-                    new int[]{},
-                    new int[]{GL_LAYOUT_GENERAL_EXT}
-            );
-            PerformanceTracker.push(PerformanceTracker.GL_INTEROP_FLIP);
-            try {
-                InteropResourcesPreprocessor.flipY(
-                        inFlight.outputColorGlTexture,
-                        inFlight.flippedOutputGlTexture);
-            } finally {
-                PerformanceTracker.pop(PerformanceTracker.GL_INTEROP_FLIP);
-            }
-        } else {
-            int currentFrameIndex = interopFrameSequence;
-            {
-                InFlightFrameResourcesSet inFlight;
-                VkGlInteropSemaphore glFinishSemaphore;
-                // =============== 处理第N帧还未完成的GL渲染结果 ================
-                inFlight = inFlightFrames[currentFrameIndex % MAX_IN_FLIGHT_FRAME];
-                glFinishSemaphore = inFlight.glFinish;
-                inFlight.frameData = FrameData.from(dispatchResource);
-                // Do NOT wait on upscaleVkFinish here. This slot's upscale output is consumed -- with
-                // its own waitOpenGL -- in the third stage below, so an extra GL wait on the same binary
-                // semaphore makes it two waits per one signal each cycle, and on the first cycle a wait
-                // before any signal. On Linux the opaque-FD semaphore wait blocks the GL queue hard and
-                // deadlocks (Windows happens to tolerate the illegal wait). Reuse safety for this slot's
-                // inputs comes from the fence wait below plus the command-buffer ring.
-                if (inFlight.commandBuffer != null) {
-                    inFlight.commandBuffer.waitForFence();
-                }
-                processInputResources(inFlight, dispatchResource);
-
-                signalInputTexturesReady(inFlight);
-                publishCaptureInputs(inFlight, dispatchResource);
-            }
-            if (currentFrameIndex > 1) {
-                InFlightFrameResourcesSet inFlight;
-                VkGlInteropSemaphore upscaleFinishSemaphore;
-                VkGlInteropSemaphore glFinishSemaphore;
-                int finishedGlIndex = 0;
-                // =============== 处理第N-1帧已经预期完成的GL渲染结果 ================
-                finishedGlIndex = (((currentFrameIndex - 1) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
-                // 获取第N-1帧的资源集合
-                inFlight = inFlightFrames[finishedGlIndex];
-
-                upscaleFinishSemaphore = inFlight.upscaleVkFinish;
-                glFinishSemaphore = inFlight.glFinish;
-                VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
-                VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
-
-                if (inFlight.frameData != null) {
-                    // 构建第N-1帧的Cmdbuf
-                    commandBuffer.begin();
-                    dispatchVulkanUpscale(
-                            commandBuffer,
-                            inFlight
-                    );
-                    commandBuffer.end();
-
-                    // 提交第N-1帧的Cmdbuf
-                    // 在第N-1帧的GL渲染结果准备好后（glFinishSemaphore）
-                    // 执行Upscale
-                    // 并在Upscale完成后（upscaleFinishSemaphore）通知GL Queue
-                    inFlight.fence = vulkanDevice.submitCommandBuffer(
-                            commandBuffer,
-                            new long[]{glFinishSemaphore.getVkSemaphoreHandle()},
-                            new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
-                            new long[]{upscaleFinishSemaphore.getVkSemaphoreHandle()}
-                    );
-
-                    // 存一下第N-1帧的Cmdbuf
-                    inFlight.commandBuffer = commandBuffer;
-
-                }
-                // =================================================================
-            }
-            if (currentFrameIndex > 2) {
-                InFlightFrameResourcesSet inFlight;
-                VkGlInteropSemaphore upscaleFinishSemaphore;
-                VkGlInteropSemaphore glFinishSemaphore;
-                int finishedGlIndex = 0;
-                int finishedIndex = 0;
-                // =============== 渲染第N-2帧已经预期完成的Upscale结果 ================
-                // 获取第N-2帧的资源集合Index
-                finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
-
-                // 获取第N-2帧的资源集合
-                inFlight = inFlightFrames[finishedIndex];
-                upscaleFinishSemaphore = inFlight.upscaleVkFinish;
-                glFinishSemaphore = inFlight.glFinish;
-
-                // Only consume this slot's upscale output if its upscale was actually submitted since the
-                // last resource (re)creation. A non-null commandBuffer means upscaleVkFinish has been
-                // signaled at least once. resize() rebuilds the slots (fresh, UNSIGNALED semaphores) but
-                // does NOT reset interopFrameSequence, so for the first frames after a resize this stage's index is
-                // still > 2 while the slot was never upscaled; waiting on its never-signaled binary
-                // semaphore blocks the GL queue and deadlocks (the HighPerformance freeze during world
-                // load, where resize() fires repeatedly). A later recreateAlgorithm (new instance,
-                // interopFrameSequence = 0) re-primes and briefly unblocks it -- hence the freeze/render/freeze cycle.
-                if (inFlight.commandBuffer != null) {
-                    // No CPU fence wait here. waitVulkanSignal below is a GL-queue-side
-                    // GPU wait that already orders the flip after the upscale, and the
-                    // matching signal was submitted during the previous dispatch, so the
-                    // glWaitSemaphoreEXT is legal. Blocking on the fence as well stalled
-                    // the render thread on GPU work submitted one frame earlier and capped
-                    // the pipeline at a single frame of overlap. The commandBuffer != null
-                    // guard is what keeps a never-signaled semaphore from being waited on
-                    // after a resize.
-
-                    //GL Queue等待第N-2帧的Upscale结果
-                    upscaleFinishSemaphore.waitVulkanSignal(
-                            new int[]{Math.toIntExact(inFlight.outputColorGlTexture.handle())},
-                            new int[]{},
-                            new int[]{GL_LAYOUT_GENERAL_EXT}
-                    );
-
-                    //把第N-2帧的Upscale结果从OpenGL共享纹理翻转到最终输出纹理
-                    PerformanceTracker.push(PerformanceTracker.GL_INTEROP_FLIP);
-                    try {
-                        InteropResourcesPreprocessor.flipY(
-                                inFlight.outputColorGlTexture,
-                                inFlight.flippedOutputGlTexture);
-                    } finally {
-                        PerformanceTracker.pop(PerformanceTracker.GL_INTEROP_FLIP);
-                    }
-                }
-                // =================================================================
-            }
-        }
-        return true;
+    public final boolean dispatch(DispatchResource dispatchResource) {
+        return dispatchWithInputWriter(dispatchResource, null);
     }
 
     @Override
-    public void destroy() {
-        RenderSystems.vulkan().device().getMainQueue().waitIdle();
+    public final void destroy() {
+        if (destroyed) {
+            return;
+        }
+        awaitResourceUsers();
         commandBufferRing.destroy();
         onBeforeInteropResourcesDestroyed();
         destroyResources();
+        destroyed = true;
+        initialized = false;
     }
 
     @Override
-    public void resize(int width, int height) {
+    public final void resize(int width, int height) {
+        if (!initialized || destroyed) {
+            throw new IllegalStateException("Cannot resize an uninitialized or destroyed interop algorithm");
+        }
         // Skip rebuilding interop resources when the resolution is unchanged. Iris/forceResize call
         // resize() on every pipeline reload during world load even at constant resolution.
         if (isVulkanInteropReady()
@@ -326,76 +229,187 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                 && RenderHandlerManager.getScreenHeight() == builtScreenHeight) {
             return;
         }
-        RenderSystems.vulkan().device().getMainQueue().waitIdle();
-        commandBufferRing.destroy();
-
-        onBeforeInteropResourcesDestroyed();
-        destroyResources();
-
-        createResources();
-        onInteropResourcesCreated();
+        rebuildResources(resolveLayout(null));
     }
 
     @Override
     public IFrameBuffer getOutputFrameBuffer() {
-        if (syncSerialMode) {
-            return inFlightFrames[0].outputFrameBuffer;
-        }
-        int currentFrameIndex = interopFrameSequence;
-        int finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
-        return inFlightFrames[finishedIndex].outputFrameBuffer;
+        return frameResourcesSet.outputFrameBuffer;
     }
 
     @Override
     public int getOutputTextureId() {
-        if (syncSerialMode) {
-            return Math.toIntExact(inFlightFrames[0].outputColorGlTexture.handle());
-        }
-        int currentFrameIndex = interopFrameSequence;
-        int finishedIndex = (((currentFrameIndex - 2) % MAX_IN_FLIGHT_FRAME) + MAX_IN_FLIGHT_FRAME) % MAX_IN_FLIGHT_FRAME;
-        GlImportableTexture2D outputColorGlTexture = inFlightFrames[finishedIndex].outputColorGlTexture;
-        return Math.toIntExact(outputColorGlTexture.handle());
+        return Math.toIntExact(frameResourcesSet.openGl(OutputColor).handle());
     }
 
-    private void processInputResources(InFlightFrameResourcesSet inFlight, DispatchResource dispatchResource) {
-        inFlight.awaitCaptureRelease();
+    private boolean dispatchInternal(DispatchResource dispatchResource, Consumer<InteropInputWriter> writer) {
+        super.dispatch(dispatchResource);
+        if (!validateInputResources(dispatchResource.resources())) {
+            return false;
+        }
+        InteropResourceLayout layout = resolveLayout(dispatchResource.resources());
+        if (!layout.equals(builtLayout)) {
+            rebuildResources(layout);
+        }
+        if (!prepareVulkanDispatch(dispatchResource)) {
+            return false;
+        }
+        VkGlInteropSemaphore upscaleFinishSemaphore;
+        VkGlInteropSemaphore glFinishSemaphore;
+        upscaleFinishSemaphore = frameResourcesSet.upscaleVkFinish;
+        glFinishSemaphore = frameResourcesSet.glFinish;
+        // commandBufferRing的acquire会帮我们waitForFence
+        //if (frameResourcesSet.commandBuffer != null) {
+        //    frameResourcesSet.commandBuffer.waitForFence();
+        //}
+        processInputResources(frameResourcesSet, dispatchResource, writer);
+        signalInputTexturesReady(frameResourcesSet);
+        publishCaptureInputs(frameResourcesSet, dispatchResource);
 
+        VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
+        frameResourcesSet.frameData = FrameData.from(dispatchResource, flipInteropResourcesY);
+
+        VulkanCommandBuffer commandBuffer = commandBufferRing.acquire(vulkanDevice);
+        // 构建第N-1帧的Cmdbuf
+
+        commandBuffer.begin();
+        dispatchVulkanUpscale(
+                commandBuffer,
+                frameResourcesSet
+        );
+        commandBuffer.end();
+
+        // 提交第N-1帧的Cmdbuf
+        // 在第N-1帧的GL渲染结果准备好后（ginishSemaphore）
+        // 执行Upscale
+        // 并在Upscale完成后（upscaleFinishSemaphore）通知GL Queue
+        frameResourcesSet.fence = vulkanDevice.submitCommandBuffer(
+                commandBuffer,
+                new long[]{glFinishSemaphore.getVkSemaphoreHandle()},
+                new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
+                new long[]{upscaleFinishSemaphore.getVkSemaphoreHandle()}
+        );
+
+        // 存一下第N-1帧的Cmdbuf
+        frameResourcesSet.commandBuffer = commandBuffer;
+
+        upscaleFinishSemaphore.waitVulkanSignal(
+                new int[]{Math.toIntExact(frameResourcesSet.openGl(OutputColor).handle())},
+                new int[]{},
+                new int[]{GL_LAYOUT_GENERAL_EXT}
+        );
+        flipOutputIfEnabled(frameResourcesSet);
+        return true;
+    }
+
+    private void flipOutputIfEnabled(FrameResourcesSet inFlight) {
+        if (!flipInteropResourcesY) {
+            return;
+        }
+        PerformanceTracker.push(PerformanceTracker.GL_INTEROP_FLIP);
+        try {
+            InteropResourcesPreprocessor.flipY(
+                    inFlight.openGl(OutputColor),
+                    inFlight.flippedOutputGlTexture);
+        } finally {
+            PerformanceTracker.pop(PerformanceTracker.GL_INTEROP_FLIP);
+        }
+    }
+
+    private void rebuildResources(InteropResourceLayout layout) {
+        awaitResourceUsers();
+        commandBufferRing.destroy();
+        onBeforeInteropResourcesDestroyed();
+        destroyResources();
+        try {
+            createResources(layout);
+            onInteropResourcesCreated();
+        } catch (RuntimeException | Error error) {
+            // Keep partial owners reachable for destruction, but never accept this layout as ready.
+            builtLayout = null;
+            throw error;
+        }
+        invalidateHistory();
+        FrameGeneration.invalidateHistory();
+    }
+
+    private void awaitResourceUsers() {
+        PresentationBackendManager.flushCapturedFrame();
+        if (frameResourcesSet != null) {
+            frameResourcesSet.awaitCaptureRelease();
+        }
+        // Vulkan idle alone does not retire OpenGL readers of an unflipped shared output.
+        glFinish();
+        RenderSystems.vulkan().device().getMainQueue().waitIdle();
+    }
+
+    private void processInputResources(FrameResourcesSet inFlight, DispatchResource dispatchResource,
+                                       Consumer<InteropInputWriter> writer) {
+        inFlight.awaitCaptureRelease();
         String motionVectorPreprocessingFunction =
                 SRWorkModeManager.getCurrentState().motionVectorPreprocessingFunction();
-
-        PerformanceTracker.push(PerformanceTracker.GL_INPUT_CONVERT);
-        try {
+        try (
+                InteropInputWriteSession session = new InteropInputWriteSession(inFlight.glTextures,
+                        (type, source) -> transferInput(
+                                type, source, inFlight.openGl(type), motionVectorPreprocessingFunction))
+        ) {
+            PerformanceTracker.push(PerformanceTracker.GL_INPUT_CONVERT);
+            if (writer != null) {
+                writer.accept(session);
+                session.requireHealthy();
+            }
+            InputResourceSet inputs = dispatchResource.resources();
             InteropResourcesPreprocessor.processInputTextures(
-                    dispatchResource.resources().get(InputResourceType.Color), inFlight.inputColorGlTexture,
-                    dispatchResource.resources().get(InputResourceType.Depth), inFlight.inputDepthGlTexture,
-                    dispatchResource.resources().get(InputResourceType.MotionVectors), inFlight.inputMotionVectorsGlTexture,
-                    dispatchResource.resources().get(InputResourceType.Exposure), inFlight.inputExposureGlTexture,
-                    motionVectorPreprocessingFunction
+                    session.pendingSource(Color, inputs), inFlight.openGl(Color),
+                    session.pendingSource(Depth, inputs), inFlight.openGl(Depth),
+                    session.pendingSource(MotionVectors, inputs), inFlight.openGl(MotionVectors),
+                    session.pendingSource(Exposure, inputs), inFlight.openGl(Exposure),
+                    motionVectorPreprocessingFunction,
+                    flipInteropResourcesY
             );
+            ICommandBuffer supplemental = null;
+            try {
+                for (InteropResourceType type : inFlight.resourceTypes()) {
+                    if (!type.isInput() || type == Color || type == Depth
+                            || type == MotionVectors || type == Exposure) {
+                        continue;
+                    }
+                    ITexture source = session.pendingSource(type, inputs);
+                    if (source != null) {
+                        if (supplemental == null) {
+                            supplemental = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
+                            supplemental.begin();
+                        }
+                        recordSupplementalTransfer(supplemental, type, source, inFlight.openGl(type));
+                    }
+                }
+                if (supplemental != null) {
+                    supplemental.end();
+                    RenderSystems.opengl().device().submitCommandBuffer(supplemental);
+                }
+            } finally {
+                if (supplemental != null) {
+                    supplemental.destroy();
+                }
+            }
         } finally {
             PerformanceTracker.pop(PerformanceTracker.GL_INPUT_CONVERT);
         }
-        processAdditionalInputResources(inFlight, dispatchResource);
     }
 
-    private void signalInputTexturesReady(InFlightFrameResourcesSet inFlight) {
-        int[] additionalHandles = getAdditionalInputSignalTextureHandles(inFlight);
-        int[] handles = new int[4 + additionalHandles.length];
-        handles[0] = Math.toIntExact(inFlight.inputColorGlTexture.handle());
-        handles[1] = Math.toIntExact(inFlight.inputDepthGlTexture.handle());
-        handles[2] = Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle());
-        handles[3] = Math.toIntExact(inFlight.inputExposureGlTexture.handle());
-        System.arraycopy(additionalHandles, 0, handles, 4, additionalHandles.length);
+    private void signalInputTexturesReady(FrameResourcesSet inFlight) {
+        int[] handles = inFlight.resourceTypes().stream().filter(InteropResourceType::isInput)
+                .mapToInt(type -> Math.toIntExact(inFlight.openGl(type).handle())).toArray();
         int[] layouts = new int[handles.length];
         Arrays.fill(layouts, GL_LAYOUT_SHADER_READ_ONLY_EXT);
         inFlight.glFinish.signalVulkan(handles, new int[]{}, layouts);
     }
 
     private void publishCaptureInputs(
-            InFlightFrameResourcesSet inFlight,
+            FrameResourcesSet inFlight,
             DispatchResource dispatchResource
     ) {
-        if (!VulkanPresentationFeature.isRequested()
+        if (!PresentationBackendManager.isVulkanPresentationRequested()
                 || !FrameCaptureManager.isInitialized()
                 // Real-only presentation does not consume these borrowed textures.
                 || !FrameGeneration.isFrameGenerationEnabled()
@@ -403,20 +417,21 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
             return;
         }
 
-        boolean hasDepth = dispatchResource.resources().has(InputResourceType.Depth);
-        boolean hasMotionVectors = dispatchResource.resources().has(InputResourceType.MotionVectors);
+        boolean hasDepth = inFlight.has(Depth) && dispatchResource.resources().has(InputResourceType.Depth);
+        boolean hasMotionVectors = inFlight.has(MotionVectors)
+                && dispatchResource.resources().has(InputResourceType.MotionVectors);
         if (!hasDepth && !hasMotionVectors) {
             return;
         }
 
         FrameResources captureFrame = FrameCaptureManager.captureVulkanInputs(
                 dispatchResource.frameCount(),
-                hasDepth ? inFlight.inputDepthVkTexture : null,
-                hasDepth ? inFlight.inputDepthGlTexture : null,
+                hasDepth ? inFlight.vulkan(Depth) : null,
+                hasDepth ? inFlight.openGl(Depth) : null,
                 hasDepth ? inFlight.captureDepthReady : null,
                 hasDepth ? inFlight.captureDepthRelease : null,
-                hasMotionVectors ? inFlight.inputMotionVectorsVkTexture : null,
-                hasMotionVectors ? inFlight.inputMotionVectorsGlTexture : null,
+                hasMotionVectors ? inFlight.vulkan(MotionVectors) : null,
+                hasMotionVectors ? inFlight.openGl(MotionVectors) : null,
                 hasMotionVectors ? inFlight.captureMotionReady : null,
                 hasMotionVectors ? inFlight.captureMotionRelease : null
         );
@@ -431,7 +446,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
         }
         if (borrowedDepth) {
             inFlight.captureDepthReady.signalVulkan(
-                    new int[]{Math.toIntExact(inFlight.inputDepthGlTexture.handle())},
+                    new int[]{Math.toIntExact(inFlight.openGl(Depth).handle())},
                     new int[0],
                     new int[]{GL_LAYOUT_SHADER_READ_ONLY_EXT}
             );
@@ -439,13 +454,49 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
         }
         if (borrowedMotionVectors) {
             inFlight.captureMotionReady.signalVulkan(
-                    new int[]{Math.toIntExact(inFlight.inputMotionVectorsGlTexture.handle())},
+                    new int[]{Math.toIntExact(inFlight.openGl(MotionVectors).handle())},
                     new int[0],
                     new int[]{GL_LAYOUT_SHADER_READ_ONLY_EXT}
             );
             inFlight.captureMotionPending = true;
         }
 
+    }
+
+    private void transferInput(InteropResourceType type, ITexture source, ITexture destination, String mvFunction) {
+        if (source.getTextureType() != TextureType.Texture2D
+                || source.getWidth() < destination.getWidth() || source.getHeight() < destination.getHeight()) {
+            throw new IllegalArgumentException("External source does not cover the interop input: " + type);
+        }
+        if (type == Color || type == Depth || type == MotionVectors || type == Exposure) {
+            InteropResourcesPreprocessor.processInputTextures(
+                    type == Color ? source : null, type == Color ? destination : null,
+                    type == Depth ? source : null, type == Depth ? destination : null,
+                    type == MotionVectors ? source : null, type == MotionVectors ? destination : null,
+                    type == Exposure ? source : null, type == Exposure ? destination : null,
+                    mvFunction, flipInteropResourcesY);
+            return;
+        }
+        ICommandBuffer commandBuffer = RenderSystems.opengl().device().defaultCommandPool().createCommandBuffer();
+        try {
+            commandBuffer.begin();
+            recordSupplementalTransfer(commandBuffer, type, source, destination);
+            commandBuffer.end();
+            RenderSystems.opengl().device().submitCommandBuffer(commandBuffer);
+        } finally {
+            commandBuffer.destroy();
+        }
+    }
+
+    private void recordSupplementalTransfer(ICommandBuffer commandBuffer, InteropResourceType type,
+                                            ITexture source, ITexture destination) {
+        if (!flipInteropResourcesY) {
+            InteropResourcesPreprocessor.copyTexture(commandBuffer, source, destination);
+        } else if (type == SpecularMotionVectors) {
+            InteropResourcesPreprocessor.flipMotionVectorY(commandBuffer, source, destination);
+        } else {
+            InteropResourcesPreprocessor.flipY(commandBuffer, source, destination);
+        }
     }
 
     public record FrameData(
@@ -496,7 +547,8 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
             float preExposure
 
     ) {
-        public static FrameData from(DispatchResource dispatchResource) {
+        public static FrameData from(DispatchResource dispatchResource, boolean flipY) {
+            Vector2f jitterOffset = new Vector2f(dispatchResource.jitterOffset());
             return new FrameData(
                     dispatchResource.renderWidth(),
                     dispatchResource.renderHeight(),
@@ -510,7 +562,7 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                     dispatchResource.horizontalFov(),
                     dispatchResource.cameraNear(),
                     dispatchResource.cameraFar(),
-                    dispatchResource.jitterOffset(),
+                    jitterOffset,
                     dispatchResource.jitterSequenceLength(),
                     new Matrix4f(dispatchResource.modelViewMatrix()),
                     new Matrix4f(dispatchResource.projectionMatrix()),
@@ -525,21 +577,12 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
         }
     }
 
-    public static class InFlightFrameResourcesSet {
-        public GlImportableTexture2D inputColorGlTexture;
-        public VulkanTexture inputColorVkTexture;
-
-        public GlImportableTexture2D inputDepthGlTexture;
-        public VulkanTexture inputDepthVkTexture;
-
-        public GlImportableTexture2D inputMotionVectorsGlTexture;
-        public VulkanTexture inputMotionVectorsVkTexture;
-
-        public GlImportableTexture2D inputExposureGlTexture;
-        public VulkanTexture inputExposureVkTexture;
-
-        public GlImportableTexture2D outputColorGlTexture;
-        public VulkanTexture outputColorVkTexture;
+    public static class FrameResourcesSet {
+        private final boolean flipInteropResourcesY;
+        private final EnumMap<InteropResourceType, VulkanTexture> vulkanTextures =
+                new EnumMap<>(InteropResourceType.class);
+        private final EnumMap<InteropResourceType, GlImportableTexture2D> glTextures =
+                new EnumMap<>(InteropResourceType.class);
 
         public GlTexture2D flippedOutputGlTexture;
         public IFrameBuffer outputFrameBuffer;
@@ -554,157 +597,121 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
         public VulkanCommandBuffer commandBuffer;
         public long fence;
 
-        protected int index;
         private boolean captureDepthPending;
         private boolean captureMotionPending;
         private FrameResources captureInputsFrame;
 
+        public FrameResourcesSet(boolean flipInteropResourcesY) {
+            this.flipInteropResourcesY = flipInteropResourcesY;
+        }
+
+        public boolean has(InteropResourceType type) {
+            return vulkanTextures.containsKey(type);
+        }
+
+        public VulkanTexture vulkan(InteropResourceType type) {
+            return vulkanTextures.get(type);
+        }
+
+        public GlImportableTexture2D openGl(InteropResourceType type) {
+            return glTextures.get(type);
+        }
+
+        public Set<InteropResourceType> resourceTypes() {
+            return Collections.unmodifiableSet(vulkanTextures.keySet());
+        }
+
         public void destroy() {
             awaitCaptureRelease();
-            if (inputColorGlTexture != null) {
-                inputColorGlTexture.destroy();
-            }
-            if (inputColorVkTexture != null) {
-                inputColorVkTexture.destroy();
-            }
-            if (inputDepthGlTexture != null) {
-                inputDepthGlTexture.destroy();
-            }
-            if (inputDepthVkTexture != null) {
-                inputDepthVkTexture.destroy();
-            }
-            if (outputColorGlTexture != null) {
-                outputColorGlTexture.destroy();
-            }
-            if (outputColorVkTexture != null) {
-                outputColorVkTexture.destroy();
-            }
-            if (inputMotionVectorsGlTexture != null) {
-                inputMotionVectorsGlTexture.destroy();
-            }
-            if (inputMotionVectorsVkTexture != null) {
-                inputMotionVectorsVkTexture.destroy();
-            }
-
-            if (inputExposureGlTexture != null) {
-                inputExposureGlTexture.destroy();
-            }
-            if (inputExposureVkTexture != null) {
-                inputExposureVkTexture.destroy();
-            }
-
-            if (flippedOutputGlTexture != null) {
-                flippedOutputGlTexture.destroy();
-            }
-
             if (outputFrameBuffer != null) {
                 outputFrameBuffer.destroy();
+                outputFrameBuffer = null;
+            }
+            if (flippedOutputGlTexture != null) {
+                flippedOutputGlTexture.destroy();
+                flippedOutputGlTexture = null;
+            }
+            for (Iterator<GlImportableTexture2D> it = glTextures.values().iterator(); it.hasNext(); ) {
+                it.next().destroy();
+                it.remove();
+            }
+            for (Iterator<VulkanTexture> it = vulkanTextures.values().iterator(); it.hasNext(); ) {
+                it.next().destroy();
+                it.remove();
             }
 
             if (glFinish != null) {
                 glFinish.destroy();
+                glFinish = null;
             }
 
             if (upscaleVkFinish != null) {
                 upscaleVkFinish.destroy();
+                upscaleVkFinish = null;
             }
             if (captureDepthReady != null) {
                 captureDepthReady.destroy();
+                captureDepthReady = null;
             }
             if (captureDepthRelease != null) {
                 captureDepthRelease.destroy();
+                captureDepthRelease = null;
             }
             if (captureMotionReady != null) {
                 captureMotionReady.destroy();
+                captureMotionReady = null;
             }
             if (captureMotionRelease != null) {
                 captureMotionRelease.destroy();
+                captureMotionRelease = null;
             }
         }
 
-        public void initialize() {
+        private void initialize(InteropResourceLayout layout) {
             VulkanDevice vkDevice = RenderSystems.vulkan().device();
             GlDevice glDevice = RenderSystems.opengl().device();
             vkDevice.getMainQueue().waitIdle();
-            this.inputColorVkTexture = vkDevice.createTextureExportable(
-                    TextureDescription.create()
-                            .usages(TextureUsages.create().sampler().storage().transferSource())
-                            .format(SuperResolutionConfig.getInternalTextureFormat())
-                            .type(TextureType.Texture2D)
-                            .width(RenderHandlerManager.getRenderWidth())
-                            .height(RenderHandlerManager.getRenderHeight())
-                            .label("SRUpscaleInputColorVkTexture-%s".formatted(index))
-                            .build()
-            );
-            this.inputColorGlTexture = glDevice.createTextureImportable(this.inputColorVkTexture);
+            for (Map.Entry<InteropResourceType, InteropResourceDescription> entry : layout.resources().entrySet()) {
+                InteropResourceDescription description = entry.getValue();
+                TextureUsages usages = TextureUsages.create();
+                usages.getUsages().addAll(description.usages());
+                VulkanTexture texture = vkDevice.createTextureExportable(
+                        TextureDescription.create()
+                                .type(TextureType.Texture2D)
+                                .usages(usages)
+                                .format(description.format())
+                                .width(description.width())
+                                .height(description.height())
+                                .label("SRInterop-%s".formatted(entry.getKey()))
+                                .build());
+                vulkanTextures.put(entry.getKey(), texture);
+                glTextures.put(entry.getKey(), glDevice.createTextureImportable(texture));
+            }
 
-            this.inputDepthVkTexture = vkDevice.createTextureExportable(
-                    TextureDescription.create()
-                            .usages(TextureUsages.create().sampler().storage().transferSource())
-                            .format(TextureFormat.R32F)
-                            .type(TextureType.Texture2D)
-                            .width(RenderHandlerManager.getRenderWidth())
-                            .height(RenderHandlerManager.getRenderHeight())
-                            .label("SRUpscaleInputDepthVkTexture-%s".formatted(index))
-                            .build()
-            );
-            this.inputDepthGlTexture = glDevice.createTextureImportable(this.inputDepthVkTexture);
-
-            this.inputMotionVectorsVkTexture = vkDevice.createTextureExportable(
-                    TextureDescription.create()
-                            .usages(TextureUsages.create().sampler().storage().transferSource())
-                            .format(TextureFormat.RG16F)
-                            .type(TextureType.Texture2D)
-                            .width(RenderHandlerManager.getRenderWidth())
-                            .height(RenderHandlerManager.getRenderHeight())
-                            .label("SRUpscaleInputMotionVectorsVkTexture-%s".formatted(index))
-                            .build()
-            );
-            this.inputMotionVectorsGlTexture = glDevice.createTextureImportable(this.inputMotionVectorsVkTexture);
-
-            this.inputExposureVkTexture = vkDevice.createTextureExportable(
-                    TextureDescription.create()
-                            .usages(TextureUsages.create().sampler().storage().transferSource())
-                            .format(TextureFormat.R32F)
-                            .type(TextureType.Texture2D)
-                            .width(1)
-                            .height(1)
-                            .label("SRUpscaleInputExposureVkTexture-%s".formatted(index))
-                            .build()
-            );
-            this.inputExposureGlTexture = glDevice.createTextureImportable(this.inputExposureVkTexture);
-
-            this.outputColorVkTexture = vkDevice.createTextureExportable(
-                    TextureDescription.create()
-                            .type(TextureType.Texture2D)
-                            .usages(TextureUsages.create().sampler().storage().transferDestination())
-                            .format(SuperResolutionConfig.getInternalTextureFormat())
-                            .width(RenderHandlerManager.getScreenWidth())
-                            .height(RenderHandlerManager.getScreenHeight())
-                            .label("SRUpscaleOutputColorVkTexture-%s".formatted(index))
-                            .build()
-            );
-            this.outputColorGlTexture = glDevice.createTextureImportable(this.outputColorVkTexture);
-
-            this.flippedOutputGlTexture = (GlTexture2D) glDevice.createTexture(
-                    TextureDescription.create()
-                            .type(TextureType.Texture2D)
-                            .usages(TextureUsages.create().sampler().storage().transferDestination())
-                            .format(SuperResolutionConfig.getInternalTextureFormat())
-                            .width(RenderHandlerManager.getScreenWidth())
-                            .height(RenderHandlerManager.getScreenHeight())
-                            .label("SRUpscaleFlippedOutputGlTexture-%s".formatted(index))
-                            .build()
-            );
+            InteropResourceDescription output = layout.resources().get(OutputColor);
+            if (flipInteropResourcesY) {
+                this.flippedOutputGlTexture = (GlTexture2D) glDevice.createTexture(
+                        TextureDescription.create()
+                                .type(TextureType.Texture2D)
+                                .usages(TextureUsages.create().sampler().storage().transferDestination())
+                                .format(output.format())
+                                .width(output.width())
+                                .height(output.height())
+                                .label("SRUpscaleFlippedOutputGlTexture")
+                                .build()
+                );
+            }
 
             this.outputFrameBuffer = RenderSystems.current().device().createFramebuffer(
                     FramebufferDescription.create()
-                            .colorAttachment(this.flippedOutputGlTexture)
+                            .colorAttachment(flipInteropResourcesY
+                                    ? this.flippedOutputGlTexture
+                                    : openGl(OutputColor))
                             .build());
 
             this.glFinish = VkGlInteropSemaphore.create(vkDevice);
             this.upscaleVkFinish = VkGlInteropSemaphore.create(vkDevice);
-            if (VulkanPresentationFeature.isRequested()) {
+            if (PresentationBackendManager.isVulkanPresentationRequested()) {
                 this.captureDepthReady = VkGlInteropSemaphore.create(vkDevice);
                 this.captureDepthRelease = VkGlInteropSemaphore.create(vkDevice);
                 this.captureMotionReady = VkGlInteropSemaphore.create(vkDevice);
@@ -722,17 +729,17 @@ public abstract class GlVulkanInteropAlgorithm extends AbstractAlgorithm {
                     && (captureDepthPending || captureMotionPending)) {
                 captureInputsFrame.awaitBorrowedInputReleaseSubmission();
             }
-            if (captureDepthPending && captureDepthRelease != null && inputDepthGlTexture != null) {
+            if (captureDepthPending && captureDepthRelease != null && openGl(Depth) != null) {
                 captureDepthRelease.waitVulkanSignal(
-                        new int[]{Math.toIntExact(inputDepthGlTexture.handle())},
+                        new int[]{Math.toIntExact(openGl(Depth).handle())},
                         new int[0],
                         new int[]{GL_LAYOUT_TRANSFER_DST_EXT}
                 );
                 captureDepthPending = false;
             }
-            if (captureMotionPending && captureMotionRelease != null && inputMotionVectorsGlTexture != null) {
+            if (captureMotionPending && captureMotionRelease != null && openGl(MotionVectors) != null) {
                 captureMotionRelease.waitVulkanSignal(
-                        new int[]{Math.toIntExact(inputMotionVectorsGlTexture.handle())},
+                        new int[]{Math.toIntExact(openGl(MotionVectors).handle())},
                         new int[0],
                         new int[]{GL_LAYOUT_TRANSFER_DST_EXT}
                 );

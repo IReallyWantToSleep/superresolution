@@ -103,6 +103,7 @@ fun DependencyHandler.modCompileOnlyCompat(notation: Any) =
 
 
 dependencies {
+    testImplementation("junit:junit:4.13.2")
     compileOnly("org.anarres:jcpp:1.4.14")
     compileOnly("org.spongepowered:mixin:0.8.7")
     compileOnly("io.github.spair:imgui-java-app:$imguiVersion")
@@ -174,8 +175,11 @@ configurations {
 val sourceSets = extensions.getByType(SourceSetContainer::class.java)
 val javaToolchains = extensions.getByType(JavaToolchainService::class.java)
 val mainSourceSet = sourceSets.getByName("main")
+val testSourceSet = sourceSets.getByName("test")
+testSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
 val irisapiSourceSet = sourceSets.maybeCreate("irisapi")
 val sharedSourceSet = sourceSets.maybeCreate("shared")
+val materialSourceSet = sourceSets.maybeCreate("material")
 val hackSourceSet = sourceSets.maybeCreate("hack")
 val shaderCompatSourceSet = sourceSets.maybeCreate("shadercompat")
 val irisVelocityExtSourceSet = sourceSets.maybeCreate("iris_velocity_ext")
@@ -215,6 +219,10 @@ sharedSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
 sharedSourceSet.compileClasspath += mainSourceSet.compileClasspath
 sharedSourceSet.runtimeClasspath += mainSourceSet.runtimeClasspath
 
+materialSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
+materialSourceSet.compileClasspath += mainSourceSet.compileClasspath
+materialSourceSet.runtimeClasspath += mainSourceSet.runtimeClasspath
+
 irisapiSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
 irisapiSourceSet.compileClasspath += mainSourceSet.compileClasspath
 irisapiSourceSet.runtimeClasspath += mainSourceSet.runtimeClasspath
@@ -225,6 +233,8 @@ mainSourceSet.compileClasspath += irisapiSourceSet.output
 mainSourceSet.runtimeClasspath += irisapiSourceSet.output
 mainSourceSet.compileClasspath += sharedSourceSet.output
 mainSourceSet.runtimeClasspath += sharedSourceSet.output
+mainSourceSet.compileClasspath += materialSourceSet.output
+mainSourceSet.runtimeClasspath += materialSourceSet.output
 
 irisVelocityExtSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
 irisVelocityExtSourceSet.compileClasspath += mainSourceSet.compileClasspath
@@ -267,6 +277,7 @@ shaderCompatSourceSet.runtimeClasspath += irisapiSourceSet.output
 tasks.named<Jar>("jar") {
     from(irisapiSourceSet.output)
     from(sharedSourceSet.output)
+    from(materialSourceSet.output)
     from(hackSourceSet.output)
     from(shaderCompatSourceSet.output)
     if (irisVelocityExtSupported) {
@@ -275,11 +286,9 @@ tasks.named<Jar>("jar") {
 }
 
 artifacts {
-    val publishedSourceSets = mutableListOf(mainSourceSet, irisapiSourceSet, sharedSourceSet, hackSourceSet, shaderCompatSourceSet)
-    if (irisVelocityExtSupported) {
-        publishedSourceSets.add(irisVelocityExtSourceSet)
-    }
-    publishedSourceSets.forEach { sourceSet ->
+    var sourceSets = listOf(mainSourceSet, irisapiSourceSet, sharedSourceSet, materialSourceSet, hackSourceSet, shaderCompatSourceSet)
+    if (irisVelocityExtSupported) sourceSets.add(irisVelocityExtSourceSet)
+    sourceSets.forEach { sourceSet ->
         sourceSet.java.sourceDirectories.files.forEach { dir ->
             add("commonJava", dir)
         }

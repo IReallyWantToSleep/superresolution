@@ -88,10 +88,10 @@ static bool srLibraryHasPendingCloseForProvider(
     const SRLoadedProviderLibrary &library,
     uint64_t providerId) {
     return std::find(
-        library.pendingCloseProviderIds.begin(),
-        library.pendingCloseProviderIds.end(),
-        providerId
-    ) != library.pendingCloseProviderIds.end();
+               library.pendingCloseProviderIds.begin(),
+               library.pendingCloseProviderIds.end(),
+               providerId
+           ) != library.pendingCloseProviderIds.end();
 }
 
 static void srCloseProviderLibraryHandles(
@@ -161,6 +161,7 @@ public:
     }
 
     SRProviderLibraryLoadGuard(const SRProviderLibraryLoadGuard &) = delete;
+
     SRProviderLibraryLoadGuard &operator=(const SRProviderLibraryLoadGuard &) = delete;
 
     void finish() noexcept {
@@ -208,6 +209,7 @@ public:
     }
 
     SRProviderLibraryHandleGuard(const SRProviderLibraryHandleGuard &) = delete;
+
     SRProviderLibraryHandleGuard &operator=(const SRProviderLibraryHandleGuard &) = delete;
 
     bool close() noexcept {
@@ -257,6 +259,7 @@ public:
     }
 
     SRProviderShutdownGuard(const SRProviderShutdownGuard &) = delete;
+
     SRProviderShutdownGuard &operator=(const SRProviderShutdownGuard &) = delete;
 
     void finish() noexcept {
@@ -289,6 +292,7 @@ public:
     }
 
     SRProviderLibraryUnloadGuard(const SRProviderLibraryUnloadGuard &) = delete;
+
     SRProviderLibraryUnloadGuard &operator=(const SRProviderLibraryUnloadGuard &) = delete;
 
     void finish() noexcept {
@@ -934,8 +938,8 @@ SR_API SRReturnCode srUnloadUpscaleProviders(uint64_t providerId) try {
     g_providerCondition.notify_all();
 
     return allSuccess && allLibrariesClosed
-        ? SR_RETURN_CODE_OK
-        : SR_RETURN_CODE_UNEXPECTED_ERROR;
+               ? SR_RETURN_CODE_OK
+               : SR_RETURN_CODE_UNEXPECTED_ERROR;
 } catch (const std::bad_alloc &) {
     return SR_RETURN_CODE_ERROR;
 } catch (...) {

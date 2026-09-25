@@ -6,6 +6,14 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.homo.superresolution.common.presentation.window;
@@ -17,7 +25,7 @@ import com.mojang.blaze3d.shaders.GpuDebugOptions;
 import com.mojang.blaze3d.shaders.ShaderSource;
 import com.mojang.blaze3d.systems.BackendCreationException;
 import com.mojang.blaze3d.systems.GpuDevice;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import org.jspecify.annotations.NonNull;
 import org.lwjgl.glfw.GLFW;
 
@@ -81,7 +89,7 @@ public final class VulkanPresentationGlBackend extends GlBackend {
                 GLFW.glfwDestroyWindow(helper);
             }
             PresentationWindowState.resetAfterStartupFailure();
-            VulkanPresentationFeature.disableAfterFailure(throwable);
+            PresentationBackendManager.disableAfterFailure(throwable);
             return throwBackendCreationFailure(throwable);
         } finally {
             GLFW.glfwDefaultWindowHints();
@@ -155,7 +163,7 @@ public final class VulkanPresentationGlBackend extends GlBackend {
                 GLFW.glfwDestroyWindow(helper);
             }
             PresentationWindowState.resetAfterStartupFailure();
-            VulkanPresentationFeature.disableAfterFailure(throwable);
+            PresentationBackendManager.disableAfterFailure(throwable);
             return throwBackendCreationFailure(throwable);
         } finally {
             GLFW.glfwDefaultWindowHints();

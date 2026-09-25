@@ -28,8 +28,8 @@ namespace {
         HRESULT result,
         sr::d3d12::SubmissionDisposition disposition) noexcept {
         const uint64_t packed =
-            (static_cast<uint64_t>(static_cast<uint32_t>(disposition)) << 32) |
-            static_cast<uint32_t>(result);
+                (static_cast<uint64_t>(static_cast<uint32_t>(disposition)) << 32) |
+                static_cast<uint32_t>(result);
         return static_cast<jlong>(packed);
     }
 
@@ -682,7 +682,7 @@ extern "C" {
         JNIEnv *, jclass, jlong device, jlong commandList, jlong sharedFence,
         jlong waitValue, jlong signalValue) {
         sr::d3d12::SubmissionDisposition disposition =
-            sr::d3d12::SubmissionDisposition::NotExecuted;
+                sr::d3d12::SubmissionDisposition::NotExecuted;
         if (!nonnegative(waitValue, "The submit wait value is negative.") ||
             !nonnegative(signalValue, "The submit signal value is negative.")) {
             return toSubmitResult(E_INVALIDARG, disposition);

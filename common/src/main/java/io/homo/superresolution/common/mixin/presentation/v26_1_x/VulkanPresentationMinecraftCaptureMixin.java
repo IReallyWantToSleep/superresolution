@@ -20,8 +20,7 @@ package io.homo.superresolution.common.mixin.presentation.v26_1_x;
 
 #if MC_VER >= MC_26_1 && MC_VER < MC_26_2
 import com.mojang.blaze3d.pipeline.RenderTarget;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
@@ -44,8 +43,8 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
     private void super_resolution$renderAndPresent(
             boolean advanceGameTime, CallbackInfo ci
     ) {
-        if (VulkanPresentationFeature.isRequested()) {
-            VulkanPresentationWindow.endMinecraftFrame();
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
+            PresentationBackendManager.endMinecraftFrame();
         }
     }
 
@@ -57,7 +56,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             )
     )
     private void super_resolution$skipOpenGlBlit(RenderTarget target) {
-        if (!VulkanPresentationFeature.isRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
             target.blitToScreen();
         }
     }

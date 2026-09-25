@@ -6,336 +6,338 @@
 #define _Included_io_homo_superresolution_core_SuperResolutionNative
 #ifdef __cplusplus
 extern "C" {
-#endif
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    getVersionInfo
- * Signature: ()Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_getVersionInfo
-  (JNIEnv *, jclass);
+    #endif
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    getVersionInfo
+     * Signature: ()Ljava/lang/String;
+     */
+    JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_getVersionInfo
+    (JNIEnv *, jclass);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    compileShaderToSpirv
- * Signature: (Ljava/lang/String;IIIIIIIIZZ)Lio/homo/superresolution/core/graphics/glslang/GlslangCompileShaderResult;
- */
-JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_compileShaderToSpirv
-  (JNIEnv *, jclass, jstring, jint, jint, jint, jint, jint, jint, jint, jint, jboolean, jboolean);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    compileShaderToSpirv
+     * Signature: (Ljava/lang/String;IIIIIIIIZZ)Lio/homo/superresolution/core/graphics/glslang/GlslangCompileShaderResult;
+     */
+    JNIEXPORT jobject JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_compileShaderToSpirv
+    (JNIEnv *, jclass, jstring, jint, jint, jint, jint, jint, jint, jint, jint, jboolean, jboolean);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    freeDirectBuffer
- * Signature: (Ljava/nio/ByteBuffer;)V
- */
-JNIEXPORT void JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_freeDirectBuffer
-  (JNIEnv *, jclass, jobject);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    freeDirectBuffer
+     * Signature: (Ljava/nio/ByteBuffer;)V
+     */
+    JNIEXPORT void JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_freeDirectBuffer
+    (JNIEnv *, jclass, jobject);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    initGlslang
- * Signature: ()I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_initGlslang
-  (JNIEnv *, jclass);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    initGlslang
+     * Signature: ()I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_initGlslang
+    (JNIEnv *, jclass);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    destroyGlslang
- * Signature: ()I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_destroyGlslang
-  (JNIEnv *, jclass);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    destroyGlslang
+     * Signature: ()I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_destroyGlslang
+    (JNIEnv *, jclass);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrCreateUpscaleContext
- * Signature: (Lio/homo/superresolution/srapi/SRUpscaleContext;JILio/homo/superresolution/srapi/SROpenGLDeviceInfo;Lio/homo/superresolution/srapi/SRVulkanDeviceInfo;Lio/homo/superresolution/srapi/SRD3D12DeviceInfo;IIIIJJI)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrCreateUpscaleContext
-  (JNIEnv *, jclass, jobject, jlong, jint, jobject, jobject, jobject, jint, jint, jint, jint, jlong, jlong, jint);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrCreateUpscaleContext
+     * Signature: (Lio/homo/superresolution/srapi/SRUpscaleContext;JILio/homo/superresolution/srapi/SROpenGLDeviceInfo;Lio/homo/superresolution/srapi/SRVulkanDeviceInfo;Lio/homo/superresolution/srapi/SRD3D12DeviceInfo;IIIIJJI)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrCreateUpscaleContext
+    (JNIEnv *, jclass, jobject, jlong, jint, jobject, jobject, jobject, jint, jint, jint, jint, jlong, jlong, jint);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrInitUpscaleContext
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrInitUpscaleContext
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrInitUpscaleContext
+     * Signature: (J)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrInitUpscaleContext
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrDestroyUpscaleContext
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrDestroyUpscaleContext
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrDestroyUpscaleContext
+     * Signature: (J)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrDestroyUpscaleContext
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrDispatchUpscale
- * Signature: (JIJLio/homo/superresolution/srapi/SRTextureResource;Lio/homo/superresolution/srapi/SRTextureResource;Lio/homo/superresolution/srapi/SRTextureResource;Lio/homo/superresolution/srapi/SRTextureResource;Lio/homo/superresolution/srapi/SRTextureResource;Lio/homo/superresolution/srapi/SRTextureResource;Lio/homo/superresolution/srapi/SRTextureResource;FFFFIIIIFZFFFFFFZJI)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrDispatchUpscale
-  (JNIEnv *, jclass, jlong, jint, jlong, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jfloat, jfloat, jfloat, jfloat, jint, jint, jint, jint, jfloat, jboolean, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jboolean, jlong, jint);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrDispatchUpscale
+     * Signature: (JIJLio/homo/superresolution/srapi/SRTextureResource;Lio/homo/superresolution/srapi/SRTextureResource;Lio/homo/superresolution/srapi/SRTextureResource;Lio/homo/superresolution/srapi/SRTextureResource;Lio/homo/superresolution/srapi/SRTextureResource;Lio/homo/superresolution/srapi/SRTextureResource;Lio/homo/superresolution/srapi/SRTextureResource;FFFFIIIIFZFFFFFFZJI)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrDispatchUpscale
+    (JNIEnv *, jclass, jlong, jint, jlong, jobject, jobject, jobject, jobject, jobject, jobject, jobject, jfloat,
+     jfloat, jfloat, jfloat, jint, jint, jint, jint, jfloat, jboolean, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat,
+     jboolean, jlong, jint);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrQueryUpscaleContext
- * Signature: (JLio/homo/superresolution/srapi/SRUpscaleContextQueryResult;I)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrQueryUpscaleContext
-  (JNIEnv *, jclass, jlong, jobject, jint);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrQueryUpscaleContext
+     * Signature: (JLio/homo/superresolution/srapi/SRUpscaleContextQueryResult;I)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrQueryUpscaleContext
+    (JNIEnv *, jclass, jlong, jobject, jint);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrGetUpscaleProvider
- * Signature: (Lio/homo/superresolution/srapi/SRUpscaleProvider;J)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrGetUpscaleProvider
-  (JNIEnv *, jclass, jobject, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrGetUpscaleProvider
+     * Signature: (Lio/homo/superresolution/srapi/SRUpscaleProvider;J)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrGetUpscaleProvider
+    (JNIEnv *, jclass, jobject, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrDestroyUpscaleProvider
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrDestroyUpscaleProvider
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrDestroyUpscaleProvider
+     * Signature: (J)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrDestroyUpscaleProvider
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrLoadUpscaleProvidersFromLibrary
- * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrLoadUpscaleProvidersFromLibrary
-  (JNIEnv *, jclass, jstring, jstring, jstring);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrLoadUpscaleProvidersFromLibrary
+     * Signature: (Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrLoadUpscaleProvidersFromLibrary
+    (JNIEnv *, jclass, jstring, jstring, jstring);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrUnloadUpscaleProviders
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrUnloadUpscaleProviders
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrUnloadUpscaleProviders
+     * Signature: (J)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrUnloadUpscaleProviders
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrShutdown
- * Signature: ()I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrShutdown
-  (JNIEnv *, jclass);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrShutdown
+     * Signature: ()I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrShutdown
+    (JNIEnv *, jclass);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrCreateParams
- * Signature: ()J
- */
-JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrCreateParams
-  (JNIEnv *, jclass);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrCreateParams
+     * Signature: ()J
+     */
+    JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrCreateParams
+    (JNIEnv *, jclass);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrDestroyParams
- * Signature: (J)V
- */
-JNIEXPORT void JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrDestroyParams
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrDestroyParams
+     * Signature: (J)V
+     */
+    JNIEXPORT void JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrDestroyParams
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsSetBool
- * Signature: (JLjava/lang/String;Z)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetBool
-  (JNIEnv *, jclass, jlong, jstring, jboolean);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsSetBool
+     * Signature: (JLjava/lang/String;Z)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetBool
+    (JNIEnv *, jclass, jlong, jstring, jboolean);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsSetInt32
- * Signature: (JLjava/lang/String;I)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetInt32
-  (JNIEnv *, jclass, jlong, jstring, jint);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsSetInt32
+     * Signature: (JLjava/lang/String;I)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetInt32
+    (JNIEnv *, jclass, jlong, jstring, jint);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsSetUint32
- * Signature: (JLjava/lang/String;J)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetUint32
-  (JNIEnv *, jclass, jlong, jstring, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsSetUint32
+     * Signature: (JLjava/lang/String;J)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetUint32
+    (JNIEnv *, jclass, jlong, jstring, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsSetFloat
- * Signature: (JLjava/lang/String;F)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetFloat
-  (JNIEnv *, jclass, jlong, jstring, jfloat);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsSetFloat
+     * Signature: (JLjava/lang/String;F)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetFloat
+    (JNIEnv *, jclass, jlong, jstring, jfloat);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsSetDouble
- * Signature: (JLjava/lang/String;D)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetDouble
-  (JNIEnv *, jclass, jlong, jstring, jdouble);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsSetDouble
+     * Signature: (JLjava/lang/String;D)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetDouble
+    (JNIEnv *, jclass, jlong, jstring, jdouble);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsSetString
- * Signature: (JLjava/lang/String;Ljava/lang/String;)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetString
-  (JNIEnv *, jclass, jlong, jstring, jstring);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsSetString
+     * Signature: (JLjava/lang/String;Ljava/lang/String;)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetString
+    (JNIEnv *, jclass, jlong, jstring, jstring);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsSetPointer
- * Signature: (JLjava/lang/String;J)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetPointer
-  (JNIEnv *, jclass, jlong, jstring, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsSetPointer
+     * Signature: (JLjava/lang/String;J)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsSetPointer
+    (JNIEnv *, jclass, jlong, jstring, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrFindParam
- * Signature: (JLjava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrFindParam
-  (JNIEnv *, jclass, jlong, jstring);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrFindParam
+     * Signature: (JLjava/lang/String;)J
+     */
+    JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrFindParam
+    (JNIEnv *, jclass, jlong, jstring);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsGetBool
- * Signature: (JLjava/lang/String;Z)Z
- */
-JNIEXPORT jboolean JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetBool
-  (JNIEnv *, jclass, jlong, jstring, jboolean);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsGetBool
+     * Signature: (JLjava/lang/String;Z)Z
+     */
+    JNIEXPORT jboolean JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetBool
+    (JNIEnv *, jclass, jlong, jstring, jboolean);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsGetInt32
- * Signature: (JLjava/lang/String;I)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetInt32
-  (JNIEnv *, jclass, jlong, jstring, jint);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsGetInt32
+     * Signature: (JLjava/lang/String;I)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetInt32
+    (JNIEnv *, jclass, jlong, jstring, jint);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsGetUint32
- * Signature: (JLjava/lang/String;J)J
- */
-JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetUint32
-  (JNIEnv *, jclass, jlong, jstring, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsGetUint32
+     * Signature: (JLjava/lang/String;J)J
+     */
+    JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetUint32
+    (JNIEnv *, jclass, jlong, jstring, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsGetFloat
- * Signature: (JLjava/lang/String;F)F
- */
-JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetFloat
-  (JNIEnv *, jclass, jlong, jstring, jfloat);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsGetFloat
+     * Signature: (JLjava/lang/String;F)F
+     */
+    JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetFloat
+    (JNIEnv *, jclass, jlong, jstring, jfloat);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsGetDouble
- * Signature: (JLjava/lang/String;D)D
- */
-JNIEXPORT jdouble JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetDouble
-  (JNIEnv *, jclass, jlong, jstring, jdouble);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsGetDouble
+     * Signature: (JLjava/lang/String;D)D
+     */
+    JNIEXPORT jdouble JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetDouble
+    (JNIEnv *, jclass, jlong, jstring, jdouble);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsGetString
- * Signature: (JLjava/lang/String;Ljava/lang/String;)Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetString
-  (JNIEnv *, jclass, jlong, jstring, jstring);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsGetString
+     * Signature: (JLjava/lang/String;Ljava/lang/String;)Ljava/lang/String;
+     */
+    JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetString
+    (JNIEnv *, jclass, jlong, jstring, jstring);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamsGetPointer
- * Signature: (JLjava/lang/String;)J
- */
-JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetPointer
-  (JNIEnv *, jclass, jlong, jstring);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamsGetPointer
+     * Signature: (JLjava/lang/String;)J
+     */
+    JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamsGetPointer
+    (JNIEnv *, jclass, jlong, jstring);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamGetName
- * Signature: (J)Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetName
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamGetName
+     * Signature: (J)Ljava/lang/String;
+     */
+    JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetName
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamGetValueType
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueType
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamGetValueType
+     * Signature: (J)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueType
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamGetValueAsBool
- * Signature: (J)Z
- */
-JNIEXPORT jboolean JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsBool
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamGetValueAsBool
+     * Signature: (J)Z
+     */
+    JNIEXPORT jboolean JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsBool
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamGetValueAsInt32
- * Signature: (J)I
- */
-JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsInt32
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamGetValueAsInt32
+     * Signature: (J)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsInt32
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamGetValueAsUint32
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsUint32
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamGetValueAsUint32
+     * Signature: (J)J
+     */
+    JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsUint32
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamGetValueAsFloat
- * Signature: (J)F
- */
-JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsFloat
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamGetValueAsFloat
+     * Signature: (J)F
+     */
+    JNIEXPORT jfloat JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsFloat
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamGetValueAsDouble
- * Signature: (J)D
- */
-JNIEXPORT jdouble JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsDouble
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamGetValueAsDouble
+     * Signature: (J)D
+     */
+    JNIEXPORT jdouble JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsDouble
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamGetValueAsString
- * Signature: (J)Ljava/lang/String;
- */
-JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsString
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamGetValueAsString
+     * Signature: (J)Ljava/lang/String;
+     */
+    JNIEXPORT jstring JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsString
+    (JNIEnv *, jclass, jlong);
 
-/*
- * Class:     io_homo_superresolution_core_SuperResolutionNative
- * Method:    NsrParamGetValueAsPointer
- * Signature: (J)J
- */
-JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsPointer
-  (JNIEnv *, jclass, jlong);
+    /*
+     * Class:     io_homo_superresolution_core_SuperResolutionNative
+     * Method:    NsrParamGetValueAsPointer
+     * Signature: (J)J
+     */
+    JNIEXPORT jlong JNICALL Java_io_homo_superresolution_core_SuperResolutionNative_NsrParamGetValueAsPointer
+    (JNIEnv *, jclass, jlong);
 
-#ifdef __cplusplus
+    #ifdef __cplusplus
 }
 #endif
 #endif

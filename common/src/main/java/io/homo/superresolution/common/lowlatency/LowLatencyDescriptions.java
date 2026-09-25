@@ -6,15 +6,23 @@
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
 package io.homo.superresolution.common.lowlatency;
 
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.LowLatencyRegisterEvent;
-import io.homo.superresolution.api.registry.LowLatencyDescription;
-import io.homo.superresolution.api.registry.LowLatencyGroups;
-import io.homo.superresolution.api.registry.LowLatencyRegistry;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyDescription;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyGroups;
+import io.homo.superresolution.api.registry.lowlatency.LowLatencyRegistry;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.ConfigSpecType;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
@@ -22,7 +30,8 @@ import io.homo.superresolution.common.config.special.SpecialConfigDescription;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexVulkanProvider;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
+import io.homo.superresolution.common.presentation.api.PresentationBackendType;
 import net.minecraft.network.chat.Component;
 
 import java.util.Optional;
@@ -70,10 +79,15 @@ public final class LowLatencyDescriptions {
                                                 ConfigSpecType.ENUM,
                                                 NVIDIAReflexMode.OFF
                                         )
-                                        .setName(Component.translatable("superresolution.screen.config.options.label.nv_reflex_mode"))
-                                        .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.nv_reflex_mode"))
-                                        .setClazz(NVIDIAReflexMode.class)
-                                        .setValueNameSupplier((v) -> Optional.of(Component.translatable("superresolution.enum.nvreflexmode." + v.name().toLowerCase())))
+                                         .setName(Component.translatable("superresolution.screen.config.options.label.nv_reflex_mode"))
+                                         .setTooltip(Component.translatable("superresolution.screen.config.options.tooltip.nv_reflex_mode"))
+                                         .setClazz(NVIDIAReflexMode.class)
+                                         .setRequirement(Requirement.nothing().isTrue(
+                                                 () -> PresentationBackendManager.isPresentationBackendAvailable(
+                                                         PresentationBackendType.VULKAN
+                                                 )
+                                         ))
+                                         .setValueNameSupplier((v) -> Optional.of(Component.translatable("superresolution.enum.nvreflexmode." + v.name().toLowerCase())))
                                         .setValueSupplier(SuperResolutionConfig::getNVIDIAReflexMode)
                                         // Frame generation rides on Reflex, so it must not be
                                         // switched off while frame generation is running.
@@ -94,8 +108,10 @@ public final class LowLatencyDescriptions {
                         .priority(100)
                         .requirement(
                                 Requirement.nothing()
-                                        .isTrue(() -> VulkanPresentationFeature.isAvailable()
-                                                && NVIDIAReflexVulkanProvider.isSupported())
+                                        .isTrue(() -> PresentationBackendManager.isPresentationBackendAvailable(
+                                                PresentationBackendType.VULKAN
+                                        ))
+                                        .isTrue(NVIDIAReflexVulkanProvider::isSupported)
                         )
                         .providerFactory(NVIDIAReflexVulkanProvider::new)
                         .build()

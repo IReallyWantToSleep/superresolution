@@ -27,7 +27,7 @@ import java.io.InputStreamReader
 private val consoleReader = BufferedReader(InputStreamReader(System.`in`))
 
 plugins {
-    id("net.neoforged.moddev") version "2.0.141" apply false
+    id("net.neoforged.moddev") version "2.0.147" apply false
     id("multiversion")
     id("multiversion-neoform")
 }

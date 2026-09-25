@@ -35,15 +35,15 @@ import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.enums.CaptureMode;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
-import io.homo.superresolution.common.config.enums.InteropSyncMode;
 import io.homo.superresolution.common.config.special.SpecialConfigs;
-import io.homo.superresolution.api.registry.FrameGenerationGroups;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationGroups;
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
 import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.presentation.api.PresentationBackendType;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
@@ -68,7 +68,7 @@ public class SuperResolutionConfig {
     public static final ModConfigSpec SPEC;
     public static final SpecialConfigs SPECIAL;
     public static final BooleanValue ENABLE_UPSCALE;
-    public static final BooleanValue ENABLE_VULKAN_PRESENTATION;
+    public static final EnumValue<PresentationBackendType> PRESENTATION_BACKEND;
     public static final FloatValue UPSCALE_RATIO;
     public static final StringValue UPSCALE_ALGO;
     public static final FloatValue SHARPNESS;
@@ -80,6 +80,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue ENABLE_PRESENT_INDICATOR;
     public static final BooleanValue GENERATE_MOTION_VECTORS;
     public static final BooleanValue PAUSE_GAME_ON_GUI;
+    public static final BooleanValue AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS;
     public static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
     public static final BooleanValue ENABLE_COMPAT_SHADER_COMPILER;
     public static final BooleanValue ENABLE_DETAILED_PROFILING;
@@ -96,8 +97,9 @@ public class SuperResolutionConfig {
     public static final EnumValue<FrameGenerationMode> FRAME_GENERATION_MODE;
     public static final StringValue FRAME_GENERATION_PROVIDER;
     public static final StringValue FRAME_GENERATION_BACKEND;
-    public static final EnumValue<InteropSyncMode> INTEROP_SYNC_MODE;
-    public static final BooleanValue ENABLE_EXPERIMENTAL_FEATURES;
+    public static final BooleanValue FLIP_VK_GL_INTEROP_RESOURCES_Y;
+    public static final BooleanValue ENABLE_EXPERIMENTAL_ALGORITHMS;
+    public static final BooleanValue ENABLE_DLSS_RAY_RECONSTRUCTION;
     public static final BooleanValue ENABLE_OPTISCALER;
     public static final StringValue OPTISCALER_DLL_PATH;
 
@@ -117,15 +119,12 @@ public class SuperResolutionConfig {
                 () -> true,
                 "Enable super-resolution upscaling"
         );
-        #if (MC_VER >= MC_1_21_11 && MC_VER <= MC_26_2) || MC_VER == MC_1_21_1  || MC_VER == MC_1_20_1
-        ENABLE_VULKAN_PRESENTATION = builder.defineBoolean(
-                "enable_vulkan_presentation",
-                () -> false,
-                "Present Minecraft through a Vulkan swapchain. Requires a game restart."
+        PRESENTATION_BACKEND = builder.defineEnum(
+                "presentation/backend",
+                PresentationBackendType.class,
+                () -> PresentationBackendType.OPENGL,
+                "Presentation backend. Requires a game restart."
         );
-        #else
-        ENABLE_VULKAN_PRESENTATION = null;
-        #endif
         UPSCALE_RATIO = builder.defineFloat(
                 "upscale_ratio",
                 () -> 1.7f,
@@ -164,6 +163,12 @@ public class SuperResolutionConfig {
                 "Pause game when GUI is open"
         );
 
+        AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS = builder.defineBoolean(
+                "auto_hide_shaderpack_disabled_algorithms",
+                () -> false,
+                "Hide algorithms explicitly disabled by the active V3 shader pack from the algorithm selector"
+        );
+
         INJECT_POST_CHAIN_BLACKLIST = builder.defineStringList(
                 "inject_post_chain_blacklist",
                 ArrayList::new,
@@ -171,11 +176,10 @@ public class SuperResolutionConfig {
                 value -> value != null && !value.isEmpty()
         );
 
-        INTEROP_SYNC_MODE = builder.defineEnum(
-                "interop_sync_mode",
-                InteropSyncMode.class,
-                () -> InteropSyncMode.LowLatency,
-                ""
+        FLIP_VK_GL_INTEROP_RESOURCES_Y = builder.defineBoolean(
+                "flip_vk_gl_interop_resources_y",
+                () -> false,
+                "Flip Vulkan-OpenGL interop upscaling resources on the Y axis"
         );
 
         THEME = builder.defineEnum(
@@ -240,10 +244,15 @@ public class SuperResolutionConfig {
                 () -> false,
                 "Stamp a small square onto every presented frame (white = rendered, cyan = generated) to visualize frame generation cadence"
         );
-        ENABLE_EXPERIMENTAL_FEATURES = builder.defineBoolean(
-                "experiment/enable_experimental_features",
+        ENABLE_EXPERIMENTAL_ALGORITHMS = builder.defineBoolean(
+                "experiment/enable_experimental_algorithms",
                 () -> false,
-                "Enable experimental features"
+                "Enable experimental algorithms"
+        );
+        ENABLE_DLSS_RAY_RECONSTRUCTION = builder.defineBoolean(
+                "experiment/enable_dlss_ray_reconstruction",
+                () -> false,
+                "Register NVIDIA DLSS Ray Reconstruction during startup"
         );
 
         ENABLE_OPTISCALER = builder.defineBoolean(
@@ -426,7 +435,7 @@ public class SuperResolutionConfig {
             }
         }
 
-        SuperResolution.LOGGER.info("Your hardware does not support all algorithms."); //最逆天的一集
+        SuperResolution.LOGGER.info("WHAT? Your hardware does not support all algorithms?"); //WHAT?
         return AlgorithmDescriptions.NONE;
     }
 
@@ -443,8 +452,6 @@ public class SuperResolutionConfig {
             UPSCALE_ALGO.set(algo.codeName);
         }
 
-        // rendering 初始化前不做 support 检查——Vulkan/GL caps 未就绪会误报，
-        // 旧实现里还会 setUpscaleAlgorithm 触发 createAlgorithm 级联失败。
         if (!SuperResolution.isRenderingInitialized) {
             return algo;
         }
@@ -456,13 +463,11 @@ public class SuperResolutionConfig {
             return defaultAlgo;
         }
 
-        // 光影包禁用的算法只在运行期回退，不写回配置——卸载光影包后恢复用户原选择
         if (SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algo.codeName)) {
             SuperResolution.LOGGER.warn("Algorithm {} is disabled by the current shader pack; falling back to the default algorithm", algo.displayName);
             return getDefaultAlgorithm();
         }
 
-        // None（仅帧生成模式）仅在光影包声明支持时可用；不写回配置，切换光影后自动恢复
         if (AlgorithmDescriptions.NONE.equals(algo)
                 && !SRWorkModeManager.getCurrentState().supportsFrameGeneration()) {
             SuperResolution.LOGGER.warn("The current shader pack does not support frame-generation-only mode; the None algorithm is unavailable. Falling back to the default algorithm.");
@@ -644,18 +649,12 @@ public class SuperResolutionConfig {
         ENABLE_PRESENT_INDICATOR.set(value);
     }
 
-    public static boolean isEnableVulkanPresentation() {
-        #if (MC_VER >= MC_1_21_11 && MC_VER <= MC_26_2) || MC_VER == MC_1_21_1 || MC_VER == MC_1_20_1
-        return ENABLE_VULKAN_PRESENTATION.get();
-        #else
-        return false;
-        #endif
+    public static PresentationBackendType getPresentationBackend() {
+        return PRESENTATION_BACKEND.get();
     }
 
-    public static void setEnableVulkanPresentation(boolean value) {
-        #if (MC_VER >= MC_1_21_11 && MC_VER <= MC_26_2) || MC_VER == MC_1_21_1 || MC_VER == MC_1_20_1
-        ENABLE_VULKAN_PRESENTATION.set(value);
-        #endif
+    public static void setPresentationBackend(PresentationBackendType value) {
+        PRESENTATION_BACKEND.set(value);
     }
 
     public static boolean isGenerateMotionVectors() {
@@ -672,6 +671,14 @@ public class SuperResolutionConfig {
 
     public static void setPauseGameOnGui(boolean value) {
         PAUSE_GAME_ON_GUI.set(value);
+    }
+
+    public static boolean isAutoHideShaderpackDisabledAlgorithms() {
+        return AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS.get();
+    }
+
+    public static void setAutoHideShaderpackDisabledAlgorithms(boolean value) {
+        AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS.set(value);
     }
 
     public static List<String> getInjectPostChainBlackList() {
@@ -708,12 +715,20 @@ public class SuperResolutionConfig {
         VulkanDebug.setEnabled(value);
     }
 
-    public static boolean isEnableExperimentalFeatures() {
-        return ENABLE_EXPERIMENTAL_FEATURES.get();
+    public static boolean isEnableExperimentalAlgorithms() {
+        return ENABLE_EXPERIMENTAL_ALGORITHMS.get();
     }
 
-    public static void setEnableExperimentalFeatures(boolean value) {
-        ENABLE_EXPERIMENTAL_FEATURES.set(value);
+    public static void setEnableExperimentalAlgorithms(boolean value) {
+        ENABLE_EXPERIMENTAL_ALGORITHMS.set(value);
+    }
+
+    public static boolean isEnableDlssRayReconstruction() {
+        return ENABLE_DLSS_RAY_RECONSTRUCTION.get();
+    }
+
+    public static void setEnableDlssRayReconstruction(boolean value) {
+        ENABLE_DLSS_RAY_RECONSTRUCTION.set(value);
     }
 
     public static boolean isEnableOptiScaler() {
@@ -758,12 +773,12 @@ public class SuperResolutionConfig {
         THEME.set(value);
     }
 
-    public static InteropSyncMode getInteropSyncMode() {
-        return INTEROP_SYNC_MODE.get();
+    public static boolean isFlipVkGlInteropResourcesY() {
+        return FLIP_VK_GL_INTEROP_RESOURCES_Y.get();
     }
 
-    public static void setInteropSyncMode(InteropSyncMode value) {
-        INTEROP_SYNC_MODE.set(value);
+    public static void setFlipVkGlInteropResourcesY(boolean value) {
+        FLIP_VK_GL_INTEROP_RESOURCES_Y.set(value);
     }
 
     public static float getMinUpscaleRatio() {

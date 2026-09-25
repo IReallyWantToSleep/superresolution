@@ -21,8 +21,7 @@ package io.homo.superresolution.common.mixin.presentation.v1_21_11;
 #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_1
 import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.common.mixin.lowlatency.v1_21_11.RenderSystemAccessor;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
@@ -47,8 +46,8 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
     private void super_resolution$renderAndPresent(
             boolean renderLevel, CallbackInfo ci
     ) {
-        if (VulkanPresentationFeature.isRequested()) {
-            VulkanPresentationWindow.endMinecraftFrame();
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
+            PresentationBackendManager.endMinecraftFrame();
         }
     }
 
@@ -63,7 +62,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             require = 1
     )
     private void super_resolution$pollEvents(CallbackInfo ci) {
-        if (VulkanPresentationFeature.isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             RenderSystemAccessor.invokePollEvents();
         }
 
@@ -75,7 +74,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             index = 0
     )
     public long super_resolution$replaceWindow(long window){
-        if (VulkanPresentationFeature.isRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
             return PresentationWindowState.renderHandle();
         }else {
             return window;
@@ -90,7 +89,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             )
     )
     private void super_resolution$skipOpenGlBlit(RenderTarget target) {
-        if (!VulkanPresentationFeature.isRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
             target.blitToScreen();
         }
     }

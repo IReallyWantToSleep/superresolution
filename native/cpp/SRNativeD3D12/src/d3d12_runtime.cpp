@@ -57,6 +57,7 @@ namespace sr::d3d12 {
             ~ComHandle() { reset(); }
 
             ComHandle(const ComHandle &) = delete;
+
             ComHandle &operator=(const ComHandle &) = delete;
 
             ComHandle(ComHandle &&other) noexcept : pointer_(other.detach()) {
@@ -112,6 +113,7 @@ namespace sr::d3d12 {
             ~UniqueHandle() { reset(); }
 
             UniqueHandle(const UniqueHandle &) = delete;
+
             UniqueHandle &operator=(const UniqueHandle &) = delete;
 
             UniqueHandle(UniqueHandle &&other) noexcept : handle_(other.detach()) {
@@ -125,6 +127,7 @@ namespace sr::d3d12 {
             }
 
             HANDLE get() const noexcept { return handle_; }
+
             explicit operator bool() const noexcept {
                 return handle_ != nullptr && handle_ != INVALID_HANDLE_VALUE;
             }
@@ -154,12 +157,12 @@ namespace sr::d3d12 {
         struct QuarantinedSubmission {
             ComHandle<ID3D12CommandAllocator> allocator;
             ComHandle<ID3D12GraphicsCommandList> commandList;
-            std::vector<ComHandle<IUnknown>> retainedObjects;
+            std::vector<ComHandle<IUnknown> > retainedObjects;
 
             void abandon() noexcept {
                 allocator.detach();
                 commandList.detach();
-                for (auto &object : retainedObjects) {
+                for (auto &object: retainedObjects) {
                     object.detach();
                 }
                 retainedObjects.clear();
@@ -182,8 +185,6 @@ namespace sr::d3d12 {
             std::atomic<uint64_t> lastSubmitted{0};
             std::vector<QuarantinedSubmission> quarantinedSubmissions;
         };
-
-        struct AllocatorState;
 
         struct TextureStateCell {
             std::mutex mutex;
@@ -211,18 +212,11 @@ namespace sr::d3d12 {
             ID3D12Resource *resource = nullptr;
         };
 
-#if defined(SR_D3D12_TEST_HOOKS)
-        std::atomic<HRESULT> g_nextFenceWaitFailure{S_OK};
-        std::atomic<HRESULT> g_nextInternalCompletionSignalFailure{S_OK};
-        std::atomic<HRESULT> g_nextQueueSharedFenceSignalFailure{S_OK};
-        std::atomic<HRESULT> g_nextCpuSharedFenceSignalFailure{S_OK};
-#endif
-
         std::string hresultText(HRESULT hr) {
             char *message = nullptr;
             const DWORD length = FormatMessageA(
                 FORMAT_MESSAGE_ALLOCATE_BUFFER | FORMAT_MESSAGE_FROM_SYSTEM |
-                    FORMAT_MESSAGE_IGNORE_INSERTS,
+                FORMAT_MESSAGE_IGNORE_INSERTS,
                 nullptr, static_cast<DWORD>(hr),
                 MAKELANGID(LANG_NEUTRAL, SUBLANG_DEFAULT),
                 reinterpret_cast<char *>(&message), 0, nullptr);
@@ -272,13 +266,13 @@ namespace sr::d3d12 {
             }
 
             stream << " DeviceRemovedReason=0x" << std::hex
-                   << static_cast<uint32_t>(removedReason) << std::dec;
+                    << static_cast<uint32_t>(removedReason) << std::dec;
             const std::string removedText = hresultText(removedReason);
             if (!removedText.empty()) {
                 stream << " (" << removedText << ")";
             }
 
-#if defined(__ID3D12DeviceRemovedExtendedData1_INTERFACE_DEFINED__)
+            #if defined(__ID3D12DeviceRemovedExtendedData1_INTERFACE_DEFINED__)
             ComHandle<ID3D12DeviceRemovedExtendedData1> dred;
             if (FAILED(device->QueryInterface(IID_PPV_ARGS(dred.put())))) {
                 return;
@@ -287,17 +281,17 @@ namespace sr::d3d12 {
             D3D12_DRED_AUTO_BREADCRUMBS_OUTPUT1 breadcrumbs = {};
             if (SUCCEEDED(dred->GetAutoBreadcrumbsOutput1(&breadcrumbs))) {
                 const D3D12_AUTO_BREADCRUMB_NODE1 *node =
-                    breadcrumbs.pHeadAutoBreadcrumbNode;
+                        breadcrumbs.pHeadAutoBreadcrumbNode;
                 uint32_t nodeCount = 0;
                 while (node && nodeCount < 8) {
                     const uint32_t last = node->pLastBreadcrumbValue
                                               ? *node->pLastBreadcrumbValue
                                               : 0;
                     stream << " Breadcrumb[" << nodeCount << "]="
-                           << (node->pCommandListDebugNameA
-                                   ? node->pCommandListDebugNameA
-                                   : "<unnamed>")
-                           << ':' << last << '/' << node->BreadcrumbCount;
+                            << (node->pCommandListDebugNameA
+                                    ? node->pCommandListDebugNameA
+                                    : "<unnamed>")
+                            << ':' << last << '/' << node->BreadcrumbCount;
                     node = node->pNext;
                     ++nodeCount;
                 }
@@ -307,19 +301,20 @@ namespace sr::d3d12 {
             if (SUCCEEDED(dred->GetPageFaultAllocationOutput1(&pageFault)) &&
                 pageFault.PageFaultVA != 0) {
                 stream << " PageFaultVA=0x" << std::hex << pageFault.PageFaultVA
-                       << std::dec;
+                        << std::dec;
                 const D3D12_DRED_ALLOCATION_NODE1 *allocation =
-                    pageFault.pHeadExistingAllocationNode;
+                        pageFault.pHeadExistingAllocationNode;
                 if (!allocation) {
                     allocation = pageFault.pHeadRecentFreedAllocationNode;
                 }
                 if (allocation) {
                     stream << " Allocation="
-                           << (allocation->ObjectNameA ? allocation->ObjectNameA
-                                                       : "<unnamed>");
+                            << (allocation->ObjectNameA
+                                    ? allocation->ObjectNameA
+                                    : "<unnamed>");
                 }
             }
-#endif
+            #endif
         }
 
         void setHresultError(const char *operation, HRESULT hr,
@@ -327,8 +322,8 @@ namespace sr::d3d12 {
             try {
                 std::ostringstream stream;
                 stream << (operation ? operation : "D3D12 operation")
-                       << " failed with HRESULT 0x" << std::hex
-                       << static_cast<uint32_t>(hr) << std::dec;
+                        << " failed with HRESULT 0x" << std::hex
+                        << static_cast<uint32_t>(hr) << std::dec;
                 const std::string text = hresultText(hr);
                 if (!text.empty()) {
                     stream << " (" << text << ')';
@@ -567,10 +562,10 @@ namespace sr::d3d12 {
             }
 
             if ((flags & DEBUG_DRED) != 0) {
-#if defined(__ID3D12DeviceRemovedExtendedDataSettings_INTERFACE_DEFINED__)
+                #if defined(__ID3D12DeviceRemovedExtendedDataSettings_INTERFACE_DEFINED__)
                 ComHandle<ID3D12DeviceRemovedExtendedDataSettings> settings;
                 const HRESULT hr =
-                    D3D12GetDebugInterface(IID_PPV_ARGS(settings.put()));
+                        D3D12GetDebugInterface(IID_PPV_ARGS(settings.put()));
                 if (FAILED(hr)) {
                     setHresultError(
                         "D3D12GetDebugInterface(DRED settings)", hr);
@@ -579,10 +574,10 @@ namespace sr::d3d12 {
                 settings->SetAutoBreadcrumbsEnablement(
                     D3D12_DRED_ENABLEMENT_FORCED_ON);
                 settings->SetPageFaultEnablement(D3D12_DRED_ENABLEMENT_FORCED_ON);
-#else
+                #else
                 return invalidArgument(
                     "This Windows SDK does not expose DRED settings.");
-#endif
+                #endif
             }
             return S_OK;
         }
@@ -598,19 +593,11 @@ namespace sr::d3d12 {
                 return S_OK;
             }
 
-#if defined(SR_D3D12_TEST_HOOKS)
-            const HRESULT injected =
-                g_nextFenceWaitFailure.exchange(S_OK, std::memory_order_acq_rel);
-            if (FAILED(injected)) {
-                setHresultError("Injected D3D12 fence wait", injected, device);
-                return injected;
-            }
-#endif
-
             const uint64_t completed = fence->GetCompletedValue();
             if (completed == std::numeric_limits<uint64_t>::max()) {
-                const HRESULT removed = device ? device->GetDeviceRemovedReason()
-                                               : DXGI_ERROR_DEVICE_REMOVED;
+                const HRESULT removed = device
+                                            ? device->GetDeviceRemovedReason()
+                                            : DXGI_ERROR_DEVICE_REMOVED;
                 setHresultError("ID3D12Fence::GetCompletedValue", removed, device);
                 return removed;
             }
@@ -642,8 +629,8 @@ namespace sr::d3d12 {
         }
 
         HRESULT waitForInternal(const std::shared_ptr<DeviceState> &state,
-                                 uint64_t value,
-                                 uint32_t timeoutMilliseconds) noexcept {
+                                uint64_t value,
+                                uint32_t timeoutMilliseconds) noexcept {
             if (!state || !state->device || !state->completionFence ||
                 !state->completionEvent) {
                 return invalidArgument("The D3D12 device state is incomplete.");
@@ -656,41 +643,17 @@ namespace sr::d3d12 {
 
         HRESULT signalSubmissionCompletion(DeviceState *state,
                                            uint64_t value) noexcept {
-#if defined(SR_D3D12_TEST_HOOKS)
-            const HRESULT injected =
-                g_nextInternalCompletionSignalFailure.exchange(
-                    S_OK, std::memory_order_acq_rel);
-            if (FAILED(injected)) {
-                return injected;
-            }
-#endif
             return state->queue->Signal(state->completionFence.get(), value);
         }
 
         HRESULT signalSharedFenceOnQueue(DeviceState *state,
                                          ID3D12Fence *fence,
                                          uint64_t value) noexcept {
-#if defined(SR_D3D12_TEST_HOOKS)
-            const HRESULT injected =
-                g_nextQueueSharedFenceSignalFailure.exchange(
-                    S_OK, std::memory_order_acq_rel);
-            if (FAILED(injected)) {
-                return injected;
-            }
-#endif
             return state->queue->Signal(fence, value);
         }
 
         HRESULT signalCpuSharedFence(ID3D12Fence *fence,
                                      uint64_t value) noexcept {
-#if defined(SR_D3D12_TEST_HOOKS)
-            const HRESULT injected =
-                g_nextCpuSharedFenceSignalFailure.exchange(
-                    S_OK, std::memory_order_acq_rel);
-            if (FAILED(injected)) {
-                return injected;
-            }
-#endif
             return fence->Signal(value);
         }
 
@@ -699,7 +662,7 @@ namespace sr::d3d12 {
             const char *signalOperation) noexcept {
             if (state->quarantinedSubmissions.empty()) {
                 const uint64_t value =
-                    state->lastSubmitted.load(std::memory_order_acquire);
+                        state->lastSubmitted.load(std::memory_order_acquire);
                 return value == 0
                            ? S_OK
                            : waitForInternal(state, value, WAIT_INFINITE);
@@ -726,7 +689,7 @@ namespace sr::d3d12 {
         }
 
         void abandonQuarantinedSubmissions(DeviceState *state) noexcept {
-            for (auto &submission : state->quarantinedSubmissions) {
+            for (auto &submission: state->quarantinedSubmissions) {
                 submission.abandon();
             }
             state->quarantinedSubmissions.clear();
@@ -795,7 +758,7 @@ namespace sr::d3d12 {
             return object;
         }
 
-        HRESULT retainObject(std::vector<ComHandle<IUnknown>> &retained,
+        HRESULT retainObject(std::vector<ComHandle<IUnknown> > &retained,
                              IUnknown *object) noexcept {
             if (!object) {
                 return invalidArgument("Cannot retain a null D3D12 object.");
@@ -828,8 +791,8 @@ namespace sr::d3d12 {
 
         uint64_t alignUp(uint64_t value, uint64_t alignment) noexcept {
             if (alignment == 0 || value >
-                                      std::numeric_limits<uint64_t>::max() -
-                                          (alignment - 1)) {
+                std::numeric_limits<uint64_t>::max() -
+                (alignment - 1)) {
                 return 0;
             }
             return (value + alignment - 1) & ~(alignment - 1);
@@ -907,9 +870,9 @@ namespace sr::d3d12 {
         std::mutex mutex;
         CommandState state = CommandState::Closed;
         uint64_t completionValue = 0;
-        std::vector<ComHandle<IUnknown>> retainedObjects;
+        std::vector<ComHandle<IUnknown> > retainedObjects;
         std::unordered_map<TextureStateCell *, PendingTextureState>
-            pendingTextureStates;
+        pendingTextureStates;
     };
 
     const char *lastError() noexcept { return g_lastError.data(); }
@@ -1157,7 +1120,7 @@ namespace sr::d3d12 {
             return 0;
         }
         const uint64_t completed =
-            device->state->completionFence->GetCompletedValue();
+                device->state->completionFence->GetCompletedValue();
         if (completed == std::numeric_limits<uint64_t>::max()) {
             const HRESULT removed = device->state->device->GetDeviceRemovedReason();
             setHresultError("ID3D12Fence::GetCompletedValue", removed,
@@ -1186,7 +1149,7 @@ namespace sr::d3d12 {
         std::unique_lock<std::mutex> submitLock(state->submitMutex);
         if (state->quarantinedSubmissions.empty()) {
             const uint64_t value =
-                state->lastSubmitted.load(std::memory_order_acquire);
+                    state->lastSubmitted.load(std::memory_order_acquire);
             submitLock.unlock();
             return waitForInternal(state, value, timeoutMilliseconds);
         }
@@ -1212,38 +1175,6 @@ namespace sr::d3d12 {
         return hr;
     }
 
-#if defined(SR_D3D12_TEST_HOOKS)
-    namespace testing {
-        void failNextFenceWait(HRESULT failure) noexcept {
-            g_nextFenceWaitFailure.store(
-                FAILED(failure) ? failure : E_FAIL, std::memory_order_release);
-        }
-
-        void failNextInternalCompletionSignal(HRESULT failure) noexcept {
-            g_nextInternalCompletionSignalFailure.store(
-                FAILED(failure) ? failure : E_FAIL, std::memory_order_release);
-        }
-
-        void failNextQueueSharedFenceSignal(HRESULT failure) noexcept {
-            g_nextQueueSharedFenceSignalFailure.store(
-                FAILED(failure) ? failure : E_FAIL, std::memory_order_release);
-        }
-
-        void failNextCpuSharedFenceSignal(HRESULT failure) noexcept {
-            g_nextCpuSharedFenceSignalFailure.store(
-                FAILED(failure) ? failure : E_FAIL, std::memory_order_release);
-        }
-
-        size_t quarantinedSubmissionCount(Device *device) noexcept {
-            device = requireObject(device, ObjectKind::Device, "D3D12 device");
-            if (!device || !device->state) {
-                return 0;
-            }
-            std::lock_guard<std::mutex> lock(device->state->submitMutex);
-            return device->state->quarantinedSubmissions.size();
-        }
-    } // namespace testing
-#endif
 
     SharedFence *createSharedFence(Device *device,
                                    uint64_t initialValue) noexcept {
@@ -1469,7 +1400,7 @@ namespace sr::d3d12 {
 
             ComHandle<ID3D12Resource> resource;
             const D3D12_HEAP_FLAGS heapFlags =
-                shared ? D3D12_HEAP_FLAG_SHARED : D3D12_HEAP_FLAG_NONE;
+                    shared ? D3D12_HEAP_FLAG_SHARED : D3D12_HEAP_FLAG_NONE;
             HRESULT hr = createCom<ID3D12Resource>(
                 "ID3D12Device::CreateCommittedResource(Texture2D)", resource,
                 device->state->device.get(), [&](ID3D12Resource **result) {
@@ -1491,8 +1422,8 @@ namespace sr::d3d12 {
             }
 
             const D3D12_RESOURCE_ALLOCATION_INFO allocation =
-                device->state->device->GetResourceAllocationInfo(0, 1,
-                                                                 &description);
+                    device->state->device->GetResourceAllocationInfo(0, 1,
+                                                                     &description);
             if (allocation.SizeInBytes == 0 ||
                 allocation.SizeInBytes == std::numeric_limits<uint64_t>::max()) {
                 setError("D3D12 returned an invalid Texture2D allocation size.");
@@ -1503,7 +1434,7 @@ namespace sr::d3d12 {
             D3D12_CPU_DESCRIPTOR_HANDLE renderTargetView = {};
             if ((flags & D3D12_RESOURCE_FLAG_ALLOW_RENDER_TARGET) != 0) {
                 const DXGI_FORMAT viewFormat =
-                    renderTargetViewFormat(srSurfaceFormat);
+                        renderTargetViewFormat(srSurfaceFormat);
                 if (viewFormat == DXGI_FORMAT_UNKNOWN) {
                     invalidArgument(
                         "The Texture2D format cannot have an RGBA clear view.");
@@ -1545,7 +1476,7 @@ namespace sr::d3d12 {
                 viewDescription.Texture2D.MipSlice = 0;
                 viewDescription.Texture2D.PlaneSlice = 0;
                 renderTargetView =
-                    renderTargetHeap->GetCPUDescriptorHandleForHeapStart();
+                        renderTargetHeap->GetCPUDescriptorHandleForHeapStart();
                 device->state->device->CreateRenderTargetView(
                     resource.get(), &viewDescription, renderTargetView);
             }
@@ -1765,7 +1696,7 @@ namespace sr::d3d12 {
 
             ComHandle<ID3D12Resource> resource;
             const D3D12_HEAP_FLAGS heapFlags =
-                shared ? D3D12_HEAP_FLAG_SHARED : D3D12_HEAP_FLAG_NONE;
+                    shared ? D3D12_HEAP_FLAG_SHARED : D3D12_HEAP_FLAG_NONE;
             HRESULT hr = createCom<ID3D12Resource>(
                 "ID3D12Device::CreateCommittedResource(Buffer)", resource,
                 device->state->device.get(), [&](ID3D12Resource **result) {
@@ -1819,7 +1750,8 @@ namespace sr::d3d12 {
                 const D3D12_RANGE writtenRange = {
                     static_cast<SIZE_T>(buffer->mappedOffset),
                     static_cast<SIZE_T>(buffer->mappedOffset +
-                                        buffer->mappedSize)};
+                                        buffer->mappedSize)
+                };
                 buffer->resource->Unmap(0, &writtenRange);
                 buffer->mapped = false;
             }
@@ -1930,7 +1862,8 @@ namespace sr::d3d12 {
 
         const D3D12_RANGE writtenRange = {
             static_cast<SIZE_T>(offset),
-            static_cast<SIZE_T>(offset + size)};
+            static_cast<SIZE_T>(offset + size)
+        };
         buffer->resource->Unmap(0, &writtenRange);
         buffer->mapped = false;
         buffer->mappedOffset = 0;
@@ -1983,8 +1916,8 @@ namespace sr::d3d12 {
 
             try {
                 auto [inserted, created] =
-                    commandList->pendingTextureStates.emplace(
-                        texture->stateCell.get(), std::move(pending));
+                        commandList->pendingTextureStates.emplace(
+                            texture->stateCell.get(), std::move(pending));
                 (void) created;
                 *state = &inserted->second;
                 return S_OK;
@@ -2014,7 +1947,7 @@ namespace sr::d3d12 {
 
         HRESULT validatePendingTextureStatesLocked(
             CommandList *commandList) noexcept {
-            for (const auto &entry : commandList->pendingTextureStates) {
+            for (const auto &entry: commandList->pendingTextureStates) {
                 const PendingTextureState &pending = entry.second;
                 std::lock_guard<std::mutex> lock(pending.cell->mutex);
                 if (pending.cell->revision != pending.baseRevision ||
@@ -2028,7 +1961,7 @@ namespace sr::d3d12 {
         }
 
         void commitPendingTextureStatesLocked(CommandList *commandList) noexcept {
-            for (auto &entry : commandList->pendingTextureStates) {
+            for (auto &entry: commandList->pendingTextureStates) {
                 PendingTextureState &pending = entry.second;
                 std::lock_guard<std::mutex> lock(pending.cell->mutex);
                 pending.cell->committed = pending.current;
@@ -2127,8 +2060,8 @@ namespace sr::d3d12 {
             commandList->completionValue = completionValue;
             commandList->allocator->recordedOwner = nullptr;
             commandList->allocator->lastCompletionValue =
-                std::max(commandList->allocator->lastCompletionValue,
-                         completionValue);
+                    std::max(commandList->allocator->lastCompletionValue,
+                             completionValue);
         }
 
         void poisonSubmissionLocked(CommandList *commandList) noexcept {
@@ -2206,7 +2139,7 @@ namespace sr::d3d12 {
                                   "D3D12 command allocator");
         if (!device || !allocator || !device->state || !allocator->state ||
             FAILED(validateOwner(device->state, allocator->state->owner,
-                                 "createCommandList"))) {
+                "createCommandList"))) {
             return nullptr;
         }
 
@@ -2451,7 +2384,7 @@ namespace sr::d3d12 {
         }
         std::lock_guard<std::mutex> lock(commandList->mutex);
         if (FAILED(requireRecordingLocked(commandList,
-                                          "checkedNativeCommandList"))) {
+            "checkedNativeCommandList"))) {
             return nullptr;
         }
         return commandList->commandList.get();
@@ -2466,13 +2399,13 @@ namespace sr::d3d12 {
                                 "D3D12 Texture2D");
         if (!commandList || !texture ||
             FAILED(validateOwner(commandList->owner, texture->owner,
-                                 "commandTextureState"))) {
+                "commandTextureState"))) {
             return ResourceState::Common;
         }
 
         std::lock_guard<std::mutex> lock(commandList->mutex);
         if (FAILED(requireRecordingLocked(commandList,
-                                          "commandTextureState"))) {
+            "commandTextureState"))) {
             return ResourceState::Common;
         }
         PendingTextureState *pending = nullptr;
@@ -2492,7 +2425,7 @@ namespace sr::d3d12 {
         D3D12_RESOURCE_STATES ignored = {};
         if (!commandList || !texture || !mapResourceState(state, ignored) ||
             FAILED(validateOwner(commandList->owner, texture->owner,
-                                 "setCommandTextureState"))) {
+                "setCommandTextureState"))) {
             return invalidArgument("Invalid command-local texture state.");
         }
 
@@ -2525,7 +2458,7 @@ namespace sr::d3d12 {
                                 "D3D12 Texture2D");
         if (!commandList || !texture ||
             FAILED(validateOwner(commandList->owner, texture->owner,
-                                 "transitionTexture"))) {
+                "transitionTexture"))) {
             return E_INVALIDARG;
         }
 
@@ -2561,7 +2494,7 @@ namespace sr::d3d12 {
             barrier.Flags = D3D12_RESOURCE_BARRIER_FLAG_NONE;
             barrier.Transition.pResource = texture->resource.get();
             barrier.Transition.Subresource =
-                D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
+                    D3D12_RESOURCE_BARRIER_ALL_SUBRESOURCES;
             barrier.Transition.StateBefore = beforeState;
             barrier.Transition.StateAfter = afterState;
             commandList->commandList->ResourceBarrier(1, &barrier);
@@ -2582,9 +2515,9 @@ namespace sr::d3d12 {
                                     "D3D12 destination Texture2D");
         if (!commandList || !source || !destination ||
             FAILED(validateOwner(commandList->owner, source->owner,
-                                 "copyTexture")) ||
+                "copyTexture")) ||
             FAILED(validateOwner(commandList->owner, destination->owner,
-                                 "copyTexture"))) {
+                "copyTexture"))) {
             return E_INVALIDARG;
         }
         if (source->surfaceFormat != destination->surfaceFormat ||
@@ -2597,9 +2530,9 @@ namespace sr::d3d12 {
         const uint32_t sourceWidth = mipExtent(source->width, region.sourceMip);
         const uint32_t sourceHeight = mipExtent(source->height, region.sourceMip);
         const uint32_t destinationWidth =
-            mipExtent(destination->width, region.destinationMip);
+                mipExtent(destination->width, region.destinationMip);
         const uint32_t destinationHeight =
-            mipExtent(destination->height, region.destinationMip);
+                mipExtent(destination->height, region.destinationMip);
         if (!rectangleFits(region.sourceX, region.sourceY, region.width,
                            region.height, sourceWidth, sourceHeight) ||
             !rectangleFits(region.destinationX, region.destinationY,
@@ -2668,9 +2601,9 @@ namespace sr::d3d12 {
                                     "D3D12 destination buffer");
         if (!commandList || !source || !destination || size == 0 ||
             FAILED(validateOwner(commandList->owner, source->owner,
-                                 "copyBuffer")) ||
+                "copyBuffer")) ||
             FAILED(validateOwner(commandList->owner, destination->owner,
-                                 "copyBuffer")) ||
+                "copyBuffer")) ||
             !rangeFits(sourceOffset, size, source->size) ||
             !rangeFits(destinationOffset, size, destination->size)) {
             return invalidArgument("Invalid D3D12 buffer copy range or owner.");
@@ -2714,7 +2647,7 @@ namespace sr::d3d12 {
                                     "D3D12 destination buffer");
         if (!commandList || !destination || !data || size == 0 ||
             FAILED(validateOwner(commandList->owner, destination->owner,
-                                 "writeBuffer")) ||
+                "writeBuffer")) ||
             !rangeFits(destinationOffset, size, destination->size)) {
             return invalidArgument("Invalid D3D12 buffer write range or data.");
         }
@@ -2757,7 +2690,8 @@ namespace sr::d3d12 {
                         size);
             const D3D12_RANGE writtenRange = {
                 static_cast<SIZE_T>(destinationOffset),
-                static_cast<SIZE_T>(destinationOffset + size)};
+                static_cast<SIZE_T>(destinationOffset + size)
+            };
             destination->resource->Unmap(0, &writtenRange);
             return S_OK;
         }
@@ -2790,15 +2724,15 @@ namespace sr::d3d12 {
                                     "D3D12 destination Texture2D");
         if (!commandList || !destination || !data || size == 0 ||
             FAILED(validateOwner(commandList->owner, destination->owner,
-                                 "writeTexture")) ||
+                "writeTexture")) ||
             region.mip >= destination->mipLevels) {
             return invalidArgument("Invalid D3D12 texture write arguments.");
         }
 
         const uint32_t destinationWidth =
-            mipExtent(destination->width, region.mip);
+                mipExtent(destination->width, region.mip);
         const uint32_t destinationHeight =
-            mipExtent(destination->height, region.mip);
+                mipExtent(destination->height, region.mip);
         if (!rectangleFits(region.x, region.y, region.width, region.height,
                            destinationWidth, destinationHeight)) {
             return invalidArgument("The D3D12 texture write region is out of range.");
@@ -2811,22 +2745,22 @@ namespace sr::d3d12 {
         }
         const uint32_t rowBytes = region.width * pixelSize;
         const uint32_t sourceRowPitch =
-            region.sourceRowPitch == 0 ? rowBytes : region.sourceRowPitch;
+                region.sourceRowPitch == 0 ? rowBytes : region.sourceRowPitch;
         if (sourceRowPitch < rowBytes) {
             return invalidArgument("The source texture row pitch is too small.");
         }
         const uint64_t requiredSourceSize =
-            static_cast<uint64_t>(sourceRowPitch) * (region.height - 1) + rowBytes;
+                static_cast<uint64_t>(sourceRowPitch) * (region.height - 1) + rowBytes;
         if (requiredSourceSize > size) {
             return invalidArgument("The source texture data buffer is too small.");
         }
 
         const uint64_t uploadRowPitch =
-            alignUp(rowBytes, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
+                alignUp(rowBytes, D3D12_TEXTURE_DATA_PITCH_ALIGNMENT);
         if (uploadRowPitch == 0 ||
             uploadRowPitch > std::numeric_limits<uint32_t>::max() ||
             region.height >
-                std::numeric_limits<uint64_t>::max() / uploadRowPitch) {
+            std::numeric_limits<uint64_t>::max() / uploadRowPitch) {
             return invalidArgument("The D3D12 texture upload size overflowed.");
         }
         const uint64_t uploadSize = uploadRowPitch * region.height;
@@ -2882,12 +2816,12 @@ namespace sr::d3d12 {
         sourceLocation.Type = D3D12_TEXTURE_COPY_TYPE_PLACED_FOOTPRINT;
         sourceLocation.PlacedFootprint.Offset = 0;
         sourceLocation.PlacedFootprint.Footprint.Format =
-            mapSurfaceFormat(destination->surfaceFormat);
+                mapSurfaceFormat(destination->surfaceFormat);
         sourceLocation.PlacedFootprint.Footprint.Width = region.width;
         sourceLocation.PlacedFootprint.Footprint.Height = region.height;
         sourceLocation.PlacedFootprint.Footprint.Depth = 1;
         sourceLocation.PlacedFootprint.Footprint.RowPitch =
-            static_cast<uint32_t>(uploadRowPitch);
+                static_cast<uint32_t>(uploadRowPitch);
 
         D3D12_TEXTURE_COPY_LOCATION destinationLocation = {};
         destinationLocation.pResource = destination->resource.get();
@@ -2908,7 +2842,7 @@ namespace sr::d3d12 {
                                 "D3D12 Texture2D");
         if (!commandList || !texture ||
             FAILED(validateOwner(commandList->owner, texture->owner,
-                                 "clearTextureRgba"))) {
+                "clearTextureRgba"))) {
             return E_INVALIDARG;
         }
         if (!texture->renderTargetHeap ||
@@ -2959,7 +2893,7 @@ namespace sr::d3d12 {
             resource = resourceFromOpaque(resourceOrNull);
             if (!resource.resource ||
                 FAILED(validateOwner(commandList->owner, resource.owner,
-                                     "uavBarrier"))) {
+                    "uavBarrier"))) {
                 return E_INVALIDARG;
             }
         }
@@ -2972,7 +2906,7 @@ namespace sr::d3d12 {
         if (resource.resource) {
             if (resourceOrNull &&
                 static_cast<ObjectHeader *>(resourceOrNull)->kind ==
-                    ObjectKind::Texture2D) {
+                ObjectKind::Texture2D) {
                 auto *texture = static_cast<Texture2D *>(resourceOrNull);
                 hr = requireCommandTextureStateLocked(
                     commandList, texture, ResourceState::UnorderedAccess,
@@ -3015,7 +2949,7 @@ namespace sr::d3d12 {
                                         "D3D12 shared fence");
             if (!sharedFence ||
                 FAILED(validateOwner(commandList->owner, sharedFence->owner,
-                                     "submit"))) {
+                    "submit"))) {
                 return E_INVALIDARG;
             }
         } else if (waitValue != 0 || signalValue != 0) {
@@ -3098,7 +3032,7 @@ namespace sr::d3d12 {
         commitPendingTextureStatesLocked(commandList);
 
         const uint64_t completionValue =
-            ++commandList->owner->nextCompletionValue;
+                ++commandList->owner->nextCompletionValue;
         hr = signalSubmissionCompletion(commandList->owner.get(),
                                         completionValue);
         if (FAILED(hr)) {
@@ -3106,7 +3040,7 @@ namespace sr::d3d12 {
             setHresultError("ID3D12CommandQueue::Signal(internal completion)", hr,
                             commandList->owner->device.get());
             const std::array<char, LAST_ERROR_CAPACITY> completionSignalDiagnostic =
-                g_lastError;
+                    g_lastError;
 
             // ExecuteCommandLists has no return value. If its internal completion
             // signal fails, queue a shared-fence signal and wait for it on the CPU.
@@ -3135,12 +3069,12 @@ namespace sr::d3d12 {
             }
 
             QuarantinedSubmission &quarantine =
-                commandList->owner->quarantinedSubmissions.back();
+                    commandList->owner->quarantinedSubmissions.back();
             quarantine.allocator =
-                std::move(commandList->allocator->allocator);
+                    std::move(commandList->allocator->allocator);
             quarantine.commandList = std::move(commandList->commandList);
             quarantine.retainedObjects =
-                std::move(commandList->retainedObjects);
+                    std::move(commandList->retainedObjects);
             poisonSubmissionLocked(commandList);
             setError(completionSignalDiagnostic.data());
             return completionSignalFailure;
@@ -3167,8 +3101,8 @@ namespace sr::d3d12 {
                     commandList->owner, completionValue, WAIT_INFINITE);
                 if (SUCCEEDED(completionWait)) {
                     const HRESULT recoverySignal =
-                        signalCpuSharedFence(sharedFence->fence.get(),
-                                             signalValue);
+                            signalCpuSharedFence(sharedFence->fence.get(),
+                                                 signalValue);
                     if (SUCCEEDED(recoverySignal)) {
                         sharedFence->lastNativeSignal = signalValue;
                         finalizeSubmissionLocked(commandList, completionValue);
@@ -3200,7 +3134,7 @@ namespace sr::d3d12 {
                                     "D3D12 shared fence");
         if (!device || !sharedFence || !device->state ||
             FAILED(validateOwner(device->state, sharedFence->owner,
-                                 "recoverSharedFence"))) {
+                "recoverSharedFence"))) {
             return E_INVALIDARG;
         }
 
@@ -3290,7 +3224,7 @@ namespace sr::d3d12 {
                                     "D3D12 shared fence");
         if (!device || !sharedFence || !device->state ||
             FAILED(validateOwner(device->state, sharedFence->owner,
-                                 "recoverExecutedSharedFence"))) {
+                "recoverExecutedSharedFence"))) {
             return E_INVALIDARG;
         }
 

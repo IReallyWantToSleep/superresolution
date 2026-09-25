@@ -19,9 +19,11 @@
 package io.homo.superresolution.common.config.special;
 
 import io.homo.superresolution.common.config.ConfigSpecType;
+import io.homo.superresolution.api.utils.Requirement;
 import it.unimi.dsi.fastutil.Pair;
 import net.minecraft.network.chat.Component;
 
+import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Consumer;
 import java.util.function.Function;
@@ -33,6 +35,7 @@ public class SpecialConfigDescription<T> {
     protected ConfigSpecType type;
     protected T value;
     protected T defaultValue;
+    protected Requirement requirement = Requirement.nothing();
 
     protected Function<T, Optional<Component>> valueName = (a) -> Optional.of(Component.empty());
     protected Function<T, Optional<Component>> name = (a) -> Optional.of(Component.empty());
@@ -73,6 +76,15 @@ public class SpecialConfigDescription<T> {
 
     public SpecialConfigDescription<T> setDefaultValue(T defaultValue) {
         this.defaultValue = defaultValue;
+        return this;
+    }
+
+    public Requirement getRequirement() {
+        return requirement;
+    }
+
+    public SpecialConfigDescription<T> setRequirement(Requirement requirement) {
+        this.requirement = Objects.requireNonNull(requirement, "requirement cannot be null");
         return this;
     }
 

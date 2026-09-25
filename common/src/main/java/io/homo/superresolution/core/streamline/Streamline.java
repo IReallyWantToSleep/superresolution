@@ -22,7 +22,7 @@ import io.homo.superresolution.api.StreamlineDistribution;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import org.lwjgl.system.Configuration;
@@ -85,7 +85,7 @@ public final class Streamline {
     }
 
     public static synchronized boolean prepareEarly() {
-        if (!VulkanPresentationFeature.shouldInitializeStreamline()) {
+        if (!PresentationBackendManager.shouldInitializeStreamline()) {
             return false;
         }
         Path pluginDir = StreamlineDistribution.pluginDirectory();
@@ -102,7 +102,7 @@ public final class Streamline {
         if (!isSupportedOnCurrentVersion() || !isSupportedPlatform()) {
             return false;
         }
-        if (!VulkanPresentationFeature.shouldInitializeStreamline()) {
+        if (!PresentationBackendManager.shouldInitializeStreamline()) {
             return false;
         }
         Path pluginDir = StreamlineDistribution.pluginDirectory();

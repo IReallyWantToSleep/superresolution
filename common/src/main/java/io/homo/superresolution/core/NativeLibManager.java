@@ -23,7 +23,7 @@ import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.SystemArchitecture;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.core.utils.MessageBox;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -71,7 +71,7 @@ public class NativeLibManager {
     static {
         OperatingSystem operatingSystem = new OperatingSystem();
         if (operatingSystem.type == OperatingSystemType.WINDOWS && operatingSystem.arch == SystemArchitecture.X86_64) {
-            boolean shouldExtract = VulkanPresentationFeature.isRequested() && SuperResolutionConfig.CURRENT_OS_TYPE == OperatingSystemType.WINDOWS;
+            boolean shouldExtract = PresentationBackendManager.isVulkanPresentationRequested() && SuperResolutionConfig.CURRENT_OS_TYPE == OperatingSystemType.WINDOWS;
             boolean shouldLoad = FrameGenerationDescriptions.mayUseStreamline(
                     SuperResolutionConfig.getFrameGenerationProvider());
             LIB_SUPER_RESOLUTION = new NativeLib(

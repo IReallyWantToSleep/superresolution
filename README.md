@@ -17,15 +17,15 @@
 
 * FSR1
 * FSR2
+* FSR3
 * SGSR2
 * SGSR1
 * DLSS
 * XeSS
-* FSR3
 
 # 其它功能
 
-* 光影包内的超分辨率支持，[文档](https://github.com/187J3X1-114514/superresolution/wiki/Shaderpack-Interface-documentation)
+* 光影包内的超分辨率支持，[文档](https://sr.187j3x1-114514.org/docs/Shaderpack-Interface-documentation/)
 
 # 兼容性
 
@@ -34,7 +34,7 @@
 * 遥远的地平线(Distant Horizons) 正常工作
 * Embeddium 正常工作
 * Voxy 正常工作
-* OptiFine 没有测试
+* OptiFine 不支持
 
 # 要求
 
@@ -42,20 +42,17 @@
 
 * Windows 10/11 x64
 * Linux x64
-* 计划支持MacOS Arm64
 
-### 关于安卓设备
+### 关于安卓（移动）设备
 
-目前不支持在安卓设备上运行，但提供安卓的本机库（无法正常加载）
-
-除此之外，安卓设备各个OpenGL转译层的计算着色器，DSA，SpirV着色器二进制等功能部分工作不正常，但SuperResolution可在不使用这部分功能的情况下正常工作
+我们永远不会支持安卓（移动）设备
 
 ## 显卡要求
 
 ### 推荐
 
 * 支持OpenGL版本 4.3 及以上
-* 支持OpenGL扩展 `GL_ARB_direct_state_access` `GL_ARB_gl_spirv` `GL_ARB_clear_texture`
+* 支持OpenGL扩展 `GL_ARB_direct_state_access` `GL_ARB_gl_spirv` `GL_ARB_clear_texture` `GL_EXT_memory_object` `GL_EXT_semaphore`
 * 支持Vulkan版本 >= 1.2
 
 ### 最低
@@ -64,24 +61,7 @@
 
 # 有问题？
 
-* 发现Bug
-* 游戏崩溃
-* 想要支持其他游戏版本 _注：仅限1.18及以上，加载器仅限Forge,Fabric,NeoForge，视移植难度进行移植_
-
 在[这里](https://github.com/187J3X1-114514/superresolution/issues)打开一个issues
-
-# 构建
-
-首先编译C++依赖库，运行`native:buildNative`任务即可
-> 注：Windows平台需要MinGW和Cmake，其它要求看[这里](native/README.md)
->
-打开你的终端，运行，然后build_jars就是模组文件
-
-```shell
-git clone https://github.com/187J3X1-114514/superresolution
-cd superresolution
-./gradlew buildAllVersions
-```
 
 # 赞助
 
@@ -92,5 +72,5 @@ cd superresolution
 # 许可证
 
 * 模组本身使用GPL-3.0
-* 本机库使用MIT
+* 本机库使用LGPL-3.0
 * 本软件包含 NVIDIA Corporation 提供的源代码

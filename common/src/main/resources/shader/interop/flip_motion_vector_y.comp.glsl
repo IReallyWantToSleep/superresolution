@@ -3,7 +3,7 @@
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout(binding = 0) uniform sampler2D inputMotionVector;
-layout(binding = 1, rg16f) uniform writeonly image2D outputMotionVector;
+layout(binding = 1, MOTION_VECTOR_FORMAT) uniform writeonly image2D outputMotionVector;
 
 void main() {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);

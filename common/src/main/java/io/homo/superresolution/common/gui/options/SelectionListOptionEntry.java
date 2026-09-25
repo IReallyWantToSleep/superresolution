@@ -264,7 +264,10 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
         if (materialSelect != null) {
             materialSelect.clearOptions();
             for (T itemValue : this.values) {
-                materialSelect.addOption(itemValue, nameProvider.apply(itemValue));
+                Supplier<Optional<Tooltip>> tooltip = menuItemTooltipSupplier != null
+                        ? () -> menuItemTooltipSupplier.apply(itemValue)
+                        : null;
+                materialSelect.addOption(itemValue, nameProvider.apply(itemValue), tooltip);
             }
         }
 

@@ -21,12 +21,16 @@ package io.homo.superresolution.common.mixin.debug;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.GameRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.Optional;
+import java.util.OptionalInt;
 
 @Mixin(GameRenderer.class)
 public class ImguiMixin {
@@ -40,11 +44,21 @@ public class ImguiMixin {
         }
     }
     #elif MC_VER > MC_26_1_2
-    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;pop()V",ordinal = 2), method = "render")
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/render/GuiRenderer;endFrame()V",shift = At.Shift.AFTER), method = "render")
     private void onRender(CallbackInfo ci) {
         if (!(SuperResolutionConfig.isEnableImgui())) return;
         if (ImguiMain.getInstance() != null) {
-            ImguiMain.getInstance().render();
+            try (com.mojang.blaze3d.systems.RenderPass renderPass = com.mojang.blaze3d.systems.RenderSystem.getDevice().createCommandEncoder().createRenderPass(
+                    ()->"SR-Imgui",
+                    MinecraftUtils.getMainRenderTarget().getColorTextureView(),
+                    #if MC_VER >= MC_26_2
+                    Optional.empty()
+                    #else
+                    OptionalInt.empty()
+                    #endif
+            )) {
+                ImguiMain.getInstance().render();
+            }
         }
     }
     #elif MC_VER > MC_1_21_11

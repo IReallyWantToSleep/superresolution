@@ -13,21 +13,21 @@
 
 ---
 
-Built-in super-resolution algorithms for **Minecraft**, improving performance and visual quality.
+Built-in super-resolution algorithms for Minecraft to improve performance and visual quality.
 
 # Supported Algorithms
 
 * FSR1
 * FSR2
+* FSR3
 * SGSR2
 * SGSR1
 * DLSS
 * XeSS
-* FSR3
 
 # Other Features
 
-* Super-resolution support inside shader packs, [documentation](https://github.com/187J3X1-114514/superresolution/wiki/Shaderpack-Interface-documentation)
+* Super-resolution support inside shader packs, [documentation](https://sr.187j3x1-114514.org/docs/Shaderpack-Interface-documentation/)
 
 # Compatibility
 
@@ -36,7 +36,7 @@ Built-in super-resolution algorithms for **Minecraft**, improving performance an
 * Distant Horizons - Works fine
 * Embeddium - Works fine
 * Voxy - Works fine
-* OptiFine - Not tested
+* OptiFine - Not supported
 
 # Requirements
 
@@ -44,20 +44,17 @@ Built-in super-resolution algorithms for **Minecraft**, improving performance an
 
 * Windows 10/11 x64
 * Linux x64
-* macOS Arm64 (planned)
 
 ### About Android Devices
 
-Currently, running on Android is **not supported**. Native Android libraries are provided (but cannot be loaded correctly).
-
-In addition, compute shaders, DSA, and SpirV shader binaries often do not work correctly across various Android OpenGL translation layers. However, **SuperResolution can function without these features where possible**.
+We will never support Android mobile devices.
 
 ## GPU Requirements
 
 ### Recommended
 
 * OpenGL 4.3 or later
-* OpenGL extensions: `GL_ARB_direct_state_access`, `GL_ARB_gl_spirv`, `GL_ARB_clear_texture`
+* OpenGL extensions: `GL_ARB_direct_state_access`, `GL_ARB_gl_spirv`, `GL_ARB_clear_texture`, `GL_EXT_memory_object`, `GL_EXT_semaphore`
 * Vulkan 1.2 or later
 
 ### Minimum
@@ -66,29 +63,7 @@ In addition, compute shaders, DSA, and SpirV shader binaries often do not work c
 
 # Found an Issue?
 
-If you:
-
-* Discovered a bug
-* Encountered a game crash
-* Want support for other Minecraft versions
-
-*Note: Only 1.18 and above, loader support limited to Forge, Fabric, NeoForge. Ports depend on feasibility.*
-
-Please open an [issue here](https://github.com/187J3X1-114514/superresolution/issues).
-
-# Building
-
-First, build the native C++ dependencies by running the `native:buildNative` task.
-
-> **Note:** Windows requires MinGW and CMake. For other requirements, see [here](../native/README.md).
->
-Then open your terminal and run, the generated `build_jars` will contain your mod files.
-
-```shell
-git clone https://github.com/187J3X1-114514/superresolution
-cd superresolution
-./gradlew buildAllVersions
-```
+Open an [issue here](https://github.com/187J3X1-114514/superresolution/issues).
 
 # Support Us
 
@@ -99,5 +74,5 @@ If SR has been helpful to you and you'd like to support our development, you're 
 # License
 
 * The mod itself uses GPL-3.0
-* Native libraries use MIT
+* Native libraries use LGPL-3.0
 * This software contains source code provided by NVIDIA Corporation

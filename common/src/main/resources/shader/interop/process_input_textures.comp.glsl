@@ -2,8 +2,10 @@
 
 layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
+#ifdef HAS_COLOR
 layout(binding = 0) uniform sampler2D inputColor;
 layout(binding = 1, COLOR_FORMAT) uniform writeonly image2D outputColor;
+#endif
 
 #ifdef HAS_DEPTH
 layout(binding = 2) uniform sampler2D inputDepth;
@@ -12,38 +14,62 @@ layout(binding = 3, r32f) uniform writeonly image2D outputDepth;
 
 #ifdef HAS_MOTION_VECTOR
 layout(binding = 4) uniform sampler2D inputMotionVectors;
-layout(binding = 5, rg16f) uniform writeonly image2D outputMotionVectors;
+layout(binding = 5, MOTION_VECTOR_FORMAT) uniform writeonly image2D outputMotionVectors;
 #endif
 
 #ifdef HAS_EXPOSURE
 layout(binding = 6) uniform sampler2D inputExposure;
-layout(binding = 7, r32f) uniform writeonly image2D outputExposure;
+layout(binding = 7, EXPOSURE_FORMAT) uniform writeonly image2D outputExposure;
 #endif
 
 void main() {
     ivec2 texelCoord = ivec2(gl_GlobalInvocationID.xy);
 
+    #ifdef HAS_COLOR
     ivec2 colorSize = imageSize(outputColor);
     if (texelCoord.x < colorSize.x && texelCoord.y < colorSize.y) {
+        #ifdef FLIP_Y
         int flippedY = colorSize.y - 1 - texelCoord.y;
+        #else
+        int flippedY = texelCoord.y;
+        #endif
 
         vec4 color = texelFetch(inputColor, ivec2(texelCoord.x, flippedY), 0);
         imageStore(outputColor, texelCoord, color);
-        
-        #ifdef HAS_DEPTH
+    }
+    #endif
+
+    #ifdef HAS_DEPTH
+    ivec2 depthSize = imageSize(outputDepth);
+    if (texelCoord.x < depthSize.x && texelCoord.y < depthSize.y) {
+        #ifdef FLIP_Y
+        int flippedY = depthSize.y - 1 - texelCoord.y;
+        #else
+        int flippedY = texelCoord.y;
+        #endif
         vec4 depth = texelFetch(inputDepth, ivec2(texelCoord.x, flippedY), 0);
         imageStore(outputDepth, texelCoord, depth);
-        #endif
+    }
+    #endif
 
-        #ifdef HAS_MOTION_VECTOR
+    #ifdef HAS_MOTION_VECTOR
+    ivec2 motionVectorSize = imageSize(outputMotionVectors);
+    if (texelCoord.x < motionVectorSize.x && texelCoord.y < motionVectorSize.y) {
+        #ifdef FLIP_Y
+        int flippedY = motionVectorSize.y - 1 - texelCoord.y;
+        #else
+        int flippedY = texelCoord.y;
+        #endif
         vec2 mv = texelFetch(inputMotionVectors, ivec2(texelCoord.x, flippedY), 0).rg;
+        #ifdef FLIP_Y
         mv.y = -mv.y;
+        #endif
         #ifdef MOTION_VECTOR_PREPROCESSING_FUNCTION_INJECTED
         mv = motionVectorPreprocessing(mv);
         #endif
         imageStore(outputMotionVectors, texelCoord, vec4(mv, 0.0, 0.0));
-        #endif
     }
+    #endif
 
     #ifdef HAS_EXPOSURE
     if (texelCoord.x == 0 && texelCoord.y == 0) {

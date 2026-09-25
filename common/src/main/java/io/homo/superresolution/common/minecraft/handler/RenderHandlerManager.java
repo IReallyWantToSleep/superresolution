@@ -32,7 +32,7 @@ import io.homo.superresolution.common.minecraft.MinecraftRenderTargetWrapper;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.mixin.core.accessor.MinecraftAccessor;
-import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeProvider;
@@ -115,7 +115,7 @@ public class RenderHandlerManager {
         }
         if (needResize) {
             MinecraftUtils.resize();
-            VulkanPresentationWindow.flushCapturedFrame();
+            PresentationBackendManager.flushCapturedFrame();
             SuperResolution.getCurrentAlgorithm().resize(
                     RenderHandlerManager.getScreenWidth(),
                     RenderHandlerManager.getScreenHeight()

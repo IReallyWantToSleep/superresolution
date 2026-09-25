@@ -30,6 +30,7 @@ import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.api.registry.ExtraResource;
 import io.homo.superresolution.api.registry.ExtraResources;
 import io.homo.superresolution.api.utils.Requirement;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.upscale.algo.dlss.DLSS;
 import io.homo.superresolution.common.upscale.algo.dlss.NgxDlssLatestProvider;
 import io.homo.superresolution.common.upscale.algo.dlssrr.DLSSRR;
@@ -154,9 +155,7 @@ public class AlgorithmDescriptions {
                                             SystemArchitecture.X86_64,
                                             OperatingSystemType.WINDOWS))
                                     .requiredGlExtension("GL_EXT_memory_object")
-                                    .requiredGlExtension("GL_EXT_memory_object_win32")
                                     .requiredGlExtension("GL_EXT_semaphore")
-                                    .requiredGlExtension("GL_EXT_semaphore_win32")
                                     .glMajorVersion(4)
                                     .glMinorVersion(6)
                                     .isTrue(NativeLibManager::d3d12Available)
@@ -396,7 +395,9 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(FSR4_D3D12);
         AlgorithmRegistry.registry(XESS);
         AlgorithmRegistry.registry(DLSS);
-        AlgorithmRegistry.registry(DLSSRR);
+        if (SuperResolutionConfig.isEnableDlssRayReconstruction()) {
+            AlgorithmRegistry.registry(DLSSRR);
+        }
         AlgorithmRegistry.registry(SGSR1);
         AlgorithmRegistry.registry(SGSR2);
         if (Platform.currentPlatform.isDevelopmentEnvironment()) {
