@@ -19,9 +19,10 @@
 package io.homo.superresolution.iris_velocity_ext.v26_1;
 
 import org.joml.Matrix4fc;
+import org.joml.Matrix4x3fc;
 
 public interface VelocityBufferBuilderAccess {
-    void irisExt$attachTransformDelta(Matrix4fc delta);
+    void irisExt$attachTransformDelta(Matrix4x3fc delta);
 
     void irisExt$detachStates();
 

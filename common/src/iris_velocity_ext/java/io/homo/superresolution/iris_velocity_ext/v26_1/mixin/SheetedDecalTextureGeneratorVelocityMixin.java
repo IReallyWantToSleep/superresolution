@@ -22,6 +22,7 @@ import com.mojang.blaze3d.vertex.SheetedDecalTextureGenerator;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityBufferBuilderAccess;
 import org.joml.Matrix4fc;
+import org.joml.Matrix4x3fc;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
@@ -33,7 +34,7 @@ public abstract class SheetedDecalTextureGeneratorVelocityMixin implements Veloc
     private VertexConsumer delegate;
 
     @Override
-    public void irisExt$attachTransformDelta(Matrix4fc delta) {
+    public void irisExt$attachTransformDelta(Matrix4x3fc delta) {
         if (this.delegate instanceof VelocityBufferBuilderAccess access) {
             access.irisExt$attachTransformDelta(delta);
         }

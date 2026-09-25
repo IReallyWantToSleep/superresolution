@@ -41,26 +41,44 @@ public final class ExperimentalPage implements ConfigPage {
         ContainerWidget container = context.createStandardContainer();
         context.addFrameTitle(container, Text.translatable("superresolution.screen.config.section.experimental"));
 
-        OptionBuilder builder = context.createOptionBuilder(Text.translatable("superresolution.screen.config.category.experimental"));
+        context.addLabeledOptionGroup(
+                container,
+                Text.translatable("superresolution.screen.config.group.experimental.algorithms"),
+                builder -> builder.booleanOption(
+                                Text.translatable("superresolution.screen.config.options.label.enable_experimental_algorithms"),
+                                SuperResolutionConfig.isEnableExperimentalAlgorithms())
+                        .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_experimental_algorithms"))
+                        .setDefaultValue(() -> false)
+                        .setSaveConsumer(SuperResolutionConfig::setEnableExperimentalAlgorithms)
+                        .build()
+        );
 
-        builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.enable_experimental_algorithms"),
-                        SuperResolutionConfig.isEnableExperimentalAlgorithms())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_experimental_algorithms"))
-                .setDefaultValue(() -> false)
-                .setSaveConsumer(SuperResolutionConfig::setEnableExperimentalAlgorithms)
-                .build();
+        context.addLabeledOptionGroup(
+                container,
+                Text.translatable("superresolution.screen.config.group.experimental.dlss_ray_reconstruction"),
+                builder -> builder.booleanOption(
+                                Text.translatable("superresolution.screen.config.options.label.enable_dlss_ray_reconstruction"),
+                                SuperResolutionConfig.isEnableDlssRayReconstruction())
+                        .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_dlss_ray_reconstruction"))
+                        .setDefaultValue(() -> false)
+                        .setSaveConsumer(SuperResolutionConfig::setEnableDlssRayReconstruction)
+                        .setRequireRestartGame(true)
+                        .build()
+        );
 
-        builder.booleanOption(
-                        Text.translatable("superresolution.screen.config.options.label.enable_dlss_ray_reconstruction"),
-                        SuperResolutionConfig.isEnableDlssRayReconstruction())
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_dlss_ray_reconstruction"))
-                .setDefaultValue(() -> false)
-                .setSaveConsumer(SuperResolutionConfig::setEnableDlssRayReconstruction)
-                .setRequireRestartGame(true)
-                .build();
+        context.addLabeledOptionGroup(
+                container,
+                Text.translatable("superresolution.screen.config.group.experimental.iris_extension"),
+                builder -> builder.booleanOption(
+                                Text.translatable("superresolution.screen.config.options.label.enable_iris_extension"),
+                                SuperResolutionConfig.isEnableIrisExtension())
+                        .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_iris_extension"))
+                        .setDefaultValue(() -> false)
+                        .setRequireRestartGame(true)
+                        .setSaveConsumer(SuperResolutionConfig::setEnableIrisExtension)
+                        .build()
+        );
 
-        context.addOptionGroupToContainer(container, builder);
         context.finalizeFrame(frame, container);
         return frame;
     }

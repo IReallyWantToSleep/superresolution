@@ -6,6 +6,7 @@ import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.toolchain.JavaLanguageVersion
 import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.jvm.tasks.Jar
+import utils.MinecraftVersion
 // Imported because in a Kotlin build script `java` resolves to the Gradle extension,
 // which shadows the java.* package.
 import java.util.zip.ZipFile
@@ -71,6 +72,23 @@ repositories {
         url = uri("https://repo1.maven.org/maven2")
         content {
             includeGroup("org.appliedenergistics.yoga")
+        }
+    }
+    maven {
+        name = "CaffeineMC"
+        url = uri("https://maven.caffeinemc.net/releases" )
+        mavenContent { releasesOnly() }
+        content {
+            includeGroup("net.caffeinemc")
+        }
+    }
+
+    maven {
+        name = "CaffeineMC"
+        url = uri("https://maven.caffeinemc.net/snapshots")
+        mavenContent { snapshotsOnly() }
+        content {
+            includeGroup("net.caffeinemc")
         }
     }
     flatDir {
@@ -159,6 +177,14 @@ dependencies {
             }
         }
     }
+
+    for (lib in versionConfig.fabric.dependencies.modrinth) {
+        if ((lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10")) || lib.name == "sodium.maven") {
+            var depName = "net.caffeinemc:sodium-fabric:${lib.version}"
+            modCompileOnlyCompat(depName)
+            break
+        }
+    }
 }
 
 configurations {
@@ -197,7 +223,7 @@ tasks.register<JavaCompile>("genJNIHeader") {
     }
 
     classpath = mainSourceSet.compileClasspath + mainSourceSet.output
-    destinationDirectory.set(file("$buildDir/jni-temp"))
+    destinationDirectory.set(file("${layout.buildDirectory}/jni-temp"))
     javaCompiler.set(javaToolchains.compilerFor {
         languageVersion.set(JavaLanguageVersion.of(versionConfig.common.javaVersion))
     })
@@ -211,7 +237,7 @@ tasks.register<JavaCompile>("genJNIHeader") {
 
     doLast {
         println("JNI headers generated at: ${outputDir.absolutePath}")
-        delete("$buildDir/jni-temp")
+        delete("$layout.buildDirectory/jni-temp")
     }
 }
 
@@ -286,7 +312,7 @@ tasks.named<Jar>("jar") {
 }
 
 artifacts {
-    var sourceSets = listOf(mainSourceSet, irisapiSourceSet, sharedSourceSet, materialSourceSet, hackSourceSet, shaderCompatSourceSet)
+    var sourceSets:ArrayList<SourceSet> = ArrayList(listOf(mainSourceSet, irisapiSourceSet, sharedSourceSet, materialSourceSet, hackSourceSet, shaderCompatSourceSet))
     if (irisVelocityExtSupported) sourceSets.add(irisVelocityExtSourceSet)
     sourceSets.forEach { sourceSet ->
         sourceSet.java.sourceDirectories.files.forEach { dir ->

@@ -50,6 +50,6 @@ public class ModelPartFeatureRendererVelocityMixin {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;
         }
-        VelocityRenderContext.clear();
+        VelocityRenderContext.clearCache();
     }
 }

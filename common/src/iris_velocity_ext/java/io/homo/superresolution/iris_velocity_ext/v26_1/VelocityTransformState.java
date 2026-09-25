@@ -19,10 +19,11 @@
 package io.homo.superresolution.iris_velocity_ext.v26_1;
 
 import org.joml.Matrix4f;
+import org.joml.Matrix4x3f;
 
 public final class VelocityTransformState {
     public final Matrix4f prevModelToView = new Matrix4f();
-    public final Matrix4f delta = new Matrix4f().zero();
+    public final Matrix4x3f delta = new Matrix4x3f().zero();
     public int lastFrameId = -1;
     public boolean valid;
 }

@@ -21,6 +21,7 @@ package io.homo.superresolution.iris_velocity_ext.v26_1;
 import net.irisshaders.iris.uniforms.CapturedRenderingState;
 import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
+import org.joml.Matrix4x3f;
 
 
 public final class VelocityCalc {
@@ -52,7 +53,23 @@ public final class VelocityCalc {
             state.delta.zero();
         } else {
             scratchPrev.set(state.prevModelToView).mul(scratchInverse);
-            state.delta.set(modelView).sub(scratchPrev);
+            state.delta.set(
+                    modelView.m00() - scratchPrev.m00(),
+                    modelView.m01() - scratchPrev.m01(),
+                    modelView.m02() - scratchPrev.m02(),
+
+                    modelView.m10() - scratchPrev.m10(),
+                    modelView.m11() - scratchPrev.m11(),
+                    modelView.m12() - scratchPrev.m12(),
+
+                    modelView.m20() - scratchPrev.m20(),
+                    modelView.m21() - scratchPrev.m21(),
+                    modelView.m22() - scratchPrev.m22(),
+
+                    modelView.m30() - scratchPrev.m30(),
+                    modelView.m31() - scratchPrev.m31(),
+                    modelView.m32() - scratchPrev.m32()
+            );
         }
         state.prevModelToView.set(modelView).mul(currentPose);
         state.valid = true;

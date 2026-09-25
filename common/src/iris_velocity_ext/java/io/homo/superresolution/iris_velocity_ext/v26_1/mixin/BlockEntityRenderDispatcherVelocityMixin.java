@@ -54,7 +54,7 @@ public class BlockEntityRenderDispatcherVelocityMixin {
             return;
         }
         if (blockEntityRenderState instanceof VelocityEntityStateAccess access) {
-            VelocityRenderContext.set(access.irisExt$getVelocityCache());
+            VelocityRenderContext.setCache(access.irisExt$getVelocityCache());
         }
     }
 
@@ -63,6 +63,6 @@ public class BlockEntityRenderDispatcherVelocityMixin {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()) {
             return;
         }
-        VelocityRenderContext.clear();
+        VelocityRenderContext.clearCache();
     }
 }

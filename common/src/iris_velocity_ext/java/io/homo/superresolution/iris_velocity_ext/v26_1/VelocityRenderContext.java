@@ -19,16 +19,27 @@
 package io.homo.superresolution.iris_velocity_ext.v26_1;
 
 public final class VelocityRenderContext {
-    public static VelocityCache current;
+    public static VelocityCache currentCache;
+
+    public static VelocityTransformState currentTransformState;
 
     private VelocityRenderContext() {
     }
 
-    public static void set(VelocityCache cache) {
-        current = cache;
+    public static void setCache(VelocityCache cache) {
+        currentCache = cache;
     }
 
-    public static void clear() {
-        current = null;
+    public static void clearCache() {
+        currentCache = null;
+    }
+
+
+    public static void setTransformState(VelocityTransformState cache) {
+        currentTransformState = cache;
+    }
+
+    public static void clearTransformState() {
+        currentTransformState = null;
     }
 }

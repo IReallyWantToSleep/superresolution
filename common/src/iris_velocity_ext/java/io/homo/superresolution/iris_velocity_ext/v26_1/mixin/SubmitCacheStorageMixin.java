@@ -36,11 +36,11 @@ public class SubmitCacheStorageMixin implements VelocitySubmitStorage {
 
     @Override
     public void irisExt$captureCache() {
-        irisExt$cache = VelocityRenderContext.current;
+        irisExt$cache = VelocityRenderContext.currentCache;
     }
 
     @Override
     public void irisExt$restoreCache() {
-        VelocityRenderContext.set(irisExt$cache);
+        VelocityRenderContext.setCache(irisExt$cache);
     }
 }

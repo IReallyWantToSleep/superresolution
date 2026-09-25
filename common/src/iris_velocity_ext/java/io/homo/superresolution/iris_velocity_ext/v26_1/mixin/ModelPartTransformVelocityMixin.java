@@ -51,7 +51,7 @@ public abstract class ModelPartTransformVelocityMixin {
         if (this.cubes.isEmpty()) {
             return;
         }
-        VelocityCache cache = VelocityRenderContext.current;
+        VelocityCache cache = VelocityRenderContext.currentCache;
         if (cache == null || !(builder instanceof VelocityBufferBuilderAccess access)) {
             return;
         }
@@ -61,6 +61,7 @@ public abstract class ModelPartTransformVelocityMixin {
         VelocityTransformState state = cache.getOrCreatePartState((ModelPart) (Object) this);
         VelocityCalc.computeTransformDelta(state, pose.pose());
         access.irisExt$attachTransformDelta(state.delta);
+        VelocityRenderContext.setTransformState(state);
     }
 
     @Inject(method = "compile", at = @At("RETURN"))
@@ -70,6 +71,7 @@ public abstract class ModelPartTransformVelocityMixin {
         }
         if (builder instanceof VelocityBufferBuilderAccess access) {
             access.irisExt$detachStates();
+            VelocityRenderContext.clearTransformState();
         }
     }
 }

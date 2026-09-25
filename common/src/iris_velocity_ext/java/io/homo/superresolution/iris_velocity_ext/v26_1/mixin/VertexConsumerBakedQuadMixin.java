@@ -28,7 +28,6 @@ import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityRenderContext;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityTransformState;
 import net.irisshaders.iris.api.v0.IrisApi;
 import net.minecraft.client.resources.model.geometry.BakedQuad;
-import org.joml.Matrix4fc;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -43,7 +42,7 @@ public interface VertexConsumerBakedQuadMixin {
         if (access == null) {
             return;
         }
-        VelocityTransformState state = VelocityRenderContext.current.getOrCreateQuadState(quad);
+        VelocityTransformState state = VelocityRenderContext.currentCache.getOrCreateQuadState(quad);
         VelocityCalc.computeTransformDelta(state, pose.pose());
         access.irisExt$attachTransformDelta(state.delta);
     }
@@ -59,7 +58,7 @@ public interface VertexConsumerBakedQuadMixin {
         if (access == null) {
             return;
         }
-        VelocityTransformState state = VelocityRenderContext.current.getOrCreateQuadState(quad);
+        VelocityTransformState state = VelocityRenderContext.currentCache.getOrCreateQuadState(quad);
         VelocityCalc.computeOffsetDelta(state, x, y, z);
         access.irisExt$attachTransformDelta(state.delta);
     }
@@ -72,7 +71,7 @@ public interface VertexConsumerBakedQuadMixin {
     @Unique
     default VelocityBufferBuilderAccess irisExt$velocityAccess() {
         if (!SuperResolutionConfig.isIrisExtensionEnabledAtStartup()
-                || VelocityRenderContext.current == null
+                || VelocityRenderContext.currentCache == null
                 || IrisApi.getInstance().isRenderingShadowPass()) {
             return null;
         }

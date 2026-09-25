@@ -18,8 +18,12 @@
 
 package io.homo.superresolution.iris_velocity_ext.v26_1;
 
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormat;
 import com.mojang.blaze3d.vertex.VertexFormatElement;
+import io.homo.superresolution.iris_velocity_ext.v26_1.vertex_serializer.IrisEntityToTerrainVertexSerializer;
+import io.homo.superresolution.iris_velocity_ext.v26_1.vertex_serializer.ModelToEntityVertexSerializer;
+import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializerRegistry;
 import net.irisshaders.iris.vertices.IrisVertexFormats;
 
 public final class IrisExtVertexFormats {
@@ -41,6 +45,9 @@ public final class IrisExtVertexFormats {
                 .add("at_tangent", IrisVertexFormats.TANGENT_ELEMENT)
                 .add("irisExt_velocity", VELOCITY_ELEMENT)
                 .build();
+
+        VertexSerializerRegistry.instance().registerSerializer(ENTITY_VELOCITY, IrisVertexFormats.TERRAIN, new IrisEntityToTerrainVertexSerializer());
+        VertexSerializerRegistry.instance().registerSerializer(DefaultVertexFormat.ENTITY, ENTITY_VELOCITY, new ModelToEntityVertexSerializer());
     }
 
     private IrisExtVertexFormats() {
