@@ -155,9 +155,7 @@ public class AlgorithmDescriptions {
                                             SystemArchitecture.X86_64,
                                             OperatingSystemType.WINDOWS))
                                     .requiredGlExtension("GL_EXT_memory_object")
-                                    .requiredGlExtension("GL_EXT_memory_object_win32")
                                     .requiredGlExtension("GL_EXT_semaphore")
-                                    .requiredGlExtension("GL_EXT_semaphore_win32")
                                     .glMajorVersion(4)
                                     .glMinorVersion(6)
                                     .isTrue(NativeLibManager::d3d12Available)
