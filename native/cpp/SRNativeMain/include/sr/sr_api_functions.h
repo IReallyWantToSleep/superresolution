@@ -20,7 +20,7 @@ extern "C" {
         SRUpscaleProvider *provider,
         const SRCreateUpscaleContextDesc *desc);
 
-    SR_API SRReturnCode srDestroyUpscaleContext(SRUpscaleContext * context);
+    SR_API SRReturnCode srDestroyUpscaleContext(SRUpscaleContext *context);
 
     SR_API SRReturnCode srQueryUpscaleContext(
         SRUpscaleContext *context,
@@ -28,7 +28,7 @@ extern "C" {
         SRUpscaleContextQueryType queryType);
 
     SR_API SRReturnCode srInitUpscaleContext(
-        SRUpscaleContext * context);
+        SRUpscaleContext *context);
 
     SR_API SRReturnCode srDispatchUpscale(
         SRUpscaleContext *context,
@@ -131,7 +131,7 @@ extern "C" {
         const char *name,
         void **outValue);
 
-    SR_API void srDestroyExtraParams(SRContextExtraParams * params);
+    SR_API void srDestroyExtraParams(SRContextExtraParams *params);
 
     #ifdef __cplusplus
 }

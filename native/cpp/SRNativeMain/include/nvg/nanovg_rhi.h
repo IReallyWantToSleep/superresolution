@@ -23,8 +23,7 @@
 
 // Create flags
 
-enum NVGcreateFlags
-{
+enum NVGcreateFlags {
     // Flag indicating if geometry based anti-aliasing is used (may not be needed when using MSAA).
     NVG_ANTIALIAS = 1 << 0,
     // Flag indicating if strokes should be drawn using stencil buffer. The rendering will be a little
@@ -34,21 +33,18 @@ enum NVGcreateFlags
     NVG_DEBUG = 1 << 2,
 };
 
-enum NVGbackendMode
-{
+enum NVGbackendMode {
     NVG_BACKEND_RHI_DIRECT = 1,
 };
 
-typedef struct NVGRHIPath
-{
+typedef struct NVGRHIPath {
     int fillOffset;
     int fillCount;
     int strokeOffset;
     int strokeCount;
 } NVGRHIPath;
 
-typedef struct NVGRHICall
-{
+typedef struct NVGRHICall {
     int type;
     int image;
     int pathOffset;
@@ -67,16 +63,20 @@ typedef struct NVGRHICall
 static_assert(sizeof(NVGRHICall) == 52, "NVGRHICall ABI changed");
 static_assert(offsetof(NVGRHICall, fontImage) == 48, "NVGRHICall fontImage offset changed");
 
-typedef struct NVGRHICallbacks
-{
+typedef struct NVGRHICallbacks {
     int (*createTexture)(void *userPtr, int imageId, int type, int w, int h, int imageFlags,
                          const unsigned char *data, int dataSize);
+
     int (*registerExternalTexture)(void *userPtr, int imageId, unsigned int externalTextureHandle,
                                    int w, int h, int imageFlags);
+
     int (*updateTexture)(void *userPtr, int imageId, int x, int y, int w, int h,
                          const unsigned char *data, int dataSize);
+
     int (*deleteTexture)(void *userPtr, int imageId);
+
     void (*viewport)(void *userPtr, float width, float height, float devicePixelRatio);
+
     void (*flush)(void *userPtr,
                   float viewWidth,
                   float viewHeight,
@@ -90,6 +90,7 @@ typedef struct NVGRHICallbacks
                   int uniformBytes,
                   int fragSize,
                   int callStride);
+
     void (*destroy)(void *userPtr);
 } NVGRHICallbacks;
 
@@ -104,21 +105,18 @@ int nvSrRhiCreateImageFromHandleRHI(NVGcontext *ctx, GLuint textureId, int w, in
 GLuint nvSrRhiImageHandleRHI(NVGcontext *ctx, int image);
 
 // These are additional flags on top of NVGimageFlags.
-enum NVGimageFlagsRHI
-{
+enum NVGimageFlagsRHI {
     NVG_IMAGE_NODELETE = 1 << 16, // Do not delete GL texture handle.
 };
 
-enum SRRHINVGUniformLoc
-{
+enum SRRHINVGUniformLoc {
     GLNVG_LOC_VIEWSIZE,
     GLNVG_LOC_TEX,
     GLNVG_LOC_FRAG,
     GLNVG_MAX_LOCS
 };
 
-enum SRRHINVGShaderType
-{
+enum SRRHINVGShaderType {
     NSVG_SHADER_FILLGRAD,
     NSVG_SHADER_FILLIMG,
     NSVG_SHADER_SIMPLE,
@@ -127,41 +125,39 @@ enum SRRHINVGShaderType
     NSVG_SHADER_TEXTIMG
 };
 
-enum SRRHINVGUniformBindings
-{
+enum SRRHINVGUniformBindings {
     GLNVG_FRAG_BINDING = 0,
 };
 
-struct SRRHINVGShader
-{
+struct SRRHINVGShader {
     GLuint prog;
     GLuint frag;
     GLuint vert;
     GLint loc[GLNVG_MAX_LOCS];
 };
+
 typedef struct SRRHINVGShader SRRHINVGShader;
 
-struct SRRHINVGTexture
-{
+struct SRRHINVGTexture {
     int id;
     GLuint tex;
     int width, height;
     int type;
     int flags;
 };
+
 typedef struct SRRHINVGTexture SRRHINVGTexture;
 
-struct SRRHINVGBlend
-{
+struct SRRHINVGBlend {
     GLenum srcRGB;
     GLenum dstRGB;
     GLenum srcAlpha;
     GLenum dstAlpha;
 };
+
 typedef struct SRRHINVGBlend SRRHINVGblend;
 
-enum SRRHINVGCallType
-{
+enum SRRHINVGCallType {
     GLNVG_NONE = 0,
     GLNVG_FILL,
     GLNVG_CONVEXFILL,
@@ -169,8 +165,7 @@ enum SRRHINVGCallType
     GLNVG_TRIANGLES,
 };
 
-struct SRRHINVGCall
-{
+struct SRRHINVGCall {
     int type;
     int image;
     int pathOffset;
@@ -182,22 +177,23 @@ struct SRRHINVGCall
     SRRHINVGblend blendFunc;
     int fontImage;
 };
+
 typedef struct SRRHINVGCall SRRHINVGCall;
 
 static_assert(sizeof(SRRHINVGCall) == sizeof(NVGRHICall), "GLNVGcall and NVGRHICall must share an ABI");
-static_assert(offsetof(SRRHINVGCall, fontImage) == offsetof(NVGRHICall, fontImage), "GLNVGcall fontImage offset changed");
+static_assert(offsetof(SRRHINVGCall, fontImage) == offsetof(NVGRHICall, fontImage),
+              "GLNVGcall fontImage offset changed");
 
-struct SRRHINVGPath
-{
+struct SRRHINVGPath {
     int fillOffset;
     int fillCount;
     int strokeOffset;
     int strokeCount;
 };
+
 typedef struct SRRHINVGPath SRRHINVGPath;
 
-struct SRRHINVGFragUniforms
-{
+struct SRRHINVGFragUniforms {
     float scissorMat[12]; // matrices are actually 3 vec4s
     float paintMat[12];
     struct NVGcolor innerCol;
@@ -212,10 +208,10 @@ struct SRRHINVGFragUniforms
     int texType;
     int type;
 };
+
 typedef struct SRRHINVGFragUniforms SRRHINVGFragUniforms;
 
-struct SRRHINVGContext
-{
+struct SRRHINVGContext {
     SRRHINVGTexture *textures;
     float view[2];
     int ntextures;
@@ -242,4 +238,5 @@ struct SRRHINVGContext
 
     int dummyTex;
 };
+
 typedef struct SRRHINVGContext SRRHINVGContext;

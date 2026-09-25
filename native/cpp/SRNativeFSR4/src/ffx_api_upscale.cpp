@@ -69,6 +69,7 @@ namespace {
         }
 
         SRFfxApiModuleGuard(const SRFfxApiModuleGuard &) = delete;
+
         SRFfxApiModuleGuard &operator=(const SRFfxApiModuleGuard &) = delete;
 
         void publish(HMODULE loadedModule) noexcept {
@@ -414,7 +415,7 @@ extern "C" {
             return SR_RETURN_CODE_NULL_POINTER;
         }
         const auto *privateData =
-            static_cast<SRFfxApiPrivateData *>(context->userContext);
+                static_cast<SRFfxApiPrivateData *>(context->userContext);
         if (!privateData->contextCreated || !privateData->context) {
             return SR_RETURN_CODE_UNSUPPORTED;
         }

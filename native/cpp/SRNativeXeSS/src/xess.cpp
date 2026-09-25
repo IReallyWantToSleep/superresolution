@@ -350,7 +350,7 @@ extern "C" {
     }
 
     SR_API SRReturnCode srXeSSQueryUpscale(SRUpscaleContext *context, SRUpscaleContextQueryResult *result,
-                                            SRUpscaleContextQueryType queryType) {
+                                           SRUpscaleContextQueryType queryType) {
         if (!context || !context->userContext || !result) {
             return SR_RETURN_CODE_NULL_POINTER;
         }

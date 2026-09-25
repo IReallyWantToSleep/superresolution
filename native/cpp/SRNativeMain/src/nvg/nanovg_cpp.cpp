@@ -118,7 +118,7 @@ void NanoVGContext::Scale(float x, float y) {
 }
 
 std::array<float, 6> NanoVGContext::CurrentTransform() {
-    std::array < float, 6 > xform;
+    std::array<float, 6> xform;
     nvgCurrentTransform(ctx, xform.data());
     return xform;
 }
@@ -339,7 +339,7 @@ TextBoundsResult NanoVGContext::TextBounds(float x, float y, const std::string &
 
 std::array<float, 4> NanoVGContext::TextBoxBounds(float x, float y, float breakRowWidth,
                                                   const std::string &string, const std::string *end) {
-    std::array < float, 4 > bounds;
+    std::array<float, 4> bounds;
     nvgTextBoxBounds(ctx, x, y, breakRowWidth, string.c_str(), end ? end->c_str() : nullptr, bounds.data());
     return bounds;
 }

@@ -30,14 +30,11 @@
 
 typedef struct NVGcontext NVGcontext;
 
-struct NVGcolor
-{
-    union
-    {
+struct NVGcolor {
+    union {
         float rgba[4];
 
-        struct
-        {
+        struct {
             float r, g, b, a;
         };
     };
@@ -45,8 +42,7 @@ struct NVGcolor
 
 typedef struct NVGcolor NVGcolor;
 
-struct NVGpaint
-{
+struct NVGpaint {
     float xform[6];
     float extent[2];
     float radius;
@@ -58,20 +54,17 @@ struct NVGpaint
 
 typedef struct NVGpaint NVGpaint;
 
-enum NVGwinding
-{
+enum NVGwinding {
     NVG_CCW = 1, // Winding for solid shapes
-    NVG_CW = 2,  // Winding for holes
+    NVG_CW = 2, // Winding for holes
 };
 
-enum NVGsolidity
-{
+enum NVGsolidity {
     NVG_SOLID = 1, // CCW
-    NVG_HOLE = 2,  // CW
+    NVG_HOLE = 2, // CW
 };
 
-enum NVGlineCap
-{
+enum NVGlineCap {
     NVG_BUTT,
     NVG_ROUND,
     NVG_SQUARE,
@@ -79,21 +72,19 @@ enum NVGlineCap
     NVG_MITER,
 };
 
-enum NVGalign
-{
+enum NVGalign {
     // Horizontal align
-    NVG_ALIGN_LEFT = 1 << 0,   // Default, align text horizontally to left.
+    NVG_ALIGN_LEFT = 1 << 0, // Default, align text horizontally to left.
     NVG_ALIGN_CENTER = 1 << 1, // Align text horizontally to center.
-    NVG_ALIGN_RIGHT = 1 << 2,  // Align text horizontally to right.
+    NVG_ALIGN_RIGHT = 1 << 2, // Align text horizontally to right.
     // Vertical align
-    NVG_ALIGN_TOP = 1 << 3,      // Align text vertically to top.
-    NVG_ALIGN_MIDDLE = 1 << 4,   // Align text vertically to middle.
-    NVG_ALIGN_BOTTOM = 1 << 5,   // Align text vertically to bottom.
+    NVG_ALIGN_TOP = 1 << 3, // Align text vertically to top.
+    NVG_ALIGN_MIDDLE = 1 << 4, // Align text vertically to middle.
+    NVG_ALIGN_BOTTOM = 1 << 5, // Align text vertically to bottom.
     NVG_ALIGN_BASELINE = 1 << 6, // Default, align text vertically to baseline.
 };
 
-enum NVGblendFactor
-{
+enum NVGblendFactor {
     NVG_ZERO = 1 << 0,
     NVG_ONE = 1 << 1,
     NVG_SRC_COLOR = 1 << 2,
@@ -107,8 +98,7 @@ enum NVGblendFactor
     NVG_SRC_ALPHA_SATURATE = 1 << 10,
 };
 
-enum NVGcompositeOperation
-{
+enum NVGcompositeOperation {
     NVG_SOURCE_OVER,
     NVG_SOURCE_IN,
     NVG_SOURCE_OUT,
@@ -122,8 +112,7 @@ enum NVGcompositeOperation
     NVG_XOR,
 };
 
-struct NVGcompositeOperationState
-{
+struct NVGcompositeOperationState {
     int srcRGB;
     int dstRGB;
     int srcAlpha;
@@ -132,20 +121,18 @@ struct NVGcompositeOperationState
 
 typedef struct NVGcompositeOperationState NVGcompositeOperationState;
 
-struct NVGglyphPosition
-{
-    char *str;        // Position of the glyph in the input string.
-    float x;          // The x-coordinate of the logical glyph position.
+struct NVGglyphPosition {
+    char *str; // Position of the glyph in the input string.
+    float x; // The x-coordinate of the logical glyph position.
     float minx, maxx; // The bounds of the glyph shape.
 };
 
 typedef struct NVGglyphPosition NVGglyphPosition;
 
-struct NVGtextRow
-{
+struct NVGtextRow {
     char *start; // Pointer to the input text where the row starts.
-    char *end;   // Pointer to the input text where the row ends (one past the last character).
-    char *next;  // Pointer to the beginning of the next row.
+    char *end; // Pointer to the input text where the row ends (one past the last character).
+    char *next; // Pointer to the beginning of the next row.
     float width; // Logical width of the row.
     float minx, maxx;
     // Actual bounds of the row. Logical with and bounds can differ because of kerning and some parts over extending.
@@ -153,14 +140,13 @@ struct NVGtextRow
 
 typedef struct NVGtextRow NVGtextRow;
 
-enum NVGimageFlags
-{
+enum NVGimageFlags {
     NVG_IMAGE_GENERATE_MIPMAPS = 1 << 0, // Generate mipmaps during creation of the image.
-    NVG_IMAGE_REPEATX = 1 << 1,          // Repeat image in X direction.
-    NVG_IMAGE_REPEATY = 1 << 2,          // Repeat image in Y direction.
-    NVG_IMAGE_FLIPY = 1 << 3,            // Flips (inverses) image in Y direction when rendered.
-    NVG_IMAGE_PREMULTIPLIED = 1 << 4,    // Image data has premultiplied alpha.
-    NVG_IMAGE_NEAREST = 1 << 5,          // Image interpolation is Nearest instead Linear
+    NVG_IMAGE_REPEATX = 1 << 1, // Repeat image in X direction.
+    NVG_IMAGE_REPEATY = 1 << 2, // Repeat image in Y direction.
+    NVG_IMAGE_FLIPY = 1 << 3, // Flips (inverses) image in Y direction when rendered.
+    NVG_IMAGE_PREMULTIPLIED = 1 << 4, // Image data has premultiplied alpha.
+    NVG_IMAGE_NEAREST = 1 << 5, // Image interpolation is Nearest instead Linear
 };
 
 // Begin drawing a new frame
@@ -659,29 +645,25 @@ void nvgRoundedRectEllipse(NVGcontext *ctx, float x, float y, float w, float h, 
 //
 // Internal Render API
 //
-enum NVGtexture
-{
+enum NVGtexture {
     NVG_TEXTURE_ALPHA = 0x01,
     NVG_TEXTURE_RGBA = 0x02,
 };
 
-struct NVGscissor
-{
+struct NVGscissor {
     float xform[6];
     float extent[2];
 };
 
 typedef struct NVGscissor NVGscissor;
 
-struct NVGvertex
-{
+struct NVGvertex {
     float x, y, u, v;
 };
 
 typedef struct NVGvertex NVGvertex;
 
-struct NVGpath
-{
+struct NVGpath {
     int first;
     int count;
     unsigned char closed;
@@ -696,8 +678,7 @@ struct NVGpath
 
 typedef struct NVGpath NVGpath;
 
-struct NVGparams
-{
+struct NVGparams {
     void *userPtr;
     int edgeAntiAlias;
 
