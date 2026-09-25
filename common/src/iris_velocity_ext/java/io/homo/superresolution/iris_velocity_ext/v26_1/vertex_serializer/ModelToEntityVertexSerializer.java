@@ -28,7 +28,6 @@ import net.irisshaders.iris.vertices.IrisVertexFormats;
 import net.irisshaders.iris.vertices.MemoryAccess;
 import net.irisshaders.iris.vertices.NormalHelper;
 import org.joml.Matrix4x3f;
-import org.joml.Vector3f;
 
 import java.nio.ByteOrder;
 
@@ -69,6 +68,10 @@ public class ModelToEntityVertexSerializer implements VertexSerializer {
         long src = srcBase;
         long dst = dstBase;
         boolean shouldCalculateVelocity = VelocityRenderContext.currentTransformState != null;
+        final long packedShorts =
+                ((long) entity      & 0xFFFFL)
+                        | (((long) blockEntity & 0xFFFFL) << 16)
+                        | (((long) item        & 0xFFFFL) << 32);
 
         for (int q = 0; q < quadCount; ++q) {
             // We each every quad, and get their four vertex's `Position`, `UV` and others
@@ -121,10 +124,8 @@ public class ModelToEntityVertexSerializer implements VertexSerializer {
             // In here, we write four vertex each quad. At the last, we write our velocity
             for (int vertexIndex = 0; vertexIndex < 4; ++vertexIndex) {
                 MemoryIntrinsics.copyMemory(writeSrc, writeDst, 36);
+                MemoryAccess.setLong(writeDst + 36L, packedShorts);
 
-                MemoryAccess.setShort(writeDst + 36L, entity);
-                MemoryAccess.setShort(writeDst + 38L, blockEntity);
-                MemoryAccess.setShort(writeDst + 40L, item);
                 MemoryAccess.setFloat(writeDst + (long) MIDCOORD, midU);
                 MemoryAccess.setFloat(writeDst + (long) MIDCOORD + 4L, midV);
                 MemoryAccess.setInt(writeDst + (long) TANGENT, tangent);
@@ -153,9 +154,15 @@ public class ModelToEntityVertexSerializer implements VertexSerializer {
                             pZ = v3z;
                         }
                     }
-                    float vx = d.m00() * pX + d.m10() * pY + d.m20() * pZ + d.m30();
-                    float vy = d.m01() * pX + d.m11() * pY + d.m21() * pZ + d.m31();
-                    float vz = d.m02() * pX + d.m12() * pY + d.m22() * pZ + d.m32();
+                    float vx = org.joml.Math.fma(d.m00(), pX,
+                            org.joml.Math.fma(d.m10(), pY,
+                                    org.joml.Math.fma(d.m20(), pZ, d.m30())));
+                    float vy = org.joml.Math.fma(d.m01(), pX,
+                            org.joml.Math.fma(d.m11(), pY,
+                                    org.joml.Math.fma(d.m21(), pZ, d.m31())));
+                    float vz = org.joml.Math.fma(d.m02(), pX,
+                            org.joml.Math.fma(d.m12(), pY,
+                                    org.joml.Math.fma(d.m22(), pZ, d.m32())));
                     MemoryAccess.setFloat(writeDst + (long) VELOCITY, vx);
                     MemoryAccess.setFloat(writeDst + (long) VELOCITY + 4L, vy);
                     MemoryAccess.setFloat(writeDst + (long) VELOCITY + 8L, vz);
