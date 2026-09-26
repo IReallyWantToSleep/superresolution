@@ -72,9 +72,9 @@ CMAKE_COMMON_ARGS=(
   -DFFX_SC_JOB_POOL_SIZE="${FFX_SC_POOL}"
 )
 
-rm -rf buildLinux
-cmake "${CMAKE_COMMON_ARGS[@]}" -DCMAKE_BUILD_TYPE=Debug
-cmake --build buildLinux --config Debug -- -j${JOBS}
+#rm -rf buildLinux
+#cmake "${CMAKE_COMMON_ARGS[@]}" -DCMAKE_BUILD_TYPE=Debug
+#cmake --build buildLinux --config Debug -- -j${JOBS}
 
 rm -rf buildLinux
 cmake "${CMAKE_COMMON_ARGS[@]}" -DCMAKE_BUILD_TYPE=Release

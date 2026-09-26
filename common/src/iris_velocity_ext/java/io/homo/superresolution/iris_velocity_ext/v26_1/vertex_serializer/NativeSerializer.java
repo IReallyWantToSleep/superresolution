@@ -28,6 +28,13 @@ import java.lang.invoke.MethodHandle;
 
 public final class NativeSerializer {
     private static final MethodHandle SERIALIZER;
+    private static final ThreadLocal<MatrixScratch> MATRIX_SCRATCH =
+            ThreadLocal.withInitial(MatrixScratch::new);
+
+    private static final class MatrixScratch {
+        private final Arena arena = Arena.ofConfined();
+        private final MemorySegment segment = arena.allocate(ValueLayout.JAVA_FLOAT, 16);
+    }
 
     static {
         if (!NativeLibManager.LIB_SUPER_RESOLUTION.available) {
@@ -64,24 +71,28 @@ public final class NativeSerializer {
             short item,
             Matrix4x3fc velocityDeltaMatrix
     ) {
-        try (Arena arena = Arena.ofConfined()) {
+        try {
             MemorySegment mat = MemorySegment.NULL;
-            if (velocityDeltaMatrix != null){
-                mat = arena.allocate(ValueLayout.JAVA_FLOAT, 12);
-                mat.setAtIndex(ValueLayout.JAVA_FLOAT, 0, velocityDeltaMatrix.m00());
-                mat.setAtIndex(ValueLayout.JAVA_FLOAT, 1, velocityDeltaMatrix.m01());
-                mat.setAtIndex(ValueLayout.JAVA_FLOAT, 2, velocityDeltaMatrix.m02());
-                mat.setAtIndex(ValueLayout.JAVA_FLOAT, 3, velocityDeltaMatrix.m10());
-                mat.setAtIndex(ValueLayout.JAVA_FLOAT, 4, velocityDeltaMatrix.m11());
-                mat.setAtIndex(ValueLayout.JAVA_FLOAT, 5, velocityDeltaMatrix.m12());
-                mat.setAtIndex(ValueLayout.JAVA_FLOAT, 6, velocityDeltaMatrix.m20());
-                mat.setAtIndex(ValueLayout.JAVA_FLOAT, 7, velocityDeltaMatrix.m21());
-                mat.setAtIndex(ValueLayout.JAVA_FLOAT, 8, velocityDeltaMatrix.m22());
-                mat.setAtIndex(ValueLayout.JAVA_FLOAT, 9, velocityDeltaMatrix.m30());
-                mat.setAtIndex(ValueLayout.JAVA_FLOAT, 10, velocityDeltaMatrix.m31());
-                mat.setAtIndex(ValueLayout.JAVA_FLOAT, 11, velocityDeltaMatrix.m32());
+            if (velocityDeltaMatrix != null) {
+                final MemorySegment matrix = MATRIX_SCRATCH.get().segment;
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 0, velocityDeltaMatrix.m00());
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 1, velocityDeltaMatrix.m01());
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 2, velocityDeltaMatrix.m02());
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 3, 0.0f);
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 4, velocityDeltaMatrix.m10());
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 5, velocityDeltaMatrix.m11());
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 6, velocityDeltaMatrix.m12());
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 7, 0.0f);
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 8, velocityDeltaMatrix.m20());
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 9, velocityDeltaMatrix.m21());
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 10, velocityDeltaMatrix.m22());
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 11, 0.0f);
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 12, velocityDeltaMatrix.m30());
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 13, velocityDeltaMatrix.m31());
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 14, velocityDeltaMatrix.m32());
+                matrix.setAtIndex(ValueLayout.JAVA_FLOAT, 15, 0.0f);
+                mat = matrix;
             }
-
 
             SERIALIZER.invokeExact(
                     srcBase, dstBase, vertexCount,

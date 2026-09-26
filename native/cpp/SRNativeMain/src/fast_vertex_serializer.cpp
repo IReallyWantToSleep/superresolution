@@ -109,12 +109,57 @@ namespace NormI8 {
 } // namespace NormI8
 
 namespace detail {
+    struct VelocityMatrix {
+        __m128 c0;
+        __m128 c1;
+        __m128 c2;
+        __m128 c3;
+    };
+
+    SR_FORCEINLINE VelocityMatrix loadVelocityMatrix(const float *matrix) noexcept {
+        return {
+                _mm_loadu_ps(matrix),
+                _mm_loadu_ps(matrix + 4),
+                _mm_loadu_ps(matrix + 8),
+                _mm_loadu_ps(matrix + 12)
+        };
+    }
+
     SR_FORCEINLINE __m128 fma(__m128 a, __m128 b, __m128 c) noexcept {
         #if defined(__FMA__)
         return _mm_fmadd_ps(a, b, c);
         #else
         return _mm_add_ps(_mm_mul_ps(a, b), c);
         #endif
+    }
+
+    template<int Lane>
+    SR_FORCEINLINE __m128 transformComponent(
+            const VelocityMatrix &matrix,
+            __m128 px,
+            __m128 py,
+            __m128 pz
+    ) noexcept {
+        constexpr int SHUFFLE = Lane == 0 ? 0x00 : (Lane == 1 ? 0x55 : 0xAA);
+        const __m128 m0 = _mm_shuffle_ps(matrix.c0, matrix.c0, SHUFFLE);
+        const __m128 m1 = _mm_shuffle_ps(matrix.c1, matrix.c1, SHUFFLE);
+        const __m128 m2 = _mm_shuffle_ps(matrix.c2, matrix.c2, SHUFFLE);
+        const __m128 m3 = _mm_shuffle_ps(matrix.c3, matrix.c3, SHUFFLE);
+        return fma(m0, px, fma(m1, py, fma(m2, pz, m3)));
+    }
+
+    SR_FORCEINLINE void storeStrided(
+            std::uint8_t *dst,
+            std::int32_t offset,
+            __m128 values
+    ) noexcept {
+        _mm_store_ss(reinterpret_cast<float *>(dst + offset), values);
+        values = _mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(values), 4));
+        _mm_store_ss(reinterpret_cast<float *>(dst + offset + 68), values);
+        values = _mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(values), 4));
+        _mm_store_ss(reinterpret_cast<float *>(dst + offset + 136), values);
+        values = _mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(values), 4));
+        _mm_store_ss(reinterpret_cast<float *>(dst + offset + 204), values);
     }
 
     SR_FORCEINLINE __m128 cross3(__m128 a, __m128 b) noexcept {
@@ -176,8 +221,10 @@ namespace detail {
         return -1;
     }
 
-    __m128 bitangent = _mm_mul_ps(fVec, _mm_sub_ps(_mm_mul_ps(deltaU1V, edge2), _mm_mul_ps(deltaU2V, edge1)));
-    bitangent = _mm_mul_ps(bitangent, rsqrtAccurate(_mm_dp_ps(bitangent, bitangent, 0x7F)));
+    // Only the handedness is needed from the bitangent. Normalizing it does
+    // not change the sign of the dot product below.
+    const __m128 bitangent =
+            _mm_mul_ps(fVec, _mm_sub_ps(_mm_mul_ps(deltaU1V, edge2), _mm_mul_ps(deltaU2V, edge1)));
 
     const __m128 pbitangent = cross3(tangent, normal);
     const float dot = _mm_cvtss_f32(_mm_dp_ps(bitangent, pbitangent, 0x7F));
@@ -219,22 +266,9 @@ SR_EXPORT void _superFastModelToEntityVertexSerializer(
             | ((static_cast<std::uint64_t>(static_cast<std::uint16_t>(blockEntity)) & 0xFFFFull) << 16)
             | ((static_cast<std::uint64_t>(static_cast<std::uint16_t>(item)) & 0xFFFFull) << 32);
 
-    __m128 m00 = _mm_setzero_ps(), m10 = _mm_setzero_ps(), m20 = _mm_setzero_ps(), m30 = _mm_setzero_ps();
-    __m128 m01 = _mm_setzero_ps(), m11 = _mm_setzero_ps(), m21 = _mm_setzero_ps(), m31 = _mm_setzero_ps();
-    __m128 m02 = _mm_setzero_ps(), m12 = _mm_setzero_ps(), m22 = _mm_setzero_ps(), m32 = _mm_setzero_ps();
+    detail::VelocityMatrix matrix;
     if (shouldCalculateVelocity) {
-        m00 = _mm_set1_ps(deltaMatrix[0]);
-        m01 = _mm_set1_ps(deltaMatrix[1]);
-        m02 = _mm_set1_ps(deltaMatrix[2]);
-        m10 = _mm_set1_ps(deltaMatrix[3]);
-        m11 = _mm_set1_ps(deltaMatrix[4]);
-        m12 = _mm_set1_ps(deltaMatrix[5]);
-        m20 = _mm_set1_ps(deltaMatrix[6]);
-        m21 = _mm_set1_ps(deltaMatrix[7]);
-        m22 = _mm_set1_ps(deltaMatrix[8]);
-        m30 = _mm_set1_ps(deltaMatrix[9]);
-        m31 = _mm_set1_ps(deltaMatrix[10]);
-        m32 = _mm_set1_ps(deltaMatrix[11]);
+        matrix = detail::loadVelocityMatrix(deltaMatrix);
     }
 
     std::int64_t srcOff = 0;
@@ -253,6 +287,7 @@ SR_EXPORT void _superFastModelToEntityVertexSerializer(
         const __m128 pos0 = detail::loadVec3(v0);
         const __m128 pos1 = detail::loadVec3(v1);
         const __m128 pos2 = detail::loadVec3(v2);
+        const __m128 pos3 = shouldCalculateVelocity ? detail::loadVec3(v3) : _mm_setzero_ps();
         const __m128 uv0 = detail::loadVec2(v0 + 16);
         const __m128 uv1 = detail::loadVec2(v1 + 16);
         const __m128 uv2 = detail::loadVec2(v2 + 16);
@@ -260,49 +295,19 @@ SR_EXPORT void _superFastModelToEntityVertexSerializer(
         const std::int32_t tangent = computeTangentFast(
             nullptr, normal, pos0, uv0, pos1, uv1, pos2, uv2);
 
-        float u0, v0f, u1, v1f, u2, v2f, u3, v3f;
-        std::memcpy(&u0, v0 + 16, 4);
-        std::memcpy(&v0f, v0 + 20, 4);
-        std::memcpy(&u1, v1 + 16, 4);
-        std::memcpy(&v1f, v1 + 20, 4);
-        std::memcpy(&u2, v2 + 16, 4);
-        std::memcpy(&v2f, v2 + 20, 4);
-        std::memcpy(&u3, v3 + 16, 4);
-        std::memcpy(&v3f, v3 + 20, 4);
-        const float midU = (u0 + u1 + u2 + u3) * 0.25f;
-        const float midV = (v0f + v1f + v2f + v3f) * 0.25f;
-
-        float vx4[4] = {0.f, 0.f, 0.f, 0.f};
-        float vy4[4] = {0.f, 0.f, 0.f, 0.f};
-        float vz4[4] = {0.f, 0.f, 0.f, 0.f};
-
-        if (shouldCalculateVelocity) {
-            float v0x, v0y, v0z, v1x, v1y, v1z, v2x, v2y, v2z, v3x, v3y, v3z;
-            std::memcpy(&v0x, v0, 4);
-            std::memcpy(&v0y, v0 + 4, 4);
-            std::memcpy(&v0z, v0 + 8, 4);
-            std::memcpy(&v1x, v1, 4);
-            std::memcpy(&v1y, v1 + 4, 4);
-            std::memcpy(&v1z, v1 + 8, 4);
-            std::memcpy(&v2x, v2, 4);
-            std::memcpy(&v2y, v2 + 4, 4);
-            std::memcpy(&v2z, v2 + 8, 4);
-            std::memcpy(&v3x, v3, 4);
-            std::memcpy(&v3y, v3 + 4, 4);
-            std::memcpy(&v3z, v3 + 8, 4);
-
-            const __m128 px = _mm_setr_ps(v0x, v1x, v2x, v3x);
-            const __m128 py = _mm_setr_ps(v0y, v1y, v2y, v3y);
-            const __m128 pz = _mm_setr_ps(v0z, v1z, v2z, v3z);
-
-            const __m128 vxVec = detail::fma(m00, px, detail::fma(m10, py, detail::fma(m20, pz, m30)));
-            const __m128 vyVec = detail::fma(m01, px, detail::fma(m11, py, detail::fma(m21, pz, m31)));
-            const __m128 vzVec = detail::fma(m02, px, detail::fma(m12, py, detail::fma(m22, pz, m32)));
-
-            _mm_storeu_ps(vx4, vxVec);
-            _mm_storeu_ps(vy4, vyVec);
-            _mm_storeu_ps(vz4, vzVec);
-        }
+        const __m128 uv3 = detail::loadVec2(v3 + 16);
+        const float midU = (
+                _mm_cvtss_f32(uv0)
+                + _mm_cvtss_f32(uv1)
+                + _mm_cvtss_f32(uv2)
+                + _mm_cvtss_f32(uv3)
+        ) * 0.25f;
+        const float midV = (
+                _mm_cvtss_f32(_mm_shuffle_ps(uv0, uv0, _MM_SHUFFLE(1, 1, 1, 1)))
+                + _mm_cvtss_f32(_mm_shuffle_ps(uv1, uv1, _MM_SHUFFLE(1, 1, 1, 1)))
+                + _mm_cvtss_f32(_mm_shuffle_ps(uv2, uv2, _MM_SHUFFLE(1, 1, 1, 1)))
+                + _mm_cvtss_f32(_mm_shuffle_ps(uv3, uv3, _MM_SHUFFLE(1, 1, 1, 1)))
+        ) * 0.25f;
 
         std::int64_t ws = srcOff;
         std::int64_t wd = dstOff;
@@ -319,12 +324,38 @@ SR_EXPORT void _superFastModelToEntityVertexSerializer(
             std::memcpy(dst + wd + MIDCOORD + 4, &midV, 4);
             std::memcpy(dst + wd + TANGENT, &tangent, 4);
 
-            std::memcpy(dst + wd + VELOCITY, &vx4[i], 4);
-            std::memcpy(dst + wd + VELOCITY + 4, &vy4[i], 4);
-            std::memcpy(dst + wd + VELOCITY + 8, &vz4[i], 4);
+            if (!shouldCalculateVelocity) {
+                const __m128 zero = _mm_setzero_ps();
+                _mm_store_ss(reinterpret_cast<float *>(dst + wd + VELOCITY), zero);
+                _mm_store_ss(reinterpret_cast<float *>(dst + wd + VELOCITY + 4), zero);
+                _mm_store_ss(reinterpret_cast<float *>(dst + wd + VELOCITY + 8), zero);
+            }
 
             ws += SRC_STRIDE;
             wd += DST_STRIDE;
+        }
+
+        if (shouldCalculateVelocity) {
+            __m128 px = pos0;
+            __m128 py = pos1;
+            __m128 pz = pos2;
+            __m128 unused = pos3;
+            _MM_TRANSPOSE4_PS(px, py, pz, unused);
+            detail::storeStrided(
+                    dst + dstOff,
+                    VELOCITY,
+                    detail::transformComponent<0>(matrix, px, py, pz)
+            );
+            detail::storeStrided(
+                    dst + dstOff,
+                    VELOCITY + 4,
+                    detail::transformComponent<1>(matrix, px, py, pz)
+            );
+            detail::storeStrided(
+                    dst + dstOff,
+                    VELOCITY + 8,
+                    detail::transformComponent<2>(matrix, px, py, pz)
+            );
         }
 
         srcOff += SRC_STRIDE * 4;

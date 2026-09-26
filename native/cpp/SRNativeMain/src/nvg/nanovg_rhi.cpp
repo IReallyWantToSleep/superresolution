@@ -17,6 +17,7 @@
 //
 
 #include <cstdlib>
+#include <cmath>
 #include <cstring>
 #include "nvg/nanovg_rhi.h"
 

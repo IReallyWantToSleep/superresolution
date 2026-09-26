@@ -13,6 +13,7 @@ include_directories(
 
 if(CMAKE_SYSTEM_NAME MATCHES "Linux")
     add_definitions(-DON_LINUX64 -DFFX_GCC)
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -msse4.1")
 elseif(CMAKE_SYSTEM_NAME MATCHES "Windows")
     add_definitions(-DON_WIN64)
     add_definitions(-D_DISABLE_CONSTEXPR_MUTEX_CONSTRUCTOR)
