@@ -48,6 +48,7 @@ import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.gui.MaterialUI;
+import io.homo.superresolution.core.gui.core.backends.render.GuiScaleManager;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.ngx.NgxInitializer;
 import io.homo.superresolution.core.streamline.Streamline;
@@ -171,6 +172,7 @@ public final class SuperResolution implements Destroyable {
             return;
         }
         SuperResolutionConfig.SPEC.load();
+        GuiScaleManager.getInstance().setUserScale(SuperResolutionConfig.getUiScale());
         gameIsStarted = true;
         instance = new SuperResolution();
         SuperResolution.check();
