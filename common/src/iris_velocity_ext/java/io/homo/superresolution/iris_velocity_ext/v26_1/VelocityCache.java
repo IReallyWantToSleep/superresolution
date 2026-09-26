@@ -29,10 +29,17 @@ public final class VelocityCache {
     private final Map<BakedQuad, VelocityTransformState> quads = new Reference2ObjectOpenHashMap<>();
 
     public VelocityTransformState getOrCreatePartState(ModelPart part) {
-        return parts.computeIfAbsent(part, key -> new VelocityTransformState());
+        VelocityTransformState state = parts.get(part);
+        if (state == null) {
+            parts.put(part, state = new VelocityTransformState());
+        }
+        return state;
     }
-
     public VelocityTransformState getOrCreateQuadState(BakedQuad quad) {
-        return quads.computeIfAbsent(quad, key -> new VelocityTransformState());
+        VelocityTransformState state = quads.get(quad);
+        if (state == null) {
+            quads.put(quad, state = new VelocityTransformState());
+        }
+        return state;
     }
 }
