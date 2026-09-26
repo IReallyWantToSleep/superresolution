@@ -20,9 +20,12 @@ package io.homo.superresolution.common.gui.config.pages;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.impl.Text;
-import io.homo.superresolution.common.gui.options.*;
-import io.homo.superresolution.core.gui.*;
+import io.homo.superresolution.core.gui.MaterialScheme;
+import io.homo.superresolution.core.gui.MaterialTheme;
+import io.homo.superresolution.core.gui.MaterialUI;
+import io.homo.superresolution.core.gui.SchemeVariant;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
+import io.homo.superresolution.core.gui.core.backends.render.GuiScaleManager;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
 import io.homo.superresolution.core.utils.Color;
@@ -33,83 +36,107 @@ public final class AppearancePage implements ConfigPage {
     private AppearancePage() {
     }
 
-    @Override
-    public Frame create(ConfigPageContext context) {
-        return build(context);
-    }
-
     private static Frame build(ConfigPageContext context) {
         ScrollableFrame frame = context.createStandardScrollableFrame();
         ContainerWidget container = context.createStandardContainer();
         context.addFrameTitle(container, Text.translatable("superresolution.screen.config.section.appearance"));
-        OptionBuilder builder = context.createOptionBuilder(Text.translatable("superresolution.screen.config.category.appearance"));
-        builder.enumSelectorOption(
-                        Text.translatable("superresolution.screen.config.options.label.theme"),
-                        MaterialTheme.class,
-                        SuperResolutionConfig.getTheme())
-                .setDefaultValue(MaterialTheme.Light)
-                .setEnumNameProvider(t -> Text.translatable("superresolution.enum.theme." + t.name().toLowerCase()).getString())
-                .setSaveConsumer(value -> {
-                    SuperResolutionConfig.setTheme(value);
-                    MaterialUI.setScheme(MaterialScheme.from(value, SuperResolutionConfig.getThemeColor(),
-                            SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
-                    context.setMaterialScheme(MaterialUI.Scheme);
-                })
-                .build();
-        builder.colorSelectOption(
-                        Text.translatable("superresolution.screen.config.options.label.theme_color"),
-                        SuperResolutionConfig.getThemeColor())
-                .setDefaultValue(() -> Color.from("#78DC77"))
-                .setValueChangeListener(value -> {
-                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), value,
-                            SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
-                    context.setMaterialScheme(MaterialUI.Scheme);
-                })
-                .setSaveConsumer(value -> {
-                    SuperResolutionConfig.setThemeColor(value);
-                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), value,
-                            SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
-                    context.setMaterialScheme(MaterialUI.Scheme);
-                })
-                .build();
-        builder.enumSelectorOption(
-                        Text.translatable("superresolution.screen.config.options.label.theme_scheme_variant"),
-                        SchemeVariant.class,
-                        SuperResolutionConfig.getThemeSchemeVariant())
-                .setDefaultValue(SchemeVariant.CONTENT)
-                .setEnumNameProvider(v -> Text.translatable("superresolution.enum.schemevarinat." + v.name().toLowerCase()).getString())
-                .setSaveConsumer(value -> {
-                    SuperResolutionConfig.setThemeSchemeVariant(value);
-                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
-                            value, SuperResolutionConfig.getThemeContrastLevel()));
-                    context.setMaterialScheme(MaterialUI.Scheme);
-                })
-                .build();
-        builder.numberOption(
-                        Text.translatable("superresolution.screen.config.options.label.theme_contrast_level"),
-                        SuperResolutionConfig.getThemeContrastLevel(),
-                        1.0f,
-                        -1.0f)
-                .setStep(0.2)
-                .setValueFormater((value) -> String.format("%.0f", value.doubleValue() * 100) + "%")
-                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.theme_contrast_level"))
-                .setDefaultValue(() -> 0.0f)
-                .setValueChangeListener(value -> {
-                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
-                            SuperResolutionConfig.getThemeSchemeVariant(), value.doubleValue()));
-                    context.setMaterialScheme(MaterialUI.Scheme);
-                })
-                .setSaveConsumer(value -> {
-                    SuperResolutionConfig.setThemeContrastLevel(value.floatValue());
-                    MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
-                            SuperResolutionConfig.getThemeSchemeVariant(), value.doubleValue()));
-                    context.setMaterialScheme(MaterialUI.Scheme);
-                })
-                .build();
 
-        context.addOptionGroupToContainer(container, builder);
+        context.addLabeledOptionGroup(
+                container,
+                Text.translatable("superresolution.screen.config.category.appearance"),
+                builder -> {
+                    builder.enumSelectorOption(
+                                    Text.translatable("superresolution.screen.config.options.label.theme"),
+                                    MaterialTheme.class,
+                                    SuperResolutionConfig.getTheme())
+                            .setDefaultValue(MaterialTheme.Light)
+                            .setEnumNameProvider(t -> Text.translatable("superresolution.enum.theme." + t.name().toLowerCase()).getString())
+                            .setSaveConsumer(value -> {
+                                SuperResolutionConfig.setTheme(value);
+                                MaterialUI.setScheme(MaterialScheme.from(value, SuperResolutionConfig.getThemeColor(),
+                                        SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
+                                context.setMaterialScheme(MaterialUI.Scheme);
+                            })
+                            .build();
+                    builder.colorSelectOption(
+                                    Text.translatable("superresolution.screen.config.options.label.theme_color"),
+                                    SuperResolutionConfig.getThemeColor())
+                            .setDefaultValue(() -> Color.from("#78DC77"))
+                            .setValueChangeListener(value -> {
+                                MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), value,
+                                        SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
+                                context.setMaterialScheme(MaterialUI.Scheme);
+                            })
+                            .setSaveConsumer(value -> {
+                                SuperResolutionConfig.setThemeColor(value);
+                                MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), value,
+                                        SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
+                                context.setMaterialScheme(MaterialUI.Scheme);
+                            })
+                            .build();
+                    builder.enumSelectorOption(
+                                    Text.translatable("superresolution.screen.config.options.label.theme_scheme_variant"),
+                                    SchemeVariant.class,
+                                    SuperResolutionConfig.getThemeSchemeVariant())
+                            .setDefaultValue(SchemeVariant.CONTENT)
+                            .setEnumNameProvider(v -> Text.translatable("superresolution.enum.schemevarinat." + v.name().toLowerCase()).getString())
+                            .setSaveConsumer(value -> {
+                                SuperResolutionConfig.setThemeSchemeVariant(value);
+                                MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
+                                        value, SuperResolutionConfig.getThemeContrastLevel()));
+                                context.setMaterialScheme(MaterialUI.Scheme);
+                            })
+                            .build();
+                });
+        context.addLabeledOptionGroup(
+                container,
+                Text.translatable("superresolution.screen.config.category.accessibility"),
+                builder -> {
+                    builder.numberOption(
+                                    Text.translatable("superresolution.screen.config.options.label.ui_scale"),
+                                    SuperResolutionConfig.getUiScale(),
+                                    1.5f,
+                                    0.7f)
+                            .setStep(0.05f)
+                            .setValueFormater(value -> String.format("%.0f", value.doubleValue() * 100) + "%")
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.ui_scale"))
+                            .setDefaultValue(() -> 1.0f)
+                            .setSaveConsumer(value -> {
+                                GuiScaleManager.getInstance().setUserScale(value.floatValue());
+                                SuperResolutionConfig.setUiScale(value.floatValue());
+                            })
+                            .build();
+
+                    builder.numberOption(
+                                    Text.translatable("superresolution.screen.config.options.label.theme_contrast_level"),
+                                    SuperResolutionConfig.getThemeContrastLevel(),
+                                    1.0f,
+                                    -1.0f)
+                            .setStep(0.2)
+                            .setValueFormater(value -> String.format("%.0f", value.doubleValue() * 100) + "%")
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.theme_contrast_level"))
+                            .setDefaultValue(() -> 0.0f)
+                            .setValueChangeListener(value -> {
+                                MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
+                                        SuperResolutionConfig.getThemeSchemeVariant(), value.doubleValue()));
+                                context.setMaterialScheme(MaterialUI.Scheme);
+                            })
+                            .setSaveConsumer(value -> {
+                                SuperResolutionConfig.setThemeContrastLevel(value.floatValue());
+                                MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
+                                        SuperResolutionConfig.getThemeSchemeVariant(), value.doubleValue()));
+                                context.setMaterialScheme(MaterialUI.Scheme);
+                            })
+                            .build();
+                });
+
         context.finalizeFrame(frame, container);
         return frame;
+    }
+
+    @Override
+    public Frame create(ConfigPageContext context) {
+        return build(context);
     }
 
 }

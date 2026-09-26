@@ -95,6 +95,8 @@ public class SmoothDragScrollHandler implements IScrollHandler {
         targetOffset.add(delta);
         applyBoundsToTarget();
         restartAnimation();
+
+        notifyOffset();
     }
 
     @Override
@@ -133,6 +135,8 @@ public class SmoothDragScrollHandler implements IScrollHandler {
         animationStartOffset.set(offset);
         elapsedMillis = 0.0f;
         animating = false;
+
+        notifyOffset();
     }
 
     @Override
@@ -172,6 +176,7 @@ public class SmoothDragScrollHandler implements IScrollHandler {
         } else if (offsetChanged && !animating) {
             animationStartOffset.set(offset);
         }
+        notifyOffset();
     }
 
     private void restartAnimation() {
@@ -187,6 +192,7 @@ public class SmoothDragScrollHandler implements IScrollHandler {
         animationStartOffset.set(offset);
         elapsedMillis = 0.0f;
         animating = true;
+        notifyOffset();
     }
 
     private void applyBoundsToTarget() {

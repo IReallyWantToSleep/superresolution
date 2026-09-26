@@ -55,6 +55,7 @@ import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDebug;
 import io.homo.superresolution.core.gui.MaterialTheme;
 import io.homo.superresolution.core.gui.SchemeVariant;
+import io.homo.superresolution.core.gui.core.backends.render.GuiScaleManager;
 import io.homo.superresolution.core.utils.Color;
 import net.minecraft.client.Minecraft;
 import org.lwjgl.opengl.GL;
@@ -90,6 +91,7 @@ public class SuperResolutionConfig {
     public static final EnumValue<MaterialTheme> THEME;
     public static final EnumValue<SchemeVariant> THEME_SCHEME_VARIANT;
     public static final FloatValue THEME_CONTRAST_LEVEL;
+    public static final FloatValue UI_SCALE;
     public static final StringValue THEME_COLOR;
     public static final StringValue LOW_LATENCY_MODE;
     public static final EnumValue<NVIDIAReflexMode> NVIDIA_REFLEX_MODE;
@@ -207,6 +209,14 @@ public class SuperResolutionConfig {
                 "Contrast level for the interface theme (-1.0 to 1.0)",
                 value -> value >= -1.0f && value <= 1.0f
         );
+
+        UI_SCALE = builder.defineFloat(
+                "ui_scale",
+                () -> 1.0f,
+                "Super Resolution interface scale",
+                value -> value >= 0.5f && value <= 2.0f
+        );
+        UI_SCALE.onChange((oldValue, newValue) -> GuiScaleManager.getInstance().setUserScale(newValue));
 
         DEBUG_DUMP_SHADER = builder.defineBoolean(
                 "debug/debug_dump_shader",
@@ -751,6 +761,14 @@ public class SuperResolutionConfig {
 
     public static void setTheme(MaterialTheme value) {
         THEME.set(value);
+    }
+
+    public static float getUiScale() {
+        return UI_SCALE.get();
+    }
+
+    public static void setUiScale(float value) {
+        UI_SCALE.set(Math.max(0.5f, Math.min(2.0f, value)));
     }
 
     public static boolean isFlipVkGlInteropResourcesY() {

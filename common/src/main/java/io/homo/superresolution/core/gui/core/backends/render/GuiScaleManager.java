@@ -30,7 +30,7 @@ public class GuiScaleManager {
     private float dpiScale = 1.0f;
     private float userScale = 1.0f;
     private boolean autoScale = true;
-    private float minScale = 0.5f;
+    private float minScale = 0.3f;
     private float maxScale = 4.0f;
 
     private GuiScaleManager() {
@@ -67,7 +67,7 @@ public class GuiScaleManager {
     }
 
     public float dpiScale() {
-        return dpiScale * 2.0f;
+        return dpiScale * 1.5f * Math.max(this.userScale,1.0f);
     }
 
     public void setDpiScale(float dpi) {
