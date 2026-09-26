@@ -18,6 +18,7 @@
 
 #include <cstdlib>
 #include <cstring>
+#include <cmath>
 #include "nvg/nanovg_rhi.h"
 
 static int rhinvg_maxi(int a, int b) { return a > b ? a : b; }
