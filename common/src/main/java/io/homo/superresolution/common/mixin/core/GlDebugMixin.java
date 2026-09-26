@@ -33,9 +33,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 public class GlDebugMixin {
     private static Logger LOGGER = LoggerFactory.getLogger("OpenGLDebug");
 
-    @Inject(method = "printDebugLog", at = @At("TAIL"))
+    @Inject(method = "printDebugLog", at = @At("TAIL"), cancellable = true)
     private static void printGlErrorStackTrace(int source, int type, int id, int severity, int messageLength, long message, long userParam, CallbackInfo ci) {
-        if (!GlDebug.isEnabled() || SuperResolution.renderThread == null || severity == 33387) return;
+        if (!GlDebug.isEnabled() || SuperResolution.renderThread == null || severity == 33387) {
+            ci.cancel();
+            return;
+        }
         StackTraceElement[] elements = SuperResolution.renderThread.getStackTrace();
         LOGGER.error("OpenGL Error!");
 
