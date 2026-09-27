@@ -40,36 +40,64 @@ public final class VelocityCalc {
         }
         Matrix4fc modelView = CapturedRenderingState.INSTANCE.getGbufferModelView();
         if (modelView == null) {
-            state.delta.zero();
+            state.deltaRaw[0]  = 0.0F;
+            state.deltaRaw[1]  = 0.0F;
+            state.deltaRaw[2]  = 0.0F;
+            state.deltaRaw[3]  = 0.0F;
+            state.deltaRaw[4]  = 0.0F;
+            state.deltaRaw[5]  = 0.0F;
+            state.deltaRaw[6]  = 0.0F;
+            state.deltaRaw[7]  = 0.0F;
+            state.deltaRaw[8]  = 0.0F;
+            state.deltaRaw[9]  = 0.0F;
+            state.deltaRaw[10] = 0.0F;
+            state.deltaRaw[11] = 0.0F;
             return;
         }
         scratchInverse.set(currentPose).invert();
         if (!scratchInverse.isFinite()) {
-            state.delta.zero();
+            state.deltaRaw[0]  = 0.0F;
+            state.deltaRaw[1]  = 0.0F;
+            state.deltaRaw[2]  = 0.0F;
+            state.deltaRaw[3]  = 0.0F;
+            state.deltaRaw[4]  = 0.0F;
+            state.deltaRaw[5]  = 0.0F;
+            state.deltaRaw[6]  = 0.0F;
+            state.deltaRaw[7]  = 0.0F;
+            state.deltaRaw[8]  = 0.0F;
+            state.deltaRaw[9]  = 0.0F;
+            state.deltaRaw[10] = 0.0F;
+            state.deltaRaw[11] = 0.0F;
             state.valid = false;
             return;
         }
         if (!state.valid || frameId - state.lastFrameId > 3) {
-            state.delta.zero();
+            state.deltaRaw[0]  = 0.0F;
+            state.deltaRaw[1]  = 0.0F;
+            state.deltaRaw[2]  = 0.0F;
+            state.deltaRaw[3]  = 0.0F;
+            state.deltaRaw[4]  = 0.0F;
+            state.deltaRaw[5]  = 0.0F;
+            state.deltaRaw[6]  = 0.0F;
+            state.deltaRaw[7]  = 0.0F;
+            state.deltaRaw[8]  = 0.0F;
+            state.deltaRaw[9]  = 0.0F;
+            state.deltaRaw[10] = 0.0F;
+            state.deltaRaw[11] = 0.0F;
         } else {
             scratchPrev.set(state.prevModelToView).mul(scratchInverse);
-            state.delta.set(
-                    modelView.m00() - scratchPrev.m00(),
-                    modelView.m01() - scratchPrev.m01(),
-                    modelView.m02() - scratchPrev.m02(),
-
-                    modelView.m10() - scratchPrev.m10(),
-                    modelView.m11() - scratchPrev.m11(),
-                    modelView.m12() - scratchPrev.m12(),
-
-                    modelView.m20() - scratchPrev.m20(),
-                    modelView.m21() - scratchPrev.m21(),
-                    modelView.m22() - scratchPrev.m22(),
-
-                    modelView.m30() - scratchPrev.m30(),
-                    modelView.m31() - scratchPrev.m31(),
-                    modelView.m32() - scratchPrev.m32()
-            );
+            state.deltaRaw[0]  = modelView.m00() - scratchPrev.m00();
+            state.deltaRaw[1]  = modelView.m01() - scratchPrev.m01();
+            state.deltaRaw[2]  = modelView.m02() - scratchPrev.m02();
+            state.deltaRaw[3]  = modelView.m10() - scratchPrev.m10();
+            state.deltaRaw[4]  = modelView.m11() - scratchPrev.m11();
+            state.deltaRaw[5]  = modelView.m12() - scratchPrev.m12();
+            state.deltaRaw[6]  = modelView.m20() - scratchPrev.m20();
+            state.deltaRaw[7]  = modelView.m21() - scratchPrev.m21();
+            state.deltaRaw[8]  = modelView.m22() - scratchPrev.m22();
+            state.deltaRaw[9]  = modelView.m30() - scratchPrev.m30();
+            state.deltaRaw[10] = modelView.m31() - scratchPrev.m31();
+            state.deltaRaw[11] = modelView.m32() - scratchPrev.m32();
         }
         state.prevModelToView.set(modelView).mul(currentPose);
         state.valid = true;

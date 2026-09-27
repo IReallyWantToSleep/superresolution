@@ -37,6 +37,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.Arrays;
+
 @Mixin(BufferBuilder.class)
 public abstract class BufferBuilderVelocityMixin implements VelocityBufferBuilderAccess {
     @Shadow
@@ -49,13 +51,19 @@ public abstract class BufferBuilderVelocityMixin implements VelocityBufferBuilde
     protected abstract long beginElement(VertexFormatElement element);
 
     @Unique
-    private final Matrix4f irisExt$delta = new Matrix4f();
+    private final float[] irisExt$delta = new float[12];
     @Unique
     private boolean irisExt$hasDelta;
 
     @Override
-    public void irisExt$attachTransformDelta(Matrix4x3fc delta) {
-        irisExt$delta.set(delta);
+    public void irisExt$attachTransformDelta(float[] delta) {
+        System.arraycopy(
+                delta,
+                0,
+                irisExt$delta,
+                0,
+                12
+        );
         irisExt$hasDelta = true;
     }
 
@@ -82,9 +90,9 @@ public abstract class BufferBuilderVelocityMixin implements VelocityBufferBuilde
         float vy = 0.0f;
         float vz = 0.0f;
         if (irisExt$hasDelta) {
-            vx = irisExt$delta.m00() * x + irisExt$delta.m10() * y + irisExt$delta.m20() * z + irisExt$delta.m30();
-            vy = irisExt$delta.m01() * x + irisExt$delta.m11() * y + irisExt$delta.m21() * z + irisExt$delta.m31();
-            vz = irisExt$delta.m02() * x + irisExt$delta.m12() * y + irisExt$delta.m22() * z + irisExt$delta.m32();
+            vx = irisExt$delta[0] * x + irisExt$delta[3 + 0] * y + irisExt$delta[3 + 3 + 0] * z + irisExt$delta[3 + 3 + 3 + 0];
+            vy = irisExt$delta[1] * x + irisExt$delta[3 + 1] * y + irisExt$delta[3 + 3 + 1] * z + irisExt$delta[3 + 3 + 3 + 1];
+            vz = irisExt$delta[2] * x + irisExt$delta[3 + 2] * y + irisExt$delta[3 + 3 + 2] * z + irisExt$delta[3 + 3 + 3 + 2];
         }
         MemoryAccess.setFloat(ptr, vx);
         MemoryAccess.setFloat(ptr + 4, vy);

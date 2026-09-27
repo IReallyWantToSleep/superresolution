@@ -1,5 +1,7 @@
-// Special thanks to @Argon4W @InitAuther97 @竹若泠ねこ
-// Them help me 
+// Special thanks to @Argon4W @InitAuther97 @竹若泠ねこ @moyongxin
+// They provided a lot of help while I was writing this code.
+
+// Require AVX2+FMA
 
 #ifdef _WIN32
 #define SR_EXPORT extern "C" __declspec(dllexport)
@@ -17,80 +19,12 @@
 
 #include <cstring>
 #include <cstdint>
-#include <algorithm>
+#include <bit>
 #include <immintrin.h>
 
 namespace NormI8 {
-    inline constexpr int X_COMPONENT_OFFSET = 0;
-    inline constexpr int Y_COMPONENT_OFFSET = 8;
-    inline constexpr int Z_COMPONENT_OFFSET = 16;
-    inline constexpr int W_COMPONENT_OFFSET = 24;
     inline constexpr float COMPONENT_RANGE = 127.0f;
     inline constexpr float NORM = 0.007874016f; // 1/127
-
-    [[nodiscard]] constexpr std::int32_t pack(float x, float y, float z, float w) noexcept {
-        return (static_cast<std::int32_t>(x * 127.0f) & 255)
-               | ((static_cast<std::int32_t>(y * 127.0f) & 255) << 8)
-               | ((static_cast<std::int32_t>(z * 127.0f) & 255) << 16)
-               | ((static_cast<std::int32_t>(w * 127.0f) & 255) << 24);
-    }
-
-    [[nodiscard]] constexpr std::int32_t pack(const float *normal) noexcept {
-        return pack(normal[0], normal[1], normal[2], 0.0f);
-    }
-
-    [[nodiscard]] constexpr std::int32_t pack(const float *normal, float w) noexcept {
-        return pack(normal[0], normal[1], normal[2], w);
-    }
-
-    [[nodiscard]] constexpr std::int8_t toByte(float v) noexcept {
-        return static_cast<std::int8_t>(static_cast<std::int32_t>(v * 127.0f) & 255);
-    }
-
-    [[nodiscard]] constexpr std::int32_t packColor(float x, float y, float z, float w) noexcept {
-        return (static_cast<std::int32_t>(x * 127.0f) & 255)
-               | ((static_cast<std::int32_t>(y * 127.0f) & 255) << 8)
-               | ((static_cast<std::int32_t>(z * 127.0f) & 255) << 16)
-               | ((static_cast<std::int32_t>(w) & 255) << 24);
-    }
-
-    [[nodiscard]] constexpr std::int32_t encode(float comp) noexcept {
-        return static_cast<std::int32_t>(std::clamp(comp, -1.0f, 1.0f) * 127.0f) & 255;
-    }
-
-    [[nodiscard]] constexpr int signedByte(std::int32_t bits) noexcept {
-        const auto raw = static_cast<std::uint32_t>(bits) & 0xFFu;
-        return raw < 0x80u ? static_cast<int>(raw) : static_cast<int>(raw) - 256;
-    }
-
-    [[nodiscard]] constexpr float unpackX(std::int32_t norm) noexcept {
-        return static_cast<float>(signedByte(norm >> X_COMPONENT_OFFSET)) * NORM;
-    }
-
-    [[nodiscard]] constexpr float unpackY(std::int32_t norm) noexcept {
-        return static_cast<float>(signedByte(norm >> Y_COMPONENT_OFFSET)) * NORM;
-    }
-
-    [[nodiscard]] constexpr float unpackZ(std::int32_t norm) noexcept {
-        return static_cast<float>(signedByte(norm >> Z_COMPONENT_OFFSET)) * NORM;
-    }
-
-    [[nodiscard]] constexpr float unpackW(std::int32_t norm) noexcept {
-        return static_cast<float>(signedByte(norm >> W_COMPONENT_OFFSET)) * NORM;
-    }
-
-    inline void unpack(std::int32_t norm, float *out) noexcept {
-        out[0] = unpackX(norm);
-        out[1] = unpackY(norm);
-        out[2] = unpackZ(norm);
-    }
-
-    inline void unpack4(std::int32_t norm, float *out) noexcept {
-        out[0] = unpackX(norm);
-        out[1] = unpackY(norm);
-        out[2] = unpackZ(norm);
-        out[3] = unpackW(norm);
-    }
 
     namespace simd {
         [[nodiscard]] SR_FORCEINLINE __m128 unpack(std::int32_t norm) noexcept {
@@ -109,57 +43,12 @@ namespace NormI8 {
 } // namespace NormI8
 
 namespace detail {
-    struct VelocityMatrix {
-        __m128 c0;
-        __m128 c1;
-        __m128 c2;
-        __m128 c3;
-    };
-
-    SR_FORCEINLINE VelocityMatrix loadVelocityMatrix(const float *matrix) noexcept {
-        return {
-                _mm_loadu_ps(matrix),
-                _mm_loadu_ps(matrix + 4),
-                _mm_loadu_ps(matrix + 8),
-                _mm_loadu_ps(matrix + 12)
-        };
-    }
-
     SR_FORCEINLINE __m128 fma(__m128 a, __m128 b, __m128 c) noexcept {
         #if defined(__FMA__)
         return _mm_fmadd_ps(a, b, c);
         #else
         return _mm_add_ps(_mm_mul_ps(a, b), c);
         #endif
-    }
-
-    template<int Lane>
-    SR_FORCEINLINE __m128 transformComponent(
-            const VelocityMatrix &matrix,
-            __m128 px,
-            __m128 py,
-            __m128 pz
-    ) noexcept {
-        constexpr int SHUFFLE = Lane == 0 ? 0x00 : (Lane == 1 ? 0x55 : 0xAA);
-        const __m128 m0 = _mm_shuffle_ps(matrix.c0, matrix.c0, SHUFFLE);
-        const __m128 m1 = _mm_shuffle_ps(matrix.c1, matrix.c1, SHUFFLE);
-        const __m128 m2 = _mm_shuffle_ps(matrix.c2, matrix.c2, SHUFFLE);
-        const __m128 m3 = _mm_shuffle_ps(matrix.c3, matrix.c3, SHUFFLE);
-        return fma(m0, px, fma(m1, py, fma(m2, pz, m3)));
-    }
-
-    SR_FORCEINLINE void storeStrided(
-            std::uint8_t *dst,
-            std::int32_t offset,
-            __m128 values
-    ) noexcept {
-        _mm_store_ss(reinterpret_cast<float *>(dst + offset), values);
-        values = _mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(values), 4));
-        _mm_store_ss(reinterpret_cast<float *>(dst + offset + 68), values);
-        values = _mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(values), 4));
-        _mm_store_ss(reinterpret_cast<float *>(dst + offset + 136), values);
-        values = _mm_castsi128_ps(_mm_srli_si128(_mm_castps_si128(values), 4));
-        _mm_store_ss(reinterpret_cast<float *>(dst + offset + 204), values);
     }
 
     SR_FORCEINLINE __m128 cross3(__m128 a, __m128 b) noexcept {
@@ -169,16 +58,22 @@ namespace detail {
         return _mm_shuffle_ps(c, c, _MM_SHUFFLE(3, 0, 2, 1));
     }
 
-    SR_FORCEINLINE __m128 rsqrtAccurate(__m128 lengthSq) noexcept {
-        const __m128 isZero = _mm_cmpeq_ps(lengthSq, _mm_setzero_ps());
-        const __m128 safe = _mm_blendv_ps(lengthSq, _mm_set1_ps(1.0f), isZero);
-        const __m128 r = _mm_div_ps(_mm_set1_ps(1.0f), _mm_sqrt_ps(safe));
+    SR_FORCEINLINE __m128 rsqrtNR(__m128 x) noexcept {
+        __m128 r = _mm_rsqrt_ps(x);
+        const __m128 halfX = _mm_mul_ps(x, _mm_set1_ps(0.5f));
+        const __m128 threeHalf = _mm_set1_ps(1.5f);
+        r = _mm_mul_ps(r, _mm_sub_ps(threeHalf, _mm_mul_ps(halfX, _mm_mul_ps(r, r))));
+        const __m128 isZero = _mm_cmpeq_ps(x, _mm_setzero_ps());
         return _mm_blendv_ps(r, _mm_set1_ps(1.0f), isZero);
     }
 
-    SR_FORCEINLINE __m128 loadVec3(const std::uint8_t *p) noexcept {
-        const __m128 raw = _mm_loadu_ps(reinterpret_cast<const float *>(p));
-        return _mm_insert_ps(raw, _mm_setzero_ps(), 0x38); // zero lane 3
+    SR_FORCEINLINE __m256 rsqrtNR(__m256 x) noexcept {
+        __m256 r = _mm256_rsqrt_ps(x);
+        const __m256 halfX = _mm256_mul_ps(x, _mm256_set1_ps(0.5f));
+        const __m256 threeHalf = _mm256_set1_ps(1.5f);
+        r = _mm256_mul_ps(r, _mm256_sub_ps(threeHalf, _mm256_mul_ps(halfX, _mm256_mul_ps(r, r))));
+        const __m256 isZero = _mm256_cmp_ps(x, _mm256_setzero_ps(), _CMP_EQ_OQ);
+        return _mm256_blendv_ps(r, _mm256_set1_ps(1.0f), isZero);
     }
 
     SR_FORCEINLINE __m128 loadVec2(const std::uint8_t *p) noexcept {
@@ -186,57 +81,245 @@ namespace detail {
     }
 } // namespace detail
 
-[[nodiscard]] static SR_FORCEINLINE std::int32_t computeTangentFast(
-    float *output,
+[[nodiscard]] static SR_FORCEINLINE std::int32_t computeTangent(
     __m128 normal,
     __m128 pos0, __m128 uv0,
     __m128 pos1, __m128 uv1,
-    __m128 pos2, __m128 uv2
-) noexcept {
-    using namespace detail;
-
+    __m128 pos2, __m128 uv2) noexcept {
     const __m128 edge1 = _mm_sub_ps(pos1, pos0);
     const __m128 edge2 = _mm_sub_ps(pos2, pos0);
-    const __m128 deltaUV1 = _mm_sub_ps(uv1, uv0); // (dU1, dV1, 0, 0)
-    const __m128 deltaUV2 = _mm_sub_ps(uv2, uv0); // (dU2, dV2, 0, 0)
+    const __m128 duv1 = _mm_sub_ps(uv1, uv0); // (dU1, dV1, ?, ?)
+    const __m128 duv2 = _mm_sub_ps(uv2, uv0); // (dU2, dV2, ?, ?)
 
-    const float deltaU1 = _mm_cvtss_f32(deltaUV1);
-    const float deltaV1 = _mm_cvtss_f32(_mm_shuffle_ps(deltaUV1, deltaUV1, _MM_SHUFFLE(1, 1, 1, 1)));
-    const float deltaU2 = _mm_cvtss_f32(deltaUV2);
-    const float deltaV2 = _mm_cvtss_f32(_mm_shuffle_ps(deltaUV2, deltaUV2, _MM_SHUFFLE(1, 1, 1, 1)));
+    const __m128 duv2s = _mm_shuffle_ps(duv2, duv2, _MM_SHUFFLE(3, 2, 0, 1)); // (dV2, dU2, ...)
+    const __m128 duv1s = _mm_shuffle_ps(duv1, duv1, _MM_SHUFFLE(3, 2, 0, 1)); // (dV1, dU1, ...)
+    const __m128 fden = _mm_sub_ps(_mm_mul_ps(duv1, duv2s), _mm_mul_ps(duv1s, duv2));
+    __m128 f = _mm_div_ss(_mm_set_ss(1.0f), fden);
+    f = _mm_blendv_ps(f, _mm_set_ss(1.0f), _mm_cmpeq_ss(fden, _mm_setzero_ps()));
+    const __m128 fv = _mm_shuffle_ps(f, f, 0x00);
 
-    const float fdenom = deltaU1 * deltaV2 - deltaU2 * deltaV1;
-    const float f = (fdenom == 0.0f) ? 1.0f : 1.0f / fdenom;
+    const __m128 dV2 = _mm_shuffle_ps(duv2, duv2, _MM_SHUFFLE(1, 1, 1, 1));
+    const __m128 dV1 = _mm_shuffle_ps(duv1, duv1, _MM_SHUFFLE(1, 1, 1, 1));
+    const __m128 tgRaw = _mm_mul_ps(fv, _mm_sub_ps(_mm_mul_ps(dV2, edge1), _mm_mul_ps(dV1, edge2)));
+    __m128 tg = _mm_mul_ps(tgRaw, detail::rsqrtNR(_mm_dp_ps(tgRaw, tgRaw, 0x7F)));
 
-    const __m128 fVec = _mm_set1_ps(f);
-    const __m128 deltaV1V = _mm_set1_ps(deltaV1);
-    const __m128 deltaV2V = _mm_set1_ps(deltaV2);
-    const __m128 deltaU1V = _mm_set1_ps(deltaU1);
-    const __m128 deltaU2V = _mm_set1_ps(deltaU2);
-
-    __m128 tangent = _mm_mul_ps(fVec, _mm_sub_ps(_mm_mul_ps(deltaV2V, edge1), _mm_mul_ps(deltaV1V, edge2)));
-    tangent = _mm_mul_ps(tangent, rsqrtAccurate(_mm_dp_ps(tangent, tangent, 0x7F)));
-
-    if ((_mm_movemask_ps(_mm_cmpeq_ps(tangent, _mm_setzero_ps())) & 0x7) == 0x7) {
+    if ((_mm_movemask_ps(_mm_cmpeq_ps(tg, _mm_setzero_ps())) & 0x7) == 0x7)
         return -1;
+
+    const __m128 dU1 = _mm_shuffle_ps(duv1, duv1, _MM_SHUFFLE(0, 0, 0, 0));
+    const __m128 dU2 = _mm_shuffle_ps(duv2, duv2, _MM_SHUFFLE(0, 0, 0, 0));
+    const __m128 bt = _mm_mul_ps(fv, _mm_sub_ps(_mm_mul_ps(dU1, edge2), _mm_mul_ps(dU2, edge1)));
+
+    const __m128 pb = detail::cross3(tgRaw, normal);
+    const __m128 dt = _mm_dp_ps(bt, pb, 0x7F);
+    const __m128 wv = _mm_or_ps(
+        _mm_and_ps(_mm_cmplt_ps(dt, _mm_setzero_ps()),
+                   _mm_castsi128_ps(_mm_set1_epi32((std::int32_t) 0x80000000))),
+        _mm_set1_ps(1.0f));
+    return NormI8::simd::pack(_mm_blend_ps(tg, wv, 0x8));
+}
+
+static SR_FORCEINLINE void computeTangent2(
+    std::int32_t &tgOutA, std::int32_t &tgOutB,
+    std::int32_t nrmA, std::int32_t nrmB,
+    __m128 p0A, __m128 t0A, __m128 p1A, __m128 t1A, __m128 p2A, __m128 t2A,
+    __m128 p0B, __m128 t0B, __m128 p1B, __m128 t1B, __m128 p2B, __m128 t2B) noexcept {
+    const __m256 P0 = _mm256_insertf128_ps(_mm256_castps128_ps256(p0A), p0B, 1);
+    const __m256 P1 = _mm256_insertf128_ps(_mm256_castps128_ps256(p1A), p1B, 1);
+    const __m256 P2 = _mm256_insertf128_ps(_mm256_castps128_ps256(p2A), p2B, 1);
+    const __m256 T0 = _mm256_insertf128_ps(_mm256_castps128_ps256(t0A), t0B, 1);
+    const __m256 T1 = _mm256_insertf128_ps(_mm256_castps128_ps256(t1A), t1B, 1);
+    const __m256 T2 = _mm256_insertf128_ps(_mm256_castps128_ps256(t2A), t2B, 1);
+
+    const __m256 E1 = _mm256_sub_ps(P1, P0);
+    const __m256 E2 = _mm256_sub_ps(P2, P0);
+    const __m256 DU1 = _mm256_sub_ps(T1, T0);
+    const __m256 DU2 = _mm256_sub_ps(T2, T0);
+
+    const __m256 DU2s = _mm256_shuffle_ps(DU2, DU2, _MM_SHUFFLE(3, 2, 0, 1));
+    const __m256 DU1s = _mm256_shuffle_ps(DU1, DU1, _MM_SHUFFLE(3, 2, 0, 1));
+    const __m256 fden = _mm256_sub_ps(_mm256_mul_ps(DU1, DU2s), _mm256_mul_ps(DU1s, DU2));
+    __m256 f = _mm256_rcp_ps(fden);
+    f = _mm256_blendv_ps(f, _mm256_set1_ps(1.0f), _mm256_cmp_ps(fden, _mm256_setzero_ps(), _CMP_EQ_OQ));
+    const __m256 fv = _mm256_permutevar8x32_ps(f, _mm256_setr_epi32(0, 0, 0, 0, 4, 4, 4, 4));
+
+    const __m256i idxV = _mm256_setr_epi32(1, 1, 1, 1, 5, 5, 5, 5);
+    const __m256i idxU = _mm256_setr_epi32(0, 0, 0, 0, 4, 4, 4, 4);
+    const __m256 dV2 = _mm256_permutevar8x32_ps(DU2, idxV);
+    const __m256 dV1 = _mm256_permutevar8x32_ps(DU1, idxV);
+    const __m256 dU1 = _mm256_permutevar8x32_ps(DU1, idxU);
+    const __m256 dU2 = _mm256_permutevar8x32_ps(DU2, idxU);
+
+    const __m256 tgRaw = _mm256_mul_ps(fv, _mm256_sub_ps(_mm256_mul_ps(dV2, E1), _mm256_mul_ps(dV1, E2)));
+    __m256 tg = _mm256_mul_ps(tgRaw, detail::rsqrtNR(_mm256_dp_ps(tgRaw, tgRaw, 0x7F)));
+
+    const __m256 bt = _mm256_mul_ps(fv, _mm256_sub_ps(_mm256_mul_ps(dU1, E2), _mm256_mul_ps(dU2, E1)));
+
+    const __m128i nb = _mm_insert_epi32(_mm_cvtsi32_si128(nrmA), nrmB, 1);
+    const __m256 nrm = _mm256_mul_ps(
+        _mm256_cvtepi32_ps(_mm256_cvtepi8_epi32(nb)), _mm256_set1_ps(NormI8::NORM));
+
+    const __m256 a_yzx = _mm256_shuffle_ps(tgRaw, tgRaw, _MM_SHUFFLE(3, 0, 2, 1));
+    const __m256 b_yzx = _mm256_shuffle_ps(nrm, nrm, _MM_SHUFFLE(3, 0, 2, 1));
+    const __m256 cx = _mm256_sub_ps(_mm256_mul_ps(tgRaw, b_yzx), _mm256_mul_ps(a_yzx, nrm));
+    const __m256 pb = _mm256_shuffle_ps(cx, cx, _MM_SHUFFLE(3, 0, 2, 1));
+
+    const __m256 dt = _mm256_dp_ps(bt, pb, 0x7F);
+    const __m256 wv = _mm256_or_ps(
+        _mm256_and_ps(_mm256_cmp_ps(dt, _mm256_setzero_ps(), _CMP_LT_OQ),
+                      _mm256_castsi256_ps(_mm256_set1_epi32((std::int32_t) 0x80000000))),
+        _mm256_set1_ps(1.0f));
+    const __m256 tg4 = _mm256_blend_ps(tg, wv, 0x88);
+
+    const __m256i i32 = _mm256_cvttps_epi32(_mm256_mul_ps(tg4, _mm256_set1_ps(NormI8::COMPONENT_RANGE)));
+    const __m256i i16 = _mm256_packs_epi32(i32, i32);
+    const __m256i i8 = _mm256_packs_epi16(i16, i16);
+    std::int32_t tgA = _mm256_cvtsi256_si32(i8);
+    std::int32_t tgB = _mm256_extract_epi32(i8, 4);
+
+    const std::int32_t zm = _mm256_movemask_ps(_mm256_cmp_ps(tg, _mm256_setzero_ps(), _CMP_EQ_OQ));
+    if ((zm & 0x7) == 0x7) tgA = -1;
+    if (((zm >> 4) & 0x7) == 0x7) tgB = -1;
+    tgOutA = tgA;
+    tgOutB = tgB;
+}
+
+static SR_FORCEINLINE void pairTgMeta(const std::uint8_t *qa, const std::uint8_t *qb,
+                                      __m256 packedV2,
+                                      std::int32_t &tgA, std::int32_t &tgB,
+                                      __m128 &loMetaA, __m128 &loMetaB) noexcept {
+    constexpr int SS = 36;
+    const __m128 p0A = _mm_loadu_ps(reinterpret_cast<const float *>(qa));
+    const __m128 p1A = _mm_loadu_ps(reinterpret_cast<const float *>(qa + SS));
+    const __m128 p2A = _mm_loadu_ps(reinterpret_cast<const float *>(qa + 2 * SS));
+    const __m128 p0B = _mm_loadu_ps(reinterpret_cast<const float *>(qb));
+    const __m128 p1B = _mm_loadu_ps(reinterpret_cast<const float *>(qb + SS));
+    const __m128 p2B = _mm_loadu_ps(reinterpret_cast<const float *>(qb + 2 * SS));
+    const __m128 t0A = detail::loadVec2(qa + 16);
+    const __m128 t1A = detail::loadVec2(qa + SS + 16);
+    const __m128 t2A = detail::loadVec2(qa + 2 * SS + 16);
+    const __m128 t3A = detail::loadVec2(qa + 3 * SS + 16);
+    const __m128 t0B = detail::loadVec2(qb + 16);
+    const __m128 t1B = detail::loadVec2(qb + SS + 16);
+    const __m128 t2B = detail::loadVec2(qb + 2 * SS + 16);
+    const __m128 t3B = detail::loadVec2(qb + 3 * SS + 16);
+
+    std::int32_t nrmA, nrmB;
+    std::memcpy(&nrmA, qa + 32, 4);
+    std::memcpy(&nrmB, qb + 32, 4);
+    computeTangent2(tgA, tgB, nrmA, nrmB,
+                    p0A, t0A, p1A, t1A, p2A, t2A,
+                    p0B, t0B, p1B, t1B, p2B, t2B);
+
+    const __m256 T0 = _mm256_insertf128_ps(_mm256_castps128_ps256(t0A), t0B, 1);
+    const __m256 T1 = _mm256_insertf128_ps(_mm256_castps128_ps256(t1A), t1B, 1);
+    const __m256 T2 = _mm256_insertf128_ps(_mm256_castps128_ps256(t2A), t2B, 1);
+    const __m256 T3 = _mm256_insertf128_ps(_mm256_castps128_ps256(t3A), t3B, 1);
+    const __m256 midUV = _mm256_mul_ps(
+        _mm256_add_ps(_mm256_add_ps(_mm256_add_ps(T0, T1), T2), T3), _mm256_set1_ps(0.25f));
+    const __m256 loMeta2 = _mm256_shuffle_ps(packedV2, midUV, _MM_SHUFFLE(1, 0, 1, 0));
+    loMetaA = _mm256_castps256_ps128(loMeta2);
+    loMetaB = _mm256_extractf128_ps(loMeta2, 1);
+}
+
+template<bool VEL>
+static SR_FORCEINLINE void storeQuad(const std::uint8_t *qs, std::uint8_t *qd,
+                                     __m128 loMeta, std::int32_t tangent,
+                                     __m128 c0, __m128 c1, __m128 c2, __m128 tr) noexcept {
+    constexpr int SS = 36, DS = 68;
+    const __m128 tgV = _mm_castsi128_ps(_mm_set1_epi32(tangent));
+    const __m128 tailC = _mm_castsi128_ps(_mm_cvtsi32_si128(tangent)); // (tg, 0, 0, 0)
+
+    const std::uint8_t *ws = qs;
+    std::uint8_t *wd = qd;
+    #pragma GCC unroll 4
+    for (int i = 0; i < 4; ++i) {
+        const __m256i a = _mm256_loadu_si256(reinterpret_cast<const __m256i *>(ws));
+        _mm256_storeu_si256(reinterpret_cast<__m256i *>(wd), a);
+
+        std::int32_t nd;
+        std::memcpy(&nd, ws + 32, 4);
+        std::memcpy(wd + 32, &nd, 4);
+
+        __m128 tail;
+        if constexpr (VEL) {
+            const __m128 bx = _mm_broadcast_ss(reinterpret_cast<const float *>(ws + 0));
+            const __m128 by = _mm_broadcast_ss(reinterpret_cast<const float *>(ws + 4));
+            const __m128 bz = _mm_broadcast_ss(reinterpret_cast<const float *>(ws + 8));
+            const __m128 vel = detail::fma(bx, c0, detail::fma(by, c1, detail::fma(bz, c2, tr)));
+            tail = _mm_move_ss(_mm_shuffle_ps(vel, vel, _MM_SHUFFLE(2, 1, 0, 3)), tgV); // (tg, vx, vy, vz)
+        } else {
+            tail = tailC;
+        }
+        const __m256 mt = _mm256_insertf128_ps(_mm256_castps128_ps256(loMeta), tail, 1);
+        _mm256_storeu_ps(reinterpret_cast<float *>(wd + 36), mt);
+
+        ws += SS;
+        wd += DS;
+    }
+}
+
+template<bool VEL>
+static void serImpl(const std::uint8_t *src, std::uint8_t *dst, std::int32_t quadCount,
+                    std::uint64_t packedShorts, const float *deltaMatrix) noexcept {
+    constexpr int SS = 36, DS = 68;
+
+    const __m128 packedV = _mm_castsi128_ps(_mm_cvtsi64_si128((std::int64_t) packedShorts)); // [psLo, psHi, 0, 0]
+    const __m256 packedV2 = _mm256_insertf128_ps(_mm256_castps128_ps256(packedV), packedV, 1);
+
+    __m128 c0 = _mm_setzero_ps(), c1 = _mm_setzero_ps(), c2 = _mm_setzero_ps(), tr = _mm_setzero_ps();
+    if constexpr (VEL) {
+        const __m128 m3 = _mm_castsi128_ps(_mm_set_epi32(0, -1, -1, -1));
+        c0 = _mm_and_ps(_mm_loadu_ps(deltaMatrix + 0), m3); // (m00, m01, m02, 0)
+        c1 = _mm_and_ps(_mm_loadu_ps(deltaMatrix + 3), m3); // (m10, m11, m12, 0)
+        c2 = _mm_and_ps(_mm_loadu_ps(deltaMatrix + 6), m3); // (m20, m21, m22, 0)
+        tr = _mm_castpd_ps(_mm_load_sd(reinterpret_cast<const double *>(deltaMatrix + 9)));
+        tr = _mm_insert_ps(tr, _mm_load_ss(deltaMatrix + 11), 0x20); // (m30, m31, m32, 0)
     }
 
-    // Only the handedness is needed from the bitangent. Normalizing it does
-    // not change the sign of the dot product below.
-    const __m128 bitangent =
-            _mm_mul_ps(fVec, _mm_sub_ps(_mm_mul_ps(deltaU1V, edge2), _mm_mul_ps(deltaU2V, edge1)));
+    const std::uint8_t *sp = src;
+    std::uint8_t *dp = dst;
+    std::int32_t q = 0;
 
-    const __m128 pbitangent = cross3(tangent, normal);
-    const float dot = _mm_cvtss_f32(_mm_dp_ps(bitangent, pbitangent, 0x7F));
-    const float tangentW = (dot < 0.0f) ? -1.0f : 1.0f;
+    for (; q + 2 <= quadCount; q += 2) {
+        const std::uint8_t *qa = sp;
+        const std::uint8_t *qb = sp + 4 * SS;
 
-    const __m128 tangent4 = _mm_insert_ps(tangent, _mm_set_ss(tangentW), 0x30);
+        std::int32_t tgA, tgB;
+        __m128 loMetaA, loMetaB;
+        pairTgMeta(qa, qb, packedV2, tgA, tgB, loMetaA, loMetaB);
 
-    if (output != nullptr) {
-        _mm_storeu_ps(output, tangent4);
+        storeQuad<VEL>(qa, dp, loMetaA, tgA, c0, c1, c2, tr);
+        storeQuad<VEL>(qb, dp + 4 * DS, loMetaB, tgB, c0, c1, c2, tr);
+
+        sp += 2 * 4 * SS;
+        dp += 2 * 4 * DS;
     }
 
-    return NormI8::simd::pack(tangent4);
+    for (; q < quadCount; ++q) {
+        const std::uint8_t *v0 = sp;
+        const __m128 p0 = _mm_loadu_ps(reinterpret_cast<const float *>(v0));
+        const __m128 p1 = _mm_loadu_ps(reinterpret_cast<const float *>(v0 + SS));
+        const __m128 p2 = _mm_loadu_ps(reinterpret_cast<const float *>(v0 + 2 * SS));
+        const __m128 t0 = detail::loadVec2(v0 + 16);
+        const __m128 t1 = detail::loadVec2(v0 + SS + 16);
+        const __m128 t2 = detail::loadVec2(v0 + 2 * SS + 16);
+        const __m128 t3 = detail::loadVec2(v0 + 3 * SS + 16);
+
+        std::int32_t nrm;
+        std::memcpy(&nrm, v0 + 32, 4);
+
+        const std::int32_t tangent = computeTangent(NormI8::simd::unpack(nrm), p0, t0, p1, t1, p2, t2);
+
+        const __m128 midUV = _mm_mul_ps(
+            _mm_add_ps(_mm_add_ps(_mm_add_ps(t0, t1), t2), t3), _mm_set1_ps(0.25f));
+        const __m128 loMeta = _mm_shuffle_ps(packedV, midUV, _MM_SHUFFLE(1, 0, 1, 0));
+
+        storeQuad<VEL>(sp, dp, loMeta, tangent, c0, c1, c2, tr);
+
+        sp += 4 * SS;
+        dp += 4 * DS;
+    }
 }
 
 SR_EXPORT void _superFastModelToEntityVertexSerializer(
@@ -248,117 +331,19 @@ SR_EXPORT void _superFastModelToEntityVertexSerializer(
     std::int16_t item,
     const float *deltaMatrix
 ) noexcept {
-    constexpr int MIDCOORD = 44;
-    constexpr int TANGENT = 52;
-    constexpr int VELOCITY = 56;
-    constexpr int DST_STRIDE = 68;
-    constexpr int SRC_STRIDE = 36;
-
     const auto *src = reinterpret_cast<const std::uint8_t *>(srcBase);
     auto *dst = reinterpret_cast<std::uint8_t *>(dstBase);
     if (!src || !dst || vertexCount <= 0) return;
 
     const std::int32_t quadCount = vertexCount >> 2;
-    const bool shouldCalculateVelocity = (deltaMatrix != nullptr);
-
     const std::uint64_t packedShorts =
             (static_cast<std::uint64_t>(static_cast<std::uint16_t>(entity)) & 0xFFFFull)
             | ((static_cast<std::uint64_t>(static_cast<std::uint16_t>(blockEntity)) & 0xFFFFull) << 16)
             | ((static_cast<std::uint64_t>(static_cast<std::uint16_t>(item)) & 0xFFFFull) << 32);
 
-    detail::VelocityMatrix matrix;
-    if (shouldCalculateVelocity) {
-        matrix = detail::loadVelocityMatrix(deltaMatrix);
-    }
-
-    std::int64_t srcOff = 0;
-    std::int64_t dstOff = 0;
-
-    for (std::int32_t q = 0; q < quadCount; ++q) {
-        const std::uint8_t *v0 = src + srcOff;
-        const std::uint8_t *v1 = v0 + SRC_STRIDE;
-        const std::uint8_t *v2 = v1 + SRC_STRIDE;
-        const std::uint8_t *v3 = v2 + SRC_STRIDE;
-
-        std::int32_t packedNormal;
-        std::memcpy(&packedNormal, v0 + 32, 4);
-        const __m128 normal = NormI8::simd::unpack(packedNormal);
-
-        const __m128 pos0 = detail::loadVec3(v0);
-        const __m128 pos1 = detail::loadVec3(v1);
-        const __m128 pos2 = detail::loadVec3(v2);
-        const __m128 pos3 = shouldCalculateVelocity ? detail::loadVec3(v3) : _mm_setzero_ps();
-        const __m128 uv0 = detail::loadVec2(v0 + 16);
-        const __m128 uv1 = detail::loadVec2(v1 + 16);
-        const __m128 uv2 = detail::loadVec2(v2 + 16);
-
-        const std::int32_t tangent = computeTangentFast(
-            nullptr, normal, pos0, uv0, pos1, uv1, pos2, uv2);
-
-        const __m128 uv3 = detail::loadVec2(v3 + 16);
-        const float midU = (
-                _mm_cvtss_f32(uv0)
-                + _mm_cvtss_f32(uv1)
-                + _mm_cvtss_f32(uv2)
-                + _mm_cvtss_f32(uv3)
-        ) * 0.25f;
-        const float midV = (
-                _mm_cvtss_f32(_mm_shuffle_ps(uv0, uv0, _MM_SHUFFLE(1, 1, 1, 1)))
-                + _mm_cvtss_f32(_mm_shuffle_ps(uv1, uv1, _MM_SHUFFLE(1, 1, 1, 1)))
-                + _mm_cvtss_f32(_mm_shuffle_ps(uv2, uv2, _MM_SHUFFLE(1, 1, 1, 1)))
-                + _mm_cvtss_f32(_mm_shuffle_ps(uv3, uv3, _MM_SHUFFLE(1, 1, 1, 1)))
-        ) * 0.25f;
-
-        std::int64_t ws = srcOff;
-        std::int64_t wd = dstOff;
-
-        for (int i = 0; i < 4; ++i) {
-            _mm_storeu_si128(reinterpret_cast<__m128i *>(dst + wd),
-                             _mm_loadu_si128(reinterpret_cast<const __m128i *>(src + ws)));
-            _mm_storeu_si128(reinterpret_cast<__m128i *>(dst + wd + 16),
-                             _mm_loadu_si128(reinterpret_cast<const __m128i *>(src + ws + 16)));
-            std::memcpy(dst + wd + 32, src + ws + 32, 4);
-
-            std::memcpy(dst + wd + 36, &packedShorts, 8);
-            std::memcpy(dst + wd + MIDCOORD, &midU, 4);
-            std::memcpy(dst + wd + MIDCOORD + 4, &midV, 4);
-            std::memcpy(dst + wd + TANGENT, &tangent, 4);
-
-            if (!shouldCalculateVelocity) {
-                const __m128 zero = _mm_setzero_ps();
-                _mm_store_ss(reinterpret_cast<float *>(dst + wd + VELOCITY), zero);
-                _mm_store_ss(reinterpret_cast<float *>(dst + wd + VELOCITY + 4), zero);
-                _mm_store_ss(reinterpret_cast<float *>(dst + wd + VELOCITY + 8), zero);
-            }
-
-            ws += SRC_STRIDE;
-            wd += DST_STRIDE;
-        }
-
-        if (shouldCalculateVelocity) {
-            __m128 px = pos0;
-            __m128 py = pos1;
-            __m128 pz = pos2;
-            __m128 unused = pos3;
-            _MM_TRANSPOSE4_PS(px, py, pz, unused);
-            detail::storeStrided(
-                    dst + dstOff,
-                    VELOCITY,
-                    detail::transformComponent<0>(matrix, px, py, pz)
-            );
-            detail::storeStrided(
-                    dst + dstOff,
-                    VELOCITY + 4,
-                    detail::transformComponent<1>(matrix, px, py, pz)
-            );
-            detail::storeStrided(
-                    dst + dstOff,
-                    VELOCITY + 8,
-                    detail::transformComponent<2>(matrix, px, py, pz)
-            );
-        }
-
-        srcOff += SRC_STRIDE * 4;
-        dstOff += DST_STRIDE * 4;
+    if (deltaMatrix) {
+        serImpl<true>(src, dst, quadCount, packedShorts, deltaMatrix);
+    } else {
+        serImpl<false>(src, dst, quadCount, packedShorts, deltaMatrix);
     }
 }

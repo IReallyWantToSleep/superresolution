@@ -66,6 +66,7 @@ public final class ExperimentalPage implements ConfigPage {
                         .build()
         );
 
+        #if MC_VER >= MC_26_1 && MC_VER < MC_26_2
         context.addLabeledOptionGroup(
                 container,
                 Text.translatable("superresolution.screen.config.group.experimental.iris_extension"),
@@ -78,6 +79,7 @@ public final class ExperimentalPage implements ConfigPage {
                         .setSaveConsumer(SuperResolutionConfig::setEnableIrisExtension)
                         .build()
         );
+        #endif
 
         context.finalizeFrame(frame, container);
         return frame;

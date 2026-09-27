@@ -60,7 +60,7 @@ public abstract class ModelPartTransformVelocityMixin {
         }
         VelocityTransformState state = cache.getOrCreatePartState((ModelPart) (Object) this);
         VelocityCalc.computeTransformDelta(state, pose.pose());
-        access.irisExt$attachTransformDelta(state.delta);
+        access.irisExt$attachTransformDelta(state.deltaRaw);
         VelocityRenderContext.setTransformState(state);
     }
 

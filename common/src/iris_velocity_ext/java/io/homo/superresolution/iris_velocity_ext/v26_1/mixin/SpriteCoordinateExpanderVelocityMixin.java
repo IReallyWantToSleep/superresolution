@@ -34,7 +34,7 @@ public abstract class SpriteCoordinateExpanderVelocityMixin implements VelocityB
     private VertexConsumer delegate;
 
     @Override
-    public void irisExt$attachTransformDelta(Matrix4x3fc delta) {
+    public void irisExt$attachTransformDelta(float[] delta) {
         if (this.delegate instanceof VelocityBufferBuilderAccess access) {
             access.irisExt$attachTransformDelta(delta);
         }

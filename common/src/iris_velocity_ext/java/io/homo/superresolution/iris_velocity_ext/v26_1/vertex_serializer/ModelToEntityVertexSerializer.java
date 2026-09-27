@@ -31,13 +31,13 @@ public class ModelToEntityVertexSerializer implements VertexSerializer {
 
     public void serialize(long srcBase, long dstBase, int vertexCount) {
 
-        final short entity      = (short) CapturedRenderingState.INSTANCE.getCurrentRenderedEntity();
+        final short entity = (short) CapturedRenderingState.INSTANCE.getCurrentRenderedEntity();
         final short blockEntity = (short) CapturedRenderingState.INSTANCE.getCurrentRenderedBlockEntity();
-        final short item        = (short) CapturedRenderingState.INSTANCE.getCurrentRenderedItem();
+        final short item = (short) CapturedRenderingState.INSTANCE.getCurrentRenderedItem();
 
-        final Matrix4x3fc delta =
-                VelocityRenderContext.currentTransformState != null
-                        ? VelocityRenderContext.currentTransformState.delta
+        final float[] delta =
+                VelocityRenderContext.currentTransformState != null && VelocityRenderContext.currentTransformState.valid
+                        ? VelocityRenderContext.currentTransformState.deltaRaw
                         : null;
 
         NativeSerializer.callNativeSerializer(

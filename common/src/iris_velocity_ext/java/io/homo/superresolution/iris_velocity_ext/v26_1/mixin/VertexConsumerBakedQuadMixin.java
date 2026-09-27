@@ -44,7 +44,7 @@ public interface VertexConsumerBakedQuadMixin {
         }
         VelocityTransformState state = VelocityRenderContext.currentCache.getOrCreateQuadState(quad);
         VelocityCalc.computeTransformDelta(state, pose.pose());
-        access.irisExt$attachTransformDelta(state.delta);
+        access.irisExt$attachTransformDelta(state.deltaRaw);
     }
 
     @Inject(method = "putBakedQuad", at = @At("RETURN"))
@@ -60,7 +60,7 @@ public interface VertexConsumerBakedQuadMixin {
         }
         VelocityTransformState state = VelocityRenderContext.currentCache.getOrCreateQuadState(quad);
         VelocityCalc.computeOffsetDelta(state, x, y, z);
-        access.irisExt$attachTransformDelta(state.delta);
+        access.irisExt$attachTransformDelta(state.deltaRaw);
     }
 
     @Inject(method = "putBlockBakedQuad", at = @At("RETURN"))

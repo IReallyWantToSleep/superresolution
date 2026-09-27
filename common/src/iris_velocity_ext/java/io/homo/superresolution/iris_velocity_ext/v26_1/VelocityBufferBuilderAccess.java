@@ -22,7 +22,7 @@ import org.joml.Matrix4fc;
 import org.joml.Matrix4x3fc;
 
 public interface VelocityBufferBuilderAccess {
-    void irisExt$attachTransformDelta(Matrix4x3fc delta);
+    void irisExt$attachTransformDelta(float[] delta);
 
     void irisExt$detachStates();
 
