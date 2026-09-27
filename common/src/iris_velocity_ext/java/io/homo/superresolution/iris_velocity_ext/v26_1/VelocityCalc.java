@@ -23,6 +23,7 @@ import org.joml.Matrix4f;
 import org.joml.Matrix4fc;
 import org.joml.Matrix4x3f;
 
+import java.lang.foreign.ValueLayout;
 
 public final class VelocityCalc {
     public static int frameId;
@@ -40,64 +41,31 @@ public final class VelocityCalc {
         }
         Matrix4fc modelView = CapturedRenderingState.INSTANCE.getGbufferModelView();
         if (modelView == null) {
-            state.deltaRaw[0]  = 0.0F;
-            state.deltaRaw[1]  = 0.0F;
-            state.deltaRaw[2]  = 0.0F;
-            state.deltaRaw[3]  = 0.0F;
-            state.deltaRaw[4]  = 0.0F;
-            state.deltaRaw[5]  = 0.0F;
-            state.deltaRaw[6]  = 0.0F;
-            state.deltaRaw[7]  = 0.0F;
-            state.deltaRaw[8]  = 0.0F;
-            state.deltaRaw[9]  = 0.0F;
-            state.deltaRaw[10] = 0.0F;
-            state.deltaRaw[11] = 0.0F;
+            state.deltaRaw.fill((byte) 0);
             return;
         }
         scratchInverse.set(currentPose).invert();
         if (!scratchInverse.isFinite()) {
-            state.deltaRaw[0]  = 0.0F;
-            state.deltaRaw[1]  = 0.0F;
-            state.deltaRaw[2]  = 0.0F;
-            state.deltaRaw[3]  = 0.0F;
-            state.deltaRaw[4]  = 0.0F;
-            state.deltaRaw[5]  = 0.0F;
-            state.deltaRaw[6]  = 0.0F;
-            state.deltaRaw[7]  = 0.0F;
-            state.deltaRaw[8]  = 0.0F;
-            state.deltaRaw[9]  = 0.0F;
-            state.deltaRaw[10] = 0.0F;
-            state.deltaRaw[11] = 0.0F;
+            state.deltaRaw.fill((byte) 0);
             state.valid = false;
             return;
         }
         if (!state.valid || frameId - state.lastFrameId > 3) {
-            state.deltaRaw[0]  = 0.0F;
-            state.deltaRaw[1]  = 0.0F;
-            state.deltaRaw[2]  = 0.0F;
-            state.deltaRaw[3]  = 0.0F;
-            state.deltaRaw[4]  = 0.0F;
-            state.deltaRaw[5]  = 0.0F;
-            state.deltaRaw[6]  = 0.0F;
-            state.deltaRaw[7]  = 0.0F;
-            state.deltaRaw[8]  = 0.0F;
-            state.deltaRaw[9]  = 0.0F;
-            state.deltaRaw[10] = 0.0F;
-            state.deltaRaw[11] = 0.0F;
+            state.deltaRaw.fill((byte) 0);
         } else {
             scratchPrev.set(state.prevModelToView).mul(scratchInverse);
-            state.deltaRaw[0]  = modelView.m00() - scratchPrev.m00();
-            state.deltaRaw[1]  = modelView.m01() - scratchPrev.m01();
-            state.deltaRaw[2]  = modelView.m02() - scratchPrev.m02();
-            state.deltaRaw[3]  = modelView.m10() - scratchPrev.m10();
-            state.deltaRaw[4]  = modelView.m11() - scratchPrev.m11();
-            state.deltaRaw[5]  = modelView.m12() - scratchPrev.m12();
-            state.deltaRaw[6]  = modelView.m20() - scratchPrev.m20();
-            state.deltaRaw[7]  = modelView.m21() - scratchPrev.m21();
-            state.deltaRaw[8]  = modelView.m22() - scratchPrev.m22();
-            state.deltaRaw[9]  = modelView.m30() - scratchPrev.m30();
-            state.deltaRaw[10] = modelView.m31() - scratchPrev.m31();
-            state.deltaRaw[11] = modelView.m32() - scratchPrev.m32();
+            state.deltaRaw.setAtIndex(ValueLayout.JAVA_FLOAT, 0, modelView.m00() - scratchPrev.m00());
+            state.deltaRaw.setAtIndex(ValueLayout.JAVA_FLOAT, 1, modelView.m01() - scratchPrev.m01());
+            state.deltaRaw.setAtIndex(ValueLayout.JAVA_FLOAT, 2, modelView.m02() - scratchPrev.m02());
+            state.deltaRaw.setAtIndex(ValueLayout.JAVA_FLOAT, 3, modelView.m10() - scratchPrev.m10());
+            state.deltaRaw.setAtIndex(ValueLayout.JAVA_FLOAT, 4, modelView.m11() - scratchPrev.m11());
+            state.deltaRaw.setAtIndex(ValueLayout.JAVA_FLOAT, 5, modelView.m12() - scratchPrev.m12());
+            state.deltaRaw.setAtIndex(ValueLayout.JAVA_FLOAT, 6, modelView.m20() - scratchPrev.m20());
+            state.deltaRaw.setAtIndex(ValueLayout.JAVA_FLOAT, 7, modelView.m21() - scratchPrev.m21());
+            state.deltaRaw.setAtIndex(ValueLayout.JAVA_FLOAT, 8, modelView.m22() - scratchPrev.m22());
+            state.deltaRaw.setAtIndex(ValueLayout.JAVA_FLOAT, 9, modelView.m30() - scratchPrev.m30());
+            state.deltaRaw.setAtIndex(ValueLayout.JAVA_FLOAT, 10, modelView.m31() - scratchPrev.m31());
+            state.deltaRaw.setAtIndex(ValueLayout.JAVA_FLOAT, 11, modelView.m32() - scratchPrev.m32());
         }
         state.prevModelToView.set(modelView).mul(currentPose);
         state.valid = true;

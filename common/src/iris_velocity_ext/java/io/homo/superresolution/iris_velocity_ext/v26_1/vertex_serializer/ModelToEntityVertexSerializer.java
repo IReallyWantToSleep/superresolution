@@ -21,7 +21,8 @@ package io.homo.superresolution.iris_velocity_ext.v26_1.vertex_serializer;
 import io.homo.superresolution.iris_velocity_ext.v26_1.VelocityRenderContext;
 import net.caffeinemc.mods.sodium.api.vertex.serializer.VertexSerializer;
 import net.irisshaders.iris.uniforms.CapturedRenderingState;
-import org.joml.Matrix4x3fc;
+
+import java.lang.foreign.MemorySegment;
 
 public class ModelToEntityVertexSerializer implements VertexSerializer {
 
@@ -35,7 +36,7 @@ public class ModelToEntityVertexSerializer implements VertexSerializer {
         final short blockEntity = (short) CapturedRenderingState.INSTANCE.getCurrentRenderedBlockEntity();
         final short item = (short) CapturedRenderingState.INSTANCE.getCurrentRenderedItem();
 
-        final float[] delta =
+        final MemorySegment delta =
                 VelocityRenderContext.currentTransformState != null && VelocityRenderContext.currentTransformState.valid
                         ? VelocityRenderContext.currentTransformState.deltaRaw
                         : null;

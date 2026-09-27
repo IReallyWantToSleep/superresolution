@@ -21,8 +21,10 @@ package io.homo.superresolution.iris_velocity_ext.v26_1;
 import org.joml.Matrix4fc;
 import org.joml.Matrix4x3fc;
 
+import java.lang.foreign.MemorySegment;
+
 public interface VelocityBufferBuilderAccess {
-    void irisExt$attachTransformDelta(float[] delta);
+    void irisExt$attachTransformDelta(MemorySegment delta);
 
     void irisExt$detachStates();
 

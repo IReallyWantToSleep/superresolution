@@ -27,6 +27,8 @@ import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 
+import java.lang.foreign.MemorySegment;
+
 @Mixin(SpriteCoordinateExpander.class)
 public abstract class SpriteCoordinateExpanderVelocityMixin implements VelocityBufferBuilderAccess {
     @Shadow
@@ -34,7 +36,7 @@ public abstract class SpriteCoordinateExpanderVelocityMixin implements VelocityB
     private VertexConsumer delegate;
 
     @Override
-    public void irisExt$attachTransformDelta(float[] delta) {
+    public void irisExt$attachTransformDelta(MemorySegment delta) {
         if (this.delegate instanceof VelocityBufferBuilderAccess access) {
             access.irisExt$attachTransformDelta(delta);
         }

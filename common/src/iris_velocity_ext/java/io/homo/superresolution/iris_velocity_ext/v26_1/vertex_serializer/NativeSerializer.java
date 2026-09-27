@@ -25,13 +25,6 @@ import java.lang.invoke.MethodHandle;
 
 public final class NativeSerializer {
     private static final MethodHandle SERIALIZER;
-    private static final ThreadLocal<MatrixScratch> MATRIX_SCRATCH =
-            ThreadLocal.withInitial(MatrixScratch::new);
-
-    private static final class MatrixScratch {
-        private final Arena arena = Arena.ofConfined();
-        private final MemorySegment segment = arena.allocate(ValueLayout.JAVA_FLOAT, 12);
-    }
 
     static {
         if (!NativeLibManager.LIB_SUPER_RESOLUTION.available) {
@@ -70,26 +63,13 @@ public final class NativeSerializer {
             short entity,
             short blockEntity,
             short item,
-            float[] velocityDeltaMatrix
+            MemorySegment velocityDeltaMatrix
     ) {
         try {
-            MemorySegment mat = MemorySegment.NULL;
-            if (velocityDeltaMatrix != null) {
-                mat = MATRIX_SCRATCH.get().segment;
-                MemorySegment.copy(
-                        velocityDeltaMatrix,
-                        0,
-                        mat,
-                        ValueLayout.JAVA_FLOAT,
-                        0,
-                        12
-                );
-            }
-
             SERIALIZER.invokeExact(
                     srcBase, dstBase, vertexCount,
                     entity, blockEntity, item,
-                    mat
+                    velocityDeltaMatrix == null ? MemorySegment.NULL : velocityDeltaMatrix
             );
         } catch (Throwable t) {
             throw new RuntimeException("Native serializer call failed", t);

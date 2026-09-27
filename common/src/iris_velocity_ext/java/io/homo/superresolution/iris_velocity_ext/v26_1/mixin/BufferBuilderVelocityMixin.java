@@ -37,7 +37,8 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-import java.util.Arrays;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
 
 @Mixin(BufferBuilder.class)
 public abstract class BufferBuilderVelocityMixin implements VelocityBufferBuilderAccess {
@@ -56,9 +57,10 @@ public abstract class BufferBuilderVelocityMixin implements VelocityBufferBuilde
     private boolean irisExt$hasDelta;
 
     @Override
-    public void irisExt$attachTransformDelta(float[] delta) {
-        System.arraycopy(
+    public void irisExt$attachTransformDelta(MemorySegment delta) {
+        MemorySegment.copy(
                 delta,
+                ValueLayout.JAVA_FLOAT,
                 0,
                 irisExt$delta,
                 0,

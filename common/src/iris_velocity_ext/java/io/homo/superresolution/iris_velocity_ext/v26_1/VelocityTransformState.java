@@ -20,9 +20,20 @@ package io.homo.superresolution.iris_velocity_ext.v26_1;
 
 import org.joml.Matrix4f;
 
+import java.lang.foreign.Arena;
+import java.lang.foreign.MemorySegment;
+import java.lang.foreign.ValueLayout;
+
 public final class VelocityTransformState {
+    private static final ThreadLocal<MatrixScratch> MATRIX_SCRATCH =
+            ThreadLocal.withInitial(MatrixScratch::new);
+
+    private static final class MatrixScratch {
+        private final Arena arena = Arena.ofConfined();
+    }
+
     public final Matrix4f prevModelToView = new Matrix4f();
-    public final float[] deltaRaw = new float[12];
+    public final MemorySegment deltaRaw = MATRIX_SCRATCH.get().arena.allocate(ValueLayout.JAVA_FLOAT, 12);
     public int lastFrameId = -1;
     public boolean valid;
 }
