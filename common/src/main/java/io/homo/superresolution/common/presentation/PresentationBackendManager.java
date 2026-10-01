@@ -50,6 +50,14 @@ public final class PresentationBackendManager {
         return backend().isInitialized();
     }
 
+    public static void beginRealFrameRendering() {
+        backend().beginRealFrameRendering();
+    }
+
+    public static void endRealFrameRendering() {
+        backend().endRealFrameRendering();
+    }
+
     public static void endMinecraftFrame() {
         backend().endMinecraftFrame();
     }

@@ -44,7 +44,11 @@ public final class FramePacingTiming {
     }
 
     public long producerTimeNanos() {
-        return clock.getAsLong() - excludedWaitNanos.get();
+        return producerTimeNanosAt(clock.getAsLong());
+    }
+
+    long producerTimeNanosAt(long timestampNanos) {
+        return timestampNanos - excludedWaitNanos.get();
     }
 
     public void recordExcludedWait(long waitNanos) {

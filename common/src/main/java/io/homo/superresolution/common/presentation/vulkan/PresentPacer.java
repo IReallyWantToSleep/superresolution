@@ -18,28 +18,110 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.locks.LockSupport;
 import java.util.function.LongConsumer;
 
-/** Pacing state used directly by the application-managed present worker. */
+/** Shared phase timing and present-deadline state for application-managed presentation. */
 final class PresentPacer {
     private static final long MAX_PRESENT_INTERVAL_NANOS = 100_000_000L;
     private static final long FINAL_SPIN_WINDOW_NANOS = 200_000L;
 
     private final AsyncFramePresenter.NanoClock clock;
+    private final FramePacingTiming framePacingTiming;
     private final LongConsumer deadlineWaiter;
+    private final ThreadLocal<PhaseStarts> phaseStarts =
+            ThreadLocal.withInitial(PhaseStarts::new);
+    private final AtomicLongArray lastPhaseDurations = new AtomicLongArray(Phase.values().length);
+    private final AtomicLong realFrameProducerTimeNanos = new AtomicLong();
+    private final AtomicBoolean hasRealFrameProducerTime = new AtomicBoolean();
     private long nextDeadlineNanos;
     private boolean previousPacingEnabled;
     private int previousGeneratedCount = -1;
+    private long presentIntervalNanos;
 
-    PresentPacer(AsyncFramePresenter.NanoClock clock) {
+    PresentPacer(AsyncFramePresenter.NanoClock clock, FramePacingTiming framePacingTiming) {
         this.clock = clock;
+        this.framePacingTiming = framePacingTiming;
         this.deadlineWaiter = this::sleepUntil;
     }
 
-    PresentPacer(AsyncFramePresenter.NanoClock clock, LongConsumer deadlineWaiter) {
+    PresentPacer(
+            AsyncFramePresenter.NanoClock clock,
+            FramePacingTiming framePacingTiming,
+            LongConsumer deadlineWaiter
+    ) {
         this.clock = clock;
+        this.framePacingTiming = framePacingTiming;
         this.deadlineWaiter = deadlineWaiter;
+    }
+
+    void beginRealFrameRendering() {
+        beginPhase(Phase.REAL_FRAME_RENDERING);
+    }
+
+    void endRealFrameRendering() {
+        long completedAtNanos = clock.nanoTime();
+        endPhase(Phase.REAL_FRAME_RENDERING, completedAtNanos);
+        long producerTimeNanos = framePacingTiming.producerTimeNanosAt(completedAtNanos);
+        realFrameProducerTimeNanos.set(producerTimeNanos);
+        hasRealFrameProducerTime.set(true);
+    }
+
+    long takeRealFrameProducerTimeNanos() {
+        if (hasRealFrameProducerTime.compareAndSet(true, false)) {
+            return realFrameProducerTimeNanos.get();
+        }
+        return framePacingTiming.producerTimeNanos();
+    }
+
+    void beginDispatchFrameGenerationBatch() {
+        beginPhase(Phase.DISPATCH_FRAME_GENERATION_BATCH);
+    }
+
+    void endDispatchFrameGenerationBatch() {
+        endPhase(Phase.DISPATCH_FRAME_GENERATION_BATCH);
+    }
+
+    void beginPresentFrameBatch(
+            boolean waited, boolean pacingEnabled, int generatedCount, long intervalNanos
+    ) {
+        beginPhase(Phase.PRESENT_FRAME_BATCH);
+        presentIntervalNanos = intervalNanos;
+        beginBatch(waited, pacingEnabled, generatedCount);
+    }
+
+    void endPresentFrameBatch() {
+        endPhase(Phase.PRESENT_FRAME_BATCH);
+    }
+
+    void beginPresentFrame() {
+        beginPhase(Phase.PRESENT_FRAME);
+    }
+
+    void endPresentFrame(boolean advanceDeadline) {
+        endPhase(Phase.PRESENT_FRAME);
+        if (advanceDeadline) {
+            advance(presentIntervalNanos);
+        }
+    }
+
+    void endPresentFrame() {
+        endPresentFrame(true);
+    }
+
+    void sleepAtPresentGeneratedFrame() {
+        awaitNextImage();
+    }
+
+    void sleepAtPresentRealFrame() {
+        awaitNextImage();
+    }
+
+    long lastPhaseDurationNanos(Phase phase) {
+        return lastPhaseDurations.get(phase.ordinal());
     }
 
     void reset() {
@@ -48,7 +130,7 @@ final class PresentPacer {
         previousGeneratedCount = -1;
     }
 
-    void beginBatch(boolean waited, boolean pacingEnabled, int generatedCount) {
+    private void beginBatch(boolean waited, boolean pacingEnabled, int generatedCount) {
         long now = clock.nanoTime();
         if (!pacingEnabled) {
             nextDeadlineNanos = 0L;
@@ -67,7 +149,7 @@ final class PresentPacer {
         previousGeneratedCount = generatedCount;
     }
 
-    void awaitNextImage() {
+    private void awaitNextImage() {
         if (nextDeadlineNanos != 0L) {
             deadlineWaiter.accept(nextDeadlineNanos);
         }
@@ -87,7 +169,7 @@ final class PresentPacer {
         }
     }
 
-    void advance(long intervalNanos) {
+    private void advance(long intervalNanos) {
         if (nextDeadlineNanos == 0L) {
             return;
         }
@@ -96,5 +178,39 @@ final class PresentPacer {
         if (lateBy > Math.max(intervalNanos * 4L, MAX_PRESENT_INTERVAL_NANOS)) {
             nextDeadlineNanos = clock.nanoTime();
         }
+    }
+
+    private void beginPhase(Phase phase) {
+        PhaseStarts starts = phaseStarts.get();
+        int index = phase.ordinal();
+        starts.startedAtNanos[index] = clock.nanoTime();
+        starts.active[index] = true;
+    }
+
+    private void endPhase(Phase phase) {
+        endPhase(phase, clock.nanoTime());
+    }
+
+    private void endPhase(Phase phase, long endedAtNanos) {
+        PhaseStarts starts = phaseStarts.get();
+        int index = phase.ordinal();
+        if (!starts.active[index]) {
+            return;
+        }
+        long elapsedNanos = endedAtNanos - starts.startedAtNanos[index];
+        lastPhaseDurations.set(index, Math.max(0L, elapsedNanos));
+        starts.active[index] = false;
+    }
+
+    enum Phase {
+        REAL_FRAME_RENDERING,
+        DISPATCH_FRAME_GENERATION_BATCH,
+        PRESENT_FRAME_BATCH,
+        PRESENT_FRAME
+    }
+
+    private static final class PhaseStarts {
+        private final long[] startedAtNanos = new long[Phase.values().length];
+        private final boolean[] active = new boolean[Phase.values().length];
     }
 }

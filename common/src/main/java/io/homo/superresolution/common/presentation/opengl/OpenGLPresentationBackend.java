@@ -20,6 +20,14 @@ public final class OpenGLPresentationBackend implements PresentationBackend {
     }
 
     @Override
+    public void beginRealFrameRendering() {
+    }
+
+    @Override
+    public void endRealFrameRendering() {
+    }
+
+    @Override
     public void endMinecraftFrame() {
     }
 

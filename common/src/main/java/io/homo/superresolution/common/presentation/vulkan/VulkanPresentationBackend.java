@@ -38,6 +38,16 @@ public final class VulkanPresentationBackend implements PresentationBackend {
     }
 
     @Override
+    public void beginRealFrameRendering() {
+        VulkanPresentationWindow.beginRealFrameRendering();
+    }
+
+    @Override
+    public void endRealFrameRendering() {
+        VulkanPresentationWindow.endRealFrameRendering();
+    }
+
+    @Override
     public void endMinecraftFrame() {
         VulkanPresentationWindow.endMinecraftFrame();
     }

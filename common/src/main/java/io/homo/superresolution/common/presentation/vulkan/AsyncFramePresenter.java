@@ -46,6 +46,7 @@ final class AsyncFramePresenter implements AutoCloseable {
     private final String providerId;
     private final AtomicLong nextRealIndex = new AtomicLong();
     private final FramePacingTiming framePacingTiming;
+    final PresentPacer pacer;
     private final FrameGenerationWorker generationWorker;
     private final PresentWorker presentWorker;
     private long nextBatchId;
@@ -53,7 +54,8 @@ final class AsyncFramePresenter implements AutoCloseable {
     private Runnable terminalTeardown;
 
     AsyncFramePresenter(VulkanSwapchain swapchain, VulkanDevice device, String providerId) {
-        this(swapchain, device, providerId, swapchain.framePacingTiming(), System::nanoTime);
+        this(swapchain, device, providerId, swapchain.framePacingTiming(),
+                swapchain.presentPacer(), System::nanoTime);
     }
 
     AsyncFramePresenter(
@@ -66,14 +68,22 @@ final class AsyncFramePresenter implements AutoCloseable {
             VulkanSwapchain swapchain, VulkanDevice device, String providerId,
             FramePacingTiming timing, NanoClock clock
     ) {
+        this(swapchain, device, providerId, timing, new PresentPacer(clock, timing), clock);
+    }
+
+    private AsyncFramePresenter(
+            VulkanSwapchain swapchain, VulkanDevice device, String providerId,
+            FramePacingTiming timing, PresentPacer pacer, NanoClock clock
+    ) {
         if (!device.asyncDispatchCapabilities().available()
                 || !providerId.equals(device.asyncDispatchCapabilities().providerId())) {
             throw new IllegalStateException("The presenter requires the selected provider's async queues");
         }
         this.providerId = providerId;
         this.framePacingTiming = timing;
-        this.generationWorker = new FrameGenerationWorker(this, swapchain, device, providerId, timing, clock);
-        this.presentWorker = new PresentWorker(this, swapchain, device, clock);
+        this.pacer = pacer;
+        this.generationWorker = new FrameGenerationWorker(this, swapchain, device, providerId);
+        this.presentWorker = new PresentWorker(this, swapchain, device);
         presentWorker.start();
         generationWorker.start();
     }
@@ -106,7 +116,7 @@ final class AsyncFramePresenter implements AutoCloseable {
         FrameGenerationWork work = new FrameGenerationWork(
                 realIndex, resources.logicalFrameIndex(), LowLatency.currentLatencyFrameId(),
                 presentAllowed ? VulkanLowLatency.claimCurrentFramePresentId() : 0L,
-                resources, snapshot, framePacingTiming.producerTimeNanos(),
+                resources, snapshot, pacer.takeRealFrameProducerTimeNanos(),
                 Math.min(Math.max(0, FrameGeneration.plannedGeneratedFrameCount()), MAX_GENERATED_FRAMES),
                 snapshot != null && snapshot.historyResetRequested(), presentAllowed
         );

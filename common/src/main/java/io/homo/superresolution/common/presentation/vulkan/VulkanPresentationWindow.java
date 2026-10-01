@@ -48,6 +48,20 @@ public final class VulkanPresentationWindow {
         surface = presentationSurface;
     }
 
+    public static void beginRealFrameRendering() {
+        VulkanPresentationContext presentationContext = context;
+        if (presentationContext != null) {
+            presentationContext.presentPacer().beginRealFrameRendering();
+        }
+    }
+
+    public static void endRealFrameRendering() {
+        VulkanPresentationContext presentationContext = context;
+        if (presentationContext != null) {
+            presentationContext.presentPacer().endRealFrameRendering();
+        }
+    }
+
     public static void endMinecraftFrame() {
         VulkanPresentationContext presentationContext = context;
         VulkanSurface presentationSurface = surface;

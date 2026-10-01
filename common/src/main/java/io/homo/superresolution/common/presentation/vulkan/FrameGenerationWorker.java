@@ -52,13 +52,13 @@ final class FrameGenerationWorker {
 
     FrameGenerationWorker(
             AsyncFramePresenter presenter, VulkanSwapchain swapchain, VulkanDevice device,
-            String providerId, FramePacingTiming timing, AsyncFramePresenter.NanoClock clock
+            String providerId
     ) {
         this.presenter = presenter;
         this.swapchain = swapchain;
         this.device = device;
         this.providerId = providerId;
-        this.estimator = new FramePacingEstimator(providerId, timing, clock::nanoTime);
+        this.estimator = new FramePacingEstimator(providerId);
         this.commandBuffers = new VulkanCommandBufferRing(
                 (AsyncFramePresenter.GENERATION_QUEUE_CAPACITY + 1) * AsyncFramePresenter.MAX_GENERATED_FRAMES,
                 device.requireFgCommandPool()
@@ -161,6 +161,7 @@ final class FrameGenerationWorker {
                     inFlight = true;
                 }
                 try {
+                    presenter.pacer.beginDispatchFrameGenerationBatch();
                     work.frameResources().markDispatching();
                     ProviderInputSnapshot snapshot = work.providerInputSnapshot();
                     int requiredCapacity = snapshot == null ? 1
@@ -177,6 +178,7 @@ final class FrameGenerationWorker {
                     nextDisplayIndex += batch.imageCount();
                     presenter.generationQueue.removeHead(work);
                 } finally {
+                    presenter.pacer.endDispatchFrameGenerationBatch();
                     synchronized (presenter.stateLock) {
                         inFlight = false;
                         presenter.stateLock.notifyAll();

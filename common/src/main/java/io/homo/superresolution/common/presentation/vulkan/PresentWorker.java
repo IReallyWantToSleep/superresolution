@@ -34,7 +34,6 @@ final class PresentWorker {
     private final AsyncFramePresenter presenter;
     private final VulkanSwapchain swapchain;
     private final VulkanDevice device;
-    private final PresentPacer pacer;
     private final Thread thread;
     private final List<PendingAcquireRelease> pendingAcquireReleases = new ArrayList<>();
     private boolean paused;
@@ -42,13 +41,11 @@ final class PresentWorker {
     private volatile boolean terminated;
 
     PresentWorker(
-            AsyncFramePresenter presenter, VulkanSwapchain swapchain, VulkanDevice device,
-            AsyncFramePresenter.NanoClock clock
+            AsyncFramePresenter presenter, VulkanSwapchain swapchain, VulkanDevice device
     ) {
         this.presenter = presenter;
         this.swapchain = swapchain;
         this.device = device;
-        this.pacer = new PresentPacer(clock);
         this.thread = new Thread(this::runLoop, "SR-FrameGeneration-Present");
         thread.setDaemon(true);
     }
@@ -105,7 +102,7 @@ final class PresentWorker {
                             || batch.images().get(batch.imageCount() - 1).source() == null
                             || !batch.configuration().available()
                             || !swapchain.isCurrentConfiguration(batch.configuration())) {
-                        pacer.reset();
+                        presenter.pacer.reset();
                         discardBatch(batch);
                     } else {
                         presentBatch(batch, head.waited());
@@ -130,6 +127,7 @@ final class PresentWorker {
             } catch (Throwable throwable) {
                 presenter.fail(throwable);
             }
+            presenter.pacer.reset();
             synchronized (presenter.stateLock) {
                 inFlight = false;
                 terminated = true;
@@ -181,20 +179,34 @@ final class PresentWorker {
                     captureReleased = true;
                 }
             }
-            pacer.beginBatch(waited, batch.pacingEnabled(), batch.generatedCount());
-            for (PreparedImage image : prepared) {
-                if (isPaused()) {
-                    pacer.reset();
-                    break;
+            PresentPacer pacer = presenter.pacer;
+            try {
+                pacer.beginPresentFrameBatch(
+                        waited, batch.pacingEnabled(), batch.generatedCount(), batch.intervalNanos());
+                for (PreparedImage image : prepared) {
+                    if (isPaused()) {
+                        pacer.reset();
+                        break;
+                    }
+                    if (image.image.kind() == PresentImage.Kind.GENERATED) {
+                        pacer.sleepAtPresentGeneratedFrame();
+                    } else {
+                        pacer.sleepAtPresentRealFrame();
+                    }
+                    boolean presented = false;
+                    pacer.beginPresentFrame();
+                    try {
+                        presentImage(image);
+                        presented = true;
+                    } finally {
+                        pacer.endPresentFrame(presented && batch.pacingEnabled());
+                    }
                 }
-                pacer.awaitNextImage();
-                presentImage(image);
-                if (batch.pacingEnabled()) {
-                    pacer.advance(batch.intervalNanos());
-                }
+            } finally {
+                pacer.endPresentFrameBatch();
             }
         } catch (VulkanSwapchain.PresentTargetUnavailableException exception) {
-            pacer.reset();
+            presenter.pacer.reset();
             swapchain.requestRecreate();
         } finally {
             try {

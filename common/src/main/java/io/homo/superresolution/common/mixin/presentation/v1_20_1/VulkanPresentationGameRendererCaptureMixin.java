@@ -29,6 +29,18 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = GameRenderer.class,priority = 2000)
 public abstract class VulkanPresentationGameRendererCaptureMixin {
+    @Inject(method = "render", at = @At("HEAD"))
+    private void super_resolution$beginRealFrameRendering(
+            float partialTicks,
+            long nanoTime,
+            boolean renderLevel,
+            CallbackInfo ci
+    ) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
+            PresentationBackendManager.beginRealFrameRendering();
+        }
+    }
+
     @Inject(
             method = "render",
             at = @At(
@@ -57,6 +69,18 @@ public abstract class VulkanPresentationGameRendererCaptureMixin {
     ) {
         if (PresentationBackendManager.isVulkanPresentationRequested()) {
             FrameCaptureManager.captureFinalColor();
+        }
+    }
+
+    @Inject(method = "render", at = @At("RETURN"), order = 3000)
+    private void super_resolution$endRealFrameRendering(
+            float partialTicks,
+            long nanoTime,
+            boolean renderLevel,
+            CallbackInfo ci
+    ) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
+            PresentationBackendManager.endRealFrameRendering();
         }
     }
 }

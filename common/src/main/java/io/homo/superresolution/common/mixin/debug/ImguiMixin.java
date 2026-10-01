@@ -43,7 +43,7 @@ public class ImguiMixin {
             ImguiMain.getInstance().render();
         }
     }
-    #elif MC_VER > MC_26_1_2
+    #elif MC_VER >= MC_26_1_2
     @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/render/GuiRenderer;endFrame()V",shift = At.Shift.AFTER), method = "render")
     private void onRender(CallbackInfo ci) {
         if (!(SuperResolutionConfig.isEnableImgui())) return;

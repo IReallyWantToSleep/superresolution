@@ -515,6 +515,10 @@ final class VulkanSwapchain {
         return context.framePacingTiming();
     }
 
+    PresentPacer presentPacer() {
+        return context.presentPacer();
+    }
+
     PresentationConfiguration presentationConfiguration() {
         synchronized (swapchainLock) {
             return new PresentationConfiguration(swapchainGeneration, swapchain, width, height,
