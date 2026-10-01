@@ -72,7 +72,7 @@ public abstract class VulkanPresentationGameRendererCaptureMixin {
         }
     }
 
-    @Inject(method = "render", at = @At("RETURN"), order = 3000)
+    @Inject(method = "render", at = @At("RETURN"))
     private void super_resolution$endRealFrameRendering(
             float partialTicks,
             long nanoTime,
