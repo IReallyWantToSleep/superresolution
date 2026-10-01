@@ -718,7 +718,7 @@ public class VulkanDevice implements IDevice {
      * the driver cannot write timestamps on this queue. Created lazily so a normal session
      * never allocates the query pool.
      */
-    public VulkanTimestampProfiler timestampProfiler() {
+    public synchronized VulkanTimestampProfiler timestampProfiler() {
         if (!SuperResolutionConfig.isEnableDetailedProfiling()) {
             return null;
         }

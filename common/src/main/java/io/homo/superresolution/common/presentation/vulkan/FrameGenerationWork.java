@@ -20,19 +20,10 @@ package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.api.registry.framegeneration.ProviderInputSnapshot;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
-import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 
 import javax.annotation.Nullable;
 
-/**
- * Immutable ownership transfer from the render thread to the FG scheduler.
- *
- * <p>The optional provider snapshot is captured before queue publication. The
- * FG thread must consume this snapshot instead of rereading mutable frame
- * constants or provider configuration.</p>
- */
-public final class RealFrameJob {
+public final class FrameGenerationWork {
     private final long realIndex;
     private final int logicalFrameIndex;
     private final long latencyFrameId;
@@ -41,39 +32,22 @@ public final class RealFrameJob {
     private final @Nullable ProviderInputSnapshot providerInputSnapshot;
     private final long producerTimeNanos;
     private final int plannedGeneratedCount;
-    private final int colorWidth;
-    private final int colorHeight;
-    private final @Nullable TextureFormat colorFormat;
     private final boolean historyResetRequested;
     private final boolean presentAllowed;
 
-    public RealFrameJob(
+    public FrameGenerationWork(
             long realIndex,
             int logicalFrameIndex,
             long latencyFrameId,
             long realPresentId,
             FrameResources frameResources,
-            @Nullable ProviderInputSnapshot providerInputSnapshot,
+            @Nullable
+            ProviderInputSnapshot providerInputSnapshot,
             long producerTimeNanos,
             int plannedGeneratedCount,
             boolean historyResetRequested,
             boolean presentAllowed
     ) {
-        if (realIndex < 0L) {
-            throw new IllegalArgumentException("realIndex cannot be negative");
-        }
-        if (frameResources == null) {
-            throw new IllegalArgumentException("frameResources cannot be null");
-        }
-        if (providerInputSnapshot != null
-                && providerInputSnapshot.logicalFrameIndex() != logicalFrameIndex) {
-            throw new IllegalArgumentException(
-                    "Provider input snapshot does not belong to the queued logical frame"
-            );
-        }
-        if (plannedGeneratedCount < 0) {
-            throw new IllegalArgumentException("plannedGeneratedCount cannot be negative");
-        }
         this.realIndex = realIndex;
         this.logicalFrameIndex = logicalFrameIndex;
         this.latencyFrameId = latencyFrameId;
@@ -82,10 +56,6 @@ public final class RealFrameJob {
         this.providerInputSnapshot = providerInputSnapshot;
         this.producerTimeNanos = producerTimeNanos;
         this.plannedGeneratedCount = plannedGeneratedCount;
-        VulkanTexture color = frameResources.finalColorVulkanTexture();
-        this.colorWidth = color == null ? 0 : color.getWidth();
-        this.colorHeight = color == null ? 0 : color.getHeight();
-        this.colorFormat = color == null ? null : color.getTextureFormat();
         this.historyResetRequested = historyResetRequested;
         this.presentAllowed = presentAllowed;
     }
@@ -120,18 +90,6 @@ public final class RealFrameJob {
 
     public int plannedGeneratedCount() {
         return plannedGeneratedCount;
-    }
-
-    public int colorWidth() {
-        return colorWidth;
-    }
-
-    public int colorHeight() {
-        return colorHeight;
-    }
-
-    public @Nullable TextureFormat colorFormat() {
-        return colorFormat;
     }
 
     public boolean historyResetRequested() {

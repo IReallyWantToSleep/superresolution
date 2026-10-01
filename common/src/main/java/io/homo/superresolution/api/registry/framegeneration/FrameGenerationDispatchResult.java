@@ -25,85 +25,69 @@ import javax.annotation.Nullable;
 import java.util.List;
 import java.util.Objects;
 
-/**
- * Atomic result of one application-managed dispatch.
- * <p>
- * A successful result owns one complete {@link ProviderOutputLease}. A failed
- * result never exposes partial generated outputs; the scheduler must publish a
- * real-only batch through its normal ordering path.
- */
-public final class AsyncFrameGenerationDispatchResult {
-    public enum Status {
-        SUCCESS,
-        FAILED
-    }
-
-    public enum HistoryDisposition {
-        UNCHANGED,
-        SEEDED,
-        RESET
-    }
-
+public final class FrameGenerationDispatchResult {
     private final Status status;
     private final int actualGeneratedCount;
-    private final @Nullable ProviderOutputLease outputLease;
+    private final @Nullable FrameGenerationProviderOutput providerOutput;
     private final List<VulkanTexture> generatedOutputs;
     private final @Nullable VulkanTexture realOutput;
     private final HistoryDisposition historyDisposition;
     private final @Nullable String failureReason;
-
-    private AsyncFrameGenerationDispatchResult(
+    private FrameGenerationDispatchResult(
             Status status,
             int actualGeneratedCount,
-            @Nullable ProviderOutputLease outputLease,
+            @Nullable
+            FrameGenerationProviderOutput providerOutput,
             List<VulkanTexture> generatedOutputs,
-            @Nullable VulkanTexture realOutput,
+            @Nullable
+            VulkanTexture realOutput,
             HistoryDisposition historyDisposition,
-            @Nullable String failureReason
+            @Nullable
+            String failureReason
     ) {
         this.status = status;
         this.actualGeneratedCount = actualGeneratedCount;
-        this.outputLease = outputLease;
+        this.providerOutput = providerOutput;
         this.generatedOutputs = generatedOutputs;
         this.realOutput = realOutput;
         this.historyDisposition = historyDisposition;
         this.failureReason = failureReason;
     }
 
-    public static AsyncFrameGenerationDispatchResult success(
+    public static FrameGenerationDispatchResult success(
             int actualGeneratedCount,
-            ProviderOutputLease outputLease,
+            FrameGenerationProviderOutput output,
             HistoryDisposition historyDisposition
     ) {
-        ProviderOutputLease lease = Objects.requireNonNull(outputLease, "outputLease cannot be null");
+        FrameGenerationProviderOutput providerOutput = Objects.requireNonNull(output, "output cannot be null");
         if (actualGeneratedCount < 0) {
             throw new IllegalArgumentException("actualGeneratedCount cannot be negative");
         }
-        List<VulkanTexture> outputs = List.copyOf(lease.generatedOutputs());
+        List<VulkanTexture> outputs = List.copyOf(providerOutput.generatedOutputs());
         if (outputs.size() != actualGeneratedCount) {
             throw new IllegalArgumentException(
                     "actualGeneratedCount must match the leased generated output count"
             );
         }
-        Objects.requireNonNull(lease.completion(), "outputLease completion cannot be null");
-        Objects.requireNonNull(lease.outputKey(), "outputLease outputKey cannot be null");
-        return new AsyncFrameGenerationDispatchResult(
+        Objects.requireNonNull(providerOutput.completion(), "outputLease completion cannot be null");
+        Objects.requireNonNull(providerOutput.outputKey(), "outputLease outputKey cannot be null");
+        return new FrameGenerationDispatchResult(
                 Status.SUCCESS,
                 actualGeneratedCount,
-                lease,
+                providerOutput,
                 outputs,
-                lease.realOutput(),
+                providerOutput.realOutput(),
                 Objects.requireNonNull(historyDisposition, "historyDisposition cannot be null"),
                 null
         );
     }
 
-    public static AsyncFrameGenerationDispatchResult failed(String failureReason) {
+    public static FrameGenerationDispatchResult failed(String failureReason) {
         String reason = Objects.requireNonNull(failureReason, "failureReason cannot be null");
         if (reason.isBlank()) {
             throw new IllegalArgumentException("failureReason cannot be blank");
         }
-        return new AsyncFrameGenerationDispatchResult(
+        return new FrameGenerationDispatchResult(
                 Status.FAILED,
                 0,
                 null,
@@ -126,8 +110,8 @@ public final class AsyncFrameGenerationDispatchResult {
         return actualGeneratedCount;
     }
 
-    public @Nullable ProviderOutputLease outputLease() {
-        return outputLease;
+    public @Nullable FrameGenerationProviderOutput output() {
+        return providerOutput;
     }
 
     public List<VulkanTexture> generatedOutputs() {
@@ -139,9 +123,9 @@ public final class AsyncFrameGenerationDispatchResult {
     }
 
     public FrameGenerationDispatchCompletion completion() {
-        return outputLease == null
+        return providerOutput == null
                 ? FrameGenerationDispatchCompletion.completed()
-                : outputLease.completion();
+                : providerOutput.completion();
     }
 
     public HistoryDisposition historyDisposition() {
@@ -150,5 +134,16 @@ public final class AsyncFrameGenerationDispatchResult {
 
     public @Nullable String failureReason() {
         return failureReason;
+    }
+
+    public enum Status {
+        SUCCESS,
+        FAILED
+    }
+
+    public enum HistoryDisposition {
+        UNCHANGED,
+        SEEDED,
+        RESET
     }
 }

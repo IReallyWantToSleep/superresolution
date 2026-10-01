@@ -16,25 +16,31 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.api.registry.framegeneration;
+package io.homo.superresolution.common.presentation.vulkan;
 
-public interface FrameGenerationDispatchCompletion {
-    FrameGenerationDispatchCompletion COMPLETED = new FrameGenerationDispatchCompletion() {
-        @Override
-        public boolean isComplete() {
-            return true;
-        }
+import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 
-        @Override
-        public void awaitCompletion() {
-        }
-    };
+import javax.annotation.Nullable;
 
-    boolean isComplete();
+/** A display source. Swapchain acquisition and submission belong to PresentWorker. */
+public record PresentImage(
+        long displayIndex,
 
-    void awaitCompletion();
+        long realIndex,
 
-    static FrameGenerationDispatchCompletion completed() {
-        return COMPLETED;
+        long latencyFrameId,
+
+        Kind kind,
+
+        @Nullable
+        VulkanTexture source,
+
+        long presentId,
+
+        boolean outOfBand
+) {
+    public enum Kind {
+        GENERATED,
+        REAL
     }
 }

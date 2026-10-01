@@ -18,14 +18,15 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
-import io.homo.superresolution.api.registry.framegeneration.*;
+import io.homo.superresolution.api.registry.framegeneration.ExternalFrameGenerationDispatchResult;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispatchCompletion;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
-import io.homo.superresolution.common.framegeneration.FramePresentPlan;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
+import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
@@ -36,11 +37,7 @@ import org.lwjgl.vulkan.*;
 
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.LongConsumer;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -51,10 +48,8 @@ final class VulkanSwapchain {
     private static final int MAX_IN_FLIGHT_FRAMES = 3;
     private static final int DESIRED_SWAPCHAIN_IMAGES = 3;
     // FrameGenerationMode.X6 generates up to 5 frames; each needs its own acquire.
-    private static final int MAX_GENERATED_FRAMES = 5;
+    private static final int MAX_GENERATED_FRAMES = AsyncFramePresenter.MAX_GENERATED_FRAMES;
     private static final int ACQUIRE_SYNC_SLOTS = MAX_IN_FLIGHT_FRAMES * (MAX_GENERATED_FRAMES + 1);
-    private static final long MIN_APPLICATION_MANAGED_PRESENT_INTERVAL_NANOS = 500_000L;
-    private static final long MAX_APPLICATION_MANAGED_PRESENT_INTERVAL_NANOS = 100_000_000L;
     private static final long ACQUIRE_TIMEOUT_NANOS = 100_000_000L;
     private static final int ACQUIRE_TIMEOUT = -1;
     private static final int ACQUIRE_OUT_OF_DATE = -2;
@@ -66,19 +61,14 @@ final class VulkanSwapchain {
     private final VulkanDevice device;
     private final VulkanCommandBufferRing commandBuffers =
             new VulkanCommandBufferRing(MAX_IN_FLIGHT_FRAMES);
-    private final PresentPacer pacer = new PresentPacer();
-    private final Object fgToMainSemaphoreLock = new Object();
     private final Object swapchainLock = new Object();
     private final Object applicationManagedTargetLock = new Object();
     private final long[] imageAvailable = new long[ACQUIRE_SYNC_SLOTS];
-    private long[] fgToMainSemaphorePool = new long[MAX_IN_FLIGHT_FRAMES];
-    private int fgToMainSemaphorePoolSize;
     private long[] renderFinished = new long[0];
-    private VulkanCommandBufferRing generatedBlitCommandBuffers;
-    private VulkanCommandBufferRing applicationManagedCommandBuffers;
-    private VulkanCommandBufferRing applicationManagedRealCommandBuffers;
+    private VulkanCommandPool presentationCommandPool;
+    private VulkanCommandBufferRing presentationCommandBuffers;
     private VulkanBinarySemaphorePool applicationManagedAcquireSemaphores;
-    private AsyncFrameGenerationScheduler applicationManagedScheduler;
+    private AsyncFramePresenter asyncFramePresenter;
     // 1x1 solid-color sources for the per-present cadence indicator (white = real
     // frame, cyan = interpolated); blitted into a corner of the swapchain image.
     private VulkanTexture realFrameIndicator;
@@ -157,47 +147,6 @@ final class VulkanSwapchain {
         }
     }
 
-    private static FrameBatch createRealOnlyBatch(
-            FramePacingEstimator framePacingEstimator,
-            RealFrameJob job,
-            long batchId,
-            PresentFrame realFrame
-    ) {
-        framePacingEstimator.onBatchResult(0, null);
-        return FrameBatch.realOnly(
-                job.realIndex(),
-                batchId,
-                job.latencyFrameId(),
-                realFrame.presentId(),
-                realFrame.batchIntervalNanos(),
-                realFrame,
-                realFrame.sourceCompletion()
-        );
-    }
-
-    private static void cancelFgTimestamp(VulkanTimestampProfiler profiler, int slot) {
-        if (profiler != null && slot >= 0) {
-            profiler.cancelRegion(slot);
-        }
-    }
-
-    private static void resetCommandBuffers(
-            List<VulkanCommandBuffer> commandBuffers,
-            int fromIndex
-    ) {
-        for (int index = fromIndex; index < commandBuffers.size(); index++) {
-            commandBuffers.get(index).reset();
-        }
-    }
-
-    private static long batchIntervalNanos(long realPeriodNanos, int generatedCount) {
-        long interval = realPeriodNanos / Math.max(1L, generatedCount + 1L);
-        return Math.max(
-                MIN_APPLICATION_MANAGED_PRESENT_INTERVAL_NANOS,
-                Math.min(MAX_APPLICATION_MANAGED_PRESENT_INTERVAL_NANOS, interval)
-        );
-    }
-
     private static String presentModeName(int presentMode) {
         return switch (presentMode) {
             case VK_PRESENT_MODE_IMMEDIATE_KHR -> "IMMEDIATE";
@@ -217,13 +166,11 @@ final class VulkanSwapchain {
 
     public void suspendPresentation() {
         requestRecreate();
-        if (applicationManagedScheduler != null) {
-            applicationManagedScheduler.awaitPresentationDrain();
-        } else {
-            pacer.awaitIdle();
+        if (asyncFramePresenter != null) {
+            asyncFramePresenter.awaitPresentationDrain();
         }
         device.getMainQueue().waitIdle();
-        if (applicationManagedScheduler != null && device.getFrameGenerationQueue() != null) {
+        if (asyncFramePresenter != null && device.getFrameGenerationQueue() != null) {
             device.getFrameGenerationQueue().waitIdle();
         }
         waitForDedicatedPresentQueueIdle();
@@ -237,48 +184,32 @@ final class VulkanSwapchain {
     }
 
     public boolean present(FrameResources frame) {
-        AsyncFrameGenerationScheduler scheduler = ensureApplicationManagedScheduler();
+        AsyncFramePresenter scheduler = ensureAsyncFramePresenter();
         if (scheduler != null) {
             updateApplicationManagedFramePlan();
             recreateIfRequestedOnControlThread();
             return scheduler.enqueue(frame, true);
         }
-        PresentSubmission submission = submitPresentFrame(frame);
+        ExternalPresentSubmission submission = submitPresentFrame(frame);
         if (submission == null) {
             return false;
         }
 
         try {
-            if (submission.paced()) {
-                return true;
-            }
             return queuePresent(submission.imageIndex());
         } finally {
-            FrameGeneration.finishPresent(frame, submission.plan());
+            FrameGeneration.finishExternalFrame(frame, submission.result());
         }
     }
 
-    private PresentSubmission submitPresentFrame(FrameResources frame) {
+    private ExternalPresentSubmission submitPresentFrame(FrameResources frame) {
         try {
-            pacer.awaitIdle();
-            pacer.throwIfFailed();
-            if (pacer.consumeRecreateRequest()) {
-                recreateRequested = true;
-            }
             if (!frame.hasFinalColor()) {
                 consumeWithoutPresentInternal(frame);
                 return null;
             }
-            plannedGeneratedFrames = Math.min(
-                    FrameGeneration.plannedGeneratedFrameCount(),
-                    MAX_GENERATED_FRAMES
-            );
-            if (plannedGeneratedFrames > 0 && imageCount < plannedGeneratedFrames + 2) {
-                recreateRequested = true;
-            }
-            if (swapchainFrameGenerationActive != (plannedGeneratedFrames > 0)) {
-                // Present mode and the effective vsync state both depend on whether
-                // generation is running, and neither can change without a new swapchain.
+            plannedGeneratedFrames = 0;
+            if (swapchainFrameGenerationActive) {
                 recreateRequested = true;
             }
             if (recreateRequested) {
@@ -308,20 +239,16 @@ final class VulkanSwapchain {
             VulkanCommandBuffer commandBuffer = commandBuffers.acquire(device);
             commandBuffer.reset();
             commandBuffer.begin();
-            FramePresentPlan plan = FrameGeneration.prepareFrame(
-                    frame,
-                    width,
-                    height,
-                    imageFormat,
-                    imageCount,
-                    commandBuffer.getNativeCommandBuffer().address()
-            );
-            // When DLSS-G produced an "output real" frame (indicator passthrough), present
-            // it instead of the raw backbuffer so the DLSS-FG indicator stays steady.
-            VulkanTexture realFrameSource = plan.realFrame() != null
-                    ? plan.realFrame()
-                    : frame.finalColorVulkanTexture();
-            recordBlit(commandBuffer, realFrameSource, imageIndex, false);
+            ExternalFrameGenerationDispatchResult externalResult =
+                    FrameGeneration.prepareExternalFrame(
+                            frame,
+                            width,
+                            height,
+                            imageFormat,
+                            imageCount,
+                            commandBuffer.getNativeCommandBuffer().address()
+                    );
+            recordBlit(commandBuffer, frame.finalColorVulkanTexture(), imageIndex, false);
             commandBuffer.end();
 
             long[] resourceWaits = frame.readySemaphores();
@@ -339,807 +266,20 @@ final class VulkanSwapchain {
             long fence = device.submitCommandBuffer(commandBuffer, waits, stages, signals);
             frame.markSubmitted(commandBuffer, fence);
 
-            if (!plan.generatedFrames().isEmpty() && submitGeneratedFrames(plan, imageIndex)) {
-                return new PresentSubmission(imageIndex, plan, true);
-            }
-            return new PresentSubmission(imageIndex, plan, false);
+            return new ExternalPresentSubmission(imageIndex, externalResult);
         } catch (Throwable throwable) {
             FrameGeneration.disableFrameGeneration();
             throw throwable;
         }
     }
 
-    FrameBatch submitApplicationManagedFrame(
-            RealFrameJob job,
-            long firstDisplayIndex,
-            long batchId,
-            long realPeriodNanos,
-            String schedulerProviderId,
-            FramePacingEstimator framePacingEstimator
-    ) {
-        if (job == null) {
-            throw new IllegalArgumentException("job cannot be null");
-        }
-        if (schedulerProviderId == null || schedulerProviderId.isBlank()) {
-            throw new IllegalArgumentException("schedulerProviderId cannot be blank");
-        }
-        if (framePacingEstimator == null) {
-            throw new IllegalArgumentException("framePacingEstimator cannot be null");
-        }
-        if (!job.presentAllowed() || !frameCanBePresented(job.frameResources())) {
-            submitRealOnlyWithoutPresent(job.frameResources());
-            return null;
-        }
-
-        ProviderInputSnapshot snapshot = job.providerInputSnapshot();
-        int requestedGeneratedCount = snapshot == null
-                ? 0
-                : Math.min(
-                snapshot.mode().generatedFrameCount(),
-                AsyncFrameGenerationScheduler.MAX_GENERATED_FRAMES
-        );
-        if (requestedGeneratedCount > 0
-                && imageCount < requestedGeneratedCount + 2) {
-            requestRecreate();
-        }
-        if (recreateRequested || swapchain == VK_NULL_HANDLE || width <= 0 || height <= 0) {
-            requestRecreate();
-            submitRealOnlyWithoutPresent(job.frameResources());
-            return null;
-        }
-
-        if (snapshot != null && schedulerProviderId.equals(snapshot.providerId())) {
-            FrameBatch generatedBatch = trySubmitProviderBatch(
-                    job,
-                    snapshot,
-                    firstDisplayIndex,
-                    batchId,
-                    realPeriodNanos,
-                    schedulerProviderId,
-                    framePacingEstimator
-            );
-            if (generatedBatch != null) {
-                return generatedBatch;
-            }
-        }
-
-        PresentFrame realFrame = submitRealOnly(
-                job,
-                firstDisplayIndex,
-                batchId,
-                batchIntervalNanos(realPeriodNanos, 0)
-        );
-        return realFrame == null
-                ? null
-                : createRealOnlyBatch(
-                framePacingEstimator,
-                job,
-                batchId,
-                realFrame
-        );
-    }
-
-    private FrameBatch trySubmitProviderBatch(
-            RealFrameJob job,
-            ProviderInputSnapshot snapshot,
-            long firstDisplayIndex,
-            long batchId,
-            long realPeriodNanos,
-            String schedulerProviderId,
-            FramePacingEstimator framePacingEstimator
-    ) {
-        boolean recreateAfterAbort = false;
-        // Recreate pauses the scheduler before taking swapchainLock. Keeping acquire
-        // outside that lock lets the present thread release images for this batch.
-        {
-            if (!frameCanBePresented(job.frameResources())
-                    || recreateRequested
-                    || swapchain == VK_NULL_HANDLE
-                    || width <= 0
-                    || height <= 0) {
-                return null;
-            }
-
-            // One command buffer per generated frame, submitted separately in index order.
-            // A single submission would hold every generated frame's renderFinished
-            // semaphore until the whole batch retired, because binary semaphores signal at
-            // end of submission; the DLSS-FG programming guide requires the first generated
-            // frame to be presentable without waiting for the later ones.
-            int commandBufferCount = Math.max(
-                    1,
-                    Math.min(
-                            Math.max(0, snapshot.mode().generatedFrameCount()),
-                            MAX_GENERATED_FRAMES
-                    )
-            );
-            List<VulkanCommandBuffer> commandBuffers = new ArrayList<>(commandBufferCount);
-            VulkanCommandBuffer realCommandBuffer = null;
-            long fgToMainReady = VK_NULL_HANDLE;
-            ProviderOutputLease outputLease = null;
-            List<ScheduledPresentTarget> targets = new ArrayList<>();
-            int submittedCount = 0;
-            int renderedTargetCount = 0;
-            boolean realSubmitted = false;
-            try {
-                long[] commandBufferHandles = new long[commandBufferCount];
-                for (int index = 0; index < commandBufferCount; index++) {
-                    VulkanCommandBuffer commandBuffer =
-                            applicationManagedCommandBuffers().acquire(device);
-                    commandBuffers.add(commandBuffer);
-                    commandBuffer.reset();
-                    commandBuffer.begin();
-                    commandBufferHandles[index] =
-                            commandBuffer.getNativeCommandBuffer().address();
-                }
-                // Opened on the first FG command buffer and closed on the last one the
-                // provider actually filled. Submissions on the FG queue start in order, so
-                // the two timestamps bracket the whole provider dispatch. Closing before
-                // the blit loop below keeps this measuring generation only - those blits
-                // record their own present-blit regions.
-                VulkanTimestampProfiler fgProfiler = device.timestampProfiler();
-                int fgTimestampSlot = fgProfiler == null || commandBuffers.isEmpty()
-                        ? -1
-                        : fgProfiler.beginRegion(
-                        commandBuffers.get(0).getNativeCommandBuffer(),
-                        PerformanceTracker.VK_FRAME_GEN
-                );
-                AsyncFrameGenerationDispatchRequest request =
-                        new AsyncFrameGenerationDispatchRequest(
-                                job.frameResources(),
-                                snapshot,
-                                device,
-                                commandBufferHandles,
-                                width,
-                                height,
-                                imageFormat,
-                                imageCount
-                        );
-                AsyncFrameGenerationDispatchResult result;
-                try {
-                    result = FrameGeneration.dispatchAsync(request);
-                } catch (Throwable throwable) {
-                    SuperResolution.LOGGER.warn(
-                            "Frame generation provider '{}' threw during async dispatch for real frame {}; "
-                                    + "using Real-only fallback",
-                            schedulerProviderId,
-                            job.realIndex(),
-                            throwable
-                    );
-                    resetCommandBuffers(commandBuffers, 0);
-                    cancelFgTimestamp(fgProfiler, fgTimestampSlot);
-                    return null;
-                }
-
-                String invalidReason = validateDispatchResult(result, request);
-                if (invalidReason != null) {
-                    if (result != null && result.outputLease() != null) {
-                        abortProviderLease(result.outputLease());
-                    }
-                    if (result != null && result.succeeded()) {
-                        SuperResolution.LOGGER.warn(
-                                "Frame generation provider '{}' returned an invalid async result for "
-                                        + "real frame {}: {}; using Real-only fallback",
-                                schedulerProviderId,
-                                job.realIndex(),
-                                invalidReason
-                        );
-                    } else {
-                        SuperResolution.LOGGER.debug(
-                                "Frame generation provider '{}' used Real-only fallback for real frame {}: {}",
-                                schedulerProviderId,
-                                job.realIndex(),
-                                invalidReason
-                        );
-                    }
-                    resetCommandBuffers(commandBuffers, 0);
-                    cancelFgTimestamp(fgProfiler, fgTimestampSlot);
-                    return null;
-                }
-
-                outputLease = result.outputLease();
-                int generatedCount = result.actualGeneratedCount();
-                if (imageCount < generatedCount + 2) {
-                    abortProviderLease(outputLease);
-                    outputLease = null;
-                    resetCommandBuffers(commandBuffers, 0);
-                    cancelFgTimestamp(fgProfiler, fgTimestampSlot);
-                    requestRecreate();
-                    return null;
-                }
-
-                if (fgTimestampSlot >= 0) {
-                    // Land the closing write in the last buffer the provider used; the
-                    // tail buffers of an under-filled batch are reset, never submitted.
-                    int lastFgBuffer = Math.min(
-                            Math.max(generatedCount, 1),
-                            commandBuffers.size()
-                    ) - 1;
-                    fgProfiler.endRegion(
-                            commandBuffers.get(lastFgBuffer).getNativeCommandBuffer(),
-                            fgTimestampSlot
-                    );
-                }
-
-                acquireScheduledPresentTargets(generatedCount + 1, targets);
-                for (int index = 0; index < generatedCount; index++) {
-                    recordBlit(
-                            commandBuffers.get(index),
-                            result.generatedOutputs().get(index),
-                            targets.get(index).imageIndex(),
-                            true
-                    );
-                }
-                VulkanTexture realSource = result.realOutput() != null
-                        ? result.realOutput()
-                        : job.frameResources().finalColorVulkanTexture();
-                for (VulkanCommandBuffer commandBuffer : commandBuffers) {
-                    commandBuffer.end();
-                }
-
-                realCommandBuffer = applicationManagedRealCommandBuffers().acquire(device);
-                realCommandBuffer.reset();
-                realCommandBuffer.begin();
-                recordBlit(
-                        realCommandBuffer,
-                        realSource,
-                        targets.get(targets.size() - 1).imageIndex(),
-                        false
-                );
-                realCommandBuffer.end();
-
-                long[] resourceWaits = job.frameResources().readySemaphores();
-                long[] resourceSignals = job.frameResources().releaseSemaphores();
-                boolean mainReadsCaptureInput = result.realOutput() == null;
-                long[] fgResourceSignals = mainReadsCaptureInput ? NO_SEMAPHORES : resourceSignals;
-                fgToMainReady = acquireFgToMainSemaphore();
-
-                // Submissions to one queue begin in order, so barriers recorded by the
-                // provider still bind across the split. What changes is when each generated
-                // frame's renderFinished signals: at the end of its own submission instead of
-                // the end of the batch. The frame's ready semaphores are binary, so only the
-                // first submission may consume them, and the release semaphores plus
-                // fgToMainReady belong to the last one, which is what the real frame and the
-                // capture ring must wait for.
-                int submissionCount = Math.max(1, generatedCount);
-                long[] submissionGenerations = new long[submissionCount];
-                long[] submissionTickets = new long[submissionCount];
-                VulkanCommandBuffer lastCommandBuffer = null;
-                long lastFence = 0L;
-
-                long realPresentId = job.realPresentId();
-                VulkanLowLatency.notifyFrameGenerationQueueOutOfBand(device.requireFgQueue());
-                VulkanLowLatency.renderSubmitMarker(realPresentId, true, true);
-                try {
-                    for (int index = 0; index < submissionCount; index++) {
-                        boolean firstSubmission = index == 0;
-                        boolean lastSubmission = index == submissionCount - 1;
-                        boolean hasTarget = index < generatedCount;
-
-                        long[] waits = new long[
-                                (hasTarget ? 1 : 0)
-                                        + (firstSubmission ? resourceWaits.length : 0)
-                                ];
-                        int[] stages = new int[waits.length];
-                        int cursor = 0;
-                        if (hasTarget) {
-                            waits[cursor] = targets.get(index).acquireLease().semaphore();
-                            stages[cursor] = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                            cursor++;
-                        }
-                        if (firstSubmission && resourceWaits.length > 0) {
-                            System.arraycopy(resourceWaits, 0, waits, cursor, resourceWaits.length);
-                            Arrays.fill(
-                                    stages,
-                                    cursor,
-                                    stages.length,
-                                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT
-                            );
-                        }
-
-                        long[] signals = new long[
-                                (hasTarget ? 1 : 0)
-                                        + (lastSubmission ? 1 + fgResourceSignals.length : 0)
-                                ];
-                        cursor = 0;
-                        if (hasTarget) {
-                            signals[cursor++] = renderFinished[targets.get(index).imageIndex()];
-                        }
-                        if (lastSubmission) {
-                            signals[cursor++] = fgToMainReady;
-                            System.arraycopy(
-                                    fgResourceSignals,
-                                    0,
-                                    signals,
-                                    cursor,
-                                    fgResourceSignals.length
-                            );
-                        }
-
-                        VulkanCommandBuffer commandBuffer = commandBuffers.get(index);
-                        VulkanDevice.IssuedSubmission submission;
-                        try {
-                            submission = device.submitCommandBufferIssued(
-                                    device.requireFgQueue(),
-                                    commandBuffer,
-                                    waits,
-                                    stages,
-                                    signals
-                            );
-                        } catch (VulkanDevice.SubmissionTicketPublicationException throwable) {
-                            // The queue submission itself landed; only the ticket failed.
-                            submittedCount = index + 1;
-                            if (hasTarget) {
-                                renderedTargetCount = index + 1;
-                            }
-                            throw throwable;
-                        }
-                        submittedCount = index + 1;
-                        if (hasTarget) {
-                            renderedTargetCount = index + 1;
-                        }
-                        submissionGenerations[index] = commandBuffer.submissionGeneration();
-                        submissionTickets[index] = submission.submissionTicket();
-                        lastCommandBuffer = commandBuffer;
-                        lastFence = submission.fence();
-                    }
-                } finally {
-                    VulkanLowLatency.renderSubmitMarker(realPresentId, true, false);
-                }
-                // A provider may return fewer generated frames than it was offered buffers
-                // for; those tail buffers are never submitted, so drop their recording.
-                resetCommandBuffers(commandBuffers, submissionCount);
-
-                ScheduledPresentTarget realTarget = targets.get(targets.size() - 1);
-                long[] realWaits = new long[]{
-                        realTarget.acquireLease().semaphore(),
-                        fgToMainReady
-                };
-                int[] realStages = new int[]{
-                        VK_PIPELINE_STAGE_TRANSFER_BIT,
-                        VK_PIPELINE_STAGE_TRANSFER_BIT
-                };
-                long[] realSignals = new long[1 + (mainReadsCaptureInput ? resourceSignals.length : 0)];
-                realSignals[0] = renderFinished[realTarget.imageIndex()];
-                if (mainReadsCaptureInput) {
-                    System.arraycopy(resourceSignals, 0, realSignals, 1, resourceSignals.length);
-                }
-                VulkanDevice.IssuedSubmission realSubmission;
-                VulkanLowLatency.renderSubmitMarker(realPresentId, false, true);
-                try {
-                    realSubmission = device.submitCommandBufferIssued(
-                            device.getMainQueue(),
-                            realCommandBuffer,
-                            realWaits,
-                            realStages,
-                            realSignals,
-                            realPresentId
-                    );
-                    realSubmitted = true;
-                } catch (VulkanDevice.SubmissionTicketPublicationException throwable) {
-                    realSubmitted = true;
-                    throw throwable;
-                } finally {
-                    VulkanLowLatency.renderSubmitMarker(realPresentId, false, false);
-                }
-                // The capture inputs are read by every generated submission, so the frame is
-                // only free once the last one retires.
-                job.frameResources().markSubmitted(lastCommandBuffer, lastFence);
-
-                FrameGenerationDispatchCompletion completion =
-                        new SubmittedProviderBatchCompletion(
-                                result.completion(),
-                                commandBuffers.subList(0, submissionCount),
-                                submissionGenerations,
-                                realCommandBuffer,
-                                realCommandBuffer.submissionGeneration(),
-                                this::recycleFgToMainSemaphore,
-                                fgToMainReady
-                        );
-                VulkanLowLatency.PresentBatchIds presentIds =
-                        VulkanLowLatency.reservePresentBatch(realPresentId, generatedCount);
-                long[] generatedPresentIds = presentIds.generatedPresentIds();
-                realPresentId = presentIds.realPresentId();
-                boolean pacingEnabled = framePacingEstimator.onBatchResult(
-                        generatedCount,
-                        result.historyDisposition()
-                );
-                long batchIntervalNanos =
-                        batchIntervalNanos(realPeriodNanos, generatedCount);
-                List<PresentFrame> presentFrames =
-                        new ArrayList<>(generatedCount + 1);
-                FrameGenerationDispatchCompletion realAcquireCompletion =
-                        new SubmittedCommandBufferCompletion(
-                                realCommandBuffer,
-                                realCommandBuffer.submissionGeneration()
-                        );
-                for (int index = 0; index < targets.size(); index++) {
-                    boolean generated = index < generatedCount;
-                    ScheduledPresentTarget target = targets.get(index);
-                    // The acquire semaphore of frame `index` is waited on by submission
-                    // `index` alone, so its lease is reusable as soon as that submission
-                    // retires. Handing the batch-wide completion here instead would block
-                    // the FG thread's drain on the whole batch -- including the real frame
-                    // -- and, through FrameResources.awaitBorrowedInputReleaseSubmission,
-                    // stall the render thread on the previous batch's GPU work.
-                    FrameGenerationDispatchCompletion acquireCompletion = generated
-                            ? new SubmittedCommandBufferCompletion(
-                            commandBuffers.get(index),
-                            submissionGenerations[index]
-                    )
-                            : realAcquireCompletion;
-                    presentFrames.add(new PresentFrame(
-                            firstDisplayIndex + index,
-                            job.realIndex(),
-                            job.latencyFrameId(),
-                            generated
-                                    ? PresentFrame.Kind.GENERATED
-                                    : PresentFrame.Kind.REAL,
-                            swapchainGeneration,
-                            swapchain,
-                            target.imageIndex(),
-                            renderFinished[target.imageIndex()],
-                            generated
-                                    ? submissionTickets[index]
-                                    : realSubmission.submissionTicket(),
-                            generated ? generatedPresentIds[index] : realPresentId,
-                            generated,
-                            batchId,
-                            batchIntervalNanos,
-                            generatedCount,
-                            pacingEnabled,
-                            outputLease,
-                            completion,
-                            acquireCompletion,
-                            target.acquireLease()::close
-                    ));
-                }
-                FrameBatch batch = FrameBatch.applicationManaged(
-                        job.realIndex(),
-                        generatedCount,
-                        batchId,
-                        job.latencyFrameId(),
-                        realPresentId,
-                        batchIntervalNanos,
-                        pacingEnabled,
-                        presentFrames,
-                        outputLease,
-                        completion,
-                        result.historyDisposition()
-                );
-                fgToMainReady = VK_NULL_HANDLE;
-                return batch;
-            } catch (Throwable throwable) {
-                if (submittedCount > 0) {
-                    job.frameResources().markUnrecoverable();
-                    waitAndReleaseAbortedSubmittedBatch(
-                            commandBuffers,
-                            submittedCount,
-                            realCommandBuffer,
-                            realSubmitted,
-                            renderedTargetCount,
-                            targets,
-                            outputLease,
-                            fgToMainReady
-                    );
-                    fgToMainReady = VK_NULL_HANDLE;
-                    throw throwable;
-                }
-
-                if (fgToMainReady != VK_NULL_HANDLE) {
-                    // Nothing was submitted on this path, so the semaphore is still unsignaled.
-                    recycleFgToMainSemaphore(fgToMainReady);
-                    fgToMainReady = VK_NULL_HANDLE;
-                }
-                try {
-                    resetCommandBuffers(commandBuffers, 0);
-                    if (realCommandBuffer != null) {
-                        realCommandBuffer.reset();
-                    }
-                } catch (Throwable resetFailure) {
-                    throwable.addSuppressed(resetFailure);
-                }
-                if (!targets.isEmpty()) {
-                    returnAbortedScheduledTargets(targets, 0);
-                }
-                ScheduledTargetAcquireException targetAcquireException =
-                        throwable instanceof ScheduledTargetAcquireException exception
-                                ? exception
-                                : null;
-                recreateAfterAbort = targetAcquireException != null
-                        && targetAcquireException.requiresRecreate();
-                abortProviderLease(outputLease);
-                if (targetAcquireException != null
-                        && targetAcquireException.isExpectedFallback()) {
-                    SuperResolution.LOGGER.debug(
-                            "Deferred async frame-generation batch for provider '{}' and real frame {}: {}; "
-                                    + "using Real-only fallback",
-                            schedulerProviderId,
-                            job.realIndex(),
-                            targetAcquireException.getMessage()
-                    );
-                } else {
-                    SuperResolution.LOGGER.warn(
-                            "Failed to build a complete async frame-generation batch for provider '{}' "
-                                    + "and real frame {}; using Real-only fallback",
-                            schedulerProviderId,
-                            job.realIndex(),
-                            throwable
-                    );
-                }
-            }
-        }
-
-        if (recreateAfterAbort) {
-            requestRecreate();
-        }
-        return null;
-    }
-
-    private PresentFrame submitRealOnly(
-            RealFrameJob job,
-            long displayIndex,
-            long batchId,
-            long batchIntervalNanos
-    ) {
-        if (!job.presentAllowed() || !frameCanBePresented(job.frameResources())) {
-            submitRealOnlyWithoutPresent(job.frameResources());
-            return null;
-        }
-        if (recreateRequested || swapchain == VK_NULL_HANDLE || width <= 0 || height <= 0) {
-            requestRecreate();
-            submitRealOnlyWithoutPresent(job.frameResources());
-            return null;
-        }
-        {
-            if (!frameCanBePresented(job.frameResources())
-                    || recreateRequested
-                    || swapchain == VK_NULL_HANDLE
-                    || width <= 0
-                    || height <= 0) {
-                submitRealOnlyWithoutPresent(job.frameResources());
-                return null;
-            }
-
-            VulkanBinarySemaphorePool.Lease acquireLease = null;
-            boolean submitted = false;
-            boolean targetReserved = false;
-            boolean targetOwnershipTransferred = false;
-            try {
-                ensureApplicationManagedBatchFits(1);
-                reserveApplicationManagedTarget();
-                targetReserved = true;
-                acquireLease = acquireApplicationManagedSemaphore();
-                int imageIndex = acquireImage(acquireLease.semaphore());
-                if (imageIndex < 0) {
-                    acquireLease.close();
-                    acquireLease = null;
-                    if (imageIndex == ACQUIRE_OUT_OF_DATE) {
-                        requestRecreate();
-                    }
-                    submitRealOnlyWithoutPresent(job.frameResources());
-                    return null;
-                }
-
-                VulkanCommandBuffer commandBuffer =
-                        applicationManagedRealCommandBuffers().acquire(device);
-                commandBuffer.reset();
-                commandBuffer.begin();
-                recordBlit(
-                        commandBuffer,
-                        job.frameResources().finalColorVulkanTexture(),
-                        imageIndex,
-                        false
-                );
-                commandBuffer.end();
-
-                long[] resourceWaits = job.frameResources().readySemaphores();
-                long[] resourceSignals = job.frameResources().releaseSemaphores();
-                long[] waits = new long[resourceWaits.length + 1];
-                int[] stages = new int[waits.length];
-                long[] signals = new long[resourceSignals.length + 1];
-                waits[0] = acquireLease.semaphore();
-                stages[0] = VK_PIPELINE_STAGE_TRANSFER_BIT;
-                System.arraycopy(resourceWaits, 0, waits, 1, resourceWaits.length);
-                Arrays.fill(stages, 1, stages.length, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-                signals[0] = renderFinished[imageIndex];
-                System.arraycopy(resourceSignals, 0, signals, 1, resourceSignals.length);
-
-                long realPresentId = VulkanLowLatency
-                        .reservePresentBatch(job.realPresentId(), 0)
-                        .realPresentId();
-                VulkanDevice.IssuedSubmission submission;
-                VulkanLowLatency.renderSubmitMarker(realPresentId, false, true);
-                try {
-                    submission = device.submitCommandBufferIssued(
-                            device.getMainQueue(),
-                            commandBuffer,
-                            waits,
-                            stages,
-                            signals,
-                            realPresentId
-                    );
-                } catch (VulkanDevice.SubmissionTicketPublicationException throwable) {
-                    job.frameResources().markSubmitted(commandBuffer, throwable.fence());
-                    commandBuffer.waitForSubmission(throwable.submissionGeneration());
-                    acquireLease.close();
-                    acquireLease = null;
-                    submitted = true;
-                    throw throwable;
-                } finally {
-                    VulkanLowLatency.renderSubmitMarker(realPresentId, false, false);
-                }
-                job.frameResources().markSubmitted(commandBuffer, submission.fence());
-                submitted = true;
-                FrameGenerationDispatchCompletion completion =
-                        new SubmittedCommandBufferCompletion(
-                                commandBuffer,
-                                commandBuffer.submissionGeneration()
-                        );
-                PresentFrame presentFrame = new PresentFrame(
-                        displayIndex,
-                        job.realIndex(),
-                        job.latencyFrameId(),
-                        PresentFrame.Kind.REAL,
-                        swapchainGeneration,
-                        swapchain,
-                        imageIndex,
-                        renderFinished[imageIndex],
-                        submission.submissionTicket(),
-                        realPresentId,
-                        false,
-                        batchId,
-                        batchIntervalNanos,
-                        0,
-                        false,
-                        null,
-                        completion,
-                        // Real-only batches are a single submission, so the batch
-                        // completion is already the acquire-semaphore granularity.
-                        completion,
-                        acquireLease::close
-                );
-                targetOwnershipTransferred = true;
-                return presentFrame;
-            } catch (ScheduledTargetAcquireException exception) {
-                requestRecreate();
-                submitRealOnlyWithoutPresent(job.frameResources());
-                return null;
-            } finally {
-                if (!submitted && acquireLease != null) {
-                    acquireLease.close();
-                }
-                if (!targetOwnershipTransferred && targetReserved) {
-                    releaseApplicationManagedTarget();
-                }
-            }
-        }
-    }
-
-    int presentScheduledFrame(PresentFrame frame) {
-        synchronized (swapchainLock) {
-            if (!isCurrentGeneration(frame)) {
-                return VK_ERROR_OUT_OF_DATE_KHR;
-            }
-            return presentImage(
-                    frame.swapchainImageIndex(),
-                    frame.outOfBand(),
-                    frame.swapchainHandle(),
-                    frame.presentReadyBinary(),
-                    frame.presentId(),
-                    true
-            );
-        }
-    }
-
-    void discardScheduledFrame(PresentFrame frame) {
-        if (frame != null) {
-            frame.releaseAcquireLease();
-        }
-    }
-
-    void releaseScheduledTarget(PresentFrame frame) {
-        if (frame != null) {
-            releaseApplicationManagedTarget();
-        }
-    }
-
-    boolean isCurrentGeneration(PresentFrame frame) {
-        return frame != null
-                && frame.swapchainGeneration() == swapchainGeneration
-                && frame.swapchainHandle() == swapchain;
-    }
-
-    /**
-     * Acquires and blits one swapchain image per interpolated frame, then hands the
-     * whole batch (interpolated frames first, real frame last) to the pacer thread.
-     * Returns false when the batch could not be set up; the caller then presents the
-     * real frame inline.
-     */
-    private boolean submitGeneratedFrames(FramePresentPlan plan, int realImageIndex) {
-        List<VulkanTexture> generated = plan.generatedFrames();
-        if (imageCount < generated.size() + 2) {
-            requestRecreate();
-            return false;
-        }
-        List<Integer> presentOrder = new ArrayList<>(generated.size() + 1);
-        for (VulkanTexture generatedTexture : generated) {
-            int syncSlot = nextImageAvailableIndex();
-            int generatedImageIndex = acquireImage(syncSlot);
-            if (generatedImageIndex < 0) {
-                requestRecreate();
-                presentAcquiredUnpaced(presentOrder);
-                return false;
-            }
-            VulkanCommandBuffer blitCommandBuffer = generatedCommandBuffers().acquire(device);
-            blitCommandBuffer.reset();
-            blitCommandBuffer.begin();
-            recordBlit(blitCommandBuffer, generatedTexture, generatedImageIndex, true);
-            blitCommandBuffer.end();
-            device.submitCommandBuffer(
-                    blitCommandBuffer,
-                    new long[]{imageAvailable[syncSlot]},
-                    new int[]{VK_PIPELINE_STAGE_TRANSFER_BIT},
-                    new long[]{renderFinished[generatedImageIndex]}
-            );
-            presentOrder.add(generatedImageIndex);
-        }
-        presentOrder.add(realImageIndex);
-        // Present ids for the whole batch are fixed now so the next frame starting
-        // on the render thread cannot shift them under the pacer thread.
-        VulkanLowLatency.expectGeneratedBatch(generated.size());
-        pacer.submitBatch(presentOrder, index -> presentImage(index, index != realImageIndex));
-        return true;
-    }
-
-    private void submitRealOnlyWithoutPresent(FrameResources frame) {
-        try {
-            VulkanCommandBuffer commandBuffer = applicationManagedRealCommandBuffers().acquire(device);
-            commandBuffer.reset();
-            commandBuffer.begin();
-            commandBuffer.end();
-
-            long[] waits = frame.readySemaphores();
-            int[] stages = waits.length == 0 ? NO_STAGES : new int[waits.length];
-            Arrays.fill(stages, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-            long[] signals = frame.releaseSemaphores();
-            long fence = device.submitCommandBuffer(
-                    device.getMainQueue(),
-                    commandBuffer,
-                    waits.length == 0 ? NO_SEMAPHORES : waits,
-                    stages,
-                    signals.length == 0 ? NO_SEMAPHORES : signals
-            );
-            frame.markSubmitted(commandBuffer, fence);
-        } catch (Throwable throwable) {
-            frame.markUnrecoverable();
-            throw throwable;
-        }
-    }
-
-    private void presentAcquiredUnpaced(List<Integer> imageIndices) {
-        for (int imageIndex : imageIndices) {
-            queuePresent(imageIndex);
-        }
-    }
-
-    private VulkanCommandBufferRing generatedCommandBuffers() {
-        if (generatedBlitCommandBuffers == null) {
-            generatedBlitCommandBuffers =
-                    new VulkanCommandBufferRing(MAX_IN_FLIGHT_FRAMES * MAX_GENERATED_FRAMES);
-        }
-        return generatedBlitCommandBuffers;
-    }
-
     public void consumeWithoutPresent(FrameResources frame) {
-        AsyncFrameGenerationScheduler scheduler = ensureApplicationManagedScheduler();
+        AsyncFramePresenter scheduler = ensureAsyncFramePresenter();
         if (scheduler != null) {
             scheduler.enqueue(frame, false);
             return;
         }
-        try {
-            consumeWithoutPresentInternal(frame);
-        } finally {
-        }
+        consumeWithoutPresentInternal(frame);
     }
 
     private void consumeWithoutPresentInternal(FrameResources frame) {
@@ -1171,62 +311,56 @@ final class VulkanSwapchain {
             String providerId,
             Runnable teardown
     ) {
-        AsyncFrameGenerationScheduler scheduler = applicationManagedScheduler;
+        AsyncFramePresenter scheduler = asyncFramePresenter;
         if (scheduler == null || !scheduler.providerId().equals(providerId)) {
             return false;
         }
-        scheduler.shutdownProviderOnFgThread(providerId, teardown);
+        scheduler.shutdownProviderOnFrameGenerationThread(providerId, teardown);
         return true;
     }
 
     public void destroy() {
         Throwable failure = null;
-        AsyncFrameGenerationScheduler scheduler = applicationManagedScheduler;
-        applicationManagedScheduler = null;
+        AsyncFramePresenter presenter = asyncFramePresenter;
         try {
-            if (scheduler != null) {
-                scheduler.close();
+            if (presenter != null) {
+                presenter.close();
             }
         } catch (Throwable throwable) {
             failure = throwable;
-        } finally {
-            pacer.shutdown();
-            device.getMainQueue().waitIdle();
-            if (device.getFrameGenerationQueue() != null) {
-                device.getFrameGenerationQueue().waitIdle();
-            }
-            waitForDedicatedPresentQueueIdle();
-            commandBuffers.destroy();
-            if (applicationManagedCommandBuffers != null) {
-                applicationManagedCommandBuffers.destroy();
-                applicationManagedCommandBuffers = null;
-            }
-            if (applicationManagedRealCommandBuffers != null) {
-                applicationManagedRealCommandBuffers.destroy();
-                applicationManagedRealCommandBuffers = null;
-            }
-            if (generatedBlitCommandBuffers != null) {
-                generatedBlitCommandBuffers.destroy();
-                generatedBlitCommandBuffers = null;
-            }
-            if (applicationManagedAcquireSemaphores != null) {
-                applicationManagedAcquireSemaphores.close();
-                applicationManagedAcquireSemaphores = null;
-            }
-            destroyIndicatorTextures();
-            destroySwapchain();
-            for (int i = 0; i < imageAvailable.length; i++) {
-                if (imageAvailable[i] != VK_NULL_HANDLE) {
-                    vkDestroySemaphore(device.getVkDevice(), imageAvailable[i], null);
-                    imageAvailable[i] = VK_NULL_HANDLE;
-                }
-            }
-            destroySemaphores(renderFinished);
-            renderFinished = new long[0];
-            destroyFgToMainSemaphorePool();
         }
+        if (presenter != null && !presenter.isTerminated()) {
+            throw new IllegalStateException("Cannot destroy presentation resources while a worker is active", failure);
+        }
+        asyncFramePresenter = null;
+        device.getMainQueue().waitIdle();
+        if (device.getFrameGenerationQueue() != null) {
+            device.getFrameGenerationQueue().waitIdle();
+        }
+        waitForDedicatedPresentQueueIdle();
+        commandBuffers.destroy();
+        if (presentationCommandBuffers != null) {
+            presentationCommandBuffers.destroy();
+            presentationCommandBuffers = null;
+            presentationCommandPool.destroy();
+            presentationCommandPool = null;
+        }
+        if (applicationManagedAcquireSemaphores != null) {
+            applicationManagedAcquireSemaphores.close();
+            applicationManagedAcquireSemaphores = null;
+        }
+        destroyIndicatorTextures();
+        destroySwapchain();
+        for (int i = 0; i < imageAvailable.length; i++) {
+            if (imageAvailable[i] != VK_NULL_HANDLE) {
+                vkDestroySemaphore(device.getVkDevice(), imageAvailable[i], null);
+                imageAvailable[i] = VK_NULL_HANDLE;
+            }
+        }
+        destroySemaphores(renderFinished);
+        renderFinished = new long[0];
         if (failure != null) {
-            throw new IllegalStateException("Application-managed scheduler shutdown failed", failure);
+            throw new IllegalStateException("Application-managed presenter shutdown failed", failure);
         }
     }
 
@@ -1247,7 +381,7 @@ final class VulkanSwapchain {
 
     /**
      * Presents one swapchain image and returns the raw VkResult. Safe to call from
-     * the pacer thread; the queue lock serializes it against command submissions.
+     * the present thread; the queue lock serializes it against command submissions.
      * Interpolated frames present as out-of-band so Reflex pacing only tracks the
      * real frame.
      */
@@ -1350,25 +484,9 @@ final class VulkanSwapchain {
         });
     }
 
-    private boolean frameCanBePresented(FrameResources frame) {
-        return frame != null
-                && frame.hasFinalColor()
-                && swapchain != VK_NULL_HANDLE
-                && width > 0
-                && height > 0;
-    }
-
-    private synchronized AsyncFrameGenerationScheduler ensureApplicationManagedScheduler() {
-        if (applicationManagedScheduler != null) {
-            if (!FrameGeneration.isApplicationManagedSchedulerCompatible(
-                    applicationManagedScheduler.providerId()
-            )) {
-                throw new IllegalStateException(
-                        "Frame generation provider changed before the application-managed "
-                                + "scheduler was drained"
-                );
-            }
-            return applicationManagedScheduler;
+    private synchronized AsyncFramePresenter ensureAsyncFramePresenter() {
+        if (asyncFramePresenter != null) {
+            return asyncFramePresenter;
         }
         String providerId = FrameGeneration.activeApplicationManagedProviderId();
         if (providerId.isEmpty()) {
@@ -1377,9 +495,9 @@ final class VulkanSwapchain {
         if (!device.asyncDispatchCapabilities().available()) {
             return null;
         }
-        applicationManagedScheduler =
-                new AsyncFrameGenerationScheduler(this, device, providerId);
-        return applicationManagedScheduler;
+        asyncFramePresenter =
+                new AsyncFramePresenter(this, device, providerId);
+        return asyncFramePresenter;
     }
 
     private void updateApplicationManagedFramePlan() {
@@ -1397,33 +515,169 @@ final class VulkanSwapchain {
         return context.framePacingTiming();
     }
 
-    long swapchainGeneration() {
-        return swapchainGeneration;
+    PresentationConfiguration presentationConfiguration() {
+        synchronized (swapchainLock) {
+            return new PresentationConfiguration(swapchainGeneration, swapchain, width, height,
+                    imageFormat, imageCount,
+                    !recreateRequested && swapchain != VK_NULL_HANDLE && width > 0 && height > 0);
+        }
     }
 
-    /**
-     * Each in-flight batch now takes one command buffer per generated frame, plus the
-     * aborted-target path may take one more, so the ring has to cover all of them or
-     * {@code acquire} would hand the same buffer back twice inside one batch.
-     */
-    private VulkanCommandBufferRing applicationManagedCommandBuffers() {
-        if (applicationManagedCommandBuffers == null) {
-            applicationManagedCommandBuffers = new VulkanCommandBufferRing(
-                    MAX_IN_FLIGHT_FRAMES * (MAX_GENERATED_FRAMES + 1),
-                    device.requireFgCommandPool()
-            );
-        }
-        return applicationManagedCommandBuffers;
+    boolean isCurrentConfiguration(PresentationConfiguration configuration) {
+        return configuration.generation() == swapchainGeneration && configuration.handle() == swapchain;
     }
 
-    private VulkanCommandBufferRing applicationManagedRealCommandBuffers() {
-        if (applicationManagedRealCommandBuffers == null) {
-            applicationManagedRealCommandBuffers = new VulkanCommandBufferRing(
-                    MAX_IN_FLIGHT_FRAMES,
-                    device.requireFgCommandPool()
-            );
+    void ensurePresentBatchFits(int targetCount) {
+        if (recreateRequested || targetCount > Math.max(0, imageCount - 1)) {
+            requestRecreate();
+            throw new PresentTargetUnavailableException();
         }
-        return applicationManagedRealCommandBuffers;
+    }
+
+    PresentTarget acquirePresentTarget() {
+        synchronized (applicationManagedTargetLock) {
+            if (recreateRequested || applicationManagedTargetCount >= imageCount - 1) {
+                throw new PresentTargetUnavailableException();
+            }
+            applicationManagedTargetCount++;
+        }
+        VulkanBinarySemaphorePool.Lease lease = null;
+        boolean acquired = false;
+        try {
+            lease = acquireApplicationManagedSemaphore();
+            int imageIndex = acquireImage(lease.semaphore());
+            if (imageIndex < 0) {
+                if (imageIndex == ACQUIRE_OUT_OF_DATE) {
+                    requestRecreate();
+                }
+                throw new PresentTargetUnavailableException();
+            }
+            acquired = true;
+            return new PresentTarget(swapchainGeneration, swapchain, imageIndex,
+                    images[imageIndex], imageLayouts[imageIndex], renderFinished[imageIndex], lease);
+        } finally {
+            if (!acquired) {
+                if (lease != null) {
+                    lease.close();
+                }
+                releasePresentTarget();
+            }
+        }
+    }
+
+    PresentBlitSubmission submitPresentBlit(
+            PresentTarget target, PresentImage image, long[] sourceWaits, long[] captureSignals
+    ) {
+        VulkanCommandBuffer buffer = presentationCommandBuffers().acquire(device);
+        buffer.reset();
+        buffer.begin();
+        recordBlit(buffer, image.source(), target.imageIndex(), image.kind() == PresentImage.Kind.GENERATED);
+        buffer.end();
+        long[] waits = new long[sourceWaits.length + 1];
+        waits[0] = target.acquireLease().semaphore();
+        System.arraycopy(sourceWaits, 0, waits, 1, sourceWaits.length);
+        int[] stages = new int[waits.length];
+        Arrays.fill(stages, VK_PIPELINE_STAGE_TRANSFER_BIT);
+        long[] signals = new long[captureSignals.length + 1];
+        signals[0] = target.renderFinishedSemaphore();
+        System.arraycopy(captureSignals, 0, signals, 1, captureSignals.length);
+        VulkanLowLatency.renderSubmitMarker(image.presentId(), image.outOfBand(), true);
+        try {
+            VulkanDevice.IssuedSubmission issued = device.submitCommandBufferIssued(
+                    device.getMainQueue(), buffer, waits, stages, signals,
+                    image.outOfBand() ? 0L : image.presentId());
+            return new PresentBlitSubmission(buffer, issued.fence(), issued.submissionTicket(),
+                    GpuReadyFences.completion(buffer));
+        } catch (VulkanDevice.SubmissionTicketPublicationException exception) {
+            // The GPU wait landed even though its CPU-issued ticket could not be published.
+            buffer.waitForSubmission(exception.submissionGeneration());
+            throw exception;
+        } finally {
+            VulkanLowLatency.renderSubmitMarker(image.presentId(), image.outOfBand(), false);
+        }
+    }
+
+    PresentBlitSubmission submitPresentationRelease(long[] waits, long[] signals) {
+        VulkanCommandBuffer buffer = presentationCommandBuffers().acquire(device);
+        buffer.reset();
+        buffer.begin();
+        buffer.end();
+        int[] stages = new int[waits.length];
+        Arrays.fill(stages, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+        long fence = device.submitCommandBuffer(device.getMainQueue(), buffer, waits, stages, signals);
+        return new PresentBlitSubmission(buffer, fence, 0L, GpuReadyFences.completion(buffer));
+    }
+
+    int presentTarget(PresentTarget target, PresentImage image) {
+        synchronized (swapchainLock) {
+            if (target.generation() != swapchainGeneration || target.swapchainHandle() != swapchain) {
+                return VK_ERROR_OUT_OF_DATE_KHR;
+            }
+            return presentImage(target.imageIndex(), image.outOfBand(), target.swapchainHandle(),
+                    target.renderFinishedSemaphore(), image.presentId(), true);
+        }
+    }
+
+    void releasePresentTarget() {
+        synchronized (applicationManagedTargetLock) {
+            applicationManagedTargetCount--;
+            applicationManagedTargetLock.notifyAll();
+        }
+    }
+
+    void discardPresentTarget(PresentTarget target, boolean rendered) {
+        try {
+            if (!rendered) {
+                VulkanCommandBuffer buffer = presentationCommandBuffers().acquire(device);
+                buffer.reset();
+                buffer.begin();
+                try (MemoryStack stack = MemoryStack.stackPush()) {
+                    if (target.layoutAtAcquire() != VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
+                        VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack)
+                                .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
+                                .srcAccessMask(sourceAccessMask(target.layoutAtAcquire()))
+                                .dstAccessMask(0)
+                                .oldLayout(target.layoutAtAcquire())
+                                .newLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
+                                .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                                .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+                                .image(target.imageHandle())
+                                .subresourceRange(colorSubresource(stack));
+                        vkCmdPipelineBarrier(buffer.getNativeCommandBuffer(),
+                                VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+                                0, null, null, barrier);
+                    }
+                }
+                buffer.end();
+                device.submitCommandBuffer(device.getMainQueue(), buffer,
+                        new long[]{target.acquireLease().semaphore()},
+                        new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
+                        new long[]{target.renderFinishedSemaphore()});
+                buffer.waitForFence();
+                imageLayouts[target.imageIndex()] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+            }
+            int result = presentImage(target.imageIndex(), true, target.swapchainHandle(),
+                    target.renderFinishedSemaphore(), 0L, true);
+            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+                requestRecreate();
+            } else {
+                check(result, "return an unpresented swapchain image");
+            }
+        } finally {
+            target.acquireLease().close();
+            releasePresentTarget();
+        }
+    }
+
+    private VulkanCommandBufferRing presentationCommandBuffers() {
+        if (presentationCommandBuffers == null) {
+            // The present thread must not record into the render or FG thread's command pool.
+            presentationCommandPool = device.createCommandPool(device.getMainQueue(), "PresentationCommandPool",
+                    CommandPoolFlags.Reset, CommandPoolFlags.Transient);
+            presentationCommandBuffers = new VulkanCommandBufferRing(
+                    MAX_IN_FLIGHT_FRAMES * (MAX_GENERATED_FRAMES + 1) + 1, presentationCommandPool);
+        }
+        return presentationCommandBuffers;
     }
 
     private VulkanBinarySemaphorePool applicationManagedAcquireSemaphores() {
@@ -1446,381 +700,6 @@ final class VulkanSwapchain {
                     e
             );
         }
-    }
-
-    private void ensureApplicationManagedBatchFits(int targetCount) {
-        synchronized (applicationManagedTargetLock) {
-            int capacity = applicationManagedTargetCapacity();
-            if (recreateRequested || targetCount > capacity) {
-                throw new ScheduledTargetAcquireException(
-                        "Application-managed swapchain batch requires " + targetCount
-                                + " targets but only " + capacity + " are available",
-                        true
-                );
-            }
-        }
-    }
-
-    private void reserveApplicationManagedTarget() {
-        synchronized (applicationManagedTargetLock) {
-            while (true) {
-                if (recreateRequested) {
-                    throw new ScheduledTargetAcquireException(
-                            "Swapchain recreation was requested while reserving an async frame target",
-                            true
-                    );
-                }
-                if (applicationManagedTargetCount < applicationManagedTargetCapacity()) {
-                    applicationManagedTargetCount++;
-                    return;
-                }
-                try {
-                    applicationManagedTargetLock.wait();
-                } catch (InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    throw new IllegalStateException(
-                            "Interrupted while waiting for an application-managed swapchain target",
-                            e
-                    );
-                }
-            }
-        }
-    }
-
-    private void releaseApplicationManagedTarget() {
-        synchronized (applicationManagedTargetLock) {
-            if (applicationManagedTargetCount <= 0) {
-                throw new IllegalStateException("No application-managed swapchain target is reserved");
-            }
-            applicationManagedTargetCount--;
-            applicationManagedTargetLock.notifyAll();
-        }
-    }
-
-    private int applicationManagedTargetCapacity() {
-        if (swapchain == VK_NULL_HANDLE || width <= 0 || height <= 0) {
-            return 0;
-        }
-        // Keep one image unreserved so the foreground render path can always make progress.
-        return Math.max(0, imageCount - 1);
-    }
-
-    private void acquireScheduledPresentTargets(
-            int count,
-            List<ScheduledPresentTarget> targets
-    ) {
-        ensureApplicationManagedBatchFits(count);
-        for (int index = 0; index < count; index++) {
-            reserveApplicationManagedTarget();
-            VulkanBinarySemaphorePool.Lease acquireLease = null;
-            boolean targetAcquired = false;
-            try {
-                acquireLease = acquireApplicationManagedSemaphore();
-                int imageIndex = acquireImage(acquireLease.semaphore());
-                if (imageIndex < 0) {
-                    acquireLease.close();
-                    acquireLease = null;
-                    throw new ScheduledTargetAcquireException(
-                            imageIndex == ACQUIRE_OUT_OF_DATE
-                                    ? VK_ERROR_OUT_OF_DATE_KHR
-                                    : VK_TIMEOUT
-                    );
-                }
-                targets.add(new ScheduledPresentTarget(
-                        imageIndex,
-                        swapchain,
-                        images[imageIndex],
-                        imageLayouts[imageIndex],
-                        renderFinished[imageIndex],
-                        acquireLease
-                ));
-                targetAcquired = true;
-            } finally {
-                if (!targetAcquired) {
-                    if (acquireLease != null) {
-                        acquireLease.close();
-                    }
-                    releaseApplicationManagedTarget();
-                }
-            }
-        }
-    }
-
-    /**
-     * Returns images acquired for a batch that will never reach the normal present queue.
-     * The FG queue first consumes every acquire semaphore and signals the image-specific
-     * present semaphore; the exceptional direct presents then return the images to the
-     * swapchain without claiming a latency present id.
-     */
-    private void returnAbortedScheduledTargets(
-            List<ScheduledPresentTarget> targets,
-            int renderedTargetCount
-    ) {
-        if (targets == null || targets.isEmpty()) {
-            return;
-        }
-        if (renderedTargetCount < 0 || renderedTargetCount > targets.size()) {
-            throw new IllegalArgumentException("renderedTargetCount is outside the acquired target range");
-        }
-
-        if (renderedTargetCount < targets.size()) {
-            VulkanCommandBuffer commandBuffer =
-                    applicationManagedCommandBuffers().acquire(device);
-            commandBuffer.reset();
-            commandBuffer.begin();
-            recordAbortedTargetPresentLayouts(commandBuffer, targets, renderedTargetCount);
-            commandBuffer.end();
-
-            int pendingCount = targets.size() - renderedTargetCount;
-            long[] waits = new long[pendingCount];
-            int[] stages = new int[pendingCount];
-            long[] signals = new long[pendingCount];
-            for (int index = 0; index < pendingCount; index++) {
-                ScheduledPresentTarget target = targets.get(renderedTargetCount + index);
-                waits[index] = target.acquireLease().semaphore();
-                stages[index] = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-                signals[index] = target.renderFinishedSemaphore();
-            }
-            device.submitCommandBuffer(
-                    device.requireFgQueue(),
-                    commandBuffer,
-                    waits,
-                    stages,
-                    signals
-            );
-            commandBuffer.waitForFence();
-            markAbortedTargetsPresented(targets, renderedTargetCount);
-        }
-
-        Throwable failure = null;
-        boolean recreate = false;
-        for (ScheduledPresentTarget target : targets) {
-            try {
-                int result = presentImage(
-                        target.imageIndex(),
-                        true,
-                        target.swapchainHandle(),
-                        target.renderFinishedSemaphore(),
-                        0L,
-                        true
-                );
-                if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-                    recreate = true;
-                } else if (result != VK_SUCCESS) {
-                    throw new IllegalStateException(
-                            "Failed to return an aborted Vulkan swapchain image, VkResult=" + result
-                    );
-                }
-            } catch (Throwable throwable) {
-                recreate = true;
-                if (failure == null) {
-                    failure = throwable;
-                } else {
-                    failure.addSuppressed(throwable);
-                }
-            } finally {
-                try {
-                    target.acquireLease().close();
-                } finally {
-                    releaseApplicationManagedTarget();
-                }
-            }
-        }
-        if (recreate) {
-            requestRecreate();
-        }
-        if (failure != null) {
-            SuperResolution.LOGGER.warn(
-                    "Failed while returning aborted application-managed swapchain images",
-                    failure
-            );
-        }
-    }
-
-    private void recordAbortedTargetPresentLayouts(
-            VulkanCommandBuffer commandBuffer,
-            List<ScheduledPresentTarget> targets,
-            int renderedTargetCount
-    ) {
-        int transitionCount = 0;
-        int sourceStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-        for (int index = renderedTargetCount; index < targets.size(); index++) {
-            int layoutAtAcquire = targets.get(index).layoutAtAcquire();
-            if (layoutAtAcquire != VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
-                transitionCount++;
-                if (layoutAtAcquire != VK_IMAGE_LAYOUT_UNDEFINED) {
-                    sourceStageMask = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
-                }
-            }
-        }
-        if (transitionCount == 0) {
-            return;
-        }
-
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkImageMemoryBarrier.Buffer barriers =
-                    VkImageMemoryBarrier.calloc(transitionCount, stack);
-            int barrierIndex = 0;
-            for (int index = renderedTargetCount; index < targets.size(); index++) {
-                ScheduledPresentTarget target = targets.get(index);
-                int layoutAtAcquire = target.layoutAtAcquire();
-                if (layoutAtAcquire == VK_IMAGE_LAYOUT_PRESENT_SRC_KHR) {
-                    continue;
-                }
-                barriers.get(barrierIndex++)
-                        .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
-                        .srcAccessMask(sourceAccessMask(layoutAtAcquire))
-                        .dstAccessMask(0)
-                        .oldLayout(layoutAtAcquire)
-                        .newLayout(VK_IMAGE_LAYOUT_PRESENT_SRC_KHR)
-                        .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                        .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
-                        .image(target.imageHandle())
-                        .subresourceRange(colorSubresource(stack));
-            }
-            vkCmdPipelineBarrier(
-                    commandBuffer.getNativeCommandBuffer(),
-                    sourceStageMask,
-                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
-                    0,
-                    null,
-                    null,
-                    barriers
-            );
-        }
-    }
-
-    private void markAbortedTargetsPresented(
-            List<ScheduledPresentTarget> targets,
-            int renderedTargetCount
-    ) {
-        for (int index = renderedTargetCount; index < targets.size(); index++) {
-            ScheduledPresentTarget target = targets.get(index);
-            int imageIndex = target.imageIndex();
-            if (target.swapchainHandle() == swapchain
-                    && imageIndex < imageLayouts.length
-                    && images[imageIndex] == target.imageHandle()) {
-                imageLayouts[imageIndex] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-            }
-        }
-    }
-
-    private void waitAndReleaseAbortedSubmittedBatch(
-            List<VulkanCommandBuffer> fgCommandBuffers,
-            int submittedCount,
-            VulkanCommandBuffer realCommandBuffer,
-            boolean realSubmitted,
-            int renderedGeneratedTargetCount,
-            List<ScheduledPresentTarget> targets,
-            ProviderOutputLease outputLease,
-            long fgToMainReady
-    ) {
-        // Submissions to one queue may still complete out of order, so every issued
-        // command buffer needs its own fence waited on.
-        for (int index = 0; index < submittedCount; index++) {
-            fgCommandBuffers.get(index).waitForFence();
-        }
-        resetCommandBuffers(fgCommandBuffers, submittedCount);
-        if (realSubmitted && realCommandBuffer != null) {
-            realCommandBuffer.waitForFence();
-        }
-        // Only the generated targets whose submission was issued had their present
-        // semaphore signalled; the real target counts only once its own submission landed.
-        int renderedTargetCount = realSubmitted
-                ? targets.size()
-                : Math.min(renderedGeneratedTargetCount, Math.max(0, targets.size() - 1));
-        returnAbortedScheduledTargets(targets, renderedTargetCount);
-        if (outputLease != null) {
-            outputLease.completion().awaitCompletion();
-            if (!outputLease.isReleased()) {
-                outputLease.release();
-            }
-        }
-        if (fgToMainReady != VK_NULL_HANDLE) {
-            // Not recycled: when the FG submissions landed but the real submission that
-            // waits on this semaphore did not, it is still signaled, and a pooled
-            // semaphore must go back unsignaled. Aborts are rare, so destroy it.
-            vkDestroySemaphore(device.getVkDevice(), fgToMainReady, null);
-        }
-    }
-
-    private void abortProviderLease(ProviderOutputLease outputLease) {
-        if (outputLease != null && !outputLease.isReleased()) {
-            outputLease.abort();
-        }
-    }
-
-    private String validateDispatchResult(
-            AsyncFrameGenerationDispatchResult result,
-            AsyncFrameGenerationDispatchRequest request
-    ) {
-        if (result == null) {
-            return "Provider returned null";
-        }
-        if (!result.succeeded()) {
-            return result.failureReason() == null
-                    ? "Provider dispatch failed without a reason"
-                    : result.failureReason();
-        }
-        ProviderOutputLease lease = result.outputLease();
-        if (lease == null) {
-            return "Successful dispatch did not return an output lease";
-        }
-        if (lease.isReleased()) {
-            return "Successful dispatch returned an already released output lease";
-        }
-        if (result.actualGeneratedCount() > request.requestedGeneratedFrameCount()) {
-            return "Provider returned more generated frames than requested";
-        }
-        if (result.actualGeneratedCount()
-                > AsyncFrameGenerationScheduler.MAX_GENERATED_FRAMES) {
-            return "Provider exceeded the scheduler generated-frame limit";
-        }
-        if (result.actualGeneratedCount() > request.commandBufferCount()) {
-            return "Provider returned more generated frames than it was given command buffers";
-        }
-        if (result.generatedOutputs().size() != result.actualGeneratedCount()) {
-            return "Generated output count does not match actualGeneratedCount";
-        }
-
-        ProviderOutputLease.OutputKey outputKey = lease.outputKey();
-        if (outputKey.width() != request.outputWidth()
-                || outputKey.height() != request.outputHeight()) {
-            return "Provider output lease dimensions do not match the swapchain extent";
-        }
-        for (VulkanTexture output : result.generatedOutputs()) {
-            String reason = validateProviderOutputTexture(output, outputKey);
-            if (reason != null) {
-                return reason;
-            }
-        }
-        if (result.realOutput() != null) {
-            String reason = validateProviderOutputTexture(
-                    result.realOutput(),
-                    outputKey
-            );
-            if (reason != null) {
-                return "Provider real output is invalid: " + reason;
-            }
-        }
-        return null;
-    }
-
-    private String validateProviderOutputTexture(
-            VulkanTexture texture,
-            ProviderOutputLease.OutputKey outputKey
-    ) {
-        if (texture == null) {
-            return "Provider output texture is null";
-        }
-        if (texture.getWidth() != outputKey.width()
-                || texture.getHeight() != outputKey.height()) {
-            return "Provider output texture dimensions do not match its lease key";
-        }
-        if (texture.getTextureFormat().vk() != outputKey.format()) {
-            return "Provider output texture format does not match its lease key";
-        }
-        return null;
     }
 
     private void recordBlit(
@@ -2009,19 +888,15 @@ final class VulkanSwapchain {
     }
 
     private void fillIndicatorTextures() {
-        VulkanCommandBuffer commandBuffer = applicationManagedScheduler != null
-                ? device.requireFgCommandPool().createCommandBuffer()
+        VulkanCommandBuffer commandBuffer = presentationCommandPool != null
+                ? presentationCommandPool.createCommandBuffer()
                 : device.createCommandBuffer();
         try (MemoryStack stack = MemoryStack.stackPush()) {
             commandBuffer.begin();
             recordIndicatorFill(commandBuffer.getNativeCommandBuffer(), stack, realFrameIndicator, 1.0f, 1.0f, 1.0f);
             recordIndicatorFill(commandBuffer.getNativeCommandBuffer(), stack, generatedFrameIndicator, 0.0f, 1.0f, 1.0f);
             commandBuffer.end();
-            if (applicationManagedScheduler != null) {
-                device.submitCommandBuffer(device.requireFgQueue(), commandBuffer);
-            } else {
-                device.submitCommandBuffer(commandBuffer);
-            }
+            device.submitCommandBuffer(commandBuffer);
             commandBuffer.waitForFence();
             realFrameIndicator.setCurrentLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
             generatedFrameIndicator.setCurrentLayout(VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
@@ -2120,20 +995,8 @@ final class VulkanSwapchain {
     }
 
     private void recreate() {
-        AsyncFrameGenerationScheduler scheduler = applicationManagedScheduler;
-        if (scheduler != null && scheduler.isWorkerThread()) {
-            throw new IllegalStateException(
-                    "Scheduler workers must request swapchain recreation from the control thread"
-            );
-        }
-        if (Thread.holdsLock(swapchainLock)) {
-            recreateLocked();
-            return;
-        }
-        if (scheduler == null) {
-            pacer.awaitIdle();
-            pacer.invalidatePacing();
-        } else {
+        AsyncFramePresenter scheduler = asyncFramePresenter;
+        if (scheduler != null) {
             scheduler.awaitPresentationDrain();
         }
         try {
@@ -2151,9 +1014,8 @@ final class VulkanSwapchain {
     }
 
     private void recreateLocked() {
-        if (applicationManagedScheduler == null) {
-            pacer.invalidatePacing();
-        } else if (device.getFrameGenerationQueue() != null) {
+        if (asyncFramePresenter != null
+                && device.getFrameGenerationQueue() != null) {
             device.getFrameGenerationQueue().waitIdle();
         }
         surface.refreshFramebufferSize();
@@ -2360,63 +1222,6 @@ final class VulkanSwapchain {
                 : requested;
     }
 
-    /**
-     * Hands out the FG-to-Main batch semaphore. A batch used to create and destroy one
-     * per frame; recycling keeps that driver allocation off the dispatch path. Returning
-     * a handle here is only legal once the batch that used it has fully retired, which is
-     * what {@link SubmittedProviderBatchCompletion} proves before it calls back. Never
-     * blocks: an empty pool just creates another semaphore.
-     */
-    private long acquireFgToMainSemaphore() {
-        synchronized (fgToMainSemaphoreLock) {
-            if (fgToMainSemaphorePoolSize > 0) {
-                return fgToMainSemaphorePool[--fgToMainSemaphorePoolSize];
-            }
-        }
-        return createBinarySemaphore("SR FG-to-Main Ready");
-    }
-
-    /**
-     * Only accepts semaphores proven to be back in the unsignaled state: either the batch
-     * that used it fully retired (its signal was consumed by the real submission's wait),
-     * or it was never submitted at all.
-     */
-    private void recycleFgToMainSemaphore(long semaphore) {
-        if (semaphore == VK_NULL_HANDLE) {
-            return;
-        }
-        synchronized (fgToMainSemaphoreLock) {
-            if (fgToMainSemaphorePoolSize == fgToMainSemaphorePool.length) {
-                fgToMainSemaphorePool = Arrays.copyOf(
-                        fgToMainSemaphorePool,
-                        fgToMainSemaphorePool.length * 2
-                );
-            }
-            fgToMainSemaphorePool[fgToMainSemaphorePoolSize++] = semaphore;
-        }
-    }
-
-    private void destroyFgToMainSemaphorePool() {
-        synchronized (fgToMainSemaphoreLock) {
-            for (int index = 0; index < fgToMainSemaphorePoolSize; index++) {
-                vkDestroySemaphore(device.getVkDevice(), fgToMainSemaphorePool[index], null);
-            }
-            fgToMainSemaphorePoolSize = 0;
-        }
-    }
-
-    private long createBinarySemaphore(String debugLabel) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VkSemaphoreCreateInfo createInfo = VkSemaphoreCreateInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-            LongBuffer pointer = stack.mallocLong(1);
-            check(vkCreateSemaphore(device.getVkDevice(), createInfo, null, pointer), "create binary semaphore");
-            long semaphore = pointer.get(0);
-            device.setDebugName(VK_OBJECT_TYPE_SEMAPHORE, semaphore, debugLabel);
-            return semaphore;
-        }
-    }
-
     private void createImageAvailableSemaphores() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             long[] semaphores = createSemaphores(stack, imageAvailable.length);
@@ -2480,10 +1285,29 @@ final class VulkanSwapchain {
                                  int colorSpace) {
     }
 
-    private record ScheduledPresentTarget(
-            int imageIndex,
+    record PresentationConfiguration(
+            long generation,
+
+            long handle,
+
+            int width,
+
+            int height,
+
+            int format,
+
+            int imageCount,
+
+            boolean available
+    ) {
+    }
+
+    record PresentTarget(
+            long generation,
 
             long swapchainHandle,
+
+            int imageIndex,
 
             long imageHandle,
 
@@ -2493,149 +1317,26 @@ final class VulkanSwapchain {
 
             VulkanBinarySemaphorePool.Lease acquireLease
     ) {
-        private ScheduledPresentTarget {
-            if (imageIndex < 0
-                    || swapchainHandle == VK_NULL_HANDLE
-                    || imageHandle == VK_NULL_HANDLE
-                    || renderFinishedSemaphore == VK_NULL_HANDLE
-                    || acquireLease == null) {
-                throw new IllegalArgumentException("Scheduled present target is invalid");
-            }
-        }
     }
 
-    private static final class ScheduledTargetAcquireException extends IllegalStateException {
-        private final boolean requiresRecreate;
-        private final boolean expectedFallback;
+    record PresentBlitSubmission(
+            VulkanCommandBuffer commandBuffer,
 
-        private ScheduledTargetAcquireException(int result) {
-            super("Failed to acquire an async frame batch target, VkResult=" + result);
-            this.requiresRecreate = result == VK_ERROR_OUT_OF_DATE_KHR;
-            this.expectedFallback = result == VK_TIMEOUT;
-        }
+            long fence,
 
-        private ScheduledTargetAcquireException(String message, boolean requiresRecreate) {
-            super(message);
-            this.requiresRecreate = requiresRecreate;
-            this.expectedFallback = true;
-        }
+            long submissionTicket,
 
-        private boolean requiresRecreate() {
-            return requiresRecreate;
-        }
-
-        private boolean isExpectedFallback() {
-            return expectedFallback;
-        }
+            FrameGenerationDispatchCompletion completion
+    ) {
     }
 
-    private static final class SubmittedCommandBufferCompletion
-            implements FrameGenerationDispatchCompletion {
-        private final VulkanCommandBuffer commandBuffer;
-        private final long submissionGeneration;
-
-        private SubmittedCommandBufferCompletion(
-                VulkanCommandBuffer commandBuffer,
-                long submissionGeneration
-        ) {
-            if (commandBuffer == null) {
-                throw new IllegalArgumentException("Submitted command buffer cannot be null");
-            }
-            this.commandBuffer = commandBuffer;
-            this.submissionGeneration = submissionGeneration;
-        }
-
-        @Override
-        public boolean isComplete() {
-            return commandBuffer.isSubmissionComplete(submissionGeneration);
-        }
-
-        @Override
-        public void awaitCompletion() {
-            commandBuffer.waitForSubmission(submissionGeneration);
-        }
+    static final class PresentTargetUnavailableException extends IllegalStateException {
     }
 
-    private static final class SubmittedProviderBatchCompletion
-            implements FrameGenerationDispatchCompletion {
-        private final FrameGenerationDispatchCompletion providerCompletion;
-        private final VulkanCommandBuffer[] fgCommandBuffers;
-        private final long[] fgSubmissionGenerations;
-        private final VulkanCommandBuffer realCommandBuffer;
-        private final long realSubmissionGeneration;
-        private final LongConsumer semaphoreRecycler;
-        private final long fgToMainReady;
-        private final AtomicBoolean semaphoreReleased = new AtomicBoolean();
+    private record ExternalPresentSubmission(
+            int imageIndex,
 
-        private SubmittedProviderBatchCompletion(
-                FrameGenerationDispatchCompletion providerCompletion,
-                List<VulkanCommandBuffer> fgCommandBuffers,
-                long[] fgSubmissionGenerations,
-                VulkanCommandBuffer realCommandBuffer,
-                long realSubmissionGeneration,
-                LongConsumer semaphoreRecycler,
-                long fgToMainReady
-        ) {
-            if (providerCompletion == null
-                    || fgCommandBuffers == null
-                    || fgCommandBuffers.isEmpty()
-                    || fgSubmissionGenerations == null
-                    || fgSubmissionGenerations.length != fgCommandBuffers.size()
-                    || fgCommandBuffers.contains(null)
-                    || realCommandBuffer == null
-                    || semaphoreRecycler == null
-                    || fgToMainReady == VK_NULL_HANDLE) {
-                throw new IllegalArgumentException(
-                        "Submitted provider completion dependencies cannot be null/zero"
-                );
-            }
-            this.providerCompletion = providerCompletion;
-            this.fgCommandBuffers = fgCommandBuffers.toArray(new VulkanCommandBuffer[0]);
-            this.fgSubmissionGenerations = fgSubmissionGenerations.clone();
-            this.realCommandBuffer = realCommandBuffer;
-            this.realSubmissionGeneration = realSubmissionGeneration;
-            this.semaphoreRecycler = semaphoreRecycler;
-            this.fgToMainReady = fgToMainReady;
-        }
-
-        @Override
-        public boolean isComplete() {
-            if (!providerCompletion.isComplete()) {
-                return false;
-            }
-            for (int index = 0; index < fgCommandBuffers.length; index++) {
-                if (!fgCommandBuffers[index].isSubmissionComplete(fgSubmissionGenerations[index])) {
-                    return false;
-                }
-            }
-            if (!realCommandBuffer.isSubmissionComplete(realSubmissionGeneration)) {
-                return false;
-            }
-            releaseSemaphore();
-            return true;
-        }
-
-        @Override
-        public void awaitCompletion() {
-            providerCompletion.awaitCompletion();
-            for (int index = 0; index < fgCommandBuffers.length; index++) {
-                fgCommandBuffers[index].waitForSubmission(fgSubmissionGenerations[index]);
-            }
-            realCommandBuffer.waitForSubmission(realSubmissionGeneration);
-            releaseSemaphore();
-        }
-
-        private void releaseSemaphore() {
-            if (semaphoreReleased.compareAndSet(false, true)) {
-                semaphoreRecycler.accept(fgToMainReady);
-            }
-        }
-    }
-
-    private record PresentSubmission(int imageIndex,
-
-                                     FramePresentPlan plan,
-
-                                     boolean paced) {
+            ExternalFrameGenerationDispatchResult result
+    ) {
     }
 }

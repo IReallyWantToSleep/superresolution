@@ -19,15 +19,14 @@
 package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
-import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
+import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.core.graphics.GraphicsDevice;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
-import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanQueueUtils;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 import org.lwjgl.PointerBuffer;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
@@ -43,14 +42,15 @@ import static org.lwjgl.vulkan.KHRPresentId.VK_KHR_PRESENT_ID_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.NVLowLatency2.VK_NV_LOW_LATENCY_2_EXTENSION_NAME;
-import static org.lwjgl.vulkan.VK10.VK_QUEUE_GRAPHICS_BIT;
-import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
-import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceQueueFamilyProperties;
+import static org.lwjgl.vulkan.VK10.*;
 
 public final class VulkanPresentationFeature {
     private static final VulkanSurface SURFACE = new VulkanSurface();
     private static VkRenderSystem renderSystem;
+    private static boolean isAvailable;
 
+    private VulkanPresentationFeature() {
+    }
 
     public static boolean isAvailable() {
         return isAvailable;
@@ -74,11 +74,6 @@ public final class VulkanPresentationFeature {
         if (profiler != null) {
             profiler.collect();
         }
-    }
-
-    private static boolean isAvailable;
-
-    private VulkanPresentationFeature() {
     }
 
     public static boolean shouldInitializeStreamline() {

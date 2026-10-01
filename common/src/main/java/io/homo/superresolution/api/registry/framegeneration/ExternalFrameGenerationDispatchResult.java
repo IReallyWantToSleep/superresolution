@@ -18,23 +18,11 @@
 
 package io.homo.superresolution.api.registry.framegeneration;
 
-public interface FrameGenerationDispatchCompletion {
-    FrameGenerationDispatchCompletion COMPLETED = new FrameGenerationDispatchCompletion() {
-        @Override
-        public boolean isComplete() {
-            return true;
-        }
+public record ExternalFrameGenerationDispatchResult(boolean frameGenerationActive) {
+    public static final ExternalFrameGenerationDispatchResult INACTIVE =
+            new ExternalFrameGenerationDispatchResult(false);
 
-        @Override
-        public void awaitCompletion() {
-        }
-    };
-
-    boolean isComplete();
-
-    void awaitCompletion();
-
-    static FrameGenerationDispatchCompletion completed() {
-        return COMPLETED;
+    public static ExternalFrameGenerationDispatchResult active() {
+        return new ExternalFrameGenerationDispatchResult(true);
     }
 }

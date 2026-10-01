@@ -19,7 +19,6 @@
 package io.homo.superresolution.api.registry.framegeneration;
 
 import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
-import io.homo.superresolution.common.framegeneration.FramePresentPlan;
 import io.homo.superresolution.common.framegeneration.constants.FrameGenerationConstants;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 
@@ -34,20 +33,19 @@ import io.homo.superresolution.common.presentation.capture.FrameResources;
  * <p>
  * {@code FrameGeneration} performs backend-agnostic gating before invoking a provider.
  * Providers must declare an {@link #executionModel()} so Super Resolution does not mix
- * external-interposer ownership with its application-managed async scheduler.
+ * external-interposer ownership with its application-managed async presenter.
  * <p>
  * Lifecycle and external-interposer methods are serialized by {@code FrameGeneration}.
  * {@link FrameGenerationExecutionModel#APPLICATION_MANAGED_ASYNC} snapshot capture runs
  * on the render thread, while dispatch, provider session/history work, output-lease
- * acquisition, and release run only on the scheduler's FG thread. Async dispatch is not
+ * acquisition, and release run only on FrameGenerationWorker. Async dispatch is not
  * performed while holding {@code FrameGeneration}'s monitor, so implementations must
  * protect state shared with lifecycle calls.
  */
 public interface FrameGenerationProvider {
 
     /**
-     * Defaults to the existing external/interposer ownership model so providers compiled
-     * against the previous API keep their presentation path until they explicitly opt in.
+     * Defaults to external-interposer ownership; application-managed providers opt in.
      */
     default FrameGenerationExecutionModel executionModel() {
         return FrameGenerationExecutionModel.EXTERNAL_INTERPOSER;
@@ -61,10 +59,9 @@ public interface FrameGenerationProvider {
     void initialize();
 
     /**
-     * One-time teardown after every application-managed scheduler has drained. This method
-     * runs on the scheduler's FG thread only for an
+     * One-time teardown after presentation has drained. This method runs on FrameGenerationWorker for an
      * {@link FrameGenerationExecutionModel#APPLICATION_MANAGED_ASYNC} provider that owns a
-     * live scheduler. Use it for thread-affine feature, session, and output-pool release.
+     * live presenter. Use it for thread-affine feature, session, and output-pool release.
      */
     default void shutdownOnFrameGenerationThread() {
     }
@@ -96,25 +93,16 @@ public interface FrameGenerationProvider {
 
     /**
      * External-interposer compatibility entry point. Records or configures this frame and
-     * returns the plan the existing synchronous presentation path should follow. Never
-     * returns {@code null}; return {@link FramePresentPlan#none()} to fall back to the raw
-     * backbuffer.
+     * returns whether external frame generation is active for the current real frame.
      * <p>
-     * {@code colorFormat} and {@code backBufferCount} describe the swapchain and are only
-     * needed by backends that configure a swapchain interposer; others may ignore them.
+     * The input contains the swapchain description and the command buffer used to notify
+     * the external interposer.
      * Application-managed async providers are never dispatched through this method.
      */
-    default FramePresentPlan prepareFrame(
-            FrameResources frameResources,
-            FrameGenerationConstants constants,
-            FrameGenerationMode mode,
-            int colorWidth,
-            int colorHeight,
-            int colorFormat,
-            int backBufferCount,
-            long vkCommandBuffer
+    default ExternalFrameGenerationDispatchResult prepareExternalFrame(
+            ExternalFrameGenerationDispatchInput input
     ) {
-        return FramePresentPlan.none();
+        return ExternalFrameGenerationDispatchResult.INACTIVE;
     }
 
     /**
@@ -138,30 +126,34 @@ public interface FrameGenerationProvider {
     }
 
     /**
-     * Records one complete application-managed dispatch on the scheduler's FG thread.
+     * Records one complete application-managed dispatch on FrameGenerationWorker.
      * The provider must not acquire swapchain images, call {@code vkQueuePresentKHR}, or
      * publish partial outputs. On failure, return
-     * {@link AsyncFrameGenerationDispatchResult#failed(String)} and let the scheduler
+     * {@link FrameGenerationDispatchResult#failed(String)} and let the worker
      * construct the real-only batch.
      * <p>
      * The request supplies one command buffer per requested generated frame, and each is
      * submitted separately so a generated frame can be presented as soon as its own work
      * retires. Record the work producing generated frame {@code k} into
-     * {@link AsyncFrameGenerationDispatchRequest#generatedFrameCommandBuffer(int)} for
+     * {@link FrameGenerationDispatchInput#dispatchCommandBuffer(int)} for
      * {@code k}, and shared setup into
-     * {@link AsyncFrameGenerationDispatchRequest#commandBuffer()}. Returning fewer frames
+     * {@link FrameGenerationDispatchInput#commandBuffer()}. Returning fewer frames
      * than requested means only the buffers below that count were recorded into.
      */
-    default AsyncFrameGenerationDispatchResult dispatchAsync(
-            AsyncFrameGenerationDispatchRequest request
+    default FrameGenerationDispatchResult dispatchAsync(
+            FrameGenerationDispatchInput request
     ) {
-        return AsyncFrameGenerationDispatchResult.failed(
+        return FrameGenerationDispatchResult.failed(
                 "Provider does not implement application-managed async dispatch"
         );
     }
 
-    /** Called once the frame's presents have been submitted. */
-    void finishPresent(FrameResources frameResources, boolean frameGenerationActive);
+    /** Called once the external path's real frame has been submitted. */
+    default void finishExternalFrame(
+            FrameResources frameResources,
+            ExternalFrameGenerationDispatchResult result
+    ) {
+    }
 
     /** Stops generating while keeping resources resident; must be idempotent. */
     void disable();

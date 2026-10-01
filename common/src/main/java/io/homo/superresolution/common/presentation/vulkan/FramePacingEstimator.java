@@ -18,16 +18,11 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
-import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchResult;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispatchResult;
 import io.homo.superresolution.common.SuperResolution;
 
 import javax.annotation.Nullable;
-
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Deque;
-import java.util.List;
-import java.util.Locale;
+import java.util.*;
 import java.util.function.LongSupplier;
 
 /**
@@ -49,24 +44,11 @@ final class FramePacingEstimator {
     private static final int OBSERVATION_WINDOW_SIZE = 16;
     private static final int REQUIRED_MISMATCH_WINDOWS = 2;
     private static final int REQUIRED_REAL_ONLY_BATCHES = 2;
-
-    enum State {
-        CALIBRATING,
-        TRACKING
-    }
-
-    private enum BatchMode {
-        UNKNOWN,
-        GENERATED,
-        REAL_ONLY
-    }
-
     private final String providerId;
     private final FramePacingTiming timing;
     private final LongSupplier wallClock;
     private final List<Long> calibrationSamples = new ArrayList<>();
     private final Deque<Long> observationWindow = new ArrayDeque<>();
-
     private State state;
     private int plannedGeneratedCount = -1;
     private long swapchainGeneration = Long.MIN_VALUE;
@@ -82,7 +64,6 @@ final class FramePacingEstimator {
     private int consecutiveMismatchWindows;
     private BatchMode confirmedBatchMode = BatchMode.UNKNOWN;
     private int consecutiveRealOnlyBatches;
-
     FramePacingEstimator(
             String providerId,
             FramePacingTiming timing,
@@ -104,8 +85,43 @@ final class FramePacingEstimator {
         );
     }
 
+    private static double trimmedMean(Iterable<Long> samples) {
+        List<Long> sorted = new ArrayList<>();
+        for (Long sample : samples) {
+            sorted.add(sample);
+        }
+        if (sorted.isEmpty()) {
+            return DEFAULT_REAL_PERIOD_NANOS;
+        }
+        sorted.sort(Long::compareTo);
+        int trimCount = (int) Math.floor(sorted.size() * TRIM_FRACTION);
+        int first = trimCount;
+        int lastExclusive = sorted.size() - trimCount;
+        if (first >= lastExclusive) {
+            first = 0;
+            lastExclusive = sorted.size();
+        }
+        double sum = 0.0;
+        for (int index = first; index < lastExclusive; index++) {
+            sum += sorted.get(index);
+        }
+        return sum / (lastExclusive - first);
+    }
+
+    private static double nanosToFps(double periodNanos) {
+        return 1_000_000_000.0 / Math.max(1.0, periodNanos);
+    }
+
+    private static String format(double value) {
+        return String.format(Locale.ROOT, "%.2f", value);
+    }
+
+    private static long clamp(long value, long min, long max) {
+        return Math.max(min, Math.min(max, value));
+    }
+
     long observeRealFrame(
-            RealFrameJob job,
+            FrameGenerationWork job,
             long currentSwapchainGeneration
     ) {
         if (job == null) {
@@ -160,7 +176,8 @@ final class FramePacingEstimator {
 
     boolean onBatchResult(
             int generatedCount,
-            @Nullable AsyncFrameGenerationDispatchResult.HistoryDisposition historyDisposition
+            @Nullable
+            FrameGenerationDispatchResult.HistoryDisposition historyDisposition
     ) {
         if (generatedCount < 0) {
             throw new IllegalArgumentException("generatedCount cannot be negative");
@@ -168,7 +185,7 @@ final class FramePacingEstimator {
 
         if (historyDisposition != null
                 && historyDisposition
-                != AsyncFrameGenerationDispatchResult.HistoryDisposition.UNCHANGED) {
+                != FrameGenerationDispatchResult.HistoryDisposition.UNCHANGED) {
             invalidateCurrentFrame(
                     "provider history disposition changed to " + historyDisposition
             );
@@ -366,38 +383,14 @@ final class FramePacingEstimator {
         consecutiveRealOnlyBatches = 0;
     }
 
-    private static double trimmedMean(Iterable<Long> samples) {
-        List<Long> sorted = new ArrayList<>();
-        for (Long sample : samples) {
-            sorted.add(sample);
-        }
-        if (sorted.isEmpty()) {
-            return DEFAULT_REAL_PERIOD_NANOS;
-        }
-        sorted.sort(Long::compareTo);
-        int trimCount = (int) Math.floor(sorted.size() * TRIM_FRACTION);
-        int first = trimCount;
-        int lastExclusive = sorted.size() - trimCount;
-        if (first >= lastExclusive) {
-            first = 0;
-            lastExclusive = sorted.size();
-        }
-        double sum = 0.0;
-        for (int index = first; index < lastExclusive; index++) {
-            sum += sorted.get(index);
-        }
-        return sum / (lastExclusive - first);
+    enum State {
+        CALIBRATING,
+        TRACKING
     }
 
-    private static double nanosToFps(double periodNanos) {
-        return 1_000_000_000.0 / Math.max(1.0, periodNanos);
-    }
-
-    private static String format(double value) {
-        return String.format(Locale.ROOT, "%.2f", value);
-    }
-
-    private static long clamp(long value, long min, long max) {
-        return Math.max(min, Math.min(max, value));
+    private enum BatchMode {
+        UNKNOWN,
+        GENERATED,
+        REAL_ONLY
     }
 }

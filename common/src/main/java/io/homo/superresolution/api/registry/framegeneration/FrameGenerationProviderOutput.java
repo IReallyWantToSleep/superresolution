@@ -24,22 +24,9 @@ import javax.annotation.Nullable;
 
 import java.util.List;
 
-/**
- * Exclusive lease over provider-owned display outputs for one dispatch.
- * <p>
- * The scheduler keeps the lease until every display item that references it
- * has drained. The provider may reuse or destroy the underlying slot only
- * after {@link #release()} and its own {@link #completion()} requirements are
- * satisfied. Acquire and release for application-managed providers occur on
- * the FG scheduler thread.
- */
-public interface ProviderOutputLease extends AutoCloseable {
+public interface FrameGenerationProviderOutput extends AutoCloseable {
     List<VulkanTexture> generatedOutputs();
 
-    /**
-     * Optional provider-produced real output. A null value means the scheduler
-     * presents the captured real frame.
-     */
     @Nullable VulkanTexture realOutput();
 
     FrameGenerationDispatchCompletion completion();
@@ -48,11 +35,6 @@ public interface ProviderOutputLease extends AutoCloseable {
 
     boolean isReleased();
 
-    /**
-     * Cancels a successful provider dispatch that was never submitted. Providers
-     * with speculative CPU-side state, such as tracked image layouts, should roll
-     * that state back before releasing the slot.
-     */
     default void abort() {
         release();
     }
