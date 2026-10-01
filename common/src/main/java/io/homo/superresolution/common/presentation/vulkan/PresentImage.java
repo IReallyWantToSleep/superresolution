@@ -37,6 +37,8 @@ public record PresentImage(
 
         long presentId,
 
+        long latencyMarkerId,
+
         boolean outOfBand
 ) {
     public enum Kind {

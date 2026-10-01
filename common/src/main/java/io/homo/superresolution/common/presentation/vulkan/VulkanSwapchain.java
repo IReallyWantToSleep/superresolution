@@ -528,6 +528,7 @@ final class VulkanSwapchain {
                 swapchain,
                 renderFinished[imageIndex],
                 0L,
+                0L,
                 false
         );
     }
@@ -538,6 +539,7 @@ final class VulkanSwapchain {
             long targetSwapchain,
             long presentReadyBinary,
             long immutablePresentId,
+            long latencyMarkerId,
             boolean applicationManaged
     ) {
         if (!surface.isShown()) {
@@ -554,6 +556,7 @@ final class VulkanSwapchain {
                 long presentId = applicationManaged
                         ? immutablePresentId
                         : VulkanLowLatency.beginPresent(outOfBandPresent);
+                long markerId = applicationManaged ? latencyMarkerId : presentId;
                 if (presentId != 0L) {
                     VkPresentIdKHR presentIdInfo = VkPresentIdKHR.calloc(stack)
                             .sType(KHRPresentId.VK_STRUCTURE_TYPE_PRESENT_ID_KHR)
@@ -562,7 +565,7 @@ final class VulkanSwapchain {
                     presentInfo.pNext(presentIdInfo.address());
                 }
                 if (applicationManaged) {
-                    VulkanLowLatency.presentMarker(presentId, outOfBandPresent, true);
+                    VulkanLowLatency.presentMarker(markerId, outOfBandPresent, true);
                 } else {
                     LowLatency.beginPresent();
                 }
@@ -575,7 +578,7 @@ final class VulkanSwapchain {
                     }
                 } finally {
                     if (applicationManaged) {
-                        VulkanLowLatency.presentMarker(presentId, outOfBandPresent, false);
+                        VulkanLowLatency.presentMarker(markerId, outOfBandPresent, false);
                     } else {
                         LowLatency.endPresent();
                         VulkanLowLatency.endPresent();
@@ -721,11 +724,11 @@ final class VulkanSwapchain {
         long[] signals = new long[captureSignals.length + 1];
         signals[0] = target.renderFinishedSemaphore();
         System.arraycopy(captureSignals, 0, signals, 1, captureSignals.length);
-        VulkanLowLatency.renderSubmitMarker(image.presentId(), image.outOfBand(), true);
+        VulkanLowLatency.renderSubmitMarker(image.latencyMarkerId(), image.outOfBand(), true);
         try {
             VulkanDevice.IssuedSubmission issued = device.submitCommandBufferIssued(
                     device.getMainQueue(), buffer, waits, stages, signals,
-                    image.outOfBand() ? 0L : image.presentId());
+                    image.outOfBand() ? 0L : image.latencyMarkerId());
             return new PresentBlitSubmission(buffer, issued.fence(), issued.submissionTicket(),
                     GpuReadyFences.completion(buffer));
         } catch (VulkanDevice.SubmissionTicketPublicationException exception) {
@@ -733,7 +736,7 @@ final class VulkanSwapchain {
             buffer.waitForSubmission(exception.submissionGeneration());
             throw exception;
         } finally {
-            VulkanLowLatency.renderSubmitMarker(image.presentId(), image.outOfBand(), false);
+            VulkanLowLatency.renderSubmitMarker(image.latencyMarkerId(), image.outOfBand(), false);
         }
     }
 
@@ -754,7 +757,7 @@ final class VulkanSwapchain {
                 return VK_ERROR_OUT_OF_DATE_KHR;
             }
             return presentImage(target.imageIndex(), image.outOfBand(), target.swapchainHandle(),
-                    target.renderFinishedSemaphore(), image.presentId(), true);
+                    target.renderFinishedSemaphore(), image.presentId(), image.latencyMarkerId(), true);
         }
     }
 
@@ -797,7 +800,7 @@ final class VulkanSwapchain {
                 imageLayouts[target.imageIndex()] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
             }
             int result = presentImage(target.imageIndex(), true, target.swapchainHandle(),
-                    target.renderFinishedSemaphore(), 0L, true);
+                    target.renderFinishedSemaphore(), 0L, 0L, true);
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
                 requestRecreate();
             } else {

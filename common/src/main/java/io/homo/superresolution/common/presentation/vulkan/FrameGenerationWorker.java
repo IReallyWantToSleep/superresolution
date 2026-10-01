@@ -423,11 +423,13 @@ final class FrameGenerationWorker {
         List<PresentImage> images = new ArrayList<>(count + 1);
         for (int index = 0; index < count; index++) {
             images.add(new PresentImage(nextDisplayIndex + index, work.realIndex(), work.latencyFrameId(),
-                    PresentImage.Kind.GENERATED, result.generatedOutputs().get(index), generatedIds[index], true));
+                    PresentImage.Kind.GENERATED, result.generatedOutputs().get(index), generatedIds[index],
+                    work.realPresentId(), true));
         }
         images.add(new PresentImage(nextDisplayIndex + count, work.realIndex(), work.latencyFrameId(),
                 PresentImage.Kind.REAL, result.realOutput() != null ? result.realOutput()
-                : work.frameResources().finalColorVulkanTexture(), ids.realPresentId(), false));
+                : work.frameResources().finalColorVulkanTexture(), ids.realPresentId(),
+                ids.realPresentId(), false));
         return new PresentImageBatch(work, batchId, images, configuration, intervalNanos(period, count),
                 estimator.onBatchResult(count, result.historyDisposition()), result.output(),
                 ready, result.historyDisposition());
@@ -441,7 +443,7 @@ final class FrameGenerationWorker {
         long presentId = work.presentAllowed()
                 ? VulkanLowLatency.reservePresentBatch(work.realPresentId(), 0).realPresentId() : 0L;
         PresentImage real = new PresentImage(nextDisplayIndex, work.realIndex(), work.latencyFrameId(),
-                PresentImage.Kind.REAL, work.frameResources().finalColorVulkanTexture(), presentId, false);
+                PresentImage.Kind.REAL, work.frameResources().finalColorVulkanTexture(), presentId, presentId, false);
         return new PresentImageBatch(work, batchId, List.of(real), configuration, intervalNanos(period, 0),
                 false, null, GpuReadyFences.none(), null);
     }
