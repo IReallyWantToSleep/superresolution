@@ -37,6 +37,8 @@ public record PresentImage(
 
         long presentId,
 
+        long timingPresentId,
+
         long latencyMarkerId,
 
         boolean outOfBand

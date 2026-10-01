@@ -53,6 +53,8 @@ public enum FramePacingEvent {
     PRESENT_BLIT_SUBMIT("present_blit_submit"),
     PRESENT_PACING_WAIT("present_pacing_wait"),
     PRESENT_CALL("present_call"),
+    PRESENT_IMAGE_FIRST_PIXEL_VISIBLE("present_image_first_pixel_visible"),
+    PRESENT_IMAGE_FIRST_PIXEL_OUT("present_image_first_pixel_out"),
     PRESENT_BATCH_RELEASE("present_batch_release"),
 
     EXTERNAL_FRAME_GENERATION_PREPARE("external_frame_generation_prepare"),

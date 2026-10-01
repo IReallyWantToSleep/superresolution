@@ -230,7 +230,7 @@ final class PresentWorker {
                     FramePacingTrace.Span presentTrace =
                             beginTrace("present_call", batch, image.image);
                     try {
-                        presentImage(image);
+                        presentImage(batch, image);
                         presented = true;
                         presentTrace.complete("complete", "presented=true");
                     } catch (Throwable throwable) {
@@ -297,7 +297,7 @@ final class PresentWorker {
                 image.realIndex(),
                 batch.batchId(),
                 image.displayIndex(),
-                image.presentId(),
+                image.timingPresentId(),
                 image.kind().name(),
                 presenter.providerId()
         );
@@ -309,9 +309,21 @@ final class PresentWorker {
         }
     }
 
-    private void presentImage(PreparedImage image) {
+    private void presentImage(PresentImageBatch batch, PreparedImage image) {
         device.requirePresentSubmitTimeline().awaitIssued(image.submission.submissionTicket());
-        int result = swapchain.presentTarget(image.target, image.image);
+        int result = swapchain.presentTarget(
+                image.target,
+                image.image,
+                new FramePacingTrace.Context(
+                        batch.frameResources().logicalFrameIndex(),
+                        image.image.realIndex(),
+                        batch.batchId(),
+                        image.image.displayIndex(),
+                        image.image.timingPresentId(),
+                        image.image.kind().name(),
+                        presenter.providerId()
+                )
+        );
         image.presented = true;
         if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
             swapchain.requestRecreate();

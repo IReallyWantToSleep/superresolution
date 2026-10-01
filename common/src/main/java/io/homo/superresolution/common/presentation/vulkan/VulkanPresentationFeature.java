@@ -38,7 +38,15 @@ import org.lwjgl.vulkan.VkQueueFamilyProperties;
 
 import java.nio.IntBuffer;
 
+#if MC_VER >= MC_26_1
+import static org.lwjgl.vulkan.EXTPresentTiming.VK_EXT_PRESENT_TIMING_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRCalibratedTimestamps.VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRGetSurfaceCapabilities2.VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRPresentId.VK_KHR_PRESENT_ID_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRPresentId2.VK_KHR_PRESENT_ID_2_EXTENSION_NAME;
+#else
+import static org.lwjgl.vulkan.KHRPresentId.VK_KHR_PRESENT_ID_EXTENSION_NAME;
+#endif
 import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.NVLowLatency2.VK_NV_LOW_LATENCY_2_EXTENSION_NAME;
@@ -99,6 +107,12 @@ public final class VulkanPresentationFeature {
         // and needs present ids to correlate latency markers with presents.
         target.addDeviceExtension(VK_KHR_PRESENT_ID_EXTENSION_NAME);
         target.addDeviceExtension(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
+#if MC_VER >= MC_26_1
+        target.addInstanceExtension(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
+        target.addDeviceExtension(VK_KHR_PRESENT_ID_2_EXTENSION_NAME);
+        target.addDeviceExtension(VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+        target.addDeviceExtension(VK_EXT_PRESENT_TIMING_EXTENSION_NAME);
+#endif
         renderSystem = target;
     }
 

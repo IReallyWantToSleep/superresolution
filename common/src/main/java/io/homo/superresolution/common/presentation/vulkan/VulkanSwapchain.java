@@ -39,6 +39,7 @@ import org.lwjgl.vulkan.*;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Arrays;
+import java.util.concurrent.atomic.AtomicLong;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -65,6 +66,10 @@ final class VulkanSwapchain {
     private final Object swapchainLock = new Object();
     private final Object applicationManagedTargetLock = new Object();
     private final long[] imageAvailable = new long[ACQUIRE_SYNC_SLOTS];
+    private final AtomicLong nextPresentTimingId = new AtomicLong(1L);
+#if MC_VER >= MC_26_1
+    private final PresentTimingSupport presentTimingSupport;
+#endif
     private long[] renderFinished = new long[0];
     private VulkanCommandPool presentationCommandPool;
     private VulkanCommandBufferRing presentationCommandBuffers;
@@ -98,6 +103,9 @@ final class VulkanSwapchain {
         this.context = context;
         this.surface = surface;
         this.device = context.device();
+#if MC_VER >= MC_26_1
+        this.presentTimingSupport = new PresentTimingSupport(context);
+#endif
         this.presentationSuspended = surface.isMinimized();
         createImageAvailableSemaphores();
         recreate();
@@ -165,6 +173,23 @@ final class VulkanSwapchain {
         synchronized (applicationManagedTargetLock) {
             applicationManagedTargetLock.notifyAll();
         }
+    }
+
+    long reservePresentTimingId(long preferredId) {
+#if MC_VER >= MC_26_1
+        if (presentTimingSupport == null || !presentTimingSupport.isEnabled()) {
+            return 0L;
+        }
+        if (preferredId > 0L) {
+            nextPresentTimingId.updateAndGet(
+                    current -> Math.max(current, preferredId == Long.MAX_VALUE ? Long.MAX_VALUE : preferredId + 1L)
+            );
+            return preferredId;
+        }
+        return nextPresentTimingId.getAndIncrement();
+#else
+        return 0L;
+#endif
     }
 
     public void suspendPresentation() {
@@ -235,11 +260,13 @@ final class VulkanSwapchain {
                 return false;
             }
 
+            long timingPresentId = reservePresentTimingId(0L);
             try {
                 boolean presented = queuePresent(
                         submission.imageIndex(),
                         frame.logicalFrameIndex(),
-                        externalProviderId
+                        externalProviderId,
+                        timingPresentId
                 );
                 externalTrace.complete(
                         "complete",
@@ -476,7 +503,8 @@ final class VulkanSwapchain {
     private boolean queuePresent(
             int imageIndex,
             int logicalFrame,
-            String providerId
+            String providerId,
+            long timingPresentId
     ) {
         FramePacingTrace.Span presentTrace = FramePacingTrace.INSTANCE.begin(
                 "present_call",
@@ -484,13 +512,31 @@ final class VulkanSwapchain {
                 -1L,
                 -1L,
                 imageIndex,
-                -1L,
+                timingPresentId,
                 "REAL",
                 providerId
         );
         int result;
         try {
-            result = presentImage(imageIndex, false);
+            result = presentImage(
+                    imageIndex,
+                    false,
+                    swapchain,
+                    renderFinished[imageIndex],
+                    0L,
+                    timingPresentId,
+                    0L,
+                    false,
+                    new FramePacingTrace.Context(
+                            logicalFrame,
+                            -1L,
+                            -1L,
+                            imageIndex,
+                            timingPresentId,
+                            "REAL",
+                            providerId
+                    )
+            );
             presentTrace.complete("complete", "vk_result=" + result);
         } catch (Throwable throwable) {
             presentTrace.complete(
@@ -529,7 +575,9 @@ final class VulkanSwapchain {
                 renderFinished[imageIndex],
                 0L,
                 0L,
-                false
+                0L,
+                false,
+                FramePacingTrace.Context.empty()
         );
     }
 
@@ -539,8 +587,10 @@ final class VulkanSwapchain {
             long targetSwapchain,
             long presentReadyBinary,
             long immutablePresentId,
+            long timingPresentId,
             long latencyMarkerId,
-            boolean applicationManaged
+            boolean applicationManaged,
+            FramePacingTrace.Context timingContext
     ) {
         if (!surface.isShown()) {
             return VK_SUCCESS;
@@ -557,12 +607,30 @@ final class VulkanSwapchain {
                         ? immutablePresentId
                         : VulkanLowLatency.beginPresent(outOfBandPresent);
                 long markerId = applicationManaged ? latencyMarkerId : presentId;
+                long pNext = 0L;
                 if (presentId != 0L) {
                     VkPresentIdKHR presentIdInfo = VkPresentIdKHR.calloc(stack)
                             .sType(KHRPresentId.VK_STRUCTURE_TYPE_PRESENT_ID_KHR)
+                            .pNext(pNext)
                             .swapchainCount(1)
                             .pPresentIds(stack.longs(presentId));
-                    presentInfo.pNext(presentIdInfo.address());
+                    pNext = presentIdInfo.address();
+                }
+#if MC_VER >= MC_26_1
+                long timingBasePNext = pNext;
+                if (timingPresentId != 0L && presentTimingSupport.isEnabled()) {
+                    VkPresentId2KHR presentId2Info = VkPresentId2KHR.calloc(stack)
+                            .sType(KHRPresentId2.VK_STRUCTURE_TYPE_PRESENT_ID_2_KHR)
+                            .pNext(pNext)
+                            .swapchainCount(1)
+                            .pPresentIds(stack.longs(timingPresentId));
+                    pNext = presentId2Info.address();
+                    pNext = presentTimingSupport.appendPresentInfo(stack, timingPresentId, pNext);
+                    presentTimingSupport.register(timingPresentId, timingContext);
+                }
+#endif
+                if (pNext != 0L) {
+                    presentInfo.pNext(pNext);
                 }
                 if (applicationManaged) {
                     VulkanLowLatency.presentMarker(markerId, outOfBandPresent, true);
@@ -573,9 +641,30 @@ final class VulkanSwapchain {
                     VulkanQueue presentQueue = applicationManaged
                             ? device.getApplicationManagedPresentQueue()
                             : device.getMainQueue();
+                    int result;
                     synchronized (presentQueue.submitLock()) {
-                        return vkQueuePresentKHR(presentQueue.getQueue(), presentInfo);
+                        result = vkQueuePresentKHR(presentQueue.getQueue(), presentInfo);
                     }
+#if MC_VER >= MC_26_1
+                    if (timingPresentId != 0L && presentTimingSupport.isEnabled()) {
+                        presentTimingSupport.collect();
+                        if (result == EXTPresentTiming.VK_ERROR_PRESENT_TIMING_QUEUE_FULL_EXT) {
+                            presentTimingSupport.discard(timingPresentId);
+                            presentInfo.pNext(timingBasePNext);
+                            synchronized (presentQueue.submitLock()) {
+                                result = vkQueuePresentKHR(presentQueue.getQueue(), presentInfo);
+                            }
+                        }
+                    }
+#endif
+                    return result;
+                } catch (Throwable throwable) {
+#if MC_VER >= MC_26_1
+                    if (timingPresentId != 0L) {
+                        presentTimingSupport.discard(timingPresentId);
+                    }
+#endif
+                    throw throwable;
                 } finally {
                     if (applicationManaged) {
                         VulkanLowLatency.presentMarker(markerId, outOfBandPresent, false);
@@ -751,13 +840,18 @@ final class VulkanSwapchain {
         return new PresentBlitSubmission(buffer, fence, 0L, GpuReadyFences.completion(buffer));
     }
 
-    int presentTarget(PresentTarget target, PresentImage image) {
+    int presentTarget(
+            PresentTarget target,
+            PresentImage image,
+            FramePacingTrace.Context timingContext
+    ) {
         synchronized (swapchainLock) {
             if (target.generation() != swapchainGeneration || target.swapchainHandle() != swapchain) {
                 return VK_ERROR_OUT_OF_DATE_KHR;
             }
             return presentImage(target.imageIndex(), image.outOfBand(), target.swapchainHandle(),
-                    target.renderFinishedSemaphore(), image.presentId(), image.latencyMarkerId(), true);
+                    target.renderFinishedSemaphore(), image.presentId(), image.timingPresentId(),
+                    image.latencyMarkerId(), true, timingContext);
         }
     }
 
@@ -800,7 +894,7 @@ final class VulkanSwapchain {
                 imageLayouts[target.imageIndex()] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
             }
             int result = presentImage(target.imageIndex(), true, target.swapchainHandle(),
-                    target.renderFinishedSemaphore(), 0L, 0L, true);
+                    target.renderFinishedSemaphore(), 0L, 0L, 0L, true, FramePacingTrace.Context.empty());
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
                 requestRecreate();
             } else {
@@ -1178,6 +1272,10 @@ final class VulkanSwapchain {
                     context.surface(),
                     capabilities
             ), "query surface capabilities");
+#if MC_VER >= MC_26_1
+            PresentTimingSupport.SurfaceSupport timingSurfaceSupport =
+                    PresentTimingSupport.querySurfaceSupport(context, stack);
+#endif
 
             SurfaceFormat format = chooseSurfaceFormat(stack, context.physicalDevice());
             // Frame generation meters its own presents, so the display must not gate them
@@ -1214,6 +1312,20 @@ final class VulkanSwapchain {
                     .presentMode(presentMode)
                     .clipped(true)
                     .oldSwapchain(swapchain);
+#if MC_VER >= MC_26_1
+            if (timingSurfaceSupport.presentId2Supported()
+                    && context.renderSystem().isPresentId2Enabled()) {
+                createInfo.flags(
+                        createInfo.flags() | KHRPresentId2.VK_SWAPCHAIN_CREATE_PRESENT_ID_2_BIT_KHR
+                );
+            }
+            if (timingSurfaceSupport.presentTimingSupported()
+                    && context.renderSystem().isPresentTimingEnabled()) {
+                createInfo.flags(
+                        createInfo.flags() | EXTPresentTiming.VK_SWAPCHAIN_CREATE_PRESENT_TIMING_BIT_EXT
+                );
+            }
+#endif
             if (latencyMode) {
                 VkSwapchainLatencyCreateInfoNV latencyCreateInfo = VkSwapchainLatencyCreateInfoNV.calloc(stack)
                         .sType(NVLowLatency2.VK_STRUCTURE_TYPE_SWAPCHAIN_LATENCY_CREATE_INFO_NV)
@@ -1245,6 +1357,9 @@ final class VulkanSwapchain {
             renderFinished = createSemaphores(stack, newImages.length);
             swapchainGeneration++;
             swapchainFrameGenerationActive = frameGenerationActive;
+#if MC_VER >= MC_26_1
+            presentTimingSupport.configure(newSwapchain, timingSurfaceSupport);
+#endif
             VulkanLowLatency.onSwapchainCreated(newSwapchain, latencyMode);
             SuperResolution.LOGGER.info(
                     "Created Vulkan presentation swapchain: {}x{}, images={}, presentMode={} "
@@ -1393,6 +1508,9 @@ final class VulkanSwapchain {
             applicationManagedTargetCount = 0;
             applicationManagedTargetLock.notifyAll();
         }
+#if MC_VER >= MC_26_1
+        presentTimingSupport.reset();
+#endif
         if (swapchain != VK_NULL_HANDLE) {
             VulkanLowLatency.onSwapchainDestroyed(swapchain);
             vkDestroySwapchainKHR(device.getVkDevice(), swapchain, null);

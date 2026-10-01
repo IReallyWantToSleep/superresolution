@@ -176,7 +176,21 @@ public final class FramePacingTrace {
         );
     }
 
+    public long nowNanos() {
+        return clock.getAsLong();
+    }
+
     public void instant(String event, Context context, String status, String details) {
+        instantAt(event, context, clock.getAsLong(), status, details);
+    }
+
+    public void instantAt(
+            String event,
+            Context context,
+            long timestampNanos,
+            String status,
+            String details
+    ) {
         if (event == null || event.isBlank()) {
             return;
         }
@@ -187,7 +201,7 @@ public final class FramePacingTrace {
         current.addInstant(
                 event,
                 context == null ? Context.empty() : context,
-                clock.getAsLong(),
+                timestampNanos,
                 status,
                 details
         );
