@@ -143,6 +143,7 @@ public class VkRenderSystem implements IRenderSystem {
     @Override
     public void destroyRenderSystem() {
         if (vulkanDevice != null) {
+            vkDeviceWaitIdle(vulkanDevice.getVkDevice());
             vulkanDevice.destroy();
             if (vulkanDevice.ownsVkDevice()) {
                 vkDestroyDevice(vulkanDevice.getVkDevice(), null);

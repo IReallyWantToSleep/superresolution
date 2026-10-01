@@ -390,15 +390,6 @@ public class ImGuiLayer {
         ImGuiDebugContext ctx = new ImGuiDebugContext("base", textures::add, this::openViewer);
         ctx.addTexture("input_color", "Input Color Texture", RenderHandlerManager.getColorTexture(), null, true);
         ctx.addTexture("input_depth", "Input Depth Texture", RenderHandlerManager.getDepthTexture(), null, true);
-        if (AlgorithmManager.getMotionVectorsFrameBuffer() != null) {
-            ctx.addTexture(
-                    "motion_vectors",
-                    "Generated Motion Vectors",
-                    AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color),
-                    null,
-                    true
-            );
-        }
         if (SuperResolution.currentAlgorithm != null && SuperResolution.currentAlgorithm.getOutputFrameBuffer() != null) {
             ctx.addTexture(
                     "upscale_output",

@@ -38,14 +38,6 @@ import org.joml.Matrix4f;
 public class AlgorithmManager {
     public static AlgorithmParam param = new AlgorithmParam();
 
-    /**
-     * @deprecated MotionVectorsGenerator 已被弃用
-     */
-    @Deprecated
-    public static GlFrameBuffer getMotionVectorsFrameBuffer() {
-        return null;
-    }
-
     public static void destroy() {
 
     }
@@ -229,11 +221,7 @@ public class AlgorithmManager {
                         .with(InputResourceType.Depth, depth)
                         .with(
                                 InputResourceType.MotionVectors,
-                                motionVectors == null ?
-                                        getMotionVectorsFrameBuffer() == null ?
-                                                null :
-                                                getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color) :
-                                        motionVectors
+                                motionVectors
                         )
         );
     }

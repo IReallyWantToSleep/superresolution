@@ -79,7 +79,6 @@ public class SuperResolutionConfig {
     public static final BooleanValue ENABLE_RENDER_DOC;
     public static final BooleanValue ENABLE_IMGUI;
     public static final BooleanValue ENABLE_PRESENT_INDICATOR;
-    public static final BooleanValue GENERATE_MOTION_VECTORS;
     public static final BooleanValue PAUSE_GAME_ON_GUI;
     public static final BooleanValue AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS;
     public static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
@@ -226,19 +225,19 @@ public class SuperResolutionConfig {
 
         SKIP_INIT_VULKAN = builder.defineBoolean(
                 "debug/skip_init_vulkan",
-                () -> !(CURRENT_OS_TYPE == OperatingSystemType.ANDROID || CURRENT_OS_TYPE == OperatingSystemType.MACOS),
+                () -> true,
                 "Skip Vulkan initialization (auto-set based on OS)"
         );
 
         ENABLE_RENDER_DOC = builder.defineBoolean(
                 "debug/enable_render_doc",
-                () -> (CURRENT_OS_TYPE == OperatingSystemType.WINDOWS || CURRENT_OS_TYPE == OperatingSystemType.LINUX) && Platform.currentPlatform.isDevelopmentEnvironment(),
+                () -> false,
                 "Enable RenderDoc integration (auto-disabled on incompatible OS)"
         );
 
         ENABLE_IMGUI = builder.defineBoolean(
                 "debug/enable_imgui",
-                () -> (CURRENT_OS_TYPE == OperatingSystemType.WINDOWS || CURRENT_OS_TYPE == OperatingSystemType.LINUX) && Platform.currentPlatform.isDevelopmentEnvironment(),
+                () -> false,
                 "Enable ImGui debug interface (auto-disabled on incompatible OS)"
         );
 
@@ -272,12 +271,6 @@ public class SuperResolutionConfig {
                 "optiscaler/dll_path",
                 () -> "",
                 "Absolute path to the OptiScaler DLL file."
-        );
-
-        GENERATE_MOTION_VECTORS = builder.defineBoolean(
-                "experiment/generate_motion_vectors",
-                () -> false,
-                "Generate motion vectors for advanced effects"
         );
 
         ENABLE_COMPAT_SHADER_COMPILER = builder.defineBoolean(
@@ -430,7 +423,7 @@ public class SuperResolutionConfig {
     }
 
     public static float getRenderScaleFactor() {
-        return ENABLE_UPSCALE.get() ? 1 / UPSCALE_RATIO.get() : 1;
+        return 1/getUpscaleRatio();
     }
 
     public static AlgorithmDescription<?> getUpscaleAlgorithm() {
@@ -645,14 +638,6 @@ public class SuperResolutionConfig {
 
     public static void setPresentationBackend(PresentationBackendType value) {
         PRESENTATION_BACKEND.set(value);
-    }
-
-    public static boolean isGenerateMotionVectors() {
-        return false;
-    }
-
-    public static void setGenerateMotionVectors(boolean value) {
-        GENERATE_MOTION_VECTORS.set(value);
     }
 
     public static boolean isPauseGameOnGui() {

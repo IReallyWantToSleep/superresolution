@@ -35,6 +35,7 @@ public class GlImportableTexture2D extends GlTexture2D {
 
     public GlImportableTexture2D(VulkanTexture sourceTexture) {
         super(sourceTexture.getTextureDescription());
+        this.configureMipmap();
         this.sourceTexture = sourceTexture;
         initializeTexture();
     }
