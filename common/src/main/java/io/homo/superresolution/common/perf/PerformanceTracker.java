@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.perf;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import it.unimi.dsi.fastutil.objects.Object2ObjectOpenHashMap;
 import org.lwjgl.opengl.GL41;
 
@@ -94,6 +95,7 @@ public class PerformanceTracker {
             ctx.tempCpuStart = System.nanoTime();
         }
         ctx.cpuStartPending = false;
+        ctx.beginTrace(operationName, GameFrameIndex.current());
 
         if (!SuperResolutionConfig.isEnableDetailedProfiling() || ctx.externalGpu) {
             return;
@@ -126,6 +128,7 @@ public class PerformanceTracker {
         long end = System.nanoTime();
         ctx.cpuTimes[ctx.cursor] = end - ctx.tempCpuStart;
         ctx.cpuStartPending = false;
+        ctx.endTrace();
 
         if (SuperResolutionConfig.isEnableDetailedProfiling() && !ctx.externalGpu) {
             tryCleanPendingResults(ctx);
@@ -304,6 +307,7 @@ public class PerformanceTracker {
 
         final boolean[] queryPending = new boolean[MAX_RESULT];
         final boolean[] queryEnded = new boolean[MAX_RESULT]; // 防止 pop 意外没有调用导致的卡死
+        final ThreadLocal<FramePacingTrace.Span> traceSpan = new ThreadLocal<>();
 
         int cursor = 0;
         int externalCursor = 0;
@@ -343,6 +347,32 @@ public class PerformanceTracker {
             Arrays.fill(gpuTimes, 0);
             cursor = 0;
             cpuStartPending = false;
+            traceSpan.remove();
+        }
+
+        void beginTrace(String operationName, int logicalFrame) {
+            FramePacingTrace.Span previous = traceSpan.get();
+            if (previous != null) {
+                previous.complete("failed", "nested_push");
+            }
+            traceSpan.set(FramePacingTrace.INSTANCE.begin(
+                    operationName,
+                    logicalFrame,
+                    -1L,
+                    -1L,
+                    -1L,
+                    -1L,
+                    "",
+                    ""
+            ));
+        }
+
+        void endTrace() {
+            FramePacingTrace.Span span = traceSpan.get();
+            traceSpan.remove();
+            if (span != null) {
+                span.close();
+            }
         }
     }
 }

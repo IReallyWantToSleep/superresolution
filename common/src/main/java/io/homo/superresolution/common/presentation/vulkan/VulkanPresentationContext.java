@@ -81,6 +81,7 @@ public final class VulkanPresentationContext {
         if (minimizedNow && !minimized) {
             swapchain.suspendPresentation();
         } else if (!minimizedNow && minimized) {
+            swapchain.resumePresentation();
             swapchain.requestRecreate();
         }
         minimized = minimizedNow;

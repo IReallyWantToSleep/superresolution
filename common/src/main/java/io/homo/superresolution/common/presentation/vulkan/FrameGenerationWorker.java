@@ -22,6 +22,7 @@ import io.homo.superresolution.api.registry.framegeneration.*;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.perf.PerformanceTracker;
+import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.core.graphics.vulkan.*;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSemaphoreCreateInfo;
@@ -163,20 +164,59 @@ final class FrameGenerationWorker {
                 try {
                     presenter.pacer.beginDispatchFrameGenerationBatch();
                     work.frameResources().markDispatching();
+                    long batchId = presenter.nextBatchId();
+                    FramePacingTrace.Span dispatchTrace = FramePacingTrace.INSTANCE.begin(
+                            "frame_generation_dispatch",
+                            work.logicalFrameIndex(),
+                            work.realIndex(),
+                            batchId,
+                            -1L,
+                            work.realPresentId(),
+                            "BATCH",
+                            providerId
+                    );
                     ProviderInputSnapshot snapshot = work.providerInputSnapshot();
                     int requiredCapacity = snapshot == null ? 1
                             : Math.min(snapshot.mode().generatedFrameCount(), AsyncFramePresenter.MAX_GENERATED_FRAMES) + 1;
-                    presenter.presentationQueue.awaitCapacityFor(requiredCapacity);
-                    PresentImageBatch batch = dispatch(work);
                     try {
-                        presenter.presentationQueue.put(batch);
+                        FramePacingTrace.Span capacityTrace = FramePacingTrace.INSTANCE.begin(
+                                "frame_generation_queue_wait",
+                                work.logicalFrameIndex(),
+                                work.realIndex(),
+                                batchId,
+                                -1L,
+                                work.realPresentId(),
+                                "BATCH",
+                                providerId
+                        );
+                        try {
+                            presenter.presentationQueue.awaitCapacityFor(requiredCapacity);
+                        } finally {
+                            capacityTrace.close();
+                        }
+                        PresentImageBatch batch = dispatch(work, batchId);
+                        try {
+                            presenter.presentationQueue.put(batch);
+                        } catch (Throwable throwable) {
+                            work.frameResources().markUnrecoverable();
+                            releaseUnpublishedBatch(batch);
+                            throw throwable;
+                        }
+                        nextDisplayIndex += batch.imageCount();
+                        presenter.generationQueue.removeHead(work);
+                        dispatchTrace.complete(
+                                "complete",
+                                "generated_count=" + batch.generatedCount()
+                        );
                     } catch (Throwable throwable) {
-                        work.frameResources().markUnrecoverable();
-                        releaseUnpublishedBatch(batch);
+                        dispatchTrace.complete(
+                                "failed",
+                                throwable.getClass().getSimpleName() + ": " + String.valueOf(throwable.getMessage())
+                        );
                         throw throwable;
+                    } finally {
+                        dispatchTrace.close();
                     }
-                    nextDisplayIndex += batch.imageCount();
-                    presenter.generationQueue.removeHead(work);
                 } finally {
                     presenter.pacer.endDispatchFrameGenerationBatch();
                     synchronized (presenter.stateLock) {
@@ -218,9 +258,8 @@ final class FrameGenerationWorker {
         }
     }
 
-    private PresentImageBatch dispatch(FrameGenerationWork work) {
+    private PresentImageBatch dispatch(FrameGenerationWork work, long batchId) {
         VulkanSwapchain.PresentationConfiguration configuration = swapchain.presentationConfiguration();
-        long batchId = presenter.nextBatchId();
         long period = estimator.observeRealFrame(work, configuration.generation());
         ProviderInputSnapshot snapshot = work.providerInputSnapshot();
         if (!work.presentAllowed() || !work.frameResources().hasFinalColor()
@@ -253,16 +292,42 @@ final class FrameGenerationWorker {
                     work.frameResources(), snapshot, device, handles,
                     configuration.width(), configuration.height(), configuration.format()
             );
-            result = FrameGeneration.dispatchAsync(input);
-            String invalidReason = validateDispatchResult(result, input);
-            if (invalidReason != null) {
-                abortDispatch(result, buffers, handoffs, 0);
-                if (profiler != null && timestampSlot >= 0) {
-                    profiler.cancelRegion(timestampSlot);
+            FramePacingTrace.Span providerTrace = FramePacingTrace.INSTANCE.begin(
+                    "frame_generation_provider_dispatch",
+                    work.logicalFrameIndex(),
+                    work.realIndex(),
+                    batchId,
+                    -1L,
+                    work.realPresentId(),
+                    "BATCH",
+                    providerId
+            );
+            try {
+                result = FrameGeneration.dispatchAsync(input);
+                String invalidReason = validateDispatchResult(result, input);
+                if (invalidReason != null) {
+                    providerTrace.complete("fallback", invalidReason);
+                    abortDispatch(result, buffers, handoffs, 0);
+                    if (profiler != null && timestampSlot >= 0) {
+                        profiler.cancelRegion(timestampSlot);
+                    }
+                    SuperResolution.LOGGER.debug("Provider '{}' used real-only fallback for frame {}: {}",
+                            providerId, work.realIndex(), invalidReason);
+                    return buildRealOnlyBatch(work, batchId, configuration, period);
                 }
-                SuperResolution.LOGGER.debug("Provider '{}' used real-only fallback for frame {}: {}",
-                        providerId, work.realIndex(), invalidReason);
-                return buildRealOnlyBatch(work, batchId, configuration, period);
+                providerTrace.complete(
+                        "complete",
+                        "generated_count=" + result.actualGeneratedCount()
+                );
+            } catch (Throwable throwable) {
+                providerTrace.complete(
+                        "failed",
+                        throwable.getClass().getSimpleName() + ": "
+                                + String.valueOf(throwable.getMessage())
+                );
+                throw throwable;
+            } finally {
+                providerTrace.close();
             }
 
             int submissionCount = Math.max(1, result.actualGeneratedCount());

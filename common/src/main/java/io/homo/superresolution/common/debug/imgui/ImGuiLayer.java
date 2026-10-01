@@ -30,12 +30,15 @@ import imgui.type.ImBoolean;
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.upscale.algo.legacy.fsr2.FSR2;
@@ -80,6 +83,7 @@ public class ImGuiLayer {
         WINDOW_OPEN.put("General", new ImBoolean(true));
         WINDOW_OPEN.put("Work Mode State", new ImBoolean(true));
         WINDOW_OPEN.put("Performance", new ImBoolean(true));
+        WINDOW_OPEN.put("Frame Pacing", new ImBoolean(true));
         WINDOW_OPEN.put("Work Mode Provider", new ImBoolean(true));
         WINDOW_OPEN.put("Render Handler", new ImBoolean(true));
         WINDOW_OPEN.put("Textures", new ImBoolean(true));
@@ -105,6 +109,7 @@ public class ImGuiLayer {
 
         drawTitleBar();
         drawGeneralWindow(provider, handler);
+        drawFramePacingWindow();
 
         if (SuperResolution.gameIsLoaded && Minecraft.getInstance().level != null) {
             drawWorkModeStateWindow(provider);
@@ -238,6 +243,58 @@ public class ImGuiLayer {
             }
         }
         ImGui.end();
+    }
+
+    private void drawFramePacingWindow() {
+        if (!isWindowVisible("Frame Pacing")) {
+            return;
+        }
+        beginWindow("Frame Pacing", 1015, 600, 420, 260);
+
+        FramePacingTrace.Status status = FramePacingTrace.INSTANCE.status();
+        if (status.state() == FramePacingTrace.State.RECORDING) {
+            if (ImGui.button("Stop & Export")) {
+                FramePacingTrace.Snapshot snapshot = FramePacingTrace.INSTANCE.stop();
+                if (snapshot != null) {
+                    FramePacingTrace.INSTANCE.exportAsync(snapshot);
+                }
+            }
+        } else if (status.state() == FramePacingTrace.State.EXPORTING) {
+            ImGui.text("Exporting CSV...");
+        } else if (ImGui.button("Start Collection")) {
+            FramePacingTrace.INSTANCE.start();
+        }
+
+        ImGui.separator();
+        ImGui.text("State: " + status.state());
+        ImGui.text("Frames: " + status.frameCount());
+        ImGui.text("Events: " + status.eventCount());
+        ImGui.text("Presentation Backend: " + getPresentationBackendName());
+        ImGui.text("Frame Generation Provider: " + getFrameGenerationProviderName());
+        if (status.lastExportPath() != null) {
+            ImGui.textWrapped("Last Report: " + status.lastExportPath());
+        }
+        if (status.lastExportError() != null && !status.lastExportError().isBlank()) {
+            ImGui.textWrapped("Export Error: " + status.lastExportError());
+        }
+        ImGui.textWrapped("CPU timestamps use a monotonic clock relative to collection start.");
+        ImGui.end();
+    }
+
+    private String getPresentationBackendName() {
+        try {
+            return PresentationBackendManager.type().name();
+        } catch (Throwable throwable) {
+            return "<unavailable>";
+        }
+    }
+
+    private String getFrameGenerationProviderName() {
+        try {
+            return FrameGeneration.mode().getId();
+        } catch (Throwable throwable) {
+            return "<unavailable>";
+        }
     }
 
     private void drawProviderWindow(SRWorkModeProvider provider) {

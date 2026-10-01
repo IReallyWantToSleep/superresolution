@@ -19,6 +19,8 @@
 package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.common.lowlatency.LowLatency;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
+import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
@@ -28,6 +30,7 @@ public final class VulkanPresentationWindow {
     private static VulkanSurface surface;
     private static boolean shown;
     private static boolean requestedVsync = false;
+    private static final ThreadLocal<FramePacingTrace.Span> REAL_FRAME_TRACE = new ThreadLocal<>();
 
     private VulkanPresentationWindow() {
     }
@@ -51,6 +54,16 @@ public final class VulkanPresentationWindow {
     public static void beginRealFrameRendering() {
         VulkanPresentationContext presentationContext = context;
         if (presentationContext != null) {
+            REAL_FRAME_TRACE.set(FramePacingTrace.INSTANCE.begin(
+                    "real_frame_rendering",
+                    GameFrameIndex.current(),
+                    -1L,
+                    -1L,
+                    -1L,
+                    -1L,
+                    "REAL",
+                    ""
+            ));
             presentationContext.presentPacer().beginRealFrameRendering();
         }
     }
@@ -59,6 +72,11 @@ public final class VulkanPresentationWindow {
         VulkanPresentationContext presentationContext = context;
         if (presentationContext != null) {
             presentationContext.presentPacer().endRealFrameRendering();
+            FramePacingTrace.Span span = REAL_FRAME_TRACE.get();
+            REAL_FRAME_TRACE.remove();
+            if (span != null) {
+                span.close();
+            }
         }
     }
 

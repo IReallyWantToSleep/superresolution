@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispatchCompletion;
+import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 
 import java.util.ArrayList;
@@ -140,12 +141,21 @@ final class PresentWorker {
         List<PreparedImage> prepared = new ArrayList<>(batch.imageCount());
         List<FrameGenerationDispatchCompletion> completions = new ArrayList<>();
         boolean captureReleased = batch.captureReleasedByGeneration();
+        FramePacingTrace.Span batchTrace = beginTrace("present_batch", batch, null);
         try {
             swapchain.ensurePresentBatchFits(batch.imageCount());
             // Submit the real image before pacing, so borrowed-input release publication
             // is not held behind the generated images' display intervals.
             for (int index = 0; index < batch.imageCount(); index++) {
-                PreparedImage image = new PreparedImage(swapchain.acquirePresentTarget(), batch.images().get(index));
+                PresentImage presentImage = batch.images().get(index);
+                FramePacingTrace.Span acquireTrace =
+                        beginTrace("present_target_acquire", batch, presentImage);
+                PreparedImage image;
+                try {
+                    image = new PreparedImage(swapchain.acquirePresentTarget(), presentImage);
+                } finally {
+                    acquireTrace.close();
+                }
                 prepared.add(image);
                 boolean real = index == batch.generatedCount();
                 long[] waits;
@@ -155,6 +165,8 @@ final class PresentWorker {
                     waits = new long[]{batch.gpuReadyFences().handoffSemaphoreFor(index)};
                 }
                 long[] signals = real && !captureReleased ? batch.captureReleaseSemaphores() : new long[0];
+                FramePacingTrace.Span blitTrace =
+                        beginTrace("present_blit_submit", batch, presentImage);
                 try {
                     image.submission = swapchain.submitPresentBlit(image.target, image.image, waits, signals);
                     image.rendered = true;
@@ -167,7 +179,21 @@ final class PresentWorker {
                         captureReleased = true;
                         batch.frameResources().markUnrecoverable();
                     }
+                    blitTrace.complete(
+                            "failed",
+                            exception.getClass().getSimpleName() + ": "
+                                    + String.valueOf(exception.getMessage())
+                    );
                     throw exception;
+                } catch (Throwable throwable) {
+                    blitTrace.complete(
+                            "failed",
+                            throwable.getClass().getSimpleName() + ": "
+                                    + String.valueOf(throwable.getMessage())
+                    );
+                    throw throwable;
+                } finally {
+                    blitTrace.close();
                 }
                 completions.add(image.submission.completion());
                 if (batch.gpuReadyFences().size() != 0) {
@@ -188,17 +214,34 @@ final class PresentWorker {
                         pacer.reset();
                         break;
                     }
-                    if (image.image.kind() == PresentImage.Kind.GENERATED) {
-                        pacer.sleepAtPresentGeneratedFrame();
-                    } else {
-                        pacer.sleepAtPresentRealFrame();
+                    FramePacingTrace.Span waitTrace =
+                            beginTrace("present_pacing_wait", batch, image.image);
+                    try {
+                        if (image.image.kind() == PresentImage.Kind.GENERATED) {
+                            pacer.sleepAtPresentGeneratedFrame();
+                        } else {
+                            pacer.sleepAtPresentRealFrame();
+                        }
+                    } finally {
+                        waitTrace.close();
                     }
                     boolean presented = false;
                     pacer.beginPresentFrame();
+                    FramePacingTrace.Span presentTrace =
+                            beginTrace("present_call", batch, image.image);
                     try {
                         presentImage(image);
                         presented = true;
+                        presentTrace.complete("complete", "presented=true");
+                    } catch (Throwable throwable) {
+                        presentTrace.complete(
+                                "failed",
+                                throwable.getClass().getSimpleName() + ": "
+                                        + String.valueOf(throwable.getMessage())
+                        );
+                        throw throwable;
                     } finally {
+                        presentTrace.close();
                         pacer.endPresentFrame(presented && batch.pacingEnabled());
                     }
                 }
@@ -208,14 +251,56 @@ final class PresentWorker {
         } catch (VulkanSwapchain.PresentTargetUnavailableException exception) {
             presenter.pacer.reset();
             swapchain.requestRecreate();
+            batchTrace.complete("fallback", "present_target_unavailable");
+        } catch (Throwable throwable) {
+            batchTrace.complete(
+                    "failed",
+                    throwable.getClass().getSimpleName() + ": "
+                            + String.valueOf(throwable.getMessage())
+            );
+            throw throwable;
         } finally {
+            FramePacingTrace.Span releaseTrace =
+                    beginTrace("present_batch_release", batch, null);
             try {
                 releaseBatch(batch, prepared, completions, captureReleased);
             } catch (Throwable throwable) {
                 batch.frameResources().markUnrecoverable();
                 throw throwable;
+            } finally {
+                releaseTrace.close();
+                batchTrace.close();
             }
         }
+    }
+
+    private FramePacingTrace.Span beginTrace(
+            String event,
+            PresentImageBatch batch,
+            PresentImage image
+    ) {
+        if (image == null) {
+            return FramePacingTrace.INSTANCE.begin(
+                    event,
+                    batch.frameResources().logicalFrameIndex(),
+                    batch.realIndex(),
+                    batch.batchId(),
+                    -1L,
+                    -1L,
+                    "BATCH",
+                    presenter.providerId()
+            );
+        }
+        return FramePacingTrace.INSTANCE.begin(
+                event,
+                batch.frameResources().logicalFrameIndex(),
+                image.realIndex(),
+                batch.batchId(),
+                image.displayIndex(),
+                image.presentId(),
+                image.kind().name(),
+                presenter.providerId()
+        );
     }
 
     private boolean isPaused() {

@@ -22,6 +22,7 @@ import io.homo.superresolution.api.registry.framegeneration.ProviderInputSnapsho
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.lowlatency.LowLatency;
+import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.common.presentation.capture.CaptureFrameRing;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
@@ -100,6 +101,16 @@ final class AsyncFramePresenter implements AutoCloseable {
         long realIndex = nextRealIndex.getAndIncrement();
         ProviderInputSnapshot snapshot = null;
         if (presentAllowed) {
+            FramePacingTrace.Span snapshotTrace = FramePacingTrace.INSTANCE.begin(
+                    "frame_generation_input_snapshot",
+                    resources.logicalFrameIndex(),
+                    realIndex,
+                    -1L,
+                    -1L,
+                    -1L,
+                    "REAL",
+                    providerId
+            );
             try {
                 snapshot = FrameGeneration.captureProviderInputSnapshotForFrame(providerId, resources);
                 if (snapshot != null && (!providerId.equals(snapshot.providerId())
@@ -111,6 +122,8 @@ final class AsyncFramePresenter implements AutoCloseable {
             } catch (Throwable throwable) {
                 SuperResolution.LOGGER.warn("Failed to capture provider '{}' input; using real-only fallback",
                         providerId, throwable);
+            } finally {
+                snapshotTrace.close();
             }
         }
         FrameGenerationWork work = new FrameGenerationWork(
@@ -121,6 +134,16 @@ final class AsyncFramePresenter implements AutoCloseable {
                 snapshot != null && snapshot.historyResetRequested(), presentAllowed
         );
         resources.markQueued();
+        FramePacingTrace.Span enqueueTrace = FramePacingTrace.INSTANCE.begin(
+                "frame_generation_enqueue_wait",
+                work.logicalFrameIndex(),
+                work.realIndex(),
+                -1L,
+                -1L,
+                work.realPresentId(),
+                "REAL",
+                providerId
+        );
         try {
             framePacingTiming.recordExcludedWait(generationQueue.put(work));
             return true;
@@ -132,6 +155,8 @@ final class AsyncFramePresenter implements AutoCloseable {
             resources.markUnrecoverable();
             throwIfFailed();
             throw exception;
+        } finally {
+            enqueueTrace.close();
         }
     }
 

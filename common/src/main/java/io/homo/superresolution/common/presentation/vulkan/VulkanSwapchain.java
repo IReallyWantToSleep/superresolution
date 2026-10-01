@@ -25,6 +25,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.perf.PerformanceTracker;
+import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
@@ -69,6 +70,7 @@ final class VulkanSwapchain {
     private VulkanCommandBufferRing presentationCommandBuffers;
     private VulkanBinarySemaphorePool applicationManagedAcquireSemaphores;
     private AsyncFramePresenter asyncFramePresenter;
+    private boolean presentationSuspended;
     // 1x1 solid-color sources for the per-present cadence indicator (white = real
     // frame, cyan = interpolated); blitted into a corner of the swapchain image.
     private VulkanTexture realFrameIndicator;
@@ -96,6 +98,7 @@ final class VulkanSwapchain {
         this.context = context;
         this.surface = surface;
         this.device = context.device();
+        this.presentationSuspended = surface.isMinimized();
         createImageAvailableSemaphores();
         recreate();
     }
@@ -174,6 +177,16 @@ final class VulkanSwapchain {
             device.getFrameGenerationQueue().waitIdle();
         }
         waitForDedicatedPresentQueueIdle();
+        // Keep the workers paused until a presentable framebuffer exists again. Frames
+        // captured while suspended bypass them and only submit the resource-release work.
+        presentationSuspended = true;
+    }
+
+    public void resumePresentation() {
+        presentationSuspended = false;
+        if (asyncFramePresenter != null) {
+            asyncFramePresenter.resumePresenting();
+        }
     }
 
     public void setVsync(boolean enabled) {
@@ -188,17 +201,63 @@ final class VulkanSwapchain {
         if (scheduler != null) {
             updateApplicationManagedFramePlan();
             recreateIfRequestedOnControlThread();
-            return scheduler.enqueue(frame, true);
+            FramePacingTrace.Span enqueueTrace = FramePacingTrace.INSTANCE.begin(
+                    "presentation_enqueue",
+                    frame.logicalFrameIndex(),
+                    -1L,
+                    -1L,
+                    -1L,
+                    -1L,
+                    "REAL",
+                    scheduler.providerId()
+            );
+            try {
+                return scheduler.enqueue(frame, true);
+            } finally {
+                enqueueTrace.close();
+            }
         }
-        ExternalPresentSubmission submission = submitPresentFrame(frame);
-        if (submission == null) {
-            return false;
-        }
-
+        String externalProviderId = FrameGeneration.mode().getId();
+        FramePacingTrace.Span externalTrace = FramePacingTrace.INSTANCE.begin(
+                "external_present",
+                frame.logicalFrameIndex(),
+                -1L,
+                -1L,
+                -1L,
+                -1L,
+                "REAL",
+                externalProviderId
+        );
         try {
-            return queuePresent(submission.imageIndex());
+            ExternalPresentSubmission submission = submitPresentFrame(frame);
+            if (submission == null) {
+                externalTrace.complete("fallback", "present_submission_unavailable");
+                return false;
+            }
+
+            try {
+                boolean presented = queuePresent(
+                        submission.imageIndex(),
+                        frame.logicalFrameIndex(),
+                        externalProviderId
+                );
+                externalTrace.complete(
+                        "complete",
+                        "presented=" + presented
+                );
+                return presented;
+            } finally {
+                FrameGeneration.finishExternalFrame(frame, submission.result());
+            }
+        } catch (Throwable throwable) {
+            externalTrace.complete(
+                    "failed",
+                    throwable.getClass().getSimpleName() + ": "
+                            + String.valueOf(throwable.getMessage())
+            );
+            throw throwable;
         } finally {
-            FrameGeneration.finishExternalFrame(frame, submission.result());
+            externalTrace.close();
         }
     }
 
@@ -239,32 +298,78 @@ final class VulkanSwapchain {
             VulkanCommandBuffer commandBuffer = commandBuffers.acquire(device);
             commandBuffer.reset();
             commandBuffer.begin();
-            ExternalFrameGenerationDispatchResult externalResult =
-                    FrameGeneration.prepareExternalFrame(
-                            frame,
-                            width,
-                            height,
-                            imageFormat,
-                            imageCount,
-                            commandBuffer.getNativeCommandBuffer().address()
-                    );
-            recordBlit(commandBuffer, frame.finalColorVulkanTexture(), imageIndex, false);
-            commandBuffer.end();
+            String providerId = FrameGeneration.mode().getId();
+            ExternalFrameGenerationDispatchResult externalResult;
+            FramePacingTrace.Span prepareTrace = FramePacingTrace.INSTANCE.begin(
+                    "external_frame_generation_prepare",
+                    frame.logicalFrameIndex(),
+                    -1L,
+                    -1L,
+                    imageIndex,
+                    -1L,
+                    "REAL",
+                    providerId
+            );
+            try {
+                externalResult = FrameGeneration.prepareExternalFrame(
+                        frame,
+                        width,
+                        height,
+                        imageFormat,
+                        imageCount,
+                        commandBuffer.getNativeCommandBuffer().address()
+                );
+                prepareTrace.complete("complete", "");
+            } catch (Throwable throwable) {
+                prepareTrace.complete(
+                        "failed",
+                        throwable.getClass().getSimpleName() + ": "
+                                + String.valueOf(throwable.getMessage())
+                );
+                throw throwable;
+            } finally {
+                prepareTrace.close();
+            }
 
-            long[] resourceWaits = frame.readySemaphores();
-            long[] resourceSignals = frame.releaseSemaphores();
-            long[] waits = new long[resourceWaits.length + 1];
-            int[] stages = new int[waits.length];
-            long[] signals = new long[resourceSignals.length + 1];
-            waits[0] = imageAvailable[syncSlot];
-            stages[0] = VK_PIPELINE_STAGE_TRANSFER_BIT;
-            System.arraycopy(resourceWaits, 0, waits, 1, resourceWaits.length);
-            Arrays.fill(stages, 1, stages.length, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-            signals[0] = renderFinished[imageIndex];
-            System.arraycopy(resourceSignals, 0, signals, 1, resourceSignals.length);
+            FramePacingTrace.Span blitTrace = FramePacingTrace.INSTANCE.begin(
+                    "external_present_blit_submit",
+                    frame.logicalFrameIndex(),
+                    -1L,
+                    -1L,
+                    imageIndex,
+                    -1L,
+                    "REAL",
+                    providerId
+            );
+            try {
+                recordBlit(commandBuffer, frame.finalColorVulkanTexture(), imageIndex, false);
+                commandBuffer.end();
 
-            long fence = device.submitCommandBuffer(commandBuffer, waits, stages, signals);
-            frame.markSubmitted(commandBuffer, fence);
+                long[] resourceWaits = frame.readySemaphores();
+                long[] resourceSignals = frame.releaseSemaphores();
+                long[] waits = new long[resourceWaits.length + 1];
+                int[] stages = new int[waits.length];
+                long[] signals = new long[resourceSignals.length + 1];
+                waits[0] = imageAvailable[syncSlot];
+                stages[0] = VK_PIPELINE_STAGE_TRANSFER_BIT;
+                System.arraycopy(resourceWaits, 0, waits, 1, resourceWaits.length);
+                Arrays.fill(stages, 1, stages.length, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+                signals[0] = renderFinished[imageIndex];
+                System.arraycopy(resourceSignals, 0, signals, 1, resourceSignals.length);
+
+                long fence = device.submitCommandBuffer(commandBuffer, waits, stages, signals);
+                frame.markSubmitted(commandBuffer, fence);
+                blitTrace.complete("complete", "");
+            } catch (Throwable throwable) {
+                blitTrace.complete(
+                        "failed",
+                        throwable.getClass().getSimpleName() + ": "
+                                + String.valueOf(throwable.getMessage())
+                );
+                throw throwable;
+            } finally {
+                blitTrace.close();
+            }
 
             return new ExternalPresentSubmission(imageIndex, externalResult);
         } catch (Throwable throwable) {
@@ -274,6 +379,10 @@ final class VulkanSwapchain {
     }
 
     public void consumeWithoutPresent(FrameResources frame) {
+        if (presentationSuspended || surface.isMinimized()) {
+            consumeWithoutPresentInternal(frame);
+            return;
+        }
         AsyncFramePresenter scheduler = ensureAsyncFramePresenter();
         if (scheduler != null) {
             scheduler.enqueue(frame, false);
@@ -364,8 +473,35 @@ final class VulkanSwapchain {
         }
     }
 
-    private boolean queuePresent(int imageIndex) {
-        int result = presentImage(imageIndex, false);
+    private boolean queuePresent(
+            int imageIndex,
+            int logicalFrame,
+            String providerId
+    ) {
+        FramePacingTrace.Span presentTrace = FramePacingTrace.INSTANCE.begin(
+                "present_call",
+                logicalFrame,
+                -1L,
+                -1L,
+                imageIndex,
+                -1L,
+                "REAL",
+                providerId
+        );
+        int result;
+        try {
+            result = presentImage(imageIndex, false);
+            presentTrace.complete("complete", "vk_result=" + result);
+        } catch (Throwable throwable) {
+            presentTrace.complete(
+                    "failed",
+                    throwable.getClass().getSimpleName() + ": "
+                            + String.valueOf(throwable.getMessage())
+            );
+            throw throwable;
+        } finally {
+            presentTrace.close();
+        }
         if (result == VK_ERROR_OUT_OF_DATE_KHR) {
             recreateRequested = true;
             return false;
