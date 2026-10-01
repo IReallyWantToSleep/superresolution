@@ -49,6 +49,7 @@ final class FramePacingEstimator {
     private double estimatedPeriodNanos;
     private BatchMode confirmedBatchMode = BatchMode.UNKNOWN;
     private int consecutiveRealOnlyBatches;
+
     FramePacingEstimator(String providerId) {
         if (providerId == null || providerId.isBlank()) {
             throw new IllegalArgumentException("providerId cannot be blank");

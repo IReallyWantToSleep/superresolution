@@ -43,11 +43,10 @@ final class AsyncFramePresenter implements AutoCloseable {
             new FrameQueue<>(GENERATION_QUEUE_CAPACITY);
     final FrameQueue<PresentImageBatch> presentationQueue =
             new FrameQueue<>(PRESENTATION_QUEUE_CAPACITY, PresentImageBatch::imageCount);
-
+    final PresentPacer pacer;
     private final String providerId;
     private final AtomicLong nextRealIndex = new AtomicLong();
     private final FramePacingTiming framePacingTiming;
-    final PresentPacer pacer;
     private final FrameGenerationWorker generationWorker;
     private final PresentWorker presentWorker;
     private long nextBatchId;
