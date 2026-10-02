@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.mixin.core;
 
+#if MC_VER < MC_26_3
 import com.mojang.blaze3d.platform.GLX;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import org.spongepowered.asm.mixin.Mixin;
@@ -34,3 +35,11 @@ public class GLXMixin {
         GraphicsCapabilities.detectSupportedVersions();
     }
 }
+#else
+import net.minecraft.client.Minecraft;
+import org.spongepowered.asm.mixin.Mixin;
+
+@Mixin(Minecraft.class)
+public class GLXMixin {
+}
+#endif

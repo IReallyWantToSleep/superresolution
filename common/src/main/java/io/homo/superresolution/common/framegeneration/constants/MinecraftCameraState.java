@@ -39,7 +39,7 @@ public final class MinecraftCameraState {
             float cameraFar,
             float aspectRatio
     ) {
-        #if MC_VER == MC_26_2
+        #if MC_VER >= MC_26_2
         Camera camera = Minecraft.getInstance().gameRenderer.mainCamera();
         #else
         Camera camera = Minecraft.getInstance().gameRenderer.getMainCamera();
@@ -59,7 +59,7 @@ public final class MinecraftCameraState {
         Vector3f up = new Vector3f(camera.upVector());
         Vector3f right = new Vector3f(camera.leftVector()).negate();
         float capturedFov = fov;
-        #elif MC_VER == MC_26_2
+        #elif MC_VER >= MC_26_2
         Vector3d position = new Vector3d(camera.position().x, camera.position().y, camera.position().z);
         Vector3f forward = new Vector3f(camera.forwardVector());
         Vector3f up = new Vector3f(camera.upVector());

@@ -18,11 +18,28 @@
 
 package io.homo.superresolution.core.utils;
 
+#if MC_VER >= MC_26_3
+import org.lwjgl.sdl.SDLMessageBox;
+import org.lwjgl.system.MemoryUtil;
+#else
 import org.lwjgl.util.tinyfd.TinyFileDialogs;
+#endif
 
 public class MessageBox {
     private static void createMsgBox(String text, String caption, String type) {
-        #if MC_VER > MC_1_21_11
+#if MC_VER >= MC_26_3
+        int flags = switch (type) {
+            case "error" -> SDLMessageBox.SDL_MESSAGEBOX_ERROR;
+            case "warning" -> SDLMessageBox.SDL_MESSAGEBOX_WARNING;
+            default -> SDLMessageBox.SDL_MESSAGEBOX_INFORMATION;
+        };
+        SDLMessageBox.SDL_ShowSimpleMessageBox(
+                flags,
+                caption,
+                text,
+                MemoryUtil.NULL
+        );
+#elif MC_VER > MC_1_21_11
         TinyFileDialogs.tinyfd_messageBox(
                 caption,
                 text,
@@ -30,7 +47,7 @@ public class MessageBox {
                 type,
                 0
         );
-        #else
+#else
         TinyFileDialogs.tinyfd_messageBox(
                 caption,
                 text,
@@ -38,7 +55,7 @@ public class MessageBox {
                 type,
                 true
         );
-        #endif
+#endif
     }
 
     public static void createError(String text, String caption) {

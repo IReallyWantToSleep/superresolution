@@ -25,7 +25,11 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(targets = "net.minecraft.client.gui.render.GuiRenderer$Draw")
 public interface GuiRendererDrawAccessor {
     @Accessor("pipeline")
+#if MC_VER >= MC_26_3
+    com.mojang.renderpearl.api.pipeline.RenderPipeline getPipeline();
+#else
     com.mojang.blaze3d.pipeline.RenderPipeline getPipeline();
+#endif
 }
 
 #else

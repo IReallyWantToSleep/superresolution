@@ -25,6 +25,9 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
 #if MC_VER < MC_26_1
 import net.minecraft.client.gui.GuiGraphics;
 #endif
+#if MC_VER >= MC_26_3
+import org.lwjgl.sdl.SDLMouse;
+#endif
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -92,6 +95,18 @@ public abstract class WidgetEventScreen<T> extends Screen {
         view.dispatchCharTyped(codePoint, modifiers);
     }
 
+    private int normalizeMouseButton(int button) {
+        #if MC_VER >= MC_26_3
+        return switch (button) {
+            case SDLMouse.SDL_BUTTON_LEFT -> 0;
+            case SDLMouse.SDL_BUTTON_RIGHT -> 1;
+            default -> button;
+        };
+        #else
+        return button;
+        #endif
+    }
+
     protected abstract double transformPos(double pos);
 
     #if MC_VER > MC_1_21_8
@@ -107,35 +122,57 @@ public abstract class WidgetEventScreen<T> extends Screen {
 
     @Override
     public boolean keyReleased(net.minecraft.client.input.KeyEvent event) {
+        #if MC_VER >= MC_26_3
+        dispatchKeyReleaseToFrame(event.key(), event.keycode(), event.modifiers());
+#else
         dispatchKeyReleaseToFrame(event.key(), event.scancode(), event.modifiers());
+#endif
         super.keyPressed(event);
         return true;
     }
 
     @Override
     public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        #if MC_VER >= MC_26_3
+        dispatchKeyPressToFrame(event.key(), event.keycode(), event.modifiers());
+#else
         dispatchKeyPressToFrame(event.key(), event.scancode(), event.modifiers());
+#endif
         super.keyPressed(event);
         return true;
     }
 
     @Override
     public boolean mouseDragged(net.minecraft.client.input.MouseButtonEvent event, double dragX, double dragY) {
-        dispatchMouseDragToFrame((float) transformPos(event.x()), (float) transformPos(event.y()), (float) transformPos(dragX), (float) transformPos(dragY), event.button());
+        dispatchMouseDragToFrame(
+                (float) transformPos(event.x()),
+                (float) transformPos(event.y()),
+                (float) transformPos(dragX),
+                (float) transformPos(dragY),
+                normalizeMouseButton(event.button())
+        );
         super.mouseDragged(event, dragX, dragY);
         return true;
     }
 
     @Override
     public boolean mouseReleased(net.minecraft.client.input.MouseButtonEvent event) {
-        dispatchMouseReleaseToFrame((float) transformPos(event.x()), (float) transformPos(event.y()), event.button());
+        dispatchMouseReleaseToFrame(
+                (float) transformPos(event.x()),
+                (float) transformPos(event.y()),
+                normalizeMouseButton(event.button())
+        );
         super.mouseReleased(event);
         return true;
     }
 
     @Override
     public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean idk) {
-        dispatchMousePressToFrame((float) transformPos(event.x()), (float) transformPos(event.y()), event.button());
+        dispatchMousePressToFrame(
+                (float) transformPos(event.x()),
+                (float) transformPos(event.y()),
+                normalizeMouseButton(event.button())
+        );
         super.mouseClicked(event, idk);
         return true;
     }

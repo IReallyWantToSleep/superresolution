@@ -296,6 +296,10 @@ final class PresentTimingSupport {
                 );
                 results.get(index)
                         .sType(EXTPresentTiming.VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_EXT);
+                MemoryUtil.memPutInt(
+                        results.get(index).address() + VkPastPresentationTimingEXT.PRESENTSTAGECOUNT,
+                        MAX_STAGES
+                );
                 MemoryUtil.memPutAddress(
                         results.get(index).address() + VkPastPresentationTimingEXT.PPRESENTSTAGES,
                         stageSlice.address()
@@ -392,8 +396,14 @@ final class PresentTimingSupport {
             long resultTimestamp
     ) {
         int hostDomain = Platform.get() == Platform.WINDOWS
+                #if MC_VER >= MC_26_3
+                ? KHRCalibratedTimestamps.VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR
+                : KHRCalibratedTimestamps.VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR
+                #else
                 ? EXTCalibratedTimestamps.VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR
-                : EXTCalibratedTimestamps.VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR;
+                : EXTCalibratedTimestamps.VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR
+                #endif
+                ;
         VkCalibratedTimestampInfoKHR.Buffer infos =
                 VkCalibratedTimestampInfoKHR.calloc(2, stack);
         infos.get(0)

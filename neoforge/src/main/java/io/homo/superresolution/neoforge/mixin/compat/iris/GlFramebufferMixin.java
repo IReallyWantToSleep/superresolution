@@ -33,6 +33,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import static org.lwjgl.opengl.GL46.*;
 
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.textures.GpuTexture;
+import com.mojang.renderpearl.backend.opengl.GlTexture;
+#endif
+
 @Mixin(value = GlFramebuffer.class, remap = false)
 public abstract class GlFramebufferMixin extends GlResource {
     @Unique
@@ -76,7 +81,15 @@ public abstract class GlFramebufferMixin extends GlResource {
 
     #else
     @Inject(method = "addDepthAttachment", at = @At("RETURN"))
-    private void checkFboCompleteness(com.mojang.blaze3d.textures.GpuTexture texture, CallbackInfo ci) {
+    private void checkFboCompleteness(
+            #if MC_VER >= MC_26_3
+            GpuTexture
+            #else
+            com.mojang.blaze3d.textures.GpuTexture
+            #endif
+            texture,
+            CallbackInfo ci
+    ) {
         int status = getStatus();
         if (status != GL_FRAMEBUFFER_COMPLETE) {
             SuperResolution.LOGGER.error("Incomplete FBO, code: {}", status);
@@ -84,7 +97,15 @@ public abstract class GlFramebufferMixin extends GlResource {
     }
 
     @Inject(method = "addDepthAttachment", at = @At("HEAD"))
-    public void addDepthAttachment(com.mojang.blaze3d.textures.GpuTexture texture, CallbackInfo ci) {
+    public void addDepthAttachment(
+            #if MC_VER >= MC_26_3
+            GpuTexture
+            #else
+            com.mojang.blaze3d.textures.GpuTexture
+            #endif
+            texture,
+            CallbackInfo ci
+    ) {
         if (super_resolution$currentDepthAttachmentType != 0) {
             IrisRenderSystem.framebufferTexture2D(
                     getGlId(),
@@ -96,7 +117,15 @@ public abstract class GlFramebufferMixin extends GlResource {
             );
         }
 
-        super_resolution$currentDepthAttachmentType = super_resolution$detectAttachmentType(TextureInfoCache.INSTANCE.getInfo(((com.mojang.blaze3d.opengl.GlTexture) texture).glId()).getInternalFormat());
+        super_resolution$currentDepthAttachmentType = super_resolution$detectAttachmentType(
+                TextureInfoCache.INSTANCE.getInfo((
+                        #if MC_VER >= MC_26_3
+                        (GlTexture) texture
+                        #else
+                        (com.mojang.blaze3d.opengl.GlTexture) texture
+                        #endif
+                ).glId()).getInternalFormat()
+        );
     }
     #endif
 

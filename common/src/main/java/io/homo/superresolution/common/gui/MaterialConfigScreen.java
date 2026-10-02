@@ -59,7 +59,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private static final float GROUP_TITLE_PILL_MIN_HEIGHT = 30f;
     private static final float FRAME_TITLE_PILL_HORIZONTAL_PADDING = 16f;
     private static final float GROUP_TITLE_PILL_HORIZONTAL_PADDING = 9f;
-    #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1 || MC_VER == MC_26_2
+    #if MC_VER >= MC_1_21_11 && MC_VER < MC_26_2 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2 || MC_VER == MC_1_20_1 || MC_VER == MC_26_2 || MC_VER == MC_26_3
     private static final boolean CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION = true;
     #else
     private static final boolean CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION = false;
@@ -130,7 +130,13 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     #if MC_VER > MC_1_21_8
     @Override
     public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
-        if (event.key() == GLFW.GLFW_KEY_INSERT) {
+        if (event.key() ==
+                #if MC_VER >= MC_26_3
+                com.mojang.blaze3d.platform.InputConstants.getKey("key.keyboard.insert").getValue()
+                #else
+                GLFW.GLFW_KEY_INSERT
+                #endif
+        ) {
             MinecraftUtils.setScreen(new WidgetShowcaseScreen(this));
             return true;
         }
@@ -139,7 +145,13 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     #else
     @Override
     public boolean keyPressed(int keyCode, int scanCode, int modifiers) {
-        if (keyCode == GLFW.GLFW_KEY_INSERT) {
+        if (keyCode ==
+                #if MC_VER >= MC_26_3
+                com.mojang.blaze3d.platform.InputConstants.getKey("key.keyboard.insert").getValue()
+                #else
+                GLFW.GLFW_KEY_INSERT
+                #endif
+        ) {
             MinecraftUtils.setScreen(new WidgetShowcaseScreen(this));
             return true;
         }

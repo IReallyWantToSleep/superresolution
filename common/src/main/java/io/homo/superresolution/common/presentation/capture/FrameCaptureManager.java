@@ -159,7 +159,7 @@ public final class FrameCaptureManager {
     }
 
     private static boolean isWorldFrame() {
-        #if MC_VER >= MC_26_1 && MC_VER <= MC_26_2 || MC_VER >= MC_1_21_11 && MC_VER < MC_26_1 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2  || MC_VER == MC_1_20_1
+        #if MC_VER >= MC_26_1 && MC_VER <= MC_26_3 || MC_VER >= MC_1_21_11 && MC_VER < MC_26_1 || MC_VER >= MC_1_21 && MC_VER < MC_1_21_2  || MC_VER == MC_1_20_1
         Minecraft minecraft = Minecraft.getInstance();
         if (minecraft == null
                 || !SuperResolution.gameIsLoaded

@@ -20,7 +20,11 @@ package io.homo.superresolution.common.minecraft;
 
 #if MC_VER >= MC_26_2
 import com.mojang.blaze3d.systems.RenderSystem;
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.commands.GpuFence;
+#else
 import com.mojang.blaze3d.buffers.GpuFence;
+#endif
 #endif
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkInstance;

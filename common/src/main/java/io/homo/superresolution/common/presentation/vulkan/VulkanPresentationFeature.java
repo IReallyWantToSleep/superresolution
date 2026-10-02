@@ -28,7 +28,11 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanQueueUtils;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 import org.lwjgl.PointerBuffer;
+#if MC_VER >= MC_26_3
+import org.lwjgl.sdl.SDLVideo;
+#else
 import org.lwjgl.glfw.GLFW;
+#endif
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
@@ -160,7 +164,11 @@ public final class VulkanPresentationFeature {
         if (!target.getCapabilities().getDeviceExtensions().contains(VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
             throw new IllegalStateException("Selected Vulkan device does not support VK_KHR_swapchain");
         }
+        #if MC_VER >= MC_26_3
+        long currentContext = SDLVideo.SDL_GL_GetCurrentWindow();
+        #else
         long currentContext = GLFW.glfwGetCurrentContext();
+        #endif
         long renderHandle = PresentationWindowState.renderHandle();
         long presentationHandle = PresentationWindowState.presentationHandle();
         if (currentContext != renderHandle || currentContext == presentationHandle) {

@@ -18,7 +18,15 @@
 
 package io.homo.superresolution.common.presentation.window;
 
-#if MC_VER >= MC_26_1
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.device.BackendCreationException;
+import com.mojang.renderpearl.api.device.GpuDebugOptions;
+import com.mojang.renderpearl.api.device.GpuDevice;
+import com.mojang.renderpearl.backend.opengl.GlBackend;
+import io.homo.superresolution.common.presentation.PresentationBackendManager;
+import org.lwjgl.sdl.SDLVideo;
+import static org.lwjgl.system.MemoryUtil.NULL;
+#elif MC_VER >= MC_26_1
 import com.mojang.blaze3d.GLFWErrorCapture;
 import com.mojang.blaze3d.opengl.GlBackend;
 import com.mojang.blaze3d.shaders.GpuDebugOptions;
@@ -38,8 +46,77 @@ import static org.lwjgl.glfw.GLFW.GLFW_OPENGL_API;
 import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
 import static org.lwjgl.glfw.GLFW.GLFW_VISIBLE;
 import static org.lwjgl.system.MemoryUtil.NULL;
+#endif
 
+#if MC_VER >= MC_26_1
 public final class VulkanPresentationGlBackend extends GlBackend {
+#if MC_VER >= MC_26_3
+    private static final long SDL_WINDOW_OPENGL = 2L;
+    private static final long SDL_WINDOW_VULKAN = 268435456L;
+    private static final String HELPER_TITLE = "Super Resolution OpenGL Context";
+
+    private long presentationWindow = NULL;
+    private boolean creatingHelperWindow;
+    private long renderWindow = NULL;
+
+    @Override
+    public long createWindow(String title, int width, int height, long flags) {
+        if (creatingHelperWindow) {
+            long helper = super.createWindow(title, width, height, flags);
+            if (renderWindow == NULL) {
+                renderWindow = helper;
+                PresentationWindowState.attachRender(helper);
+            }
+            return helper;
+        }
+
+        if (presentationWindow != NULL) {
+            return super.createWindow(title, width, height, flags);
+        }
+
+        long window = SDLVideo.SDL_CreateWindow(
+                title,
+                width,
+                height,
+                (flags & ~SDL_WINDOW_OPENGL) | SDL_WINDOW_VULKAN
+        );
+        if (window == NULL) {
+            throw new IllegalStateException("Failed to create the Vulkan presentation window");
+        }
+        presentationWindow = window;
+        PresentationWindowState.attachPresentation(window);
+        return window;
+    }
+
+    @Override
+    public GpuDevice createDevice(GpuDebugOptions debugOptions) throws BackendCreationException {
+        creatingHelperWindow = true;
+        try {
+            GpuDevice device = super.createDevice(debugOptions);
+            if (renderWindow == NULL) {
+                throw new IllegalStateException("RenderPearl did not create an OpenGL helper window");
+            }
+            return device;
+        } catch (Throwable throwable) {
+            PresentationBackendManager.disableAfterFailure(throwable);
+            return throwBackendCreationFailure(throwable);
+        } finally {
+            creatingHelperWindow = false;
+        }
+    }
+
+    private static <T> T throwBackendCreationFailure(Throwable cause) throws BackendCreationException {
+        if (cause instanceof BackendCreationException failure) {
+            throw failure;
+        }
+        BackendCreationException failure = new BackendCreationException(
+                "Failed to initialize Vulkan presentation: " + cause.getMessage(),
+                BackendCreationException.Reason.OTHER
+        );
+        failure.addSuppressed(cause);
+        throw failure;
+    }
+#else
     private static final String HELPER_TITLE = "Super Resolution OpenGL Context";
 
     @Override
@@ -199,5 +276,6 @@ public final class VulkanPresentationGlBackend extends GlBackend {
     private static <E extends Throwable, T> T sneakyThrow(Throwable throwable) throws E {
         throw (E) throwable;
     }
+#endif
 }
 #endif

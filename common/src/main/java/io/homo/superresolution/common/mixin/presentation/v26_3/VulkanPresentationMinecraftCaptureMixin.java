@@ -1,28 +1,20 @@
 /*
  * Super Resolution
- * Copyright (c) 2025-2026. 187J3X1-114514
+ * Copyright (c) 2026. 187J3X1-114514
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
  * the Free Software Foundation, either version 3 of the License, or
  * (at your option) any later version.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU General Public License for more details.
- *
- * You should have received a copy of the GNU General Public License
- * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.common.mixin.presentation.v26_2;
+package io.homo.superresolution.common.mixin.presentation.v26_3;
 
-#if MC_VER == MC_26_2
-import com.mojang.blaze3d.systems.CommandEncoder;
-import com.mojang.blaze3d.systems.GpuSurface;
-import com.mojang.blaze3d.systems.SurfaceException;
-import com.mojang.blaze3d.textures.GpuTextureView;
+#if MC_VER == MC_26_3
+import com.mojang.renderpearl.api.commands.CommandEncoder;
+import com.mojang.renderpearl.api.device.GpuSurface;
+import com.mojang.renderpearl.api.device.SurfaceException;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
@@ -37,13 +29,11 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             method = "renderFrame",
             at = @At(
                     value = "INVOKE",
-                    target = "Lnet/minecraft/client/renderer/GameRenderer;render(Lnet/minecraft/client/DeltaTracker;Z)V",
-                    shift =  At.Shift.AFTER
+                    target = "Lnet/minecraft/client/renderer/GameRenderer;render()V",
+                    shift = At.Shift.AFTER
             )
     )
-    private void super_resolution$renderAndPresent(
-            boolean advanceGameTime, CallbackInfo ci
-    ) {
+    private void super_resolution$renderAndPresent(boolean advanceGameTime, CallbackInfo ci) {
         if (PresentationBackendManager.isVulkanPresentationRequested()) {
             PresentationBackendManager.endMinecraftFrame();
         }
@@ -53,7 +43,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             method = "renderFrame",
             at = @At(
                     value = "INVOKE",
-                    target = "Lcom/mojang/blaze3d/systems/GpuSurface;blitFromTexture(Lcom/mojang/blaze3d/systems/CommandEncoder;Lcom/mojang/blaze3d/textures/GpuTextureView;)V"
+                    target = "Lcom/mojang/renderpearl/api/device/GpuSurface;blitFromTexture(Lcom/mojang/renderpearl/api/commands/CommandEncoder;Lcom/mojang/renderpearl/api/textures/GpuTextureView;)V"
             )
     )
     private void super_resolution$skipOpenGlBlit(GpuSurface instance, CommandEncoder commandEncoder, GpuTextureView textureView) {
@@ -66,7 +56,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             method = "renderFrame",
             at = @At(
                     value = "INVOKE",
-                    target = "Lcom/mojang/blaze3d/systems/GpuSurface;present()V"
+                    target = "Lcom/mojang/renderpearl/api/device/GpuSurface;present()V"
             )
     )
     private void super_resolution$skipOpenGlPresent(GpuSurface instance) {
@@ -79,21 +69,18 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             method = "renderFrame",
             at = @At(
                     value = "INVOKE",
-                    target = "Lcom/mojang/blaze3d/systems/GpuSurface;isAcquired()Z"
+                    target = "Lcom/mojang/renderpearl/api/device/GpuSurface;isAcquired()Z"
             )
     )
     private boolean super_resolution$isAcquired(GpuSurface instance) {
-        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
-            return instance.isAcquired();
-        }
-        return false;
+        return !PresentationBackendManager.isVulkanPresentationRequested() && instance.isAcquired();
     }
 
     @Redirect(
             method = "renderFrame",
             at = @At(
                     value = "INVOKE",
-                    target = "Lcom/mojang/blaze3d/systems/GpuSurface;acquireNextTexture()V"
+                    target = "Lcom/mojang/renderpearl/api/device/GpuSurface;acquireNextTexture()V"
             )
     )
     private void super_resolution$acquireNextTexture(GpuSurface instance) throws SurfaceException {

@@ -60,7 +60,11 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+#if MC_VER >= MC_26_3
+@Mixin(targets = "com.mojang.renderpearl.backend.opengl.GlDebug")
+#else
 @Mixin(targets = "com.mojang.blaze3d.opengl.GlDebug")
+#endif
 public class GlDebugMixin {
     private static Logger LOGGER = LoggerFactory.getLogger("OpenGLDebug");
 

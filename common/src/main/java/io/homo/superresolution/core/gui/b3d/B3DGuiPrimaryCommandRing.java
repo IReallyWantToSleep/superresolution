@@ -25,7 +25,11 @@ import io.homo.superresolution.core.graphics.impl.command.CommandBufferBehavior;
 import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandPool;
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.commands.GpuFence;
+#else
 import com.mojang.blaze3d.buffers.GpuFence;
+#endif
 
 import java.util.ArrayList;
 import java.util.List;

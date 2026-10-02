@@ -28,9 +28,15 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
     //草
     import com.mojang.blaze3d.opengl.GlDevice;
     #endif
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.backend.opengl.DirectStateAccess;
+import com.mojang.renderpearl.backend.opengl.FrameBufferCache;
+import com.mojang.renderpearl.backend.opengl.GlTexture;
+#else
 import com.mojang.blaze3d.opengl.GlTexture;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.opengl.DirectStateAccess;
+#endif
+import com.mojang.blaze3d.systems.RenderSystem;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.InvocationTargetException;
@@ -49,8 +55,13 @@ public class MinecraftRenderTargetUtil {
 
     static {
         try {
+#if MC_VER >= MC_26_3
+            cachedGlDeviceClass = Class.forName("com.mojang.renderpearl.backend.opengl.GlDevice");
+            cachedGpuDeviceClass = Class.forName("com.mojang.renderpearl.frontend.FrontendGpuDevice");
+#else
             cachedGlDeviceClass = Class.forName("com.mojang.blaze3d.opengl.GlDevice");
             cachedGpuDeviceClass = Class.forName("com.mojang.blaze3d.systems.GpuDevice");
+#endif
             cachedGpuDeviceBackendField = cachedGpuDeviceClass.getDeclaredField("backend");
             cachedGpuDeviceBackendField.setAccessible(true);
             cachedGlDeviceDirectStateAccessMethod = cachedGlDeviceClass.getMethod("directStateAccess");
@@ -83,7 +94,13 @@ public class MinecraftRenderTargetUtil {
             //getDevice返回的不是GlDevice，而是一个像验证层的东西，它的backend字段才是实际GlDevice
             //RenderSystem.getDevice()->GpuDevice.backend-->GlDevice.directStateAccess()-->GlTexture.getFbo()
             #if MC_VER > MC_26_1_2
-            return ((com.mojang.blaze3d.opengl.FrameBufferCache)MinecraftUtils.getFrameBufferCache())
+            return ((
+                    #if MC_VER >= MC_26_3
+                    FrameBufferCache
+                    #else
+                    com.mojang.blaze3d.opengl.FrameBufferCache
+                    #endif
+                    )MinecraftUtils.getFrameBufferCache())
                     .getFbo(
                             (DirectStateAccess) cachedGlDeviceDirectStateAccessMethod.invoke(cachedGpuDeviceBackendField.get(RenderSystem.getDevice())),
                             List.of(((GlTexture) Objects.requireNonNull(renderTarget.getColorTexture()))),

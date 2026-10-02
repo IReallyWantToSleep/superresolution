@@ -32,6 +32,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import java.util.Optional;
 import java.util.OptionalInt;
 
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.commands.RenderPass;
+#endif
+
 @Mixin(GameRenderer.class)
 public class ImguiMixin {
     #if IS_DEV == 1
@@ -48,7 +52,13 @@ public class ImguiMixin {
     private void onRender(CallbackInfo ci) {
         if (!(SuperResolutionConfig.isEnableImgui())) return;
         if (ImguiMain.getInstance() != null) {
-            try (com.mojang.blaze3d.systems.RenderPass renderPass = com.mojang.blaze3d.systems.RenderSystem.getDevice().createCommandEncoder().createRenderPass(
+            try (
+                    #if MC_VER >= MC_26_3
+                    RenderPass
+                    #else
+                    com.mojang.blaze3d.systems.RenderPass
+                    #endif
+                    renderPass = com.mojang.blaze3d.systems.RenderSystem.getDevice().createCommandEncoder().createRenderPass(
                     ()->"SR-Imgui",
                     MinecraftUtils.getMainRenderTarget().getColorTextureView(),
                     #if MC_VER >= MC_26_2

@@ -68,6 +68,12 @@ public class MinecraftWindow {
     }
 
     public static int[] getWindowSourceSize() {
+        #if MC_VER >= MC_26_1_2
+        return new int[]{
+                getWindowWidth(),
+                getWindowHeight()
+        };
+        #else
         int[] sizeX = new int[]{1};
         int[] sizeY = new int[]{1};
         if (hasWindow()) {
@@ -77,6 +83,7 @@ public class MinecraftWindow {
                 sizeX[0],
                 sizeY[0]
         };
+        #endif
     }
 
     public static int getWindowSourceWidth() {

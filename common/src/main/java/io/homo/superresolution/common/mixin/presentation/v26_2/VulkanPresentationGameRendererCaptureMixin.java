@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.common.mixin.presentation.v26_2;
 
-#if MC_VER >= MC_26_2
+#if MC_VER == MC_26_2
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import net.minecraft.client.DeltaTracker;

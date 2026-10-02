@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.gui.options;
 
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
@@ -26,13 +27,12 @@ import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
+import io.homo.superresolution.core.utils.FileDialogUtil;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaDisplay;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaFlexDirection;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaGutter;
-import org.lwjgl.PointerBuffer;
-import org.lwjgl.system.MemoryStack;
-import org.lwjgl.util.tinyfd.TinyFileDialogs;
+import net.minecraft.client.Minecraft;
 
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -118,36 +118,33 @@ public class FileSelectorOptionEntry extends AbstractOptionEntry<String, FileSel
     }
 
     private void openFileDialog() {
-        String defaultPath = value.isBlank() ? null : value;
+        Path origin = null;
+        if (!value.isBlank()) {
+            try {
+                origin = Path.of(value);
+            } catch (InvalidPathException ignored) {
+            }
+        }
         String filterText = filterDescription == null || filterDescription.getString().isBlank()
                 ? null
                 : filterDescription.getString();
-        String selected;
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            PointerBuffer filters = null;
-            if (filterPatterns != null && filterPatterns.length > 0) {
-                filters = stack.mallocPointer(filterPatterns.length);
-                for (String pattern : filterPatterns) {
-                    filters.put(stack.UTF8(pattern));
-                }
-                filters.flip();
-            }
-            selected = TinyFileDialogs.tinyfd_openFileDialog(
-                    dialogTitle.getString(),
-                    defaultPath,
-                    filters,
-                    filterText,
-                    false
-            );
-        }
-        if (selected == null || selected.isBlank()) {
-            return;
-        }
-
-        try {
-            updateValue(Path.of(selected).toAbsolutePath().normalize().toString());
-        } catch (InvalidPathException ignored) {
-        }
+        FileDialogUtil.fileSelectDialog(
+                        FileDialogUtil.DialogType.OPEN,
+                        dialogTitle.getString(),
+                        origin,
+                        filterText,
+                        filterPatterns == null ? new String[0] : filterPatterns
+                )
+                .thenAccept(result -> Minecraft.getInstance().execute(() -> result.ifPresent(path -> {
+                    try {
+                        updateValue(path.toAbsolutePath().normalize().toString());
+                    } catch (InvalidPathException ignored) {
+                    }
+                })))
+                .exceptionally(throwable -> {
+                    SuperResolution.LOGGER.error("Failed to open file selection dialog", throwable);
+                    return null;
+                });
     }
 
     private void updateValue(String newValue) {

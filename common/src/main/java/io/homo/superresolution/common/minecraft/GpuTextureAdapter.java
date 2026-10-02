@@ -21,11 +21,20 @@ package io.homo.superresolution.common.minecraft;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 #if MC_VER > MC_1_21_4
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.GpuFormat;
+import com.mojang.renderpearl.api.textures.AddressMode;
+import com.mojang.renderpearl.api.textures.FilterMode;
+import com.mojang.renderpearl.api.textures.GpuTexture;
+import com.mojang.renderpearl.backend.opengl.DirectStateAccess;
+import com.mojang.renderpearl.backend.opengl.GlTexture;
+#else
 import com.mojang.blaze3d.opengl.DirectStateAccess;
 import com.mojang.blaze3d.opengl.GlTexture;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
+#endif
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 
 import javax.annotation.Nullable;
@@ -48,8 +57,13 @@ public class GpuTextureAdapter extends GlTexture {
                         com.mojang.blaze3d.textures.TextureFormat.RGBA8,
                 #else
                 texture.getTextureFormat().isDepth() ?
+                        #if MC_VER >= MC_26_3
+                        GpuFormat.D32_FLOAT :
+                        GpuFormat.RGBA8_UNORM,
+                        #else
                         com.mojang.blaze3d.GpuFormat.D32_FLOAT :
                         com.mojang.blaze3d.GpuFormat.RGBA8_UNORM,
+                        #endif
                 #endif
                 texture.getWidth(),
                 texture.getHeight(),
@@ -57,7 +71,11 @@ public class GpuTextureAdapter extends GlTexture {
                 texture.getTextureDescription().getMipmapSettings().getLevels(),
                 (int) texture.handle()
                 #if MC_VER > MC_26_1_2
+                #if MC_VER >= MC_26_3
+                ,(com.mojang.renderpearl.backend.opengl.FrameBufferCache)MinecraftUtils.getFrameBufferCache()
+                #else
                 ,(com.mojang.blaze3d.opengl.FrameBufferCache)MinecraftUtils.getFrameBufferCache()
+                #endif
                 #endif
         );
         #else

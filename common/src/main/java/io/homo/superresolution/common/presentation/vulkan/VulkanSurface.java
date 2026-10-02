@@ -21,9 +21,14 @@ package io.homo.superresolution.common.presentation.vulkan;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import org.lwjgl.PointerBuffer;
+#if MC_VER >= MC_26_3
+import org.lwjgl.sdl.SDLVideo;
+import org.lwjgl.sdl.SDLVulkan;
+#else
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWNativeWin32;
 import org.lwjgl.glfw.GLFWVulkan;
+#endif
 import org.lwjgl.system.JNI;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
@@ -33,8 +38,10 @@ import org.lwjgl.vulkan.*;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 
+#if MC_VER < MC_26_3
 import static org.lwjgl.glfw.GLFW.GLFW_CLIENT_API;
 import static org.lwjgl.glfw.GLFW.GLFW_NO_API;
+#endif
 import static org.lwjgl.vulkan.VK10.VK_NULL_HANDLE;
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 
@@ -74,9 +81,15 @@ public final class VulkanSurface {
         if (handle != VK_NULL_HANDLE) {
             throw new IllegalStateException("Vulkan presentation window is already attached");
         }
+        #if MC_VER >= MC_26_3
+        if ((SDLVideo.SDL_GetWindowFlags(presentationHandle) & SDLVideo.SDL_WINDOW_VULKAN) == 0L) {
+            throw new IllegalStateException("Vulkan presentation window must use SDL_WINDOW_VULKAN");
+        }
+        #else
         if (GLFW.glfwGetWindowAttrib(presentationHandle, GLFW_CLIENT_API) != GLFW_NO_API) {
             throw new IllegalStateException("Vulkan presentation window must use GLFW_NO_API");
         }
+        #endif
         if (presentationHandle != MinecraftWindow.getWindowHandle()) {
             throw new IllegalStateException("Presentation handle is not the Minecraft window");
         }
@@ -92,6 +105,13 @@ public final class VulkanSurface {
     }
 
     public PointerBuffer requiredInstanceExtensions() {
+        #if MC_VER >= MC_26_3
+        PointerBuffer extensions = SDLVulkan.SDL_Vulkan_GetInstanceExtensions();
+        if (extensions == null || !extensions.hasRemaining()) {
+            throw new IllegalStateException("SDL did not provide required Vulkan instance extensions");
+        }
+        return extensions;
+        #else
         if (!GLFWVulkan.glfwVulkanSupported()) {
             throw new IllegalStateException("GLFW Vulkan support is unavailable");
         }
@@ -100,6 +120,7 @@ public final class VulkanSurface {
             throw new IllegalStateException("GLFW did not provide required Vulkan instance extensions");
         }
         return extensions;
+        #endif
     }
 
     public void createSurface(VkInstance instance) {
@@ -109,9 +130,16 @@ public final class VulkanSurface {
         if (handle == VK_NULL_HANDLE) {
             throw new IllegalStateException("Presentation window must be attached before creating its surface");
         }
-        requiredInstanceExtensions();
         try (MemoryStack stack = MemoryStack.stackPush()) {
             LongBuffer surfacePointer = stack.mallocLong(1);
+            #if MC_VER >= MC_26_3
+            if (!SDLVulkan.SDL_Vulkan_CreateSurface(handle, instance, null, surfacePointer)) {
+                throw new IllegalStateException(
+                        "Failed to create the Vulkan surface for SDL handle " + handle
+                );
+            }
+            #else
+            requiredInstanceExtensions();
             int result = isWindows()
                     ? createHookedWin32Surface(instance, stack, surfacePointer)
                     : GLFWVulkan.glfwCreateWindowSurface(instance, handle, null, surfacePointer);
@@ -123,10 +151,12 @@ public final class VulkanSurface {
                                 + result
                 );
             }
+            #endif
             surface = surfacePointer.get(0);
         }
     }
 
+    #if MC_VER < MC_26_3
     private int createHookedWin32Surface(
             VkInstance instance,
             MemoryStack stack,
@@ -158,6 +188,7 @@ public final class VulkanSurface {
                 function
         );
     }
+    #endif
 
     public void recreateSurface(VkInstance instance) {
         destroySurface(instance);
@@ -171,7 +202,11 @@ public final class VulkanSurface {
         try (MemoryStack stack = MemoryStack.stackPush()) {
             IntBuffer width = stack.mallocInt(1);
             IntBuffer height = stack.mallocInt(1);
+            #if MC_VER >= MC_26_3
+            SDLVideo.SDL_GetWindowSizeInPixels(handle, width, height);
+            #else
             GLFW.glfwGetFramebufferSize(handle, width, height);
+            #endif
             int newWidth = width.get(0);
             int newHeight = height.get(0);
             if (newWidth != framebufferWidth || newHeight != framebufferHeight) {
@@ -192,22 +227,38 @@ public final class VulkanSurface {
         if (shown || handle == VK_NULL_HANDLE) {
             return;
         }
+        #if MC_VER >= MC_26_3
+        SDLVideo.SDL_ShowWindow(handle);
+        SDLVideo.SDL_RaiseWindow(handle);
+        #else
         GLFW.glfwShowWindow(handle);
         GLFW.glfwFocusWindow(handle);
+        #endif
         shown = true;
     }
 
     public boolean shouldClose() {
+        #if MC_VER >= MC_26_3
+        return handle != VK_NULL_HANDLE
+                && net.minecraft.client.Minecraft.getInstance().getWindow().shouldClose();
+        #else
         return handle != VK_NULL_HANDLE && GLFW.glfwWindowShouldClose(handle);
+        #endif
     }
 
     public boolean isMinimized() {
         if (handle == VK_NULL_HANDLE) {
             return false;
         }
+        #if MC_VER >= MC_26_3
+        return (SDLVideo.SDL_GetWindowFlags(handle) & SDLVideo.SDL_WINDOW_MINIMIZED) != 0L
+                || framebufferWidth <= 0
+                || framebufferHeight <= 0;
+        #else
         return GLFW.glfwGetWindowAttrib(handle, GLFW.GLFW_ICONIFIED) == GLFW.GLFW_TRUE
                 || framebufferWidth <= 0
                 || framebufferHeight <= 0;
+        #endif
     }
 
     public void destroySurface(VkInstance instance) {

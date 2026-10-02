@@ -37,7 +37,11 @@ public class SuperResolutionKeyMapping {
 
     public static final KeyMapping OPENGUI_KEYMAPPING = new KeyMapping(
             "key.super_resolution.open_config",
+            #if MC_VER >= MC_26_3
+            InputConstants.Type.KEYBOARD,
+            #else
             InputConstants.Type.KEYSYM,
+            #endif
             InputConstants.KEY_F6,
             CATEGORY
     );

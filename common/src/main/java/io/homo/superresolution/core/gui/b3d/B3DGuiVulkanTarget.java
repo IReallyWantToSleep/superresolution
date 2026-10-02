@@ -19,13 +19,22 @@
 package io.homo.superresolution.core.gui.b3d;
 
 #if MC_VER >= MC_26_2
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.GpuFormat;
+import com.mojang.renderpearl.api.textures.AddressMode;
+import com.mojang.renderpearl.api.textures.FilterMode;
+import com.mojang.renderpearl.api.textures.GpuSampler;
+import com.mojang.renderpearl.api.textures.GpuTexture;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
+#else
 import com.mojang.blaze3d.GpuFormat;
-import com.mojang.blaze3d.systems.RenderSystem;
 import com.mojang.blaze3d.textures.AddressMode;
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuSampler;
 import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
+#endif
+import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;

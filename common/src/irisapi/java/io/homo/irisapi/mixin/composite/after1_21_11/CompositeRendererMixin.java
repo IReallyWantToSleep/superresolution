@@ -32,10 +32,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.LocalCapture;
 import org.spongepowered.asm.mixin.Final;
 import com.google.common.collect.ImmutableList;
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.buffers.GpuBuffer;
+#else
 import com.mojang.blaze3d.buffers.GpuBuffer;
+#endif
 import com.mojang.blaze3d.pipeline.RenderTarget;
 #if MC_VER > MC_26_1_2
+
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.pipeline.IndexType;
+#else
 import com.mojang.blaze3d.IndexType;
+#endif
+
 #else
 import com.mojang.blaze3d.vertex.VertexFormat.IndexType;
 #endif

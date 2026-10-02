@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.common.mixin.lowlatency.v26_2;
 
-#if MC_VER >= MC_26_2
+#if MC_VER == MC_26_2
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import net.minecraft.client.MouseHandler;
 import net.minecraft.client.input.MouseButtonInfo;
