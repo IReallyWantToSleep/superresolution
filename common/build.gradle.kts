@@ -209,6 +209,8 @@ val materialSourceSet = sourceSets.maybeCreate("material")
 val hackSourceSet = sourceSets.maybeCreate("hack")
 val shaderCompatSourceSet = sourceSets.maybeCreate("shadercompat")
 val irisVelocityExtSourceSet = sourceSets.maybeCreate("iris_velocity_ext")
+val irisVelocityExtJavaRoot = file("src/iris_velocity_ext/java")
+val irisVelocityExtResourcesRoot = file("src/iris_velocity_ext/resources")
 tasks.register<JavaCompile>("genJNIHeader") {
     description = "Generate JNI Header"
     val outputDir = file("../native/cpp/SRNativeMain/include")
@@ -272,14 +274,22 @@ irisVelocityExtSourceSet.runtimeClasspath += sharedSourceSet.output
 irisVelocityExtSourceSet.compileClasspath += mainSourceSet.output
 irisVelocityExtSourceSet.runtimeClasspath += mainSourceSet.output
 
-val irisVelocityExtSupported = versionConfig.common.minecraftVersion.startsWith("26.1")
+val irisVelocityExtVersion = when {
+    versionConfig.common.minecraftVersion.startsWith("26.1") -> "26_1"
+    versionConfig.common.minecraftVersion == "26.2" -> "26_2"
+    versionConfig.common.minecraftVersion == "26.3" -> "26_2"
+    else -> null
+}
+val irisVelocityExtSupported = irisVelocityExtVersion != null
 if (irisVelocityExtSupported) {
+    irisVelocityExtSourceSet.java.setSrcDirs(listOf(File(irisVelocityExtJavaRoot, "io/homo/superresolution/iris_velocity_ext/v${irisVelocityExtVersion}")))
+    irisVelocityExtSourceSet.resources.setSrcDirs(listOf(File(irisVelocityExtResourcesRoot, "v${irisVelocityExtVersion}")))
     dependencies {
         add("iris_velocity_extCompileOnly", "io.github.llamalad7:mixinextras-common:0.5.0")
     }
 } else {
-    irisVelocityExtSourceSet.java.setSrcDirs(emptyList<java.io.File>())
-    irisVelocityExtSourceSet.resources.setSrcDirs(emptyList<java.io.File>())
+    irisVelocityExtSourceSet.java.setSrcDirs(emptyList<File>())
+    irisVelocityExtSourceSet.resources.setSrcDirs(emptyList<File>())
 }
 
 hackSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath

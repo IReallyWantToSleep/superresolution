@@ -68,10 +68,11 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
                 #if MC_VER >= MC_26_3
                 GpuFormat.RGBA8_UNORM,
                 frameBuffer.getDepthTextureFormat() != null ? GpuFormat.D32_FLOAT : null
+                #elif MC_VER >= MC_26_2
+                frameBuffer.getDepthTextureFormat() != null,
+                com.mojang.blaze3d.GpuFormat.RGBA8_UNORM
                 #else
                 frameBuffer.getDepthTextureFormat() != null
-                ,
-                com.mojang.blaze3d.GpuFormat.RGBA8_UNORM
                 #endif
         );
         this.frameBuffer = frameBuffer;

@@ -16,7 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.iris_velocity_ext.v26_1.vertex_serializer;
+package io.homo.superresolution.iris_velocity_ext.v26_2.vertex_serializer;
 
 import io.homo.superresolution.core.NativeLibManager;
 

@@ -235,10 +235,13 @@ val fabricVersionRange = if (versionConfig.common.fabricVersionRange.size == 1) 
     versionConfig.common.fabricVersionRange.joinToString(prefix = "[", postfix = "]") { "\"$it\"" }
 }
 
-// The iris velocity extension only exists for Minecraft 26.1; its mixin config lives in the
-// common jar only for those versions, so the reference here must be conditional too — Fabric
-// loader fails hard on a mixin config that is listed but absent from the jar.
-val irisVelocityExtMixinEntry = if (versionConfig.common.minecraftVersion.startsWith("26.1")) {
+// The velocity extension is versioned because Iris and Minecraft change its rendering APIs.
+// The common jar only contains the selected version's mixin config, so keep this reference
+// conditional — Fabric loader fails hard on a mixin config that is absent from the jar.
+val irisVelocityExtMixinEntry = if (
+    versionConfig.common.minecraftVersion.startsWith("26.1")
+        || versionConfig.common.minecraftVersion == "26.2"
+) {
     ",\n        \"super_resolution.iris_velocity_ext.mixins.json\""
 } else {
     ""
