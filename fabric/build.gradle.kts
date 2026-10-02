@@ -241,6 +241,7 @@ val fabricVersionRange = if (versionConfig.common.fabricVersionRange.size == 1) 
 val irisVelocityExtMixinEntry = if (
     versionConfig.common.minecraftVersion.startsWith("26.1")
         || versionConfig.common.minecraftVersion == "26.2"
+        || versionConfig.common.minecraftVersion == "26.3"
 ) {
     ",\n        \"super_resolution.iris_velocity_ext.mixins.json\""
 } else {

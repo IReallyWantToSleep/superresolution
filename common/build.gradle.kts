@@ -277,7 +277,7 @@ irisVelocityExtSourceSet.runtimeClasspath += mainSourceSet.output
 val irisVelocityExtVersion = when {
     versionConfig.common.minecraftVersion.startsWith("26.1") -> "26_1"
     versionConfig.common.minecraftVersion == "26.2" -> "26_2"
-    versionConfig.common.minecraftVersion == "26.3" -> "26_2"
+    versionConfig.common.minecraftVersion == "26.3" -> "26_3"
     else -> null
 }
 val irisVelocityExtSupported = irisVelocityExtVersion != null
