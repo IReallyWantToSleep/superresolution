@@ -1,14 +1,10 @@
+// Imported because in a Kotlin build script `java` resolves to the Gradle extension,
+// which shadows the java.* package.
 import multiversion.BasePlatformConfig
 import multiversion.Dependency
 import multiversion.VersionConfig
-import org.gradle.api.tasks.SourceSetContainer
-import org.gradle.api.tasks.compile.JavaCompile
-import org.gradle.jvm.toolchain.JavaLanguageVersion
-import org.gradle.jvm.toolchain.JavaToolchainService
 import org.gradle.jvm.tasks.Jar
 import utils.MinecraftVersion
-// Imported because in a Kotlin build script `java` resolves to the Gradle extension,
-// which shadows the java.* package.
 import java.util.zip.ZipFile
 
 plugins {
@@ -17,6 +13,7 @@ plugins {
 
 @Suppress("UNCHECKED_CAST")
 val versionConfig = rootProject.extra["versionConfig"] as VersionConfig
+
 @Suppress("UNCHECKED_CAST")
 val getCurrentNeoFormVersion = rootProject.extra["getCurrentNeoFormVersion"] as () -> String
 val imguiVersion = if (versionConfig.common.minecraftVersion >= "26.1") "1.92.0" else "1.90.0"
@@ -76,7 +73,7 @@ repositories {
     }
     maven {
         name = "CaffeineMC"
-        url = uri("https://maven.caffeinemc.net/releases" )
+        url = uri("https://maven.caffeinemc.net/releases")
         mavenContent { releasesOnly() }
         content {
             includeGroup("net.caffeinemc")
@@ -113,9 +110,11 @@ fun findIris(config: BasePlatformConfig?): Pair<Dependency, Boolean>? {
 
     return null
 }
+
 fun findFirstConfiguration(vararg names: String): String {
     return names.firstOrNull { name -> configurations.findByName(name) != null } ?: names.last()
 }
+
 fun DependencyHandler.modCompileOnlyCompat(notation: Any) =
     add(findFirstConfiguration("modCompileOnly", "compileOnly"), notation)
 
@@ -178,18 +177,17 @@ dependencies {
         }
     }
 
-    if (versionConfig.fabric.dependencies.modrinth) {
-        for (lib in versionConfig.fabric.dependencies.modrinth) {
-            if ((lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of(
-                    "1.21.10"
-                )) || lib.name == "sodium.maven"
-            ) {
-                var depName = "net.caffeinemc:sodium-fabric:${lib.version}"
-                modCompileOnlyCompat(depName)
-                break
-            }
+    for (lib in versionConfig.fabric.dependencies.modrinth) {
+        if ((lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of(
+                "1.21.10"
+            )) || lib.name == "sodium.maven"
+        ) {
+            var depName = "net.caffeinemc:sodium-fabric:${lib.version}"
+            modCompileOnlyCompat(depName)
+            break
         }
     }
+
 }
 
 configurations {
@@ -287,8 +285,22 @@ val irisVelocityExtVersion = when {
 }
 val irisVelocityExtSupported = irisVelocityExtVersion != null
 if (irisVelocityExtSupported) {
-    irisVelocityExtSourceSet.java.setSrcDirs(listOf(File(irisVelocityExtJavaRoot, "io/homo/superresolution/iris_velocity_ext/v${irisVelocityExtVersion}")))
-    irisVelocityExtSourceSet.resources.setSrcDirs(listOf(File(irisVelocityExtResourcesRoot, "v${irisVelocityExtVersion}")))
+    irisVelocityExtSourceSet.java.setSrcDirs(
+        listOf(
+            File(
+                irisVelocityExtJavaRoot,
+                "io/homo/superresolution/iris_velocity_ext/v${irisVelocityExtVersion}"
+            )
+        )
+    )
+    irisVelocityExtSourceSet.resources.setSrcDirs(
+        listOf(
+            File(
+                irisVelocityExtResourcesRoot,
+                "v${irisVelocityExtVersion}"
+            )
+        )
+    )
     dependencies {
         add("iris_velocity_extCompileOnly", "io.github.llamalad7:mixinextras-common:0.5.0")
     }
@@ -327,7 +339,16 @@ tasks.named<Jar>("jar") {
 }
 
 artifacts {
-    var sourceSets:ArrayList<SourceSet> = ArrayList(listOf(mainSourceSet, irisapiSourceSet, sharedSourceSet, materialSourceSet, hackSourceSet, shaderCompatSourceSet))
+    var sourceSets: ArrayList<SourceSet> = ArrayList(
+        listOf(
+            mainSourceSet,
+            irisapiSourceSet,
+            sharedSourceSet,
+            materialSourceSet,
+            hackSourceSet,
+            shaderCompatSourceSet
+        )
+    )
     if (irisVelocityExtSupported) sourceSets.add(irisVelocityExtSourceSet)
     sourceSets.forEach { sourceSet ->
         sourceSet.java.sourceDirectories.files.forEach { dir ->
@@ -377,7 +398,7 @@ val publishingApiToShnexus = gradle.startParameter.taskNames.any { taskName ->
 if (publishingApiToShnexus && minecraftVersionConfig != "1.20.1") {
     throw GradleException(
         "Remote Super Resolution API publishing must use minecraft_version_config=1.20.1; "
-            + "run :publishApiToShnexus."
+                + "run :publishApiToShnexus."
     )
 }
 
@@ -424,11 +445,11 @@ val apiJar = tasks.register<Jar>("apiJar") {
         if (offenders.isNotEmpty()) {
             throw GradleException(
                 "The API jar contains class files newer than Java 17 (major $apiMaxClassFileMajor), "
-                    + "so mods built for older Minecraft versions could not read it. "
-                    + "Build it from the oldest configuration that consumers target: "
-                    + "-Pminecraft_version_config=$apiSourceVersionConfig\n"
-                    + offenders.take(5).joinToString("\n") { "  $it" }
-                    + if (offenders.size > 5) "\n  ... and ${offenders.size - 5} more" else ""
+                        + "so mods built for older Minecraft versions could not read it. "
+                        + "Build it from the oldest configuration that consumers target: "
+                        + "-Pminecraft_version_config=$apiSourceVersionConfig\n"
+                        + offenders.take(5).joinToString("\n") { "  $it" }
+                        + if (offenders.size > 5) "\n  ... and ${offenders.size - 5} more" else ""
             )
         }
     }
