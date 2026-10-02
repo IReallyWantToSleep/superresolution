@@ -37,7 +37,9 @@ import com.mojang.renderpearl.api.GpuFormat;
 import com.mojang.renderpearl.api.textures.FilterMode;
 import com.mojang.renderpearl.api.textures.GpuTexture;
 #else
+#if MC_VER > MC_1_21_11
 import com.mojang.blaze3d.GpuFormat;
+#endif
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
 #endif
