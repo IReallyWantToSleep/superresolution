@@ -36,6 +36,25 @@ public class GuiGraphicsMixin {
     }
 
 }
+#elif MC_VER >= MC_26_3
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
+import io.homo.superresolution.core.gui.NanoVGScreen;
+import com.mojang.blaze3d.platform.Window;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+@Mixin(GuiGraphicsExtractor.class)
+public class GuiGraphicsMixin {
+    @Inject(method = "applyCursor", at = @At("HEAD"), cancellable = true)
+    private void applyCursor(Window window, CallbackInfo ci) {
+        if (MinecraftUtils.getScreen() instanceof NanoVGScreen<?>) {
+            ci.cancel();
+        }
+    }
+}
 #else
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
