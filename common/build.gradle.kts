@@ -178,11 +178,16 @@ dependencies {
         }
     }
 
-    for (lib in versionConfig.fabric.dependencies.modrinth) {
-        if ((lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10")) || lib.name == "sodium.maven") {
-            var depName = "net.caffeinemc:sodium-fabric:${lib.version}"
-            modCompileOnlyCompat(depName)
-            break
+    if (versionConfig.fabric.dependencies.modrinth) {
+        for (lib in versionConfig.fabric.dependencies.modrinth) {
+            if ((lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of(
+                    "1.21.10"
+                )) || lib.name == "sodium.maven"
+            ) {
+                var depName = "net.caffeinemc:sodium-fabric:${lib.version}"
+                modCompileOnlyCompat(depName)
+                break
+            }
         }
     }
 }
