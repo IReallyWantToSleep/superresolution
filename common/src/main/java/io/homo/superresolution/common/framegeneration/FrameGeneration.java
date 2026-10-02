@@ -19,8 +19,10 @@
 package io.homo.superresolution.common.framegeneration;
 
 import io.homo.superresolution.api.registry.BackendGroup;
-import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchRequest;
-import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchResult;
+import io.homo.superresolution.api.registry.framegeneration.ExternalFrameGenerationDispatchInput;
+import io.homo.superresolution.api.registry.framegeneration.ExternalFrameGenerationDispatchResult;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispatchInput;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispatchResult;
 import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDescription;
 import io.homo.superresolution.api.registry.framegeneration.FrameGenerationExecutionModel;
 import io.homo.superresolution.api.registry.framegeneration.FrameGenerationProvider;
@@ -147,7 +149,7 @@ public final class FrameGeneration {
         }
     }
 
-    public static synchronized FramePresentPlan prepareFrame(
+    public static synchronized ExternalFrameGenerationDispatchResult prepareExternalFrame(
             FrameResources frameResources,
             int colorWidth,
             int colorHeight,
@@ -157,38 +159,30 @@ public final class FrameGeneration {
     ) {
         if (!initialized || !frameGenerationConfigured()) {
             disableFrameGeneration();
-            return FramePresentPlan.none();
+            return ExternalFrameGenerationDispatchResult.INACTIVE;
         }
         FrameGenerationProvider provider = activeProvider();
         FrameGenerationMode mode = displayedModeWith(provider);
         if (provider == null
                 || provider.executionModel() != FrameGenerationExecutionModel.EXTERNAL_INTERPOSER
                 || !mode.isEnabled()
-                || frameResources == null
-                || commandBuffer == 0L
                 || !frameResources.hasHudlessColor()
                 || !frameResources.hasDepth()
                 || !frameResources.hasMotionVector()) {
             disableFrameGeneration();
-            return FramePresentPlan.none();
+            return ExternalFrameGenerationDispatchResult.INACTIVE;
         }
 
-        FrameGenerationConstants constants = FGConstantsFeature.getConstants(frameResources.logicalFrameIndex());
+        FrameGenerationConstants constants =
+                FGConstantsFeature.getConstants(frameResources.logicalFrameIndex());
         if (constants == null) {
             disableFrameGeneration();
-            return FramePresentPlan.none();
+            return ExternalFrameGenerationDispatchResult.INACTIVE;
         }
 
-        return provider.prepareFrame(
-                frameResources,
-                constants,
-                mode,
-                colorWidth,
-                colorHeight,
-                colorFormat,
-                backBufferCount,
-                commandBuffer
-        );
+        return provider.prepareExternalFrame(new ExternalFrameGenerationDispatchInput(
+                frameResources, constants, mode, colorWidth, colorHeight, colorFormat,
+                backBufferCount, commandBuffer));
     }
 
     /**
@@ -206,7 +200,7 @@ public final class FrameGeneration {
     }
 
     /**
-     * Captures inputs only when the active provider still matches the scheduler
+     * Captures inputs only when the active provider still matches the presenter
      * lifecycle that requested the snapshot.
      */
     public static synchronized @Nullable ProviderInputSnapshot captureProviderInputSnapshotForFrame(
@@ -247,53 +241,49 @@ public final class FrameGeneration {
     }
 
     /**
-     * Returns whether an existing scheduler may keep owning application-managed
+     * Returns whether an existing presenter may keep owning application-managed
      * presentation. A temporarily unavailable provider is compatible and produces
      * Real-only jobs; selecting another provider or an external interposer requires
-     * a drain/restart instead of sharing one scheduler lifecycle.
+     * a drain/restart instead of sharing one presenter lifecycle.
      */
-    public static synchronized boolean isApplicationManagedSchedulerCompatible(
-            String schedulerProviderId
+    public static synchronized boolean isApplicationManagedPresenterCompatible(
+            String presenterProviderId
     ) {
-        Objects.requireNonNull(schedulerProviderId, "schedulerProviderId cannot be null");
-        if (schedulerProviderId.isBlank()) {
-            throw new IllegalArgumentException("schedulerProviderId cannot be blank");
-        }
         ProviderSelection selection = activeProviderSelection();
         return selection == null
                 || (selection.executionModel() == FrameGenerationExecutionModel.APPLICATION_MANAGED_ASYNC
-                && selection.id().equals(schedulerProviderId));
+                && selection.id().equals(presenterProviderId));
     }
 
     /**
      * Dispatches the provider captured by {@link ProviderInputSnapshot#providerId()}.
-     * Provider code runs outside the facade monitor on the scheduler's FG thread.
+     * Provider code runs outside the facade monitor on FrameGenerationWorker.
      */
-    public static AsyncFrameGenerationDispatchResult dispatchAsync(
-            AsyncFrameGenerationDispatchRequest request
+    public static FrameGenerationDispatchResult dispatchAsync(
+            FrameGenerationDispatchInput request
     ) {
         Objects.requireNonNull(request, "request cannot be null");
         ProviderSelection selection;
         synchronized (FrameGeneration.class) {
             selection = activeProviderSelection();
             if (!initialized || selection == null) {
-                return AsyncFrameGenerationDispatchResult.failed(
+                return FrameGenerationDispatchResult.failed(
                         "No active frame-generation provider"
                 );
             }
             if (selection.executionModel() != FrameGenerationExecutionModel.APPLICATION_MANAGED_ASYNC) {
-                return AsyncFrameGenerationDispatchResult.failed(
+                return FrameGenerationDispatchResult.failed(
                         "Active provider does not use application-managed async dispatch"
                 );
             }
             if (!selection.id().equals(request.providerInputSnapshot().providerId())) {
-                return AsyncFrameGenerationDispatchResult.failed(
+                return FrameGenerationDispatchResult.failed(
                         "Provider changed after the input snapshot was captured"
                 );
             }
             if (request.frameResources().logicalFrameIndex()
                     != request.providerInputSnapshot().logicalFrameIndex()) {
-                return AsyncFrameGenerationDispatchResult.failed(
+                return FrameGenerationDispatchResult.failed(
                         "Provider input snapshot does not belong to the queued frame"
                 );
             }
@@ -301,14 +291,14 @@ public final class FrameGeneration {
         return selection.provider().dispatchAsync(request);
     }
 
-    public static synchronized void finishPresent(
+    public static synchronized void finishExternalFrame(
             FrameResources frameResources,
-            FramePresentPlan plan
+            ExternalFrameGenerationDispatchResult result
     ) {
         FrameGenerationProvider provider = activeProvider();
         if (provider != null
                 && provider.executionModel() == FrameGenerationExecutionModel.EXTERNAL_INTERPOSER) {
-            provider.finishPresent(frameResources, plan != null && plan.frameGenerationActive());
+            provider.finishExternalFrame(frameResources, result);
         }
     }
 

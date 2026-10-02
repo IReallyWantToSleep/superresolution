@@ -164,7 +164,7 @@ public final class VulkanLowLatency {
 
     /**
      * Returns the immutable native Reflex id for the current real/application frame.
-     * The render thread captures this value into RealFrameJob before publication.
+     * The render thread captures this value into FrameGenerationWork before publication.
      */
     public static long currentFramePresentId() {
         synchronized (LOCK) {

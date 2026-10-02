@@ -27,10 +27,20 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 #if MC_VER > MC_1_21_8
+#if MC_VER >= MC_26_3
+@Mixin(com.mojang.renderpearl.backend.opengl.GlTextureView.class)
+#else
 @Mixin(com.mojang.blaze3d.opengl.GlTextureView.class)
+#endif
 public abstract class GlTextureViewMixin {
     @Shadow
-    public abstract com.mojang.blaze3d.opengl.GlTexture texture();
+    public abstract
+            #if MC_VER >= MC_26_3
+            com.mojang.renderpearl.backend.opengl.GlTexture
+            #else
+            com.mojang.blaze3d.opengl.GlTexture
+            #endif
+            texture();
     #if MC_VER < MC_26_2
     @Inject(method = "getFbo", at = @At("HEAD"), cancellable = true)
     public void replaceFbo(

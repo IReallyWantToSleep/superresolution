@@ -161,7 +161,7 @@ public abstract class MinecraftMixin {
         SuperResolution.onClientStopping();
     }
 
-    @Inject(method = "destroy",at = @At(value = "TAIL"))
+    @Inject(method = "destroy",at = @At(value = "INVOKE", target = "Lnet/minecraft/client/Minecraft;close()V",shift = At.Shift.AFTER))
     public void super_resolution$onDestroyTail(CallbackInfo ci) {
         SuperResolution.onClientStopped();
     }

@@ -35,6 +35,16 @@ import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 
+#if MC_VER > MC_1_21_8
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.commands.CommandEncoder;
+import com.mojang.renderpearl.api.textures.GpuTexture;
+#else
+import com.mojang.blaze3d.systems.CommandEncoder;
+import com.mojang.blaze3d.textures.GpuTexture;
+#endif
+#endif
+
 @Mixin(GameRenderer.class)
 public abstract class GameRendererMixin {
     @Inject(at = @At(value = "HEAD"), method = "renderLevel", cancellable = true)
@@ -46,10 +56,23 @@ public abstract class GameRendererMixin {
     }
 
     #if MC_VER > MC_1_21_8
-    @Redirect(at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/systems/CommandEncoder;clearDepthTexture(Lcom/mojang/blaze3d/textures/GpuTexture;D)V"), method = "renderLevel")
+    @Redirect(at = @At(value = "INVOKE", target =
+            #if MC_VER >= MC_26_3
+            "Lcom/mojang/renderpearl/api/commands/CommandEncoder;clearDepthTexture(Lcom/mojang/renderpearl/api/textures/GpuTexture;D)V"
+            #else
+            "Lcom/mojang/blaze3d/systems/CommandEncoder;clearDepthTexture(Lcom/mojang/blaze3d/textures/GpuTexture;D)V"
+            #endif
+    ),
+            method =
+                    #if MC_VER >= MC_26_3
+                    "render()V"
+                    #else
+                    "renderLevel"
+                    #endif
+    )
     private void cancelDepthClear(
-            com.mojang.blaze3d.systems.CommandEncoder commandEncoder,
-            com.mojang.blaze3d.textures.GpuTexture gpuTexture,
+            CommandEncoder commandEncoder,
+            GpuTexture gpuTexture,
             double depth
     ) {
         //这里必需取消深度清除，不然后面捕获不到深度

@@ -50,11 +50,6 @@ public class InteropResourcesPreprocessor {
     private static final Map<ProcessInputKey, ComputePipeline> processInputPipelineCache = new HashMap<>();
     private static final Map<TextureFormat, ComputePipeline> flipMotionVectorYPipelineCache = new HashMap<>();
 
-    private static GraphicsPipeline depthPreprocessPipeline;
-    private static IShaderProgram depthPreprocessShader;
-    private static RenderPass depthPreprocessRenderPass;
-    private static IFrameBuffer depthPreprocessFrameBuffer;
-
     private static boolean isInit = false;
 
     private static void destroyPipeline(ComputePipeline pipeline) {
@@ -108,40 +103,6 @@ public class InteropResourcesPreprocessor {
     }
 
     private static void initShaders() {
-        depthPreprocessShader = RenderSystems.current().device().createShaderProgram(
-                ShaderDescription.create()
-                        .fragment(
-                                ShaderSource.file(
-                                        ShaderType.Fragment,
-                                        "/shader/interop/depth_preprocess.frag.glsl"
-                                )
-                        )
-                        .vertex(
-                                ShaderSource.file(
-                                        ShaderType.Vertex,
-                                        "/shader/blit.vert.glsl"
-                                )
-                        )
-                        .name("depth_preprocess")
-                        .uniformSamplerTexture("inputDepth", 0)
-                        .build()
-        );
-        depthPreprocessShader.compile();
-        depthPreprocessRenderPass = RenderSystems.current().device().createRenderPass(
-                RenderPass.builder()
-                        .frameBuffer(depthPreprocessFrameBuffer)
-                        .clearDepthOnBegin(1.0f)
-        );
-        depthPreprocessPipeline = RenderSystems.current().device().createGraphicsPipeline(
-                GraphicsPipeline.builder()
-                        .shader(depthPreprocessShader)
-                        .renderPass(depthPreprocessRenderPass)
-                        .primitiveType(PrimitiveType.TriangleStrip)
-                        .rasterization((r) -> r.cullMode(CullMode.None))
-                        .depthStencil((r) -> r.depthCompareOp(CompareOp.Always).depthTestEnable(true).depthWriteEnable(true))
-                        .dynamicStates(DynamicStateFlags.Viewport)
-                        .vertexFormat(FullscreenQuad.getVertexFormat())
-        );
     }
 
 
@@ -196,11 +157,6 @@ public class InteropResourcesPreprocessor {
         if (isInit) {
             return;
         }
-        depthPreprocessFrameBuffer = RenderSystems.current().device().createFramebuffer(
-                FramebufferDescription.create()
-                        .depthFormat(TextureFormat.DEPTH32F)
-                        .size(16, 16)
-                        .build());
         initShaders();
         isInit = true;
     }
@@ -220,25 +176,6 @@ public class InteropResourcesPreprocessor {
             destroyPipeline(pipeline);
         }
         flipMotionVectorYPipelineCache.clear();
-
-        destroyPipeline(depthPreprocessPipeline);
-        depthPreprocessPipeline = null;
-        depthPreprocessShader = null;
-
-        if (depthPreprocessRenderPass != null) {
-            depthPreprocessRenderPass.destroy();
-            depthPreprocessRenderPass = null;
-        }
-
-        if (depthPreprocessFrameBuffer != null) {
-            ITexture depthTexture = depthPreprocessFrameBuffer.getTexture(io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType.Depth);
-            depthPreprocessFrameBuffer.destroy();
-            if (depthTexture != null) {
-                depthTexture.destroy();
-            }
-            depthPreprocessFrameBuffer = null;
-        }
-
         isInit = false;
     }
 

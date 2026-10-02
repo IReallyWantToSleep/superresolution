@@ -47,7 +47,6 @@ import org.joml.Vector2i;
 public class RenderHandlerManager {
     private static boolean isRenderingWorld;
     private static boolean shouldApplyScale;
-    private static boolean worldDebugGroupPushed;
     private static Minecraft minecraft;
     private static IMinecraftRenderHandler handler;
     private static String handlerProviderId;
@@ -99,7 +98,6 @@ public class RenderHandlerManager {
         handler = null;
         handlerProviderId = null;
         shouldApplyScale = false;
-        worldDebugGroupPushed = false;
         if (provider == null) {
             return;
         }
@@ -145,7 +143,6 @@ public class RenderHandlerManager {
         }
 
         GlDebug.pushGroup(74108435, "MinecraftLevelRender");
-        worldDebugGroupPushed = true;
         shouldApplyScale = true;
         SuperResolutionAPI.EVENT_BUS.post(new LevelRenderStartEvent());
         handler.onRenderWorldBegin(type);
@@ -159,7 +156,7 @@ public class RenderHandlerManager {
             isRenderingWorld = false;
         }
         if (handler == null) {
-            worldDebugGroupPushed = false;
+            GlDebug.popGroup();
             return;
         }
         if (checkRenderWorldCallPos(type)) {
@@ -167,10 +164,7 @@ public class RenderHandlerManager {
             SuperResolutionAPI.EVENT_BUS.post(new LevelRenderEndEvent());
             shouldApplyScale = false;
         }
-        if (worldDebugGroupPushed) {
-            GlDebug.popGroup();
-            worldDebugGroupPushed = false;
-        }
+        GlDebug.popGroup();
     }
 
     public static void onRenderHandBegin() {

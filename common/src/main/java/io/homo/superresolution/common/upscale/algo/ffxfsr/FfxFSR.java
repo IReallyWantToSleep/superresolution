@@ -174,7 +174,7 @@ public class FfxFSR extends SRApiAlgorithm {
             desc.setPreExposure(frameResourcesSet.frameData.preExposure());
             desc.setCameraNear(frameResourcesSet.frameData.cameraNear());
             desc.setCameraFar(frameResourcesSet.frameData.cameraFar());
-            desc.setCameraFovAngleVertical(frameResourcesSet.frameData.verticalFov());
+            desc.setCameraFovAngleVertical((float) Math.toRadians(frameResourcesSet.frameData.verticalFov()));
             desc.setViewSpaceToMetersFactor(1.0f);
             desc.setReset(consumeHistoryReset());
             desc.setFlags(1);

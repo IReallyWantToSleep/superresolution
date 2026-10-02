@@ -7,6 +7,10 @@ public interface PresentationBackend {
 
     boolean isInitialized();
 
+    void beginRealFrameRendering();
+
+    void endRealFrameRendering();
+
     void endMinecraftFrame();
 
     void flushCapturedFrame();

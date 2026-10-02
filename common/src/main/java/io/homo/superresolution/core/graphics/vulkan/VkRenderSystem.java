@@ -44,6 +44,11 @@ import static org.lwjgl.vulkan.KHRDynamicRendering.VK_STRUCTURE_TYPE_PHYSICAL_DE
 import static org.lwjgl.vulkan.KHRDynamicRenderingLocalRead.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_LOCAL_READ_FEATURES_KHR;
 
 import static org.lwjgl.vulkan.KHRShaderIntegerDotProduct.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES_KHR;
+#if MC_VER >= MC_26_1
+import static org.lwjgl.vulkan.EXTPresentTiming.VK_EXT_PRESENT_TIMING_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRCalibratedTimestamps.VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRPresentId2.VK_KHR_PRESENT_ID_2_EXTENSION_NAME;
+#endif
 import static org.lwjgl.vulkan.VK10.*;
 import static org.lwjgl.vulkan.VK11.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 import static org.lwjgl.vulkan.VK11.vkGetPhysicalDeviceFeatures2;
@@ -65,6 +70,8 @@ public class VkRenderSystem implements IRenderSystem {
     protected VulkanCapabilities capabilities = new VulkanCapabilities();
     private VulkanDevice vulkanDevice;
     private boolean borrowed;
+    private boolean presentTimingEnabled;
+    private boolean presentId2Enabled;
 
     public VkRenderSystem() {
     }
@@ -119,6 +126,14 @@ public class VkRenderSystem implements IRenderSystem {
         return this;
     }
 
+    public boolean isPresentTimingEnabled() {
+        return presentTimingEnabled;
+    }
+
+    public boolean isPresentId2Enabled() {
+        return presentId2Enabled;
+    }
+
     public VulkanCapabilities getCapabilities() {
         return capabilities;
     }
@@ -143,6 +158,7 @@ public class VkRenderSystem implements IRenderSystem {
     @Override
     public void destroyRenderSystem() {
         if (vulkanDevice != null) {
+            vkDeviceWaitIdle(vulkanDevice.getVkDevice());
             vulkanDevice.destroy();
             if (vulkanDevice.ownsVkDevice()) {
                 vkDestroyDevice(vulkanDevice.getVkDevice(), null);
@@ -320,6 +336,14 @@ public class VkRenderSystem implements IRenderSystem {
             boolean hasSynchronization2Extension = supportedDeviceExts.contains("VK_KHR_synchronization2");
             boolean hasPresentIdExtension = enableDeviceExts.contains(KHRPresentId.VK_KHR_PRESENT_ID_EXTENSION_NAME);
             boolean hasLowLatency2Extension = enableDeviceExts.contains(NVLowLatency2.VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
+#if MC_VER >= MC_26_1
+            boolean hasPresentId2Extension =
+                    enableDeviceExts.contains(KHRPresentId2.VK_KHR_PRESENT_ID_2_EXTENSION_NAME);
+            boolean hasPresentTimingExtension =
+                    enableDeviceExts.contains(EXTPresentTiming.VK_EXT_PRESENT_TIMING_EXTENSION_NAME);
+            boolean hasCalibratedTimestampsExtension =
+                    enableDeviceExts.contains(KHRCalibratedTimestamps.VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+#endif
             VkPhysicalDeviceOpticalFlowFeaturesNV opticalFlowFeatures =
                     VkPhysicalDeviceOpticalFlowFeaturesNV.calloc(stack)
                             .sType(NVOpticalFlow.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_FEATURES_NV);
@@ -329,6 +353,14 @@ public class VkRenderSystem implements IRenderSystem {
             VkPhysicalDevicePresentIdFeaturesKHR presentIdFeatures =
                     VkPhysicalDevicePresentIdFeaturesKHR.calloc(stack)
                             .sType(KHRPresentId.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR);
+#if MC_VER >= MC_26_1
+            VkPhysicalDevicePresentId2FeaturesKHR presentId2Features =
+                    VkPhysicalDevicePresentId2FeaturesKHR.calloc(stack)
+                            .sType(KHRPresentId2.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_2_FEATURES_KHR);
+            VkPhysicalDevicePresentTimingFeaturesEXT presentTimingFeatures =
+                    VkPhysicalDevicePresentTimingFeaturesEXT.calloc(stack)
+                            .sType(EXTPresentTiming.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_TIMING_FEATURES_EXT);
+#endif
             long featureQueryChain = dynamicRenderingLocalReadFeatures.address();
             if (hasSynchronization2Extension) {
                 synchronization2Features.pNext(featureQueryChain);
@@ -342,6 +374,16 @@ public class VkRenderSystem implements IRenderSystem {
                 presentIdFeatures.pNext(featureQueryChain);
                 featureQueryChain = presentIdFeatures.address();
             }
+#if MC_VER >= MC_26_1
+            if (hasPresentId2Extension) {
+                presentId2Features.pNext(featureQueryChain);
+                featureQueryChain = presentId2Features.address();
+            }
+            if (hasPresentTimingExtension) {
+                presentTimingFeatures.pNext(featureQueryChain);
+                featureQueryChain = presentTimingFeatures.address();
+            }
+#endif
 
             VkPhysicalDeviceVulkan12Features features12 = VkPhysicalDeviceVulkan12Features.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
@@ -369,6 +411,16 @@ public class VkRenderSystem implements IRenderSystem {
                     hasSynchronization2Extension && synchronization2Features.synchronization2();
             boolean deviceSupportsTimelineSemaphore = features12.timelineSemaphore();
             boolean deviceSupportsPresentId = hasPresentIdExtension && presentIdFeatures.presentId();
+#if MC_VER >= MC_26_1
+            boolean deviceSupportsPresentId2 = hasPresentId2Extension && presentId2Features.presentId2();
+            boolean deviceSupportsPresentTiming = hasPresentTimingExtension
+                    && hasCalibratedTimestampsExtension
+                    && deviceSupportsPresentId2
+                    && presentTimingFeatures.presentTiming();
+#else
+            boolean deviceSupportsPresentId2 = false;
+            boolean deviceSupportsPresentTiming = false;
+#endif
             LOGGER.info("Vulkan device feature support:");
             LOGGER.info("  mutableDescriptorType: {}", deviceSupportsMutableDescriptor);
             LOGGER.info("  shaderInt8: {}", deviceSupportsShaderInt8);
@@ -385,6 +437,10 @@ public class VkRenderSystem implements IRenderSystem {
             LOGGER.info("  synchronization2: {}", deviceSupportsSynchronization2);
             LOGGER.info("  timelineSemaphore: {}", deviceSupportsTimelineSemaphore);
             LOGGER.info("  presentId: {}", deviceSupportsPresentId);
+#if MC_VER >= MC_26_1
+            LOGGER.info("  presentId2: {}", deviceSupportsPresentId2);
+            LOGGER.info("  presentTiming: {}", deviceSupportsPresentTiming);
+#endif
 
             boolean createFrameGenerationQueue = asyncDispatchRequested
                     && availableGraphicsQueueCount >= 2
@@ -454,6 +510,26 @@ public class VkRenderSystem implements IRenderSystem {
                                 .pNext(deviceFeatureChain);
                 deviceFeatureChain = devicePresentIdFeatures.address();
             }
+#if MC_VER >= MC_26_1
+            if (deviceSupportsPresentId2) {
+                VkPhysicalDevicePresentId2FeaturesKHR devicePresentId2Features =
+                        VkPhysicalDevicePresentId2FeaturesKHR.calloc(stack)
+                                .sType(KHRPresentId2.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_2_FEATURES_KHR)
+                                .presentId2(true)
+                                .pNext(deviceFeatureChain);
+                deviceFeatureChain = devicePresentId2Features.address();
+            }
+            if (deviceSupportsPresentTiming) {
+                VkPhysicalDevicePresentTimingFeaturesEXT devicePresentTimingFeatures =
+                        VkPhysicalDevicePresentTimingFeaturesEXT.calloc(stack)
+                                .sType(EXTPresentTiming.VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_TIMING_FEATURES_EXT)
+                                .presentTiming(true)
+                                .presentAtAbsoluteTime(false)
+                                .presentAtRelativeTime(false)
+                                .pNext(deviceFeatureChain);
+                deviceFeatureChain = devicePresentTimingFeatures.address();
+            }
+#endif
 
             VkPhysicalDeviceVulkan12Features deviceFeatures12 = VkPhysicalDeviceVulkan12Features.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
@@ -521,6 +597,15 @@ public class VkRenderSystem implements IRenderSystem {
                     createPresentQueue,
                     asyncDispatchCapabilities
             );
+#if MC_VER >= MC_26_1
+            presentId2Enabled = deviceSupportsPresentId2;
+            presentTimingEnabled = deviceSupportsPresentTiming
+                    && logicalDevice.getCapabilities().vkGetPastPresentationTimingEXT != VK_NULL_HANDLE
+                    && logicalDevice.getCapabilities().vkGetCalibratedTimestampsKHR != VK_NULL_HANDLE;
+#else
+            presentId2Enabled = false;
+            presentTimingEnabled = false;
+#endif
             LOGGER.info(
                     "Vulkan main queue: handle=0x{}, family={}, index={}",
                     Long.toHexString(vulkanDevice.getMainQueue().getQueue().address()),

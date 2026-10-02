@@ -50,6 +50,14 @@ public final class PresentationBackendManager {
         return backend().isInitialized();
     }
 
+    public static void beginRealFrameRendering() {
+        backend().beginRealFrameRendering();
+    }
+
+    public static void endRealFrameRendering() {
+        backend().endRealFrameRendering();
+    }
+
     public static void endMinecraftFrame() {
         backend().endMinecraftFrame();
     }
@@ -135,7 +143,7 @@ public final class PresentationBackendManager {
     }
 
     private static boolean isVulkanSupported() {
-        #if (MC_VER >= MC_1_21_11 && MC_VER < MC_26_2) || (MC_VER >= MC_1_21 && MC_VER < MC_1_21_2) || MC_VER == MC_1_20_1 || MC_VER == MC_26_2
+        #if (MC_VER >= MC_1_21_11 && MC_VER < MC_26_2) || (MC_VER >= MC_1_21 && MC_VER < MC_1_21_2) || MC_VER == MC_1_20_1 || MC_VER == MC_26_2 || MC_VER == MC_26_3
         return true;
         #else
         return false;

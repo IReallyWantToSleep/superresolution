@@ -76,7 +76,13 @@ public final class GuiRenderInjector {
                                     }
 
                                     @Override
-                                    public com.mojang.blaze3d.pipeline.RenderPipeline pipeline() {
+                                    public
+                                    #if MC_VER >= MC_26_3
+                                    com.mojang.renderpearl.api.pipeline.RenderPipeline
+                                    #else
+                                    com.mojang.blaze3d.pipeline.RenderPipeline
+                                    #endif
+                                    pipeline() {
                                         return new CustomActionRenderPipeline(renderAction);
                                     }
 

@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.common.mixin.presentation.v26_2;
 
-#if MC_VER >= MC_26_2
+#if MC_VER == MC_26_2
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import net.minecraft.client.DeltaTracker;
@@ -30,6 +30,17 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(value = GameRenderer.class)
 public abstract class VulkanPresentationGameRendererCaptureMixin {
+    @Inject(method = "render(Lnet/minecraft/client/DeltaTracker;Z)V", at = @At("HEAD"))
+    private void super_resolution$beginRealFrameRendering(
+            DeltaTracker deltaTracker,
+            boolean advanceGameTime,
+            CallbackInfo ci
+    ) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
+            PresentationBackendManager.beginRealFrameRendering();
+        }
+    }
+
     @Inject(
             method = "render(Lnet/minecraft/client/DeltaTracker;Z)V",
             at = @At(
@@ -56,6 +67,21 @@ public abstract class VulkanPresentationGameRendererCaptureMixin {
     ) {
         if (PresentationBackendManager.isVulkanPresentationRequested()) {
             FrameCaptureManager.captureFinalColor();
+        }
+    }
+
+    @Inject(
+            method = "render(Lnet/minecraft/client/DeltaTracker;Z)V",
+            at = @At("RETURN"),
+            order = 3000
+    )
+    private void super_resolution$endRealFrameRendering(
+            DeltaTracker deltaTracker,
+            boolean advanceGameTime,
+            CallbackInfo ci
+    ) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()) {
+            PresentationBackendManager.endRealFrameRendering();
         }
     }
 }

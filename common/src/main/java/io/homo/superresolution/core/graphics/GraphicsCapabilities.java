@@ -21,7 +21,11 @@ package io.homo.superresolution.core.graphics;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.impl.Pair;
+#if MC_VER >= MC_26_3
+import org.lwjgl.sdl.SDLVideo;
+#else
 import org.lwjgl.glfw.GLFW;
+#endif
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VK10;
@@ -91,6 +95,10 @@ public class GraphicsCapabilities {
     }
 
     public static void detectSupportedVersions() {
+        #if MC_VER >= MC_26_3
+        detectSupportedVersionsSdl();
+        return;
+        #else
         if (isB3DVulkan()) {
             glVersions.clear();
             return;
@@ -124,9 +132,76 @@ public class GraphicsCapabilities {
         }
         LOGGER.info("Highest supported OpenGL version {}.{}", getHighestOpenGLVersion().left(), getHighestOpenGLVersion().right());
         GLFW.glfwDefaultWindowHints();
+        #endif
     }
 
+    #if MC_VER >= MC_26_3
+    private static void detectSupportedVersionsSdl() {
+        if (isB3DVulkan()) {
+            glVersions.clear();
+            return;
+        }
+
+        glVersions.clear();
+        int[][] versionMatrix = {
+                {4, 6},
+                {4, 5},
+                {4, 3},
+                {4, 2},
+                {4, 1},
+                {3, 3}
+        };
+        for (int[] version : versionMatrix) {
+            SDLVideo.SDL_GL_ResetAttributes();
+            SDLVideo.SDL_GL_SetAttribute(17, version[0]);
+            SDLVideo.SDL_GL_SetAttribute(18, version[1]);
+            SDLVideo.SDL_GL_SetAttribute(20, 1);
+            SDLVideo.SDL_GL_SetAttribute(19, 2);
+            SDLVideo.SDL_GL_SetAttribute(22, 1);
+
+            long window = SDLVideo.SDL_CreateWindow(
+                    "Super Resolution OpenGL Capability Probe",
+                    1,
+                    1,
+                    SDLVideo.SDL_WINDOW_OPENGL | SDLVideo.SDL_WINDOW_HIDDEN
+            );
+            if (window == 0L) {
+                continue;
+            }
+
+            long context = SDLVideo.SDL_GL_CreateContext(window);
+            if (context != 0L) {
+                try (MemoryStack stack = MemoryStack.stackPush()) {
+                    IntBuffer actualMajor = stack.mallocInt(1);
+                    IntBuffer actualMinor = stack.mallocInt(1);
+                    SDLVideo.SDL_GL_GetAttribute(17, actualMajor);
+                    SDLVideo.SDL_GL_GetAttribute(18, actualMinor);
+                    glVersions.add(Pair.of(actualMajor.get(0), actualMinor.get(0)));
+                }
+                SDLVideo.SDL_GL_MakeCurrent(0L, 0L);
+                SDLVideo.SDL_GL_DestroyContext(context);
+                SDLVideo.SDL_DestroyWindow(window);
+                LOGGER.info("Added supported OpenGL version {}.{}", glVersions.get(0).left(), glVersions.get(0).right());
+                break;
+            }
+            SDLVideo.SDL_DestroyWindow(window);
+        }
+        SDLVideo.SDL_GL_ResetAttributes();
+        if (glVersions.isEmpty()) {
+            LOGGER.warn("Could not probe an OpenGL version through SDL; using OpenGL 3.3");
+        }
+    }
+    #endif
+
     public static Pair<Integer, Integer> getHighestOpenGLVersion() {
+        #if MC_VER >= MC_26_3
+        if (glVersions.isEmpty()) {
+            detectSupportedVersions();
+        }
+        if (glVersions.isEmpty()) {
+            return Pair.of(3, 3);
+        }
+        #endif
         return glVersions.stream()
                 .max(Comparator.comparingInt((Pair<Integer, Integer> p) -> p.left())
                         .thenComparingInt(Pair::right))

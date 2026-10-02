@@ -25,6 +25,8 @@
         "framegeneration.v26_1_x.GameRendererConstantsMixin",
         "framegeneration.v26_2.GameRendererConstantsMixin",
         "framegeneration.v26_2.NativeLibrariesBootstrapMixin",
+        "framegeneration.v26_3.GameRendererConstantsMixin",
+        "framegeneration.v26_3.NativeLibrariesBootstrapMixin",
         "gui.AbstractWidgetAccessor",
         "gui.GameRendererAccessor",
         "gui.GuiGraphicsAccessor",
@@ -49,6 +51,9 @@
         "lowlatency.v26_2.KeyboardHandlerReflexMixin",
         "lowlatency.v26_2.MinecraftReflexMixin",
         "lowlatency.v26_2.MouseHandlerReflexMixin",
+        "lowlatency.v26_3.KeyboardHandlerReflexMixin",
+        "lowlatency.v26_3.MinecraftReflexMixin",
+        "lowlatency.v26_3.MouseHandlerReflexMixin",
         "presentation.v1_20_1.VulkanPresentationGameRendererCaptureMixin",
         "presentation.v1_20_1.VulkanPresentationGlDeviceMixin",
         "presentation.v1_20_1.VulkanPresentationMinecraftBackendMixin",
@@ -73,7 +78,12 @@
         "presentation.v26_2.VulkanPresentationGlDeviceMixin",
         "presentation.v26_2.VulkanPresentationMinecraftBackendMixin",
         "presentation.v26_2.VulkanPresentationMinecraftCaptureMixin",
-        "presentation.v26_2.VulkanPresentationWindowCloseMixin"
+        "presentation.v26_2.VulkanPresentationWindowCloseMixin",
+        "presentation.v26_3.VulkanPresentationGameRendererCaptureMixin",
+        "presentation.v26_3.VulkanPresentationGlDeviceMixin",
+        "presentation.v26_3.VulkanPresentationMinecraftBackendMixin",
+        "presentation.v26_3.VulkanPresentationMinecraftCaptureMixin",
+        "presentation.v26_3.VulkanPresentationWindowCloseMixin"
     ],
     "mixins": [
     ],

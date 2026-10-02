@@ -18,100 +18,79 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
-import io.homo.superresolution.api.registry.framegeneration.AsyncFrameGenerationDispatchResult;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispatchResult;
 import io.homo.superresolution.common.SuperResolution;
 
 import javax.annotation.Nullable;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
-import java.util.Locale;
-import java.util.function.LongSupplier;
 
 /**
  * FG-thread-owned estimator for real-frame production cadence.
  */
 final class FramePacingEstimator {
-    private static final double EMA_ALPHA = 0.2;
-    private static final double SAMPLE_EMA_MIN_FACTOR = 0.5;
-    private static final double SAMPLE_EMA_MAX_FACTOR = 2.0;
-    private static final double INVALID_FPS_DEVIATION = 0.25;
     private static final double TRIM_FRACTION = 0.2;
     private static final long DEFAULT_REAL_PERIOD_NANOS = 16_666_667L;
     private static final long MIN_REAL_PERIOD_NANOS = 1_000_000L;
     private static final long MAX_REAL_PERIOD_NANOS = 500_000_000L;
-    private static final long MIN_CALIBRATION_PRODUCER_SPAN_NANOS = 250_000_000L;
-    private static final long MAX_CALIBRATION_WALL_TIME_NANOS = 2_000_000_000L;
-    private static final int PREFERRED_CALIBRATION_SAMPLES = 16;
-    private static final int MIN_TIMEOUT_CALIBRATION_SAMPLES = 8;
-    private static final int OBSERVATION_WINDOW_SIZE = 16;
-    private static final int REQUIRED_MISMATCH_WINDOWS = 2;
+    private static final int HISTORY_WINDOW_SIZE = 20;
     private static final int REQUIRED_REAL_ONLY_BATCHES = 2;
-
-    enum State {
-        CALIBRATING,
-        TRACKING
-    }
-
-    private enum BatchMode {
-        UNKNOWN,
-        GENERATED,
-        REAL_ONLY
-    }
-
     private final String providerId;
-    private final FramePacingTiming timing;
-    private final LongSupplier wallClock;
-    private final List<Long> calibrationSamples = new ArrayList<>();
-    private final Deque<Long> observationWindow = new ArrayDeque<>();
-
-    private State state;
+    private final Deque<Long> recentPeriods = new ArrayDeque<>();
     private int plannedGeneratedCount = -1;
     private long swapchainGeneration = Long.MIN_VALUE;
     private long currentProducerTimeNanos;
     private long previousProducerTimeNanos;
-    private long calibrationFirstProducerTimeNanos;
-    private long calibrationStartWallNanos;
-    private long calibrationStartExcludedWaitNanos;
     private boolean hasPreviousProducerTime;
-    private boolean calibrationStarted;
+    private boolean hasEstimatedPeriod;
     private boolean invalidatedThisFrame;
-    private double realPeriodEmaNanos;
-    private int consecutiveMismatchWindows;
+    private double estimatedPeriodNanos;
     private BatchMode confirmedBatchMode = BatchMode.UNKNOWN;
     private int consecutiveRealOnlyBatches;
 
-    FramePacingEstimator(
-            String providerId,
-            FramePacingTiming timing,
-            LongSupplier wallClock
-    ) {
+    FramePacingEstimator(String providerId) {
         if (providerId == null || providerId.isBlank()) {
             throw new IllegalArgumentException("providerId cannot be blank");
         }
-        if (timing == null || wallClock == null) {
-            throw new IllegalArgumentException("pacing estimator dependencies cannot be null");
-        }
         this.providerId = providerId;
-        this.timing = timing;
-        this.wallClock = wallClock;
-        beginCalibration(
-                "application-managed provider lifecycle created",
-                0L,
-                false
-        );
+    }
+
+    private static double trimmedMean(Iterable<Long> samples) {
+        List<Long> sorted = new ArrayList<>();
+        for (Long sample : samples) {
+            sorted.add(sample);
+        }
+        if (sorted.isEmpty()) {
+            return DEFAULT_REAL_PERIOD_NANOS;
+        }
+        sorted.sort(Long::compareTo);
+        int trimCount = (int) Math.floor(sorted.size() * TRIM_FRACTION);
+        int first = trimCount;
+        int lastExclusive = sorted.size() - trimCount;
+        if (first >= lastExclusive) {
+            first = 0;
+            lastExclusive = sorted.size();
+        }
+        double sum = 0.0;
+        for (int index = first; index < lastExclusive; index++) {
+            sum += sorted.get(index);
+        }
+        return sum / (lastExclusive - first);
+    }
+
+    private static long clamp(long value, long min, long max) {
+        return Math.max(min, Math.min(max, value));
     }
 
     long observeRealFrame(
-            RealFrameJob job,
+            FrameGenerationWork job,
             long currentSwapchainGeneration
     ) {
         if (job == null) {
             throw new IllegalArgumentException("job cannot be null");
         }
-        long wallNow = wallClock.getAsLong();
         currentProducerTimeNanos = job.producerTimeNanos();
         invalidatedThisFrame = false;
 
@@ -146,21 +125,22 @@ final class FramePacingEstimator {
             if (plannedCountChanged) {
                 resetBatchModeObservation();
             }
-            beginCalibration(
+            resetHistory(
                     String.join("; ", invalidationReasons),
                     currentProducerTimeNanos,
                     true
             );
             invalidatedThisFrame = true;
         } else {
-            observeProducerTime(currentProducerTimeNanos, wallNow);
+            observeProducerTime(currentProducerTimeNanos);
         }
         return estimatedRealPeriodNanos();
     }
 
     boolean onBatchResult(
             int generatedCount,
-            @Nullable AsyncFrameGenerationDispatchResult.HistoryDisposition historyDisposition
+            @Nullable
+            FrameGenerationDispatchResult.HistoryDisposition historyDisposition
     ) {
         if (generatedCount < 0) {
             throw new IllegalArgumentException("generatedCount cannot be negative");
@@ -168,7 +148,7 @@ final class FramePacingEstimator {
 
         if (historyDisposition != null
                 && historyDisposition
-                != AsyncFrameGenerationDispatchResult.HistoryDisposition.UNCHANGED) {
+                != FrameGenerationDispatchResult.HistoryDisposition.UNCHANGED) {
             invalidateCurrentFrame(
                     "provider history disposition changed to " + historyDisposition
             );
@@ -205,13 +185,12 @@ final class FramePacingEstimator {
         }
 
         return generated
-                && state == State.TRACKING
+                && hasEstimatedPeriod
                 && confirmedBatchMode != BatchMode.REAL_ONLY;
     }
 
-    private void observeProducerTime(long producerTimeNanos, long wallNow) {
+    private void observeProducerTime(long producerTimeNanos) {
         if (!hasPreviousProducerTime) {
-            startCalibrationIfNeeded(producerTimeNanos, wallNow);
             previousProducerTimeNanos = producerTimeNanos;
             hasPreviousProducerTime = true;
             return;
@@ -228,136 +207,46 @@ final class FramePacingEstimator {
                 MAX_REAL_PERIOD_NANOS
         );
 
-        if (state == State.CALIBRATING) {
-            startCalibrationIfNeeded(producerTimeNanos, wallNow);
-            calibrationSamples.add(sample);
-            long producerSpan = producerTimeNanos - calibrationFirstProducerTimeNanos;
-            long wallTime = wallNow - calibrationStartWallNanos;
-            boolean preferredSampleSetReady =
-                    calibrationSamples.size() >= PREFERRED_CALIBRATION_SAMPLES
-                            && producerSpan >= MIN_CALIBRATION_PRODUCER_SPAN_NANOS;
-            boolean timeoutSampleSetReady =
-                    wallTime >= MAX_CALIBRATION_WALL_TIME_NANOS
-                            && calibrationSamples.size() >= MIN_TIMEOUT_CALIBRATION_SAMPLES;
-            if (preferredSampleSetReady || timeoutSampleSetReady) {
-                completeCalibration(wallNow);
-            }
-            return;
+        recentPeriods.addLast(sample);
+        while (recentPeriods.size() > HISTORY_WINDOW_SIZE) {
+            recentPeriods.removeFirst();
         }
-
-        observationWindow.addLast(sample);
-        while (observationWindow.size() > OBSERVATION_WINDOW_SIZE) {
-            observationWindow.removeFirst();
-        }
-
-        if (sample >= realPeriodEmaNanos * SAMPLE_EMA_MIN_FACTOR
-                && sample <= realPeriodEmaNanos * SAMPLE_EMA_MAX_FACTOR) {
-            realPeriodEmaNanos =
-                    realPeriodEmaNanos * (1.0 - EMA_ALPHA) + sample * EMA_ALPHA;
-        }
-
-        if (observationWindow.size() == OBSERVATION_WINDOW_SIZE) {
-            double observedPeriodNanos = trimmedMean(observationWindow);
-            double estimatedFps = nanosToFps(realPeriodEmaNanos);
-            double observedFps = nanosToFps(observedPeriodNanos);
-            double deviation = Math.abs(estimatedFps - observedFps) / observedFps;
-            consecutiveMismatchWindows = deviation > INVALID_FPS_DEVIATION
-                    ? consecutiveMismatchWindows + 1
-                    : 0;
-            if (consecutiveMismatchWindows >= REQUIRED_MISMATCH_WINDOWS) {
-                SuperResolution.LOGGER.info(
-                        "Frame pacing EMA invalid for provider '{}': estimatedFps={}, "
-                                + "observedFps={}, deviation={}%",
-                        providerId,
-                        format(estimatedFps),
-                        format(observedFps),
-                        format(deviation * 100.0)
-                );
-                beginCalibration(
-                        "estimated and observed real-frame rates diverged",
-                        producerTimeNanos,
-                        true
-                );
-                invalidatedThisFrame = true;
-            }
-        }
-    }
-
-    private void startCalibrationIfNeeded(long producerTimeNanos, long wallNow) {
-        if (state != State.CALIBRATING || calibrationStarted) {
-            return;
-        }
-        calibrationStarted = true;
-        calibrationFirstProducerTimeNanos = producerTimeNanos;
-        calibrationStartWallNanos = wallNow;
-        calibrationStartExcludedWaitNanos = timing.excludedWaitNanos();
-    }
-
-    private void completeCalibration(long wallNow) {
-        realPeriodEmaNanos = trimmedMean(calibrationSamples);
-        state = State.TRACKING;
-        observationWindow.clear();
-        consecutiveMismatchWindows = 0;
-
-        long wallTimeNanos = Math.max(0L, wallNow - calibrationStartWallNanos);
-        long excludedWaitNanos = Math.max(
-                0L,
-                timing.excludedWaitNanos() - calibrationStartExcludedWaitNanos
-        );
-        double realFps = nanosToFps(realPeriodEmaNanos);
-        double targetPresentFps = realFps * (plannedGeneratedCount + 1.0);
-        SuperResolution.LOGGER.info(
-                "Frame pacing calibration completed for provider '{}': samples={}, "
-                        + "wallTimeMs={}, excludedWaitMs={}, realFps={}, targetPresentFps={}",
-                providerId,
-                calibrationSamples.size(),
-                format(wallTimeNanos / 1_000_000.0),
-                format(excludedWaitNanos / 1_000_000.0),
-                format(realFps),
-                format(targetPresentFps)
-        );
+        estimatedPeriodNanos = trimmedMean(recentPeriods);
+        hasEstimatedPeriod = true;
     }
 
     private void invalidateCurrentFrame(String reason) {
         if (invalidatedThisFrame) {
             return;
         }
-        beginCalibration(reason, currentProducerTimeNanos, true);
+        resetHistory(reason, currentProducerTimeNanos, true);
         invalidatedThisFrame = true;
     }
 
-    private void beginCalibration(
+    private void resetHistory(
             String reason,
             long producerTimeNanos,
             boolean hasProducerTime
     ) {
-        state = State.CALIBRATING;
-        realPeriodEmaNanos = 0.0;
-        calibrationSamples.clear();
-        observationWindow.clear();
-        consecutiveMismatchWindows = 0;
-        calibrationStarted = false;
+        recentPeriods.clear();
+        estimatedPeriodNanos = 0.0;
+        hasEstimatedPeriod = false;
         hasPreviousProducerTime = false;
         previousProducerTimeNanos = 0L;
-        calibrationFirstProducerTimeNanos = 0L;
-        calibrationStartWallNanos = 0L;
-        calibrationStartExcludedWaitNanos = 0L;
         if (hasProducerTime) {
-            long wallNow = wallClock.getAsLong();
-            startCalibrationIfNeeded(producerTimeNanos, wallNow);
             previousProducerTimeNanos = producerTimeNanos;
             hasPreviousProducerTime = true;
         }
         SuperResolution.LOGGER.info(
-                "Frame pacing calibration started for provider '{}': {}",
+                "Frame pacing sample history reset for provider '{}': {}",
                 providerId,
                 reason
         );
     }
 
     private long estimatedRealPeriodNanos() {
-        return state == State.TRACKING && realPeriodEmaNanos > 0.0
-                ? Math.round(realPeriodEmaNanos)
+        return hasEstimatedPeriod
+                ? Math.round(estimatedPeriodNanos)
                 : DEFAULT_REAL_PERIOD_NANOS;
     }
 
@@ -366,38 +255,9 @@ final class FramePacingEstimator {
         consecutiveRealOnlyBatches = 0;
     }
 
-    private static double trimmedMean(Iterable<Long> samples) {
-        List<Long> sorted = new ArrayList<>();
-        for (Long sample : samples) {
-            sorted.add(sample);
-        }
-        if (sorted.isEmpty()) {
-            return DEFAULT_REAL_PERIOD_NANOS;
-        }
-        sorted.sort(Long::compareTo);
-        int trimCount = (int) Math.floor(sorted.size() * TRIM_FRACTION);
-        int first = trimCount;
-        int lastExclusive = sorted.size() - trimCount;
-        if (first >= lastExclusive) {
-            first = 0;
-            lastExclusive = sorted.size();
-        }
-        double sum = 0.0;
-        for (int index = first; index < lastExclusive; index++) {
-            sum += sorted.get(index);
-        }
-        return sum / (lastExclusive - first);
-    }
-
-    private static double nanosToFps(double periodNanos) {
-        return 1_000_000_000.0 / Math.max(1.0, periodNanos);
-    }
-
-    private static String format(double value) {
-        return String.format(Locale.ROOT, "%.2f", value);
-    }
-
-    private static long clamp(long value, long min, long max) {
-        return Math.max(min, Math.min(max, value));
+    private enum BatchMode {
+        UNKNOWN,
+        GENERATED,
+        REAL_ONLY
     }
 }

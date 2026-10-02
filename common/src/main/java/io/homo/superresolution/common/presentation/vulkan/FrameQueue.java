@@ -22,9 +22,10 @@ import java.util.ArrayDeque;
 import java.util.Collection;
 import java.util.Deque;
 import java.util.List;
-import java.util.function.BooleanSupplier;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
+import java.util.function.BooleanSupplier;
+import java.util.function.ToIntFunction;
 
 /**
  * Bounded queue used by the application-managed presentation threads.
@@ -35,17 +36,24 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 final class FrameQueue<T> implements AutoCloseable {
     private final int capacity;
+    private final ToIntFunction<T> weight;
     private final ReentrantLock lock = new ReentrantLock();
     private final Condition notEmpty = lock.newCondition();
     private final Condition hasCapacity = lock.newCondition();
     private final Deque<T> items = new ArrayDeque<>();
     private boolean closed;
+    private int queuedWeight;
 
     FrameQueue(int capacity) {
+        this(capacity, item -> 1);
+    }
+
+    FrameQueue(int capacity, ToIntFunction<T> weight) {
         if (capacity <= 0) {
             throw new IllegalArgumentException("capacity must be positive");
         }
         this.capacity = capacity;
+        this.weight = weight;
     }
 
     long put(T item) throws InterruptedException {
@@ -57,14 +65,15 @@ final class FrameQueue<T> implements AutoCloseable {
         if (snapshot.isEmpty()) {
             throw new IllegalArgumentException("batch cannot be empty");
         }
-        if (snapshot.size() > capacity) {
+        int batchWeight = snapshot.stream().mapToInt(weight).sum();
+        if (batchWeight <= 0 || batchWeight > capacity) {
             throw new IllegalArgumentException("batch exceeds queue capacity");
         }
 
         long waitedNanos = 0L;
         lock.lockInterruptibly();
         try {
-            while (!closed && capacity - items.size() < snapshot.size()) {
+            while (!closed && capacity - queuedWeight < batchWeight) {
                 long waitStartedAtNanos = System.nanoTime();
                 try {
                     hasCapacity.await();
@@ -74,6 +83,7 @@ final class FrameQueue<T> implements AutoCloseable {
             }
             requireOpen();
             items.addAll(snapshot);
+            queuedWeight += batchWeight;
             notEmpty.signalAll();
             return waitedNanos;
         } finally {
@@ -93,7 +103,7 @@ final class FrameQueue<T> implements AutoCloseable {
 
         lock.lockInterruptibly();
         try {
-            while (!closed && capacity - items.size() < requiredCapacity) {
+            while (!closed && capacity - queuedWeight < requiredCapacity) {
                 hasCapacity.await();
             }
             requireOpen();
@@ -140,6 +150,7 @@ final class FrameQueue<T> implements AutoCloseable {
                 return TakeResult.closed(waited);
             }
             T item = items.removeFirst();
+            queuedWeight -= weight.applyAsInt(item);
             hasCapacity.signalAll();
             return new TakeResult<>(item, waited, false);
         } finally {
@@ -153,7 +164,7 @@ final class FrameQueue<T> implements AutoCloseable {
             if (items.peekFirst() != expected) {
                 throw new IllegalStateException("Queue head changed before ownership removal");
             }
-            items.removeFirst();
+            queuedWeight -= weight.applyAsInt(items.removeFirst());
             hasCapacity.signalAll();
             return true;
         } finally {
@@ -212,8 +223,11 @@ final class FrameQueue<T> implements AutoCloseable {
 
     record HeadResult<T>(
             T value,
+
             boolean waited,
+
             boolean closedAndEmpty,
+
             boolean externalWake
     ) {
         private static <T> HeadResult<T> closed(boolean waited) {
@@ -225,7 +239,11 @@ final class FrameQueue<T> implements AutoCloseable {
         }
     }
 
-    record TakeResult<T>(T value, boolean waited, boolean closedAndEmpty) {
+    record TakeResult<T>(T value,
+
+                         boolean waited,
+
+                         boolean closedAndEmpty) {
         private static <T> TakeResult<T> closed(boolean waited) {
             return new TakeResult<>(null, waited, true);
         }

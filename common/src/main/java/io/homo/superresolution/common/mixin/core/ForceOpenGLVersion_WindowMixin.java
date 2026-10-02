@@ -21,13 +21,37 @@ package io.homo.superresolution.common.mixin.core;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import org.spongepowered.asm.mixin.Mixin;
 
-#if MC_VER > MC_1_21_11
+#if MC_VER >= MC_26_3
+@Mixin(value = com.mojang.renderpearl.backend.opengl.GlBackend.class)
+#elif MC_VER > MC_1_21_11
 @Mixin(value = com.mojang.blaze3d.opengl.GlBackend.class)
 #else
 @Mixin(value = com.mojang.blaze3d.platform.Window.class)
 #endif
 public class ForceOpenGLVersion_WindowMixin {
-    #if MC_VER > MC_1_21_11
+    #if MC_VER >= MC_26_3
+    @org.spongepowered.asm.mixin.injection.ModifyConstant(
+            method = "createWindow",
+            constant = @org.spongepowered.asm.mixin.injection.Constant(
+                    intValue = 3,
+                    ordinal = 0
+            )
+    )
+    private int super_resolution$modifyGlMajorVersion(int value) {
+        return GraphicsCapabilities.getHighestOpenGLVersion().left();
+    }
+
+    @org.spongepowered.asm.mixin.injection.ModifyConstant(
+            method = "createWindow",
+            constant = @org.spongepowered.asm.mixin.injection.Constant(
+                    intValue = 3,
+                    ordinal = 1
+            )
+    )
+    private int super_resolution$modifyGlMinorVersion(int value) {
+        return GraphicsCapabilities.getHighestOpenGLVersion().right();
+    }
+    #elif MC_VER > MC_1_21_11
     @org.spongepowered.asm.mixin.injection.Inject(method = "setWindowHints", at = @org.spongepowered.asm.mixin.injection.At(value = "TAIL"))
     private void forceOpenGLVersion(org.spongepowered.asm.mixin.injection.callback.CallbackInfo ci) {
         //#if !IS_VULKAN

@@ -32,7 +32,11 @@ import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2
 import io.homo.superresolution.core.graphics.vulkan.VkGlInteropSemaphore;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
+#if MC_VER >= MC_26_3
+import org.lwjgl.sdl.SDLVideo;
+#else
 import org.lwjgl.glfw.GLFW;
+#endif
 import org.lwjgl.opengl.GL11;
 
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_TRANSFER_DST_EXT;
@@ -187,7 +191,11 @@ final class FrameTextureResource {
         }
 
         PresentationWindowState.requireOwnerThread();
+#if MC_VER >= MC_26_3
+        if (SDLVideo.SDL_GL_GetCurrentWindow() != PresentationWindowState.renderHandle()) {
+#else
         if (GLFW.glfwGetCurrentContext() != PresentationWindowState.renderHandle()) {
+#endif
             throw new IllegalStateException("Capture texture creation requires the hidden OpenGL render context");
         }
 

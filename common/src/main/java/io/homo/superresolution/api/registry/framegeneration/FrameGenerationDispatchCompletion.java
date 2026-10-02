@@ -18,12 +18,6 @@
 
 package io.homo.superresolution.api.registry.framegeneration;
 
-/**
- * Provider-owned completion point for one application-managed dispatch.
- * <p>
- * This completion protects provider output reuse. It is not the scheduler's
- * submission-issued ticket and must not be interpreted as present readiness.
- */
 public interface FrameGenerationDispatchCompletion {
     FrameGenerationDispatchCompletion COMPLETED = new FrameGenerationDispatchCompletion() {
         @Override

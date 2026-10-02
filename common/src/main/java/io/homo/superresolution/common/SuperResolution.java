@@ -155,11 +155,6 @@ public final class SuperResolution implements Destroyable {
         if (minecraft == null) {
             minecraft = Minecraft.getInstance();
         }
-
-        OptiScalerLoader.loadConfiguredDll();
-        if (PresentationBackendManager.shouldInitializeStreamline() && !Streamline.prepareEarly()) {
-            LOGGER.warn("Streamline is unavailable; falling back to non-Streamline backends.");
-        }
     }
 
     public static void onGameLoadFinished() {
@@ -175,9 +170,12 @@ public final class SuperResolution implements Destroyable {
         GuiScaleManager.getInstance().setUserScale(SuperResolutionConfig.getUiScale());
         gameIsStarted = true;
         instance = new SuperResolution();
+        OptiScalerLoader.loadConfiguredDll();
+        if (PresentationBackendManager.shouldInitializeStreamline() && !Streamline.prepareEarly()) {
+            LOGGER.warn("Streamline is unavailable; falling back to non-Streamline backends.");
+        }
         SuperResolution.check();
         SuperResolution.preInit();
-        Streamline.prepareEarly();
         SuperResolution.initRendering();
         SuperResolution.getInstance().init();
         MaterialUI.init();
@@ -278,6 +276,7 @@ public final class SuperResolution implements Destroyable {
                                 .formatted(String.join("\n", installedMods)),
                         Component.translatable("superresolution.common_requirement.not_support.msg").getString()
                 );
+                System.exit(1);
             }
         });
     }
@@ -384,6 +383,8 @@ public final class SuperResolution implements Destroyable {
             candidate = algorithmDescription.createNewInstance();
             candidate.initialize(desc);
             currentAlgorithm = candidate;
+            previous.destroy();
+
             // 算法创建时已按当前尺寸初始化，同步尺寸缓存避免渲染路径上重复重建。
             cachedWidth = RenderHandlerManager.getScreenWidth();
             cachedHeight = RenderHandlerManager.getScreenHeight();
@@ -606,7 +607,7 @@ public final class SuperResolution implements Destroyable {
         Error error = findAlgorithmError(
                 failure,
                 Collections.newSetFromMap(new IdentityHashMap<>()));
-        if (error != null) {
+        if (error != null && !(error instanceof UnsatisfiedLinkError) ) {
             throw error;
         }
     }

@@ -11,7 +11,7 @@
         "homepage": "https://github.com/187J3X1-114514/superresolution",
         "issues": "https://github.com/187J3X1-114514/superresolution/issues"
     },
-    "license": "MIT",
+    "license": "GPL-3.0",
     "icon": "assets/super_resolution/textures/gui/logo.png",
     "environment": "client",
     "entrypoints": {

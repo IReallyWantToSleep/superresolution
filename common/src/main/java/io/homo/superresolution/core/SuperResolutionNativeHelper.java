@@ -19,7 +19,11 @@
 package io.homo.superresolution.core;
 
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
+#if MC_VER >= MC_26_3
+import org.lwjgl.sdl.SDLVideo;
+#else
 import org.lwjgl.glfw.GLFW;
+#endif
 import org.lwjgl.vulkan.VK;
 import org.lwjgl.vulkan.VK10;
 import org.slf4j.Logger;
@@ -40,7 +44,11 @@ public class SuperResolutionNativeHelper {
     }
 
     public static long CPP_glfwGetProcAddress(String name) {
+        #if MC_VER >= MC_26_3
+        return SDLVideo.SDL_GL_GetProcAddress(name);
+        #else
         return GLFW.glfwGetProcAddress(name);
+        #endif
     }
 
     public static long CPP_vkGetDeviceProcAddr(String name) {

@@ -1,7 +1,7 @@
 modLoader = "javafml"
 loaderVersion = "*"
 issueTrackerURL = "https://github.com/187J3X1-114514/superresolution/issues"
-license = "MIT"
+license = "GPL-3.0"
 
 [[mods]]
 modId = "super_resolution"
@@ -67,7 +67,7 @@ side = "BOTH"
 "mixin.workarounds" = false
 
 [modproperties.super_resolution]
-"sodium:config_api_user" = "io.homo.superresolution.fabric.compat.sodium.SodiumConfigBuilder"
+"sodium:config_api_user" = "io.homo.superresolution.neoforge.compat.sodium.SodiumConfigBuilder"
 
 [[mixins]]
 config = "super_resolution.mixins.json"

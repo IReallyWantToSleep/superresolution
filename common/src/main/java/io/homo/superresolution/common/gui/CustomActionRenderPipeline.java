@@ -20,10 +20,16 @@ package io.homo.superresolution.common.gui;
 #if MC_VER > MC_1_21_5
 
 import net.minecraft.client.renderer.ShaderDefines;
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.pipeline.*;
+import com.mojang.renderpearl.api.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+#else
 import com.mojang.blaze3d.platform.*;
 import com.mojang.blaze3d.pipeline.*;
 import com.mojang.blaze3d.vertex.*;
 import com.mojang.blaze3d.*;
+#endif
 
 #endif
 
@@ -34,6 +40,7 @@ import net.minecraft.resources.ResourceLocation;
 #endif
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 
 #if MC_VER > MC_1_21_5
@@ -44,6 +51,44 @@ public class CustomActionRenderPipeline extends RenderPipeline {
             Runnable action
     ) {
         #if MC_VER > MC_1_21_11
+        #if MC_VER >= MC_26_3
+        super(
+                Identifier.withDefaultNamespace(""),
+                Map.of(
+                        ShaderType.VERTEX,
+                        Identifier.withDefaultNamespace(""),
+                        ShaderType.FRAGMENT,
+                        Identifier.withDefaultNamespace("")
+                ),
+                ShaderDefines.EMPTY,
+                List.of(),
+                new ColorTargetState[]{ColorTargetState.DEFAULT},
+                DepthStencilState.DEFAULT,
+                PolygonMode.FILL,
+                false,
+                new VertexFormat[]{
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                },
+                PrimitiveTopology.QUADS,
+                0,
+                0
+        );
+        #else
         super(
                 Identifier.withDefaultNamespace(""),
                 Identifier.withDefaultNamespace(""),
@@ -90,6 +135,7 @@ public class CustomActionRenderPipeline extends RenderPipeline {
                 #endif
                 0
         );
+        #endif
         #else
         super(
                 #if MC_VER > MC_1_21_10

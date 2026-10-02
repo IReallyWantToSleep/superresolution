@@ -18,7 +18,11 @@
 
 package io.homo.superresolution.core.gui.core.input;
 
+#if MC_VER >= MC_26_3
+import org.lwjgl.sdl.SDLKeycode;
+#else
 import org.lwjgl.glfw.GLFW;
+#endif
 
 public record KeyInput(
         KeyCode code,
@@ -32,18 +36,34 @@ public record KeyInput(
     }
 
     public boolean controlDown() {
+        #if MC_VER >= MC_26_3
+        return (modifiers & SDLKeycode.SDL_KMOD_CTRL) != 0;
+        #else
         return (modifiers & GLFW.GLFW_MOD_CONTROL) != 0;
+        #endif
     }
 
     public boolean shiftDown() {
+        #if MC_VER >= MC_26_3
+        return (modifiers & SDLKeycode.SDL_KMOD_SHIFT) != 0;
+        #else
         return (modifiers & GLFW.GLFW_MOD_SHIFT) != 0;
+        #endif
     }
 
     public boolean altDown() {
+        #if MC_VER >= MC_26_3
+        return (modifiers & SDLKeycode.SDL_KMOD_ALT) != 0;
+        #else
         return (modifiers & GLFW.GLFW_MOD_ALT) != 0;
+        #endif
     }
 
     public boolean superDown() {
+        #if MC_VER >= MC_26_3
+        return (modifiers & SDLKeycode.SDL_KMOD_GUI) != 0;
+        #else
         return (modifiers & GLFW.GLFW_MOD_SUPER) != 0;
+        #endif
     }
 }

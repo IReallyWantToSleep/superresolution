@@ -174,9 +174,6 @@ public class IrisShaderCompatUpscaleDispatcher {
                                                        boolean depthPreProcessed,
                                                        boolean motionVectorsPreProcessed) {
         ITexture motionVectorsInput = getAlgorithmTexture(motionVectorsTexture, motionVectorsPreProcessed);
-        if (motionVectorsInput == null && AlgorithmManager.getMotionVectorsFrameBuffer() != null) {
-            motionVectorsInput = AlgorithmManager.getMotionVectorsFrameBuffer().getTexture(FrameBufferAttachmentType.Color);
-        }
         InputResourceSet resources = InputResourceSet.create()
                 .with(InputResourceType.Color, getAlgorithmTexture(colorTexture, colorPreProcessed))
                 .with(InputResourceType.Depth, getAlgorithmTexture(depthTexture, depthPreProcessed))

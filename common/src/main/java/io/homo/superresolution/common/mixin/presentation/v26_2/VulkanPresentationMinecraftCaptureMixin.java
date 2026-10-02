@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.common.mixin.presentation.v26_2;
 
-#if MC_VER >= MC_26_2
+#if MC_VER == MC_26_2
 import com.mojang.blaze3d.systems.CommandEncoder;
 import com.mojang.blaze3d.systems.GpuSurface;
 import com.mojang.blaze3d.systems.SurfaceException;

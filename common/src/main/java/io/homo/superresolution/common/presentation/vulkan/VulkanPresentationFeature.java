@@ -19,17 +19,20 @@
 package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.common.SuperResolution;
-import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
-import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
+import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.core.graphics.GraphicsDevice;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
-import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanQueueUtils;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 import org.lwjgl.PointerBuffer;
+#if MC_VER >= MC_26_3
+import org.lwjgl.sdl.SDLVideo;
+#else
 import org.lwjgl.glfw.GLFW;
+#endif
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
@@ -39,18 +42,27 @@ import org.lwjgl.vulkan.VkQueueFamilyProperties;
 
 import java.nio.IntBuffer;
 
+#if MC_VER >= MC_26_1
+import static org.lwjgl.vulkan.EXTPresentTiming.VK_EXT_PRESENT_TIMING_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRCalibratedTimestamps.VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRGetSurfaceCapabilities2.VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME;
 import static org.lwjgl.vulkan.KHRPresentId.VK_KHR_PRESENT_ID_EXTENSION_NAME;
+import static org.lwjgl.vulkan.KHRPresentId2.VK_KHR_PRESENT_ID_2_EXTENSION_NAME;
+#else
+import static org.lwjgl.vulkan.KHRPresentId.VK_KHR_PRESENT_ID_EXTENSION_NAME;
+#endif
 import static org.lwjgl.vulkan.KHRSurface.vkGetPhysicalDeviceSurfaceSupportKHR;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_KHR_SWAPCHAIN_EXTENSION_NAME;
 import static org.lwjgl.vulkan.NVLowLatency2.VK_NV_LOW_LATENCY_2_EXTENSION_NAME;
-import static org.lwjgl.vulkan.VK10.VK_QUEUE_GRAPHICS_BIT;
-import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
-import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceQueueFamilyProperties;
+import static org.lwjgl.vulkan.VK10.*;
 
 public final class VulkanPresentationFeature {
     private static final VulkanSurface SURFACE = new VulkanSurface();
     private static VkRenderSystem renderSystem;
+    private static boolean isAvailable;
 
+    private VulkanPresentationFeature() {
+    }
 
     public static boolean isAvailable() {
         return isAvailable;
@@ -76,11 +88,6 @@ public final class VulkanPresentationFeature {
         }
     }
 
-    private static boolean isAvailable;
-
-    private VulkanPresentationFeature() {
-    }
-
     public static boolean shouldInitializeStreamline() {
         return PresentationBackendManager.shouldInitializeStreamline();
     }
@@ -104,6 +111,12 @@ public final class VulkanPresentationFeature {
         // and needs present ids to correlate latency markers with presents.
         target.addDeviceExtension(VK_KHR_PRESENT_ID_EXTENSION_NAME);
         target.addDeviceExtension(VK_NV_LOW_LATENCY_2_EXTENSION_NAME);
+#if MC_VER >= MC_26_1
+        target.addInstanceExtension(VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME);
+        target.addDeviceExtension(VK_KHR_PRESENT_ID_2_EXTENSION_NAME);
+        target.addDeviceExtension(VK_KHR_CALIBRATED_TIMESTAMPS_EXTENSION_NAME);
+        target.addDeviceExtension(VK_EXT_PRESENT_TIMING_EXTENSION_NAME);
+#endif
         renderSystem = target;
     }
 
@@ -151,7 +164,11 @@ public final class VulkanPresentationFeature {
         if (!target.getCapabilities().getDeviceExtensions().contains(VK_KHR_SWAPCHAIN_EXTENSION_NAME)) {
             throw new IllegalStateException("Selected Vulkan device does not support VK_KHR_swapchain");
         }
+        #if MC_VER >= MC_26_3
+        long currentContext = SDLVideo.SDL_GL_GetCurrentWindow();
+        #else
         long currentContext = GLFW.glfwGetCurrentContext();
+        #endif
         long renderHandle = PresentationWindowState.renderHandle();
         long presentationHandle = PresentationWindowState.presentationHandle();
         if (currentContext != renderHandle || currentContext == presentationHandle) {

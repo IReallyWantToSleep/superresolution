@@ -19,122 +19,154 @@
 package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.common.lowlatency.LowLatency;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
+import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 
 public final class VulkanPresentationWindow {
-	private static VulkanPresentationContext context;
-	private static VulkanSurface surface;
-	private static boolean shown;
-	private static boolean requestedVsync = false;
+    private static VulkanPresentationContext context;
+    private static VulkanSurface surface;
+    private static boolean shown;
+    private static boolean requestedVsync = false;
+    private static final ThreadLocal<FramePacingTrace.Span> REAL_FRAME_TRACE = new ThreadLocal<>();
 
-	private VulkanPresentationWindow() {
-	}
+    private VulkanPresentationWindow() {
+    }
 
-	public static synchronized void initialize(
-		VulkanPresentationContext presentationContext,
-		VulkanSurface presentationSurface
-	) {
-		if (context != null) {
-			return;
-		}
-		FrameCaptureManager.initialize(
-				presentationContext.device(),
-				presentationContext.framePacingTiming()
-		);
-		presentationContext.setVsync(requestedVsync);
-		context = presentationContext;
-		surface = presentationSurface;
-	}
+    public static synchronized void initialize(
+            VulkanPresentationContext presentationContext,
+            VulkanSurface presentationSurface
+    ) {
+        if (context != null) {
+            return;
+        }
+        FrameCaptureManager.initialize(
+                presentationContext.device(),
+                presentationContext.framePacingTiming()
+        );
+        presentationContext.setVsync(requestedVsync);
+        context = presentationContext;
+        surface = presentationSurface;
+    }
 
-	public static void endMinecraftFrame() {
-		VulkanPresentationContext presentationContext = context;
-		VulkanSurface presentationSurface = surface;
-		if (presentationContext == null || presentationSurface == null) {
-			return;
-		}
-		PresentationWindowState.requireOwnerThread();
+    public static void beginRealFrameRendering() {
+        VulkanPresentationContext presentationContext = context;
+        if (presentationContext != null) {
+            REAL_FRAME_TRACE.set(FramePacingTrace.INSTANCE.begin(
+                    "real_frame_rendering",
+                    GameFrameIndex.current(),
+                    -1L,
+                    -1L,
+                    -1L,
+                    -1L,
+                    "REAL",
+                    ""
+            ));
+            presentationContext.presentPacer().beginRealFrameRendering();
+        }
+    }
 
-		FrameResources frameResources = FrameCaptureManager.finishFrame();
-		LowLatency.endRenderSubmission();
+    public static void endRealFrameRendering() {
+        VulkanPresentationContext presentationContext = context;
+        if (presentationContext != null) {
+            presentationContext.presentPacer().endRealFrameRendering();
+            FramePacingTrace.Span span = REAL_FRAME_TRACE.get();
+            REAL_FRAME_TRACE.remove();
+            if (span != null) {
+                span.close();
+            }
+        }
+    }
 
-		presentationContext.tickWindow();
+    public static void endMinecraftFrame() {
+        VulkanPresentationContext presentationContext = context;
+        VulkanSurface presentationSurface = surface;
+        if (presentationContext == null || presentationSurface == null) {
+            return;
+        }
+        PresentationWindowState.requireOwnerThread();
 
-		if (frameResources == null) {
-			return;
-		}
-		presentationContext.setVsync(requestedVsync);
-		if (!frameResources.hasFinalColor()) {
-			consumeRenderedFrame(presentationContext, frameResources);
-			throw new IllegalStateException("Vulkan presentation frame is missing final color");
-		}
-		if (!presentationSurface.shouldClose()
-			&& !presentationSurface.isMinimized()) {
-			boolean presented = presentationContext.present(frameResources);
-			if (presented && !shown) {
-				presentationSurface.show();
-				shown = true;
-			}
-		} else {
-			consumeRenderedFrame(presentationContext, frameResources);
-		}
-	}
+        FrameResources frameResources = FrameCaptureManager.finishFrame();
+        LowLatency.endRenderSubmission();
 
-	private static void consumeRenderedFrame(
-		VulkanPresentationContext presentationContext,
-		FrameResources frameResources
-	) {
-		presentationContext.consumeWithoutPresent(frameResources);
-	}
+        presentationContext.tickWindow();
 
-	public static synchronized void setVsync(boolean enabled) {
-		requestedVsync = enabled;
-		if (context != null) {
-			context.setVsync(requestedVsync);
-		}
-	}
+        if (frameResources == null) {
+            return;
+        }
+        presentationContext.setVsync(requestedVsync);
+        if (!frameResources.hasFinalColor()) {
+            consumeRenderedFrame(presentationContext, frameResources);
+            throw new IllegalStateException("Vulkan presentation frame is missing final color");
+        }
+        if (!presentationSurface.shouldClose()
+                && !presentationSurface.isMinimized()) {
+            boolean presented = presentationContext.present(frameResources);
+            if (presented && !shown) {
+                presentationSurface.show();
+                shown = true;
+            }
+        } else {
+            consumeRenderedFrame(presentationContext, frameResources);
+        }
+    }
 
-	public static synchronized void flushCapturedFrame() {
-		VulkanPresentationContext presentationContext = context;
-		if (presentationContext == null) {
-			return;
-		}
-		FrameResources pending = FrameCaptureManager.finishFrame();
-		if (pending != null) {
-			presentationContext.consumeWithoutPresent(pending);
-		}
-	}
+    private static void consumeRenderedFrame(
+            VulkanPresentationContext presentationContext,
+            FrameResources frameResources
+    ) {
+        presentationContext.consumeWithoutPresent(frameResources);
+    }
 
-	public static boolean shutdownApplicationManagedProvider(
-			String providerId,
-			Runnable teardown
-	) {
-		VulkanPresentationContext presentationContext = context;
-		return presentationContext != null
-				&& presentationContext.shutdownApplicationManagedProvider(providerId, teardown);
-	}
+    public static synchronized void setVsync(boolean enabled) {
+        requestedVsync = enabled;
+        if (context != null) {
+            context.setVsync(requestedVsync);
+        }
+    }
 
-	public static synchronized void shutdown() {
-		VulkanPresentationContext presentationContext = context;
-		FrameResources pending = FrameCaptureManager.finishFrame();
-		if (presentationContext != null && pending != null) {
-			presentationContext.consumeWithoutPresent(pending);
-		}
-		if (presentationContext != null) {
-			presentationContext.device().getMainQueue().waitIdle();
-		}
-		if (presentationContext != null) {
-			presentationContext.destroy();
-		}
-		FrameCaptureManager.shutdown();
-		context = null;
-		surface = null;
-		shown = false;
-	}
+    public static synchronized void flushCapturedFrame() {
+        VulkanPresentationContext presentationContext = context;
+        if (presentationContext == null) {
+            return;
+        }
+        FrameResources pending = FrameCaptureManager.finishFrame();
+        if (pending != null) {
+            presentationContext.consumeWithoutPresent(pending);
+        }
+    }
 
-	public static boolean isInitialized() {
-		return context != null && surface != null;
-	}
+    public static boolean shutdownApplicationManagedProvider(
+            String providerId,
+            Runnable teardown
+    ) {
+        VulkanPresentationContext presentationContext = context;
+        return presentationContext != null
+                && presentationContext.shutdownApplicationManagedProvider(providerId, teardown);
+    }
+
+    public static synchronized void shutdown() {
+        VulkanPresentationContext presentationContext = context;
+        FrameResources pending = FrameCaptureManager.finishFrame();
+        if (presentationContext != null && pending != null) {
+            presentationContext.consumeWithoutPresent(pending);
+        }
+        if (presentationContext != null) {
+            presentationContext.device().getMainQueue().waitIdle();
+        }
+        if (presentationContext != null) {
+            presentationContext.destroy();
+        }
+        FrameCaptureManager.shutdown();
+        context = null;
+        surface = null;
+        shown = false;
+    }
+
+    public static boolean isInitialized() {
+        return context != null && surface != null;
+    }
 
 }

@@ -25,14 +25,14 @@ public enum FrameGenerationExecutionModel {
     /**
      * The provider or its swapchain interposer owns generated-frame dispatch,
      * pacing, and presentation. Super Resolution presents only the application's
-     * normal frame and must not route this provider through its async scheduler.
+     * normal frame and notifies the provider through ExternalFrameGenerationDispatchInput.
      */
     EXTERNAL_INTERPOSER,
 
     /**
-     * Super Resolution owns the bounded queues, dedicated dispatch thread and
-     * queue, display order, pacing, and {@code vkQueuePresentKHR}. The provider
-     * only records a complete dispatch and returns leased display outputs.
+     * Super Resolution owns generation submissions on FrameGenerationWorker and
+     * all generated/real image preparation, pacing and {@code vkQueuePresentKHR}
+     * on PresentWorker. The provider records pure FG work and returns leased outputs.
      */
     APPLICATION_MANAGED_ASYNC
 }

@@ -31,7 +31,11 @@ import org.spongepowered.asm.mixin.Unique;
 import net.irisshaders.iris.shaderpack.properties.PackDirectives;
 import net.irisshaders.iris.targets.RenderTargets;
 import net.irisshaders.iris.gl.texture.DepthBufferFormat;
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.textures.GpuTexture;
+#else
 import com.mojang.blaze3d.textures.GpuTexture;
+#endif
 #endif
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -66,7 +70,13 @@ public class IrisRenderingPipelineMixin {
     @Unique
     private Object lastDepthTexture = null;
 
-    @Redirect(method = "beginLevelRendering", at = @At(value = "INVOKE", target = "Lnet/irisshaders/iris/targets/RenderTargets;resizeIfNeeded(ILcom/mojang/blaze3d/textures/GpuTexture;IILnet/irisshaders/iris/gl/texture/DepthBufferFormat;Lnet/irisshaders/iris/shaderpack/properties/PackDirectives;)Z"), remap = false)
+    @Redirect(method = "beginLevelRendering", at = @At(value = "INVOKE", target =
+            #if MC_VER >= MC_26_3
+            "Lnet/irisshaders/iris/targets/RenderTargets;resizeIfNeeded(ILcom/mojang/renderpearl/api/textures/GpuTexture;IILnet/irisshaders/iris/gl/texture/DepthBufferFormat;Lnet/irisshaders/iris/shaderpack/properties/PackDirectives;)Z"
+            #else
+            "Lnet/irisshaders/iris/targets/RenderTargets;resizeIfNeeded(ILcom/mojang/blaze3d/textures/GpuTexture;IILnet/irisshaders/iris/gl/texture/DepthBufferFormat;Lnet/irisshaders/iris/shaderpack/properties/PackDirectives;)Z"
+            #endif
+    ), remap = false)
     private boolean patch(
             RenderTargets instance,
             int newDepthBufferVersion,

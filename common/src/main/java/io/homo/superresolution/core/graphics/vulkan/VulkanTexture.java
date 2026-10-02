@@ -362,27 +362,6 @@ public class VulkanTexture implements ITexture, VulkanLayoutTracked {
         return exportedHandle;
     }
 
-    public void resize(int newWidth, int newHeight) {
-        if (newWidth == width && newHeight == height) {
-            return;
-        }
-
-        destroy();
-        this.width = newWidth;
-        this.height = newHeight;
-
-        try (MemoryStack stack = stackPush()) {
-            createImage(stack);
-            if (isExternal) {
-                throw new VulkanException("Cannot resize external memory texture");
-            } else {
-                allocateMemory(stack);
-            }
-            createImageView(stack);
-            updateDebugLabels();
-        }
-    }
-
     public void transitionImageLayout(
             VulkanCommandBuffer commandBuffer,
             int newLayout,

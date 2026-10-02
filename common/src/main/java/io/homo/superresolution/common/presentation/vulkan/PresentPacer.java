@@ -18,224 +18,199 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
-import io.homo.superresolution.common.SuperResolution;
-
-import java.util.ArrayList;
-import java.util.List;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicLongArray;
 import java.util.concurrent.locks.LockSupport;
+import java.util.function.LongConsumer;
 
-import static org.lwjgl.vulkan.KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR;
-import static org.lwjgl.vulkan.KHRSwapchain.VK_SUBOPTIMAL_KHR;
-import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
-
-/**
- * Presents frame-generation batches (interpolated frames followed by the real frame)
- * from a dedicated thread so the render thread never sleeps for pacing. The DLSS-FG
- * SDK requires the application to space generated and real frames evenly; the pacer
- * derives the spacing from the measured interval between successive batches.
- */
+/** Shared phase timing and present-deadline state for application-managed presentation. */
 final class PresentPacer {
-    private static final long MIN_SPACING_NANOS = 500_000L;
-    private static final long MAX_SPACING_NANOS = 100_000_000L;
-    private static final double INTERVAL_EMA_ALPHA = 0.2;
+    private static final long MAX_PRESENT_INTERVAL_NANOS = 100_000_000L;
+    private static final long FINAL_SPIN_WINDOW_NANOS = 200_000L;
 
-    private final Object lock = new Object();
-    private List<Integer> pendingImages;
-    private long pendingSpacingNanos;
-    private PresentFunction pendingPresentFunction;
-    private boolean batchInFlight;
-    private boolean shutdownRequested;
-    private boolean recreateRequested;
-    private Throwable failure;
-    private Thread worker;
-    private long lastBatchNanos;
-    private double intervalEmaNanos;
+    private final AsyncFramePresenter.NanoClock clock;
+    private final FramePacingTiming framePacingTiming;
+    private final LongConsumer deadlineWaiter;
+    private final ThreadLocal<PhaseStarts> phaseStarts =
+            ThreadLocal.withInitial(PhaseStarts::new);
+    private final AtomicLongArray lastPhaseDurations = new AtomicLongArray(Phase.values().length);
+    private final AtomicLong realFrameProducerTimeNanos = new AtomicLong();
+    private final AtomicBoolean hasRealFrameProducerTime = new AtomicBoolean();
+    private long nextDeadlineNanos;
+    private boolean previousPacingEnabled;
+    private int previousGeneratedCount = -1;
+    private long presentIntervalNanos;
 
-    interface PresentFunction {
-        int present(int imageIndex);
+    PresentPacer(AsyncFramePresenter.NanoClock clock, FramePacingTiming framePacingTiming) {
+        this.clock = clock;
+        this.framePacingTiming = framePacingTiming;
+        this.deadlineWaiter = this::sleepUntil;
     }
 
-    /**
-     * Queues one batch of already-submitted swapchain images for paced presentation.
-     * Call {@link #awaitIdle()} first; at most one batch may be outstanding.
-     */
-    void submitBatch(List<Integer> imageIndices, PresentFunction presentFunction) {
-        if (imageIndices == null || imageIndices.isEmpty()) {
+    PresentPacer(
+            AsyncFramePresenter.NanoClock clock,
+            FramePacingTiming framePacingTiming,
+            LongConsumer deadlineWaiter
+    ) {
+        this.clock = clock;
+        this.framePacingTiming = framePacingTiming;
+        this.deadlineWaiter = deadlineWaiter;
+    }
+
+    void beginRealFrameRendering() {
+        beginPhase(Phase.REAL_FRAME_RENDERING);
+    }
+
+    void endRealFrameRendering() {
+        long completedAtNanos = clock.nanoTime();
+        endPhase(Phase.REAL_FRAME_RENDERING, completedAtNanos);
+        long producerTimeNanos = framePacingTiming.producerTimeNanosAt(completedAtNanos);
+        realFrameProducerTimeNanos.set(producerTimeNanos);
+        hasRealFrameProducerTime.set(true);
+    }
+
+    long takeRealFrameProducerTimeNanos() {
+        if (hasRealFrameProducerTime.compareAndSet(true, false)) {
+            return realFrameProducerTimeNanos.get();
+        }
+        return framePacingTiming.producerTimeNanos();
+    }
+
+    void beginDispatchFrameGenerationBatch() {
+        beginPhase(Phase.DISPATCH_FRAME_GENERATION_BATCH);
+    }
+
+    void endDispatchFrameGenerationBatch() {
+        endPhase(Phase.DISPATCH_FRAME_GENERATION_BATCH);
+    }
+
+    void beginPresentFrameBatch(
+            boolean waited, boolean pacingEnabled, int generatedCount, long intervalNanos
+    ) {
+        beginPhase(Phase.PRESENT_FRAME_BATCH);
+        presentIntervalNanos = intervalNanos;
+        beginBatch(waited, pacingEnabled, generatedCount);
+    }
+
+    void endPresentFrameBatch() {
+        endPhase(Phase.PRESENT_FRAME_BATCH);
+    }
+
+    void beginPresentFrame() {
+        beginPhase(Phase.PRESENT_FRAME);
+    }
+
+    void endPresentFrame(boolean advanceDeadline) {
+        endPhase(Phase.PRESENT_FRAME);
+        if (advanceDeadline) {
+            advance(presentIntervalNanos);
+        }
+    }
+
+    void endPresentFrame() {
+        endPresentFrame(true);
+    }
+
+    void sleepAtPresentGeneratedFrame() {
+        awaitNextImage();
+    }
+
+    void sleepAtPresentRealFrame() {
+        awaitNextImage();
+    }
+
+    long lastPhaseDurationNanos(Phase phase) {
+        return lastPhaseDurations.get(phase.ordinal());
+    }
+
+    void reset() {
+        nextDeadlineNanos = 0L;
+        previousPacingEnabled = false;
+        previousGeneratedCount = -1;
+    }
+
+    private void beginBatch(boolean waited, boolean pacingEnabled, int generatedCount) {
+        long now = clock.nanoTime();
+        if (!pacingEnabled) {
+            nextDeadlineNanos = 0L;
+            previousPacingEnabled = false;
+            previousGeneratedCount = generatedCount;
             return;
         }
-        long now = System.nanoTime();
-        synchronized (lock) {
-            if (shutdownRequested) {
+        boolean resetTimeline = waited
+                || !previousPacingEnabled
+                || previousGeneratedCount != generatedCount
+                || nextDeadlineNanos == 0L;
+        if (resetTimeline) {
+            nextDeadlineNanos = now;
+        }
+        previousPacingEnabled = true;
+        previousGeneratedCount = generatedCount;
+    }
+
+    private void awaitNextImage() {
+        if (nextDeadlineNanos != 0L) {
+            deadlineWaiter.accept(nextDeadlineNanos);
+        }
+    }
+
+    private void sleepUntil(long targetNanos) {
+        while (true) {
+            long remaining = targetNanos - clock.nanoTime();
+            if (remaining <= 0L) {
                 return;
             }
-            if (pendingImages != null || batchInFlight) {
-                throw new IllegalStateException("A present batch is already outstanding");
-            }
-            if (lastBatchNanos != 0L) {
-                long interval = now - lastBatchNanos;
-                intervalEmaNanos = intervalEmaNanos <= 0.0
-                        ? interval
-                        : intervalEmaNanos * (1.0 - INTERVAL_EMA_ALPHA) + interval * INTERVAL_EMA_ALPHA;
-            }
-            lastBatchNanos = now;
-            long spacing = intervalEmaNanos <= 0.0
-                    ? MIN_SPACING_NANOS
-                    : (long) (intervalEmaNanos / imageIndices.size());
-            pendingSpacingNanos = Math.max(MIN_SPACING_NANOS, Math.min(MAX_SPACING_NANOS, spacing));
-            pendingImages = new ArrayList<>(imageIndices);
-            pendingPresentFunction = presentFunction;
-            ensureWorker();
-            lock.notifyAll();
-        }
-    }
-
-    /**
-     * Blocks until the outstanding batch (if any) has been fully presented.
-     */
-    void awaitIdle() {
-        synchronized (lock) {
-            boolean interrupted = false;
-            while (pendingImages != null || batchInFlight) {
-                try {
-                    lock.wait();
-                } catch (InterruptedException e) {
-                    interrupted = true;
-                }
-            }
-            if (interrupted) {
-                Thread.currentThread().interrupt();
+            if (remaining > FINAL_SPIN_WINDOW_NANOS) {
+                LockSupport.parkNanos(remaining - FINAL_SPIN_WINDOW_NANOS);
+            } else {
+                Thread.onSpinWait();
             }
         }
     }
 
-    boolean consumeRecreateRequest() {
-        synchronized (lock) {
-            boolean requested = recreateRequested;
-            recreateRequested = false;
-            return requested;
-        }
-    }
-
-    void throwIfFailed() {
-        Throwable pendingFailure;
-        synchronized (lock) {
-            pendingFailure = failure;
-            failure = null;
-        }
-        if (pendingFailure != null) {
-            throw new IllegalStateException("Paced presentation failed", pendingFailure);
-        }
-    }
-
-    void invalidatePacing() {
-        synchronized (lock) {
-            lastBatchNanos = 0L;
-            intervalEmaNanos = 0.0;
-        }
-    }
-
-    void shutdown() {
-        Thread activeWorker;
-        synchronized (lock) {
-            shutdownRequested = true;
-            pendingImages = null;
-            pendingPresentFunction = null;
-            activeWorker = worker;
-            worker = null;
-            lock.notifyAll();
-        }
-        if (activeWorker != null) {
-            try {
-                activeWorker.join(2_000L);
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-        }
-        synchronized (lock) {
-            shutdownRequested = false;
-            batchInFlight = false;
-            failure = null;
-            recreateRequested = false;
-            lastBatchNanos = 0L;
-            intervalEmaNanos = 0.0;
-        }
-    }
-
-    private void ensureWorker() {
-        if (worker != null && worker.isAlive()) {
+    private void advance(long intervalNanos) {
+        if (nextDeadlineNanos == 0L) {
             return;
         }
-        worker = new Thread(this::runWorker, "SR-FrameGeneration-Pacer");
-        worker.setDaemon(true);
-        worker.start();
-    }
-
-    private void runWorker() {
-        while (true) {
-            List<Integer> images;
-            long spacing;
-            PresentFunction presentFunction;
-            synchronized (lock) {
-                while (pendingImages == null && !shutdownRequested) {
-                    try {
-                        lock.wait();
-                    } catch (InterruptedException e) {
-                        // Shutdown uses the flag; spurious interrupts are ignored.
-                    }
-                }
-                if (shutdownRequested) {
-                    return;
-                }
-                images = pendingImages;
-                spacing = pendingSpacingNanos;
-                presentFunction = pendingPresentFunction;
-                pendingImages = null;
-                pendingPresentFunction = null;
-                batchInFlight = true;
-            }
-
-            try {
-                long startNanos = System.nanoTime();
-                for (int i = 0; i < images.size(); i++) {
-                    sleepUntil(startNanos + (long) i * spacing);
-                    int result = presentFunction.present(images.get(i));
-                    if (result == VK_ERROR_OUT_OF_DATE_KHR) {
-                        synchronized (lock) {
-                            recreateRequested = true;
-                        }
-                        break;
-                    }
-                    if (result == VK_SUBOPTIMAL_KHR) {
-                        synchronized (lock) {
-                            recreateRequested = true;
-                        }
-                    } else if (result != VK_SUCCESS) {
-                        throw new IllegalStateException(
-                                "Failed to present a generated frame, VkResult=" + result
-                        );
-                    }
-                }
-            } catch (Throwable throwable) {
-                SuperResolution.LOGGER.warn("Frame generation present pacing failed", throwable);
-                synchronized (lock) {
-                    failure = throwable;
-                }
-            } finally {
-                synchronized (lock) {
-                    batchInFlight = false;
-                    lock.notifyAll();
-                }
-            }
+        nextDeadlineNanos += intervalNanos;
+        long lateBy = clock.nanoTime() - nextDeadlineNanos;
+        if (lateBy > Math.max(intervalNanos * 4L, MAX_PRESENT_INTERVAL_NANOS)) {
+            nextDeadlineNanos = clock.nanoTime();
         }
     }
 
-    private static void sleepUntil(long targetNanos) {
-        while (true) {
-            long remaining = targetNanos - System.nanoTime();
-            if (remaining <= 0) {
-                return;
-            }
-            LockSupport.parkNanos(Math.min(remaining, 2_000_000L));
+    private void beginPhase(Phase phase) {
+        PhaseStarts starts = phaseStarts.get();
+        int index = phase.ordinal();
+        starts.startedAtNanos[index] = clock.nanoTime();
+        starts.active[index] = true;
+    }
+
+    private void endPhase(Phase phase) {
+        endPhase(phase, clock.nanoTime());
+    }
+
+    private void endPhase(Phase phase, long endedAtNanos) {
+        PhaseStarts starts = phaseStarts.get();
+        int index = phase.ordinal();
+        if (!starts.active[index]) {
+            return;
         }
+        long elapsedNanos = endedAtNanos - starts.startedAtNanos[index];
+        lastPhaseDurations.set(index, Math.max(0L, elapsedNanos));
+        starts.active[index] = false;
+    }
+
+    enum Phase {
+        REAL_FRAME_RENDERING,
+        DISPATCH_FRAME_GENERATION_BATCH,
+        PRESENT_FRAME_BATCH,
+        PRESENT_FRAME
+    }
+
+    private static final class PhaseStarts {
+        private final long[] startedAtNanos = new long[Phase.values().length];
+        private final boolean[] active = new boolean[Phase.values().length];
     }
 }

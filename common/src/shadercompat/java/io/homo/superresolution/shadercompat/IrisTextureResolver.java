@@ -194,17 +194,35 @@ public class IrisTextureResolver {
     }
     #else
     private static int getDepthTexId(ICompositeRendererAccessor renderer) {
-        return ((com.mojang.blaze3d.opengl.GlTexture) (renderer)
+        return ((
+                #if MC_VER >= MC_26_3
+                com.mojang.renderpearl.backend.opengl.GlTexture
+                #else
+                com.mojang.blaze3d.opengl.GlTexture
+                #endif
+                ) (renderer)
                 .getRenderTargets().getDepthTexture()).glId();
     }
 
     private static int getNoHandDepthTexId(ICompositeRendererAccessor renderer) {
-        return ((com.mojang.blaze3d.opengl.GlTexture) (renderer)
+        return ((
+                #if MC_VER >= MC_26_3
+                com.mojang.renderpearl.backend.opengl.GlTexture
+                #else
+                com.mojang.blaze3d.opengl.GlTexture
+                #endif
+                ) (renderer)
                 .getRenderTargets().getDepthTextureNoHand()).glId();
     }
 
     private static int getNoTranslucentDepthTexId(ICompositeRendererAccessor renderer) {
-        return ((com.mojang.blaze3d.opengl.GlTexture) (renderer)
+        return ((
+                #if MC_VER >= MC_26_3
+                com.mojang.renderpearl.backend.opengl.GlTexture
+                #else
+                com.mojang.blaze3d.opengl.GlTexture
+                #endif
+                ) (renderer)
                 .getRenderTargets().getDepthTextureNoTranslucents()).glId();
     }
     #endif

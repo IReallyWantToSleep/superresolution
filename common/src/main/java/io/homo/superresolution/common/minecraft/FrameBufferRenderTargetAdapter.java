@@ -22,14 +22,24 @@ package io.homo.superresolution.common.minecraft;
 import com.mojang.blaze3d.pipeline.RenderTarget;
 #if MC_VER >= MC_1_21_6
 import com.mojang.blaze3d.systems.RenderSystem;
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.textures.GpuTextureView;
+#else
 import com.mojang.blaze3d.textures.GpuTextureView;
+#endif
 #endif
 import io.homo.superresolution.core.graphics.opengl.utils.GlBlitRenderer;
 
 
 #if MC_VER > MC_1_21_4
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.GpuFormat;
+import com.mojang.renderpearl.api.textures.FilterMode;
+import com.mojang.renderpearl.api.textures.GpuTexture;
+#else
 import com.mojang.blaze3d.textures.FilterMode;
 import com.mojang.blaze3d.textures.GpuTexture;
+#endif
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
@@ -55,10 +65,12 @@ public class FrameBufferRenderTargetAdapter extends RenderTarget {
     FrameBufferRenderTargetAdapter(IFrameBuffer frameBuffer) {
         super(
                 frameBuffer.handle() + "-IFrameBuffer-" + frameBuffer.getTextureId(FrameBufferAttachmentType.Color),
+                #if MC_VER >= MC_26_3
+                GpuFormat.RGBA8_UNORM,
+                frameBuffer.getDepthTextureFormat() != null ? GpuFormat.D32_FLOAT : null
+                #else
                 frameBuffer.getDepthTextureFormat() != null
-                #if MC_VER > MC_26_1_2
                 ,
-                //TODO:写一个转换helper
                 com.mojang.blaze3d.GpuFormat.RGBA8_UNORM
                 #endif
         );

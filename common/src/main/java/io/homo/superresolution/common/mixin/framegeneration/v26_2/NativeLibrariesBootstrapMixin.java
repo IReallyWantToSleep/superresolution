@@ -18,7 +18,7 @@
 
 package io.homo.superresolution.common.mixin.framegeneration.v26_2;
 
-#if MC_VER >= MC_26_2
+#if MC_VER == MC_26_2
 
 import com.mojang.blaze3d.platform.NativeLibrariesBootstrap;
 import org.spongepowered.asm.mixin.Mixin;
