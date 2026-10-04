@@ -24,6 +24,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
+import io.homo.superresolution.common.presentation.api.PresentationBackendType;
 import io.homo.superresolution.core.graphics.d3d12.D3D12OpenGlInterop;
 import io.homo.superresolution.core.graphics.d3d12.D3D12RenderSystem;
 import io.homo.superresolution.core.graphics.opengl.GlRenderSystem;
@@ -207,7 +208,15 @@ public class RenderSystems {
                 .addDeviceExtension("VK_KHR_synchronization2")//DLSS-FG
                 .addDeviceExtension("VK_KHR_format_feature_flags2")//DLSS-FG
                 .addDeviceExtension("VK_KHR_timeline_semaphore")//DLSS-FG
-                .addDeviceExtension("VK_EXT_calibrated_timestamps");//DLSS-FG
+                .addDeviceExtension("VK_EXT_calibrated_timestamps")//DLSS-FG
+
+                .addDeviceExtension("VK_EXT_descriptor_buffer")
+                .addDeviceExtension("VK_EXT_frame_boundary")
+                .addDeviceExtension("VK_EXT_shader_float8")
+                .addDeviceExtension("VK_KHR_shader_bfloat16")
+                .addDeviceExtension("VK_ARM_tensors")
+        ;
+        if (SuperResolutionConfig.getPresentationBackend() == PresentationBackendType.OPENGL)vulkan.addDeviceExtension("VK_KHR_surface");
         if (Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS) {
             vulkan.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
                     .addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);

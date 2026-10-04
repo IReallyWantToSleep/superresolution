@@ -123,6 +123,7 @@ public class SRCompatV3Processor implements SRCompatProcessor {
                         description.equals(AlgorithmDescriptions.DLSS) ||
                         description.equals(AlgorithmDescriptions.DLSSRR) ||
                         description.equals(AlgorithmDescriptions.XESS) ||
+                        description.equals(AlgorithmDescriptions.NSS) ||
                         description.equals(AlgorithmDescriptions.FSR4_D3D12)
         ) {
             return rawJitter.mul(1, -1);

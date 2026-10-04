@@ -42,6 +42,7 @@ import io.homo.superresolution.common.upscale.algo.legacy.fsr2.FSR2;
 import io.homo.superresolution.common.upscale.algo.legacy.sgsr.v1.Sgsr1;
 import io.homo.superresolution.common.upscale.algo.legacy.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.algo.none.None;
+import io.homo.superresolution.common.upscale.algo.nss.ArmNSS;
 import io.homo.superresolution.common.upscale.algo.xess.XeSS;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.graphics.opengl.Gl;
@@ -143,6 +144,29 @@ public class AlgorithmDescriptions {
             .supportJitter(true)
             .qualityPresets(FSR_QUALITY_PRESETS)
             .customUpscaleRatio(true)
+            .build();
+
+    public static final AlgorithmDescription<ArmNSS> NSS = AlgorithmDescription.builder(ArmNSS.class)
+            .briefName("ARM NSS")
+            .codeName("nss")
+            .displayName("ARM Neural Super Sampling")
+            .requirement(
+                    Requirement.nothing()
+                            .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
+                            .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.LINUX))
+                            .requiredGlExtension("GL_EXT_memory_object")
+                            .requiredGlExtension("GL_EXT_semaphore")
+                            .glMajorVersion(4)
+                            .glMinorVersion(6)
+                            .requireVulkan(true)
+            )
+            .supportJitter(true)
+            .qualityPresets(List.of(
+                            new QualityPreset()
+                                    .setName(Component.literal("2X"))
+                                    .setCodeName("nss_2x")
+                                    .setUpscaleRatio(2f)))
+            .customUpscaleRatio(false)
             .build();
     public static final AlgorithmDescription<FfxFSR4D3D12> FSR4_D3D12 =
             AlgorithmDescription.builder(FfxFSR4D3D12.class)
@@ -393,6 +417,7 @@ public class AlgorithmDescriptions {
         AlgorithmRegistry.registry(FSR2);
         AlgorithmRegistry.registry(FSR);
         AlgorithmRegistry.registry(FSR4_D3D12);
+        AlgorithmRegistry.registry(NSS);
         AlgorithmRegistry.registry(XESS);
         AlgorithmRegistry.registry(DLSS);
         if (SuperResolutionConfig.isEnableDlssRayReconstruction()) {

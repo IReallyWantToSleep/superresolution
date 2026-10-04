@@ -12,10 +12,10 @@ void main() {
         return;
     }
     #ifdef FLIP_Y
-    int sourceY = texSize.y - 1 - texelCoord.y;
+    int writeY = texSize.y - texelCoord.y;
     #else
-    int sourceY = texelCoord.y;
+    int writeY = texelCoord.y;
     #endif
-    vec4 color = texelFetch(inputTexture, ivec2(texelCoord.x, sourceY), 0);
-    imageStore(outputTexture, texelCoord, color);
+    vec4 color = texelFetch(inputTexture, ivec2(texelCoord.x, texelCoord.y), 0);
+    imageStore(outputTexture, ivec2(texelCoord.x,writeY), color);
 }

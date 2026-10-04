@@ -2,6 +2,7 @@
     "modmenu.nameTranslation.super_resolution": "超分辨率",
     "modmenu.descriptionTranslation.super_resolution": "喵",
     "key.super_resolution.open_config": "打开配置界面",
+    "key.category.super_resolution.keys": "Super Resolution",
     "superresolution.algorithm.frame_generation.auto": "自动",
     "superresolution.algorithm.frame_generation.dlss": "DLSS 帧生成",
     "superresolution.algorithm.low_latency.none": "关闭",

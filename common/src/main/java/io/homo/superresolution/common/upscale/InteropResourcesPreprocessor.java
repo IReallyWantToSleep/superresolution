@@ -147,8 +147,8 @@ public class InteropResourcesPreprocessor {
         computePipeline.descriptorSet().update();
         commandBuffer.bindPipeline(computePipeline);
         commandBuffer.dispatch(
-                (input.getWidth() + 15) / 16,
-                (input.getHeight() + 15) / 16,
+                (output.getWidth() + 15) / 16,
+                (output.getHeight() + 15) / 16,
                 1
         );
     }

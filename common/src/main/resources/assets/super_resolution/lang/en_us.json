@@ -2,6 +2,7 @@
     "modmenu.nameTranslation.super_resolution": "Super Resolution",
     "modmenu.descriptionTranslation.super_resolution": "Meow",
     "key.super_resolution.open_config": "Open Configuration Screen",
+    "key.category.super_resolution.keys": "Super Resolution",
     "superresolution.algorithm.frame_generation.auto": "Auto",
     "superresolution.algorithm.frame_generation.dlss": "DLSS Frame Generation",
     "superresolution.algorithm.low_latency.none": "Off",

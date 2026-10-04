@@ -59,6 +59,7 @@ public class NativeLibManager {
     @Deprecated
     public static NativeLib LIB_SUPER_RESOLUTION_D3D12_INTEROP = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR = null;
+    public static NativeLib LIB_SUPER_RESOLUTION_NSS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_FSR4 = null;
     public static NativeLib LIB_SUPER_RESOLUTION_XESS = null;
     public static NativeLib LIB_SUPER_RESOLUTION_NGX = null;
@@ -90,6 +91,11 @@ public class NativeLibManager {
                     false,
                     false
             );
+            LIB_SUPER_RESOLUTION_NSS = new NativeLib(
+                    "SuperResolutionNSS",
+                    false,
+                    false
+            );
             LIB_SUPER_RESOLUTION_FSR4 = new NativeLib(
                     "SuperResolutionFSR4",
                     false,
@@ -113,6 +119,7 @@ public class NativeLibManager {
 
             libs.add(LIB_SUPER_RESOLUTION);
             libs.add(LIB_SUPER_RESOLUTION_D3D12);
+            libs.add(LIB_SUPER_RESOLUTION_NSS);
             libs.add(LIB_SUPER_RESOLUTION_FSR);
             libs.add(LIB_SUPER_RESOLUTION_FSR4);
             libs.add(LIB_SUPER_RESOLUTION_XESS);

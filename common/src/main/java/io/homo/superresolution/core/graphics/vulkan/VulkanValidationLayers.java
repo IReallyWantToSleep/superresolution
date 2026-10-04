@@ -29,6 +29,7 @@ import org.slf4j.LoggerFactory;
 import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Collections;
+import java.util.List;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
@@ -39,7 +40,10 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanValidationLayers implements Destroyable {
     private static final Logger LOGGER = LoggerFactory.getLogger(VulkanValidationLayers.class);
-    private static final Set<String> REQUIRED_LAYERS = Collections.singleton("VK_LAYER_KHRONOS_validation");
+    private static final Set<String> REQUIRED_LAYERS = Set.of(
+            "VK_LAYER_KHRONOS_validation",
+            "VK_LAYER_ML_Tensor_Emulation"
+    );
 
     private final VkInstance instance;
     private long debugMessenger;
