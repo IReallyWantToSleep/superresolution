@@ -19,8 +19,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            common/src/main/resources/lib
-          key: native-libs-linux-${{ hashFiles('native/**') }}
+            modules/common/src/main/resources/lib
+          key: native-libs-linux-${{ hashFiles('modules/native/**') }}
           restore-keys: |
             native-libs-linux-
 
@@ -72,7 +72,7 @@ jobs:
 
       - name: Initialize
         if: steps.native-cache-linux.outputs.cache-hit != 'true'
-        working-directory: native/cpp
+        working-directory: modules/native/cpp
         run: python init.py
 
       - name: Build native libraries (Linux)
@@ -86,7 +86,7 @@ jobs:
         with:
           name: native-libs-linux
           path: |
-            common/src/main/resources/lib/**/*.so
+            modules/common/src/main/resources/lib/**/*.so
           if-no-files-found: error
 
   build-native-windows:
@@ -103,8 +103,8 @@ jobs:
         uses: actions/cache@v4
         with:
           path: |
-            common/src/main/resources/lib
-          key: native-libs-windows-${{ hashFiles('native/**') }}
+            modules/common/src/main/resources/lib
+          key: native-libs-windows-${{ hashFiles('modules/native/**') }}
           restore-keys: |
             native-libs-windows-
 
@@ -144,7 +144,7 @@ jobs:
 
       - name: Initialize
         if: steps.native-cache-windows.outputs.cache-hit != 'true'
-        working-directory: native/cpp
+        working-directory: modules/native/cpp
         run: python init.py
 
       - name: Build native libraries (Windows)
@@ -158,7 +158,7 @@ jobs:
         with:
           name: native-libs-windows
           path: |
-            common/src/main/resources/lib/**/*.dll
+            modules/common/src/main/resources/lib/**/*.dll
           if-no-files-found: error
 
   build:
@@ -175,13 +175,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: native-libs-linux
-          path: common/src/main/resources/lib
+          path: modules/common/src/main/resources/lib
 
       - name: Download Windows native libraries
         uses: actions/download-artifact@v4
         with:
           name: native-libs-windows
-          path: common/src/main/resources/lib
+          path: modules/common/src/main/resources/lib
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4

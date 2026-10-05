@@ -6,7 +6,7 @@ from typing import Dict, List, Optional
 script_path = Path(__file__).resolve()
 cur_path = script_path.parent.parent
 
-i18n_dir = cur_path / "common" / "src" / "main" / "resources" / "assets" / "super_resolution" / "lang"
+i18n_dir = cur_path / "modules" / "common" / "src" / "main" / "resources" / "assets" / "super_resolution" / "lang"
 def load_i18n_files() -> Dict[str, Dict[str, str]]:
     i18n_data = {}
     for file in i18n_dir.glob("*.json"):

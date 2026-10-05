@@ -72,7 +72,7 @@ jobs:
         run: pip install pyyaml simplejson
 
       - name: Initialize
-        working-directory: native/cpp
+        working-directory: modules/native/cpp
         run: python init.py
 
       - name: Build native libraries (Linux)
@@ -83,7 +83,7 @@ jobs:
         with:
           name: native-libs-linux
           path: |
-            common/src/main/resources/lib/**/*
+            modules/common/src/main/resources/lib/**/*
           if-no-files-found: error
 
   build-native-windows:
@@ -126,7 +126,7 @@ jobs:
         run: pip install pyyaml simplejson
 
       - name: Initialize
-        working-directory: native/cpp
+        working-directory: modules/native/cpp
         run: python init.py
 
       - name: Build native libraries (Windows)
@@ -137,7 +137,7 @@ jobs:
         with:
           name: native-libs-windows
           path: |
-            common/src/main/resources/lib/**/*
+            modules/common/src/main/resources/lib/**/*
           if-no-files-found: error
 
   build-and-upload:
@@ -162,13 +162,13 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: native-libs-linux
-          path: common/src/main/resources/lib
+          path: modules/common/src/main/resources/lib
 
       - name: Download Windows native libraries
         uses: actions/download-artifact@v4
         with:
           name: native-libs-windows
-          path: common/src/main/resources/lib
+          path: modules/common/src/main/resources/lib
 
       - name: Validate Gradle wrapper
         uses: gradle/actions/wrapper-validation@v4

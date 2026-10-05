@@ -176,7 +176,7 @@ if (srConfigsDir.exists()) {
             doLast {
                 srOutputDir.mkdirs()
                 platforms.forEach { platform ->
-                    val libsDir = file("$rootDir/$platform/build/libs")
+                    val libsDir = file("$rootDir/modules/$platform/build/libs")
                     if (!libsDir.exists()) {
                         println("Warning: build directory does not exist - $libsDir")
                         return@forEach

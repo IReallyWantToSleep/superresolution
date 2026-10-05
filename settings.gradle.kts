@@ -47,15 +47,17 @@ val nativeOnlyMode = requestedTasks.isNotEmpty() && requestedTasks.all { taskNam
 }
 
 include("native")
+project(":native").projectDir = File(rootDir, "modules/native")
 if (!nativeOnlyMode) {
     include("common")
+    project(":common").projectDir = File(rootDir, "modules/common")
 }
 
 val minecraftVersionConfig = providers.gradleProperty("minecraft_version_config").orNull
     ?: throw GradleException("Missing minecraft_version_config property")
 
 val versionConfigSrc = JsonSlurper().parse(
-    File("$rootDir/configs/$minecraftVersionConfig.json")
+    File(rootDir, "configs/${minecraftVersionConfig}.json")
 ) as Map<*, *>
 
 val isUnobfuscated = versionConfigSrc["unobfuscated"] as? Boolean ?: false
@@ -86,8 +88,9 @@ if (!nativeOnlyMode) {
         if (loaderName.isBlank()) continue
         println("Enabled loader: $loaderName")
         include(loaderName)
+        project(":$loaderName").projectDir = File(rootDir, "modules/$loaderName")
         if (loaderName == "fabric") {
-            val fabricBuildFile = File(rootDir, "fabric/build.gradle.kts")
+            val fabricBuildFile = File(rootDir, "modules/fabric/build.gradle.kts")
             val targetPluginId = if (isUnobfuscated) {
                 "net.fabricmc.fabric-loom"
             } else {
