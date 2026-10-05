@@ -1,6 +1,7 @@
 import multiversion.VersionConfig
 import org.gradle.jvm.tasks.Jar
 import utils.MinecraftVersion
+import utils.registerNsightRunTasks
 
 plugins {
     id("multiloader-loader")
@@ -115,9 +116,12 @@ legacyForge {
         }
     }
 }
-
-
 val sourceSets = extensions.getByType(SourceSetContainer::class.java)
+registerNsightRunTasks(
+    taskGroup = "forge",
+    preparationTaskNames = listOf("prepareClientRun"),
+    workingDirectory = rootProject.file("runs/forge")
+)
 sourceSets.getByName("main").resources.srcDir("src/generated/resources")
 
 mixin {

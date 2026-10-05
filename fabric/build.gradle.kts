@@ -1,6 +1,7 @@
 import multiversion.VersionConfig
 import org.gradle.language.jvm.tasks.ProcessResources
 import utils.MinecraftVersion
+import utils.registerNsightRunTasks
 
 plugins {
     id("multiloader-loader")
@@ -226,6 +227,12 @@ loom {
         }
     }
 }
+
+registerNsightRunTasks(
+    taskGroup = "fabric",
+    preparationTaskNames = listOf("configureClientLaunch"),
+    workingDirectory = file("../runs/fabric")
+)
 
 val fabricModVersion = project.version.toString()
 val fabricJavaVersion = versionConfig.common.javaVersion.toString()

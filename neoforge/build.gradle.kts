@@ -1,5 +1,6 @@
 import multiversion.VersionConfig
 import utils.MinecraftVersion
+import utils.registerNsightRunTasks
 
 plugins {
     id("multiloader-loader")
@@ -133,6 +134,12 @@ neoForge {
         }
     }
 }
+
+registerNsightRunTasks(
+    taskGroup = "mod development",
+    preparationTaskNames = listOf("prepareClientRun"),
+    workingDirectory = rootProject.file("runs/neoforge")
+)
 
 dependencies {
     implementation("org.anarres:jcpp:1.4.14")
