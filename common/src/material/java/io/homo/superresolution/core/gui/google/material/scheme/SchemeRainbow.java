@@ -20,41 +20,59 @@ import io.homo.superresolution.core.gui.google.material.dynamiccolor.ColorSpecs;
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.DynamicScheme;
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.Variant;
 import io.homo.superresolution.core.gui.google.material.hct.Hct;
+import java.util.Collections;
+import java.util.List;
 
-/**
- * A playful theme - the source color's hue does not appear in the theme.
- */
+/** A playful theme - the source color's hue does not appear in the theme. */
 public class SchemeRainbow extends DynamicScheme {
 
-    public SchemeRainbow(Hct sourceColorHct, boolean isDark, double contrastLevel) {
-        this(sourceColorHct, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
-    }
+  public SchemeRainbow(Hct sourceColorHct, boolean isDark, double contrastLevel) {
+    this(sourceColorHct, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
+  }
 
-    public SchemeRainbow(
-            Hct sourceColorHct,
-            boolean isDark,
-            double contrastLevel,
-            SpecVersion specVersion,
-            Platform platform) {
-        super(
-                sourceColorHct,
-                Variant.RAINBOW,
-                isDark,
-                contrastLevel,
-                platform,
-                specVersion,
-                ColorSpecs.get(specVersion)
-                        .getPrimaryPalette(Variant.RAINBOW, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getSecondaryPalette(Variant.RAINBOW, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getTertiaryPalette(Variant.RAINBOW, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getNeutralPalette(Variant.RAINBOW, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getNeutralVariantPalette(
-                                Variant.RAINBOW, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getErrorPalette(Variant.RAINBOW, sourceColorHct, isDark, platform, contrastLevel));
-    }
+  public SchemeRainbow(
+      Hct sourceColorHct,
+      boolean isDark,
+      double contrastLevel,
+      SpecVersion specVersion,
+      Platform platform) {
+    this(Collections.singletonList(sourceColorHct), isDark, contrastLevel, specVersion, platform);
+  }
+
+  public SchemeRainbow(List<Hct> sourceColorHctList, boolean isDark, double contrastLevel) {
+    this(sourceColorHctList, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
+  }
+
+  public SchemeRainbow(
+      List<Hct> sourceColorHctList,
+      boolean isDark,
+      double contrastLevel,
+      SpecVersion specVersion,
+      Platform platform) {
+    super(
+        sourceColorHctList,
+        Variant.RAINBOW,
+        isDark,
+        contrastLevel,
+        platform,
+        specVersion,
+        ColorSpecs.get(specVersion)
+            .getPrimaryPalette(
+                Variant.RAINBOW, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getSecondaryPalette(
+                Variant.RAINBOW, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getTertiaryPalette(
+                Variant.RAINBOW, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getNeutralPalette(
+                Variant.RAINBOW, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getNeutralVariantPalette(
+                Variant.RAINBOW, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getErrorPalette(
+                Variant.RAINBOW, sourceColorHctList.get(0), isDark, platform, contrastLevel));
+  }
 }

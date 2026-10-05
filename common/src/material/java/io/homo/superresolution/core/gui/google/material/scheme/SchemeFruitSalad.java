@@ -20,45 +20,59 @@ import io.homo.superresolution.core.gui.google.material.dynamiccolor.ColorSpecs;
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.DynamicScheme;
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.Variant;
 import io.homo.superresolution.core.gui.google.material.hct.Hct;
+import java.util.Collections;
+import java.util.List;
 
-/**
- * A playful theme - the source color's hue does not appear in the theme.
- */
+/** A playful theme - the source color's hue does not appear in the theme. */
 public class SchemeFruitSalad extends DynamicScheme {
 
-    public SchemeFruitSalad(Hct sourceColorHct, boolean isDark, double contrastLevel) {
-        this(sourceColorHct, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
-    }
+  public SchemeFruitSalad(Hct sourceColorHct, boolean isDark, double contrastLevel) {
+    this(sourceColorHct, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
+  }
 
-    public SchemeFruitSalad(
-            Hct sourceColorHct,
-            boolean isDark,
-            double contrastLevel,
-            SpecVersion specVersion,
-            Platform platform) {
-        super(
-                sourceColorHct,
-                Variant.FRUIT_SALAD,
-                isDark,
-                contrastLevel,
-                platform,
-                specVersion,
-                ColorSpecs.get(specVersion)
-                        .getPrimaryPalette(
-                                Variant.FRUIT_SALAD, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getSecondaryPalette(
-                                Variant.FRUIT_SALAD, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getTertiaryPalette(
-                                Variant.FRUIT_SALAD, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getNeutralPalette(
-                                Variant.FRUIT_SALAD, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getNeutralVariantPalette(
-                                Variant.FRUIT_SALAD, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getErrorPalette(Variant.FRUIT_SALAD, sourceColorHct, isDark, platform, contrastLevel));
-    }
+  public SchemeFruitSalad(
+      Hct sourceColorHct,
+      boolean isDark,
+      double contrastLevel,
+      SpecVersion specVersion,
+      Platform platform) {
+    this(Collections.singletonList(sourceColorHct), isDark, contrastLevel, specVersion, platform);
+  }
+
+  public SchemeFruitSalad(List<Hct> sourceColorHctList, boolean isDark, double contrastLevel) {
+    this(sourceColorHctList, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
+  }
+
+  public SchemeFruitSalad(
+      List<Hct> sourceColorHctList,
+      boolean isDark,
+      double contrastLevel,
+      SpecVersion specVersion,
+      Platform platform) {
+    super(
+        sourceColorHctList,
+        Variant.FRUIT_SALAD,
+        isDark,
+        contrastLevel,
+        platform,
+        specVersion,
+        ColorSpecs.get(specVersion)
+            .getPrimaryPalette(
+                Variant.FRUIT_SALAD, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getSecondaryPalette(
+                Variant.FRUIT_SALAD, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getTertiaryPalette(
+                Variant.FRUIT_SALAD, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getNeutralPalette(
+                Variant.FRUIT_SALAD, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getNeutralVariantPalette(
+                Variant.FRUIT_SALAD, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getErrorPalette(
+                Variant.FRUIT_SALAD, sourceColorHctList.get(0), isDark, platform, contrastLevel));
+  }
 }

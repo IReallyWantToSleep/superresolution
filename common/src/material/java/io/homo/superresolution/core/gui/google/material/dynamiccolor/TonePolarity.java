@@ -27,18 +27,18 @@ package io.homo.superresolution.core.gui.google.material.dynamiccolor;
  * <p>See `ToneDeltaPair` for details.
  */
 public enum TonePolarity {
-    DARKER,
-    LIGHTER,
-    RELATIVE_DARKER,
-    RELATIVE_LIGHTER,
-    /**
-     * @deprecated Use {@link ToneDeltaPair.DeltaConstraint} instead.
-     */
-    @Deprecated
-    NEARER,
-    /**
-     * @deprecated Use {@link ToneDeltaPair.DeltaConstraint} instead.
-     */
-    @Deprecated
-    FARTHER;
+  DARKER,
+  LIGHTER,
+  RELATIVE_DARKER,
+  RELATIVE_LIGHTER,
+  /**
+   * @deprecated Use {@link ToneDeltaPair.DeltaConstraint} instead.
+   */
+  @Deprecated
+  NEARER,
+  /**
+   * @deprecated Use {@link ToneDeltaPair.DeltaConstraint} instead.
+   */
+  @Deprecated
+  FARTHER;
 }

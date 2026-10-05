@@ -20,41 +20,59 @@ import io.homo.superresolution.core.gui.google.material.dynamiccolor.ColorSpecs;
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.DynamicScheme;
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.Variant;
 import io.homo.superresolution.core.gui.google.material.hct.Hct;
+import java.util.Collections;
+import java.util.List;
 
-/**
- * A loud theme, colorfulness is maximum for Primary palette, increased for others.
- */
+/** A loud theme, colorfulness is maximum for Primary palette, increased for others. */
 public class SchemeVibrant extends DynamicScheme {
 
-    public SchemeVibrant(Hct sourceColorHct, boolean isDark, double contrastLevel) {
-        this(sourceColorHct, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
-    }
+  public SchemeVibrant(Hct sourceColorHct, boolean isDark, double contrastLevel) {
+    this(sourceColorHct, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
+  }
 
-    public SchemeVibrant(
-            Hct sourceColorHct,
-            boolean isDark,
-            double contrastLevel,
-            SpecVersion specVersion,
-            Platform platform) {
-        super(
-                sourceColorHct,
-                Variant.VIBRANT,
-                isDark,
-                contrastLevel,
-                platform,
-                specVersion,
-                ColorSpecs.get(specVersion)
-                        .getPrimaryPalette(Variant.VIBRANT, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getSecondaryPalette(Variant.VIBRANT, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getTertiaryPalette(Variant.VIBRANT, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getNeutralPalette(Variant.VIBRANT, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getNeutralVariantPalette(
-                                Variant.VIBRANT, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getErrorPalette(Variant.VIBRANT, sourceColorHct, isDark, platform, contrastLevel));
-    }
+  public SchemeVibrant(
+      Hct sourceColorHct,
+      boolean isDark,
+      double contrastLevel,
+      SpecVersion specVersion,
+      Platform platform) {
+    this(Collections.singletonList(sourceColorHct), isDark, contrastLevel, specVersion, platform);
+  }
+
+  public SchemeVibrant(List<Hct> sourceColorHctList, boolean isDark, double contrastLevel) {
+    this(sourceColorHctList, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
+  }
+
+  public SchemeVibrant(
+      List<Hct> sourceColorHctList,
+      boolean isDark,
+      double contrastLevel,
+      SpecVersion specVersion,
+      Platform platform) {
+    super(
+        sourceColorHctList,
+        Variant.VIBRANT,
+        isDark,
+        contrastLevel,
+        platform,
+        specVersion,
+        ColorSpecs.get(specVersion)
+            .getPrimaryPalette(
+                Variant.VIBRANT, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getSecondaryPalette(
+                Variant.VIBRANT, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getTertiaryPalette(
+                Variant.VIBRANT, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getNeutralPalette(
+                Variant.VIBRANT, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getNeutralVariantPalette(
+                Variant.VIBRANT, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getErrorPalette(
+                Variant.VIBRANT, sourceColorHctList.get(0), isDark, platform, contrastLevel));
+  }
 }

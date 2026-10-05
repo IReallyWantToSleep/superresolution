@@ -21,6 +21,8 @@ import io.homo.superresolution.core.gui.google.material.dynamiccolor.ColorSpecs;
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.DynamicScheme;
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.Variant;
 import io.homo.superresolution.core.gui.google.material.hct.Hct;
+import java.util.Collections;
+import java.util.List;
 
 /**
  * A scheme that places the source color in Scheme.primaryContainer.
@@ -34,35 +36,53 @@ import io.homo.superresolution.core.gui.google.material.hct.Hct;
  */
 public class SchemeFidelity extends DynamicScheme {
 
-    public SchemeFidelity(Hct sourceColorHct, boolean isDark, double contrastLevel) {
-        this(sourceColorHct, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
-    }
+  public SchemeFidelity(Hct sourceColorHct, boolean isDark, double contrastLevel) {
+    this(sourceColorHct, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
+  }
 
-    public SchemeFidelity(
-            Hct sourceColorHct,
-            boolean isDark,
-            double contrastLevel,
-            SpecVersion specVersion,
-            Platform platform) {
-        super(
-                sourceColorHct,
-                Variant.FIDELITY,
-                isDark,
-                contrastLevel,
-                platform,
-                specVersion,
-                ColorSpecs.get(specVersion)
-                        .getPrimaryPalette(Variant.FIDELITY, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getSecondaryPalette(Variant.FIDELITY, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getTertiaryPalette(Variant.FIDELITY, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getNeutralPalette(Variant.FIDELITY, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getNeutralVariantPalette(
-                                Variant.FIDELITY, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getErrorPalette(Variant.FIDELITY, sourceColorHct, isDark, platform, contrastLevel));
-    }
+  public SchemeFidelity(
+      Hct sourceColorHct,
+      boolean isDark,
+      double contrastLevel,
+      SpecVersion specVersion,
+      Platform platform) {
+    this(Collections.singletonList(sourceColorHct), isDark, contrastLevel, specVersion, platform);
+  }
+
+  public SchemeFidelity(List<Hct> sourceColorHctList, boolean isDark, double contrastLevel) {
+    this(sourceColorHctList, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
+  }
+
+  public SchemeFidelity(
+      List<Hct> sourceColorHctList,
+      boolean isDark,
+      double contrastLevel,
+      SpecVersion specVersion,
+      Platform platform) {
+    super(
+        sourceColorHctList,
+        Variant.FIDELITY,
+        isDark,
+        contrastLevel,
+        platform,
+        specVersion,
+        ColorSpecs.get(specVersion)
+            .getPrimaryPalette(
+                Variant.FIDELITY, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getSecondaryPalette(
+                Variant.FIDELITY, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getTertiaryPalette(
+                Variant.FIDELITY, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getNeutralPalette(
+                Variant.FIDELITY, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getNeutralVariantPalette(
+                Variant.FIDELITY, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getErrorPalette(
+                Variant.FIDELITY, sourceColorHctList.get(0), isDark, platform, contrastLevel));
+  }
 }

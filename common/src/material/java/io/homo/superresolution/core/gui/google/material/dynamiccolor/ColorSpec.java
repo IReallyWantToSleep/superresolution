@@ -16,307 +16,304 @@
 
 package io.homo.superresolution.core.gui.google.material.dynamiccolor;
 
-import io.homo.superresolution.core.gui.google.material.hct.Hct;
-import io.homo.superresolution.core.gui.google.material.palettes.TonalPalette;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
-
+import io.homo.superresolution.core.gui.google.material.dynamiccolor.DynamicScheme.Platform;
+import io.homo.superresolution.core.gui.google.material.hct.Hct;
+import io.homo.superresolution.core.gui.google.material.palettes.TonalPalette;
 import java.util.Optional;
 
-/**
- * An interface defining all the necessary methods that could be different between specs.
- */
+/** An interface defining all the necessary methods that could be different between specs. */
 public interface ColorSpec {
 
-    @NotNull
-    public DynamicColor primaryPaletteKeyColor();
+  /** All available spec versions. */
+  public enum SpecVersion {
+    SPEC_2021,
+    SPEC_2025,
+    SPEC_2026,
+  }
 
-    ////////////////////////////////////////////////////////////////
-    // Main Palettes                                              //
-    ////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////
+  // Main Palettes                                              //
+  ////////////////////////////////////////////////////////////////
 
-    @NotNull
-    public DynamicColor secondaryPaletteKeyColor();
+  @NotNull
+  public DynamicColor primaryPaletteKeyColor();
 
-    @NotNull
-    public DynamicColor tertiaryPaletteKeyColor();
+  @NotNull
+  public DynamicColor secondaryPaletteKeyColor();
 
-    @NotNull
-    public DynamicColor neutralPaletteKeyColor();
+  @NotNull
+  public DynamicColor tertiaryPaletteKeyColor();
 
-    @NotNull
-    public DynamicColor neutralVariantPaletteKeyColor();
+  @NotNull
+  public DynamicColor neutralPaletteKeyColor();
 
-    @NotNull
-    public DynamicColor errorPaletteKeyColor();
+  @NotNull
+  public DynamicColor neutralVariantPaletteKeyColor();
 
-    @NotNull
-    public DynamicColor background();
+  @NotNull
+  public DynamicColor errorPaletteKeyColor();
 
-    ////////////////////////////////////////////////////////////////
-    // Surfaces [S]                                               //
-    ////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////
+  // Surfaces [S]                                               //
+  ////////////////////////////////////////////////////////////////
 
-    @NotNull
-    public DynamicColor onBackground();
+  @NotNull
+  public DynamicColor background();
 
-    @NotNull
-    public DynamicColor surface();
+  @NotNull
+  public DynamicColor onBackground();
 
-    @NotNull
-    public DynamicColor surfaceDim();
+  @NotNull
+  public DynamicColor surface();
 
-    @NotNull
-    public DynamicColor surfaceBright();
+  @NotNull
+  public DynamicColor surfaceDim();
 
-    @NotNull
-    public DynamicColor surfaceContainerLowest();
+  @NotNull
+  public DynamicColor surfaceBright();
 
-    @NotNull
-    public DynamicColor surfaceContainerLow();
+  @NotNull
+  public DynamicColor surfaceContainerLowest();
 
-    @NotNull
-    public DynamicColor surfaceContainer();
+  @NotNull
+  public DynamicColor surfaceContainerLow();
 
-    @NotNull
-    public DynamicColor surfaceContainerHigh();
+  @NotNull
+  public DynamicColor surfaceContainer();
 
-    @NotNull
-    public DynamicColor surfaceContainerHighest();
+  @NotNull
+  public DynamicColor surfaceContainerHigh();
 
-    @NotNull
-    public DynamicColor onSurface();
+  @NotNull
+  public DynamicColor surfaceContainerHighest();
 
-    @NotNull
-    public DynamicColor surfaceVariant();
+  @NotNull
+  public DynamicColor onSurface();
 
-    @NotNull
-    public DynamicColor onSurfaceVariant();
+  @NotNull
+  public DynamicColor surfaceVariant();
 
-    @NotNull
-    public DynamicColor inverseSurface();
+  @NotNull
+  public DynamicColor onSurfaceVariant();
 
-    @NotNull
-    public DynamicColor inverseOnSurface();
+  @NotNull
+  public DynamicColor inverseSurface();
 
-    @NotNull
-    public DynamicColor outline();
+  @NotNull
+  public DynamicColor inverseOnSurface();
 
-    @NotNull
-    public DynamicColor outlineVariant();
+  @NotNull
+  public DynamicColor outline();
 
-    @NotNull
-    public DynamicColor shadow();
+  @NotNull
+  public DynamicColor outlineVariant();
 
-    @NotNull
-    public DynamicColor scrim();
+  @NotNull
+  public DynamicColor shadow();
 
-    @NotNull
-    public DynamicColor surfaceTint();
+  @NotNull
+  public DynamicColor scrim();
 
-    @NotNull
-    public DynamicColor primary();
+  @NotNull
+  public DynamicColor surfaceTint();
 
-    ////////////////////////////////////////////////////////////////
-    // Primaries [P]                                              //
-    ////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////
+  // Primaries [P]                                              //
+  ////////////////////////////////////////////////////////////////
 
-    @Nullable
-    public DynamicColor primaryDim();
+  @NotNull
+  public DynamicColor primary();
 
-    @NotNull
-    public DynamicColor onPrimary();
+  @Nullable
+  public DynamicColor primaryDim();
 
-    @NotNull
-    public DynamicColor primaryContainer();
+  @NotNull
+  public DynamicColor onPrimary();
 
-    @NotNull
-    public DynamicColor onPrimaryContainer();
+  @NotNull
+  public DynamicColor primaryContainer();
 
-    @NotNull
-    public DynamicColor inversePrimary();
+  @NotNull
+  public DynamicColor onPrimaryContainer();
 
-    @NotNull
-    public DynamicColor secondary();
+  @NotNull
+  public DynamicColor inversePrimary();
 
-    ////////////////////////////////////////////////////////////////
-    // Secondaries [Q]                                            //
-    ////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////
+  // Secondaries [Q]                                            //
+  ////////////////////////////////////////////////////////////////
 
-    @Nullable
-    public DynamicColor secondaryDim();
+  @NotNull
+  public DynamicColor secondary();
 
-    @NotNull
-    public DynamicColor onSecondary();
+  @Nullable
+  public DynamicColor secondaryDim();
 
-    @NotNull
-    public DynamicColor secondaryContainer();
+  @NotNull
+  public DynamicColor onSecondary();
 
-    @NotNull
-    public DynamicColor onSecondaryContainer();
+  @NotNull
+  public DynamicColor secondaryContainer();
 
-    @NotNull
-    public DynamicColor tertiary();
+  @NotNull
+  public DynamicColor onSecondaryContainer();
 
-    ////////////////////////////////////////////////////////////////
-    // Tertiaries [T]                                             //
-    ////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////
+  // Tertiaries [T]                                             //
+  ////////////////////////////////////////////////////////////////
 
-    @Nullable
-    public DynamicColor tertiaryDim();
+  @NotNull
+  public DynamicColor tertiary();
 
-    @NotNull
-    public DynamicColor onTertiary();
+  @Nullable
+  public DynamicColor tertiaryDim();
 
-    @NotNull
-    public DynamicColor tertiaryContainer();
+  @NotNull
+  public DynamicColor onTertiary();
 
-    @NotNull
-    public DynamicColor onTertiaryContainer();
+  @NotNull
+  public DynamicColor tertiaryContainer();
 
-    @NotNull
-    public DynamicColor error();
+  @NotNull
+  public DynamicColor onTertiaryContainer();
 
-    ////////////////////////////////////////////////////////////////
-    // Errors [E]                                                 //
-    ////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////
+  // Errors [E]                                                 //
+  ////////////////////////////////////////////////////////////////
 
-    @Nullable
-    public DynamicColor errorDim();
+  @NotNull
+  public DynamicColor error();
 
-    @NotNull
-    public DynamicColor onError();
+  @Nullable
+  public DynamicColor errorDim();
 
-    @NotNull
-    public DynamicColor errorContainer();
+  @NotNull
+  public DynamicColor onError();
 
-    @NotNull
-    public DynamicColor onErrorContainer();
+  @NotNull
+  public DynamicColor errorContainer();
 
-    @NotNull
-    public DynamicColor primaryFixed();
+  @NotNull
+  public DynamicColor onErrorContainer();
 
-    ////////////////////////////////////////////////////////////////
-    // Primary Fixed Colors [PF]                                  //
-    ////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////
+  // Primary Fixed Colors [PF]                                  //
+  ////////////////////////////////////////////////////////////////
 
-    @NotNull
-    public DynamicColor primaryFixedDim();
+  @NotNull
+  public DynamicColor primaryFixed();
 
-    @NotNull
-    public DynamicColor onPrimaryFixed();
+  @NotNull
+  public DynamicColor primaryFixedDim();
 
-    @NotNull
-    public DynamicColor onPrimaryFixedVariant();
+  @NotNull
+  public DynamicColor onPrimaryFixed();
 
-    @NotNull
-    public DynamicColor secondaryFixed();
+  @NotNull
+  public DynamicColor onPrimaryFixedVariant();
 
-    ////////////////////////////////////////////////////////////////
-    // Secondary Fixed Colors [QF]                                //
-    ////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////
+  // Secondary Fixed Colors [QF]                                //
+  ////////////////////////////////////////////////////////////////
 
-    @NotNull
-    public DynamicColor secondaryFixedDim();
+  @NotNull
+  public DynamicColor secondaryFixed();
 
-    @NotNull
-    public DynamicColor onSecondaryFixed();
+  @NotNull
+  public DynamicColor secondaryFixedDim();
 
-    @NotNull
-    public DynamicColor onSecondaryFixedVariant();
+  @NotNull
+  public DynamicColor onSecondaryFixed();
 
-    @NotNull
-    public DynamicColor tertiaryFixed();
+  @NotNull
+  public DynamicColor onSecondaryFixedVariant();
 
-    ////////////////////////////////////////////////////////////////
-    // Tertiary Fixed Colors [TF]                                 //
-    ////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////
+  // Tertiary Fixed Colors [TF]                                 //
+  ////////////////////////////////////////////////////////////////
 
-    @NotNull
-    public DynamicColor tertiaryFixedDim();
+  @NotNull
+  public DynamicColor tertiaryFixed();
 
-    @NotNull
-    public DynamicColor onTertiaryFixed();
+  @NotNull
+  public DynamicColor tertiaryFixedDim();
 
-    @NotNull
-    public DynamicColor onTertiaryFixedVariant();
+  @NotNull
+  public DynamicColor onTertiaryFixed();
 
-    @NotNull
-    public DynamicColor controlActivated();
+  @NotNull
+  public DynamicColor onTertiaryFixedVariant();
 
-    //////////////////////////////////////////////////////////////////
-    // Android-only Colors                                          //
-    //////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////
+  // Android-only Colors                                          //
+  //////////////////////////////////////////////////////////////////
 
-    @NotNull
-    public DynamicColor controlNormal();
+  @NotNull
+  public DynamicColor controlActivated();
 
-    @NotNull
-    public DynamicColor controlHighlight();
+  @NotNull
+  public DynamicColor controlNormal();
 
-    @NotNull
-    public DynamicColor textPrimaryInverse();
+  @NotNull
+  public DynamicColor controlHighlight();
 
-    @NotNull
-    public DynamicColor textSecondaryAndTertiaryInverse();
+  @NotNull
+  public DynamicColor textPrimaryInverse();
 
-    @NotNull
-    public DynamicColor textPrimaryInverseDisableOnly();
+  @NotNull
+  public DynamicColor textSecondaryAndTertiaryInverse();
 
-    @NotNull
-    public DynamicColor textSecondaryAndTertiaryInverseDisabled();
+  @NotNull
+  public DynamicColor textPrimaryInverseDisableOnly();
 
-    @NotNull
-    public DynamicColor textHintInverse();
+  @NotNull
+  public DynamicColor textSecondaryAndTertiaryInverseDisabled();
 
-    @NotNull
-    public DynamicColor highestSurface(@NotNull DynamicScheme s);
+  @NotNull
+  public DynamicColor textHintInverse();
 
-    ////////////////////////////////////////////////////////////////
-    // Other                                                      //
-    ////////////////////////////////////////////////////////////////
+  ////////////////////////////////////////////////////////////////
+  // Other                                                      //
+  ////////////////////////////////////////////////////////////////
 
-    Hct getHct(DynamicScheme scheme, DynamicColor color);
+  @NotNull
+  public DynamicColor highestSurface(@NotNull DynamicScheme s);
 
-    /////////////////////////////////////////////////////////////////
-    // Color value calculations                                    //
-    /////////////////////////////////////////////////////////////////
+  /////////////////////////////////////////////////////////////////
+  // Color value calculations                                    //
+  /////////////////////////////////////////////////////////////////
 
-    double getTone(DynamicScheme scheme, DynamicColor color);
+  Hct getHct(DynamicScheme scheme, DynamicColor color);
 
-    @NotNull
-    public TonalPalette getPrimaryPalette(
-            Variant variant, Hct sourceColorHct, boolean isDark, DynamicScheme.Platform platform, double contrastLevel);
+  double getTone(DynamicScheme scheme, DynamicColor color);
 
-    //////////////////////////////////////////////////////////////////
-    // Scheme Palettes                                              //
-    //////////////////////////////////////////////////////////////////
+  //////////////////////////////////////////////////////////////////
+  // Scheme Palettes                                              //
+  //////////////////////////////////////////////////////////////////
 
-    @NotNull
-    public TonalPalette getSecondaryPalette(
-            Variant variant, Hct sourceColorHct, boolean isDark, DynamicScheme.Platform platform, double contrastLevel);
+  @NotNull
+  public TonalPalette getPrimaryPalette(
+      Variant variant, Hct sourceColorHct, boolean isDark, Platform platform, double contrastLevel);
 
-    @NotNull
-    public TonalPalette getTertiaryPalette(
-            Variant variant, Hct sourceColorHct, boolean isDark, DynamicScheme.Platform platform, double contrastLevel);
+  @NotNull
+  public TonalPalette getSecondaryPalette(
+      Variant variant, Hct sourceColorHct, boolean isDark, Platform platform, double contrastLevel);
 
-    @NotNull
-    public TonalPalette getNeutralPalette(
-            Variant variant, Hct sourceColorHct, boolean isDark, DynamicScheme.Platform platform, double contrastLevel);
+  @NotNull
+  public TonalPalette getTertiaryPalette(
+      Variant variant, Hct sourceColorHct, boolean isDark, Platform platform, double contrastLevel);
 
-    @NotNull
-    public TonalPalette getNeutralVariantPalette(
-            Variant variant, Hct sourceColorHct, boolean isDark, DynamicScheme.Platform platform, double contrastLevel);
+  @NotNull
+  public TonalPalette getNeutralPalette(
+      Variant variant, Hct sourceColorHct, boolean isDark, Platform platform, double contrastLevel);
 
-    @NotNull
-    public Optional<TonalPalette> getErrorPalette(
-            Variant variant, Hct sourceColorHct, boolean isDark, DynamicScheme.Platform platform, double contrastLevel);
+  @NotNull
+  public TonalPalette getNeutralVariantPalette(
+      Variant variant, Hct sourceColorHct, boolean isDark, Platform platform, double contrastLevel);
 
-    /**
-     * All available spec versions.
-     */
-    public enum SpecVersion {
-        SPEC_2021,
-        SPEC_2025,
-    }
+  @NotNull
+  public Optional<TonalPalette> getErrorPalette(
+      Variant variant, Hct sourceColorHct, boolean isDark, Platform platform, double contrastLevel);
 }

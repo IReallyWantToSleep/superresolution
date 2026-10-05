@@ -21,43 +21,59 @@ import io.homo.superresolution.core.gui.google.material.dynamiccolor.ColorSpecs;
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.DynamicScheme;
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.Variant;
 import io.homo.superresolution.core.gui.google.material.hct.Hct;
+import java.util.Collections;
+import java.util.List;
 
-/**
- * A playful theme - the source color's hue does not appear in the theme.
- */
+/** A playful theme - the source color's hue does not appear in the theme. */
 public class SchemeExpressive extends DynamicScheme {
 
-    public SchemeExpressive(Hct sourceColorHct, boolean isDark, double contrastLevel) {
-        this(sourceColorHct, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
-    }
+  public SchemeExpressive(Hct sourceColorHct, boolean isDark, double contrastLevel) {
+    this(sourceColorHct, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
+  }
 
-    public SchemeExpressive(
-            Hct sourceColorHct,
-            boolean isDark,
-            double contrastLevel,
-            SpecVersion specVersion,
-            Platform platform) {
-        super(
-                sourceColorHct,
-                Variant.EXPRESSIVE,
-                isDark,
-                contrastLevel,
-                platform,
-                specVersion,
-                ColorSpecs.get(specVersion)
-                        .getPrimaryPalette(Variant.EXPRESSIVE, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getSecondaryPalette(
-                                Variant.EXPRESSIVE, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getTertiaryPalette(
-                                Variant.EXPRESSIVE, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getNeutralPalette(Variant.EXPRESSIVE, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getNeutralVariantPalette(
-                                Variant.EXPRESSIVE, sourceColorHct, isDark, platform, contrastLevel),
-                ColorSpecs.get(specVersion)
-                        .getErrorPalette(Variant.EXPRESSIVE, sourceColorHct, isDark, platform, contrastLevel));
-    }
+  public SchemeExpressive(
+      Hct sourceColorHct,
+      boolean isDark,
+      double contrastLevel,
+      SpecVersion specVersion,
+      Platform platform) {
+    this(Collections.singletonList(sourceColorHct), isDark, contrastLevel, specVersion, platform);
+  }
+
+  public SchemeExpressive(List<Hct> sourceColorHctList, boolean isDark, double contrastLevel) {
+    this(sourceColorHctList, isDark, contrastLevel, DEFAULT_SPEC_VERSION, DEFAULT_PLATFORM);
+  }
+
+  public SchemeExpressive(
+      List<Hct> sourceColorHctList,
+      boolean isDark,
+      double contrastLevel,
+      SpecVersion specVersion,
+      Platform platform) {
+    super(
+        sourceColorHctList,
+        Variant.EXPRESSIVE,
+        isDark,
+        contrastLevel,
+        platform,
+        specVersion,
+        ColorSpecs.get(specVersion)
+            .getPrimaryPalette(
+                Variant.EXPRESSIVE, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getSecondaryPalette(
+                Variant.EXPRESSIVE, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getTertiaryPalette(
+                Variant.EXPRESSIVE, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getNeutralPalette(
+                Variant.EXPRESSIVE, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getNeutralVariantPalette(
+                Variant.EXPRESSIVE, sourceColorHctList.get(0), isDark, platform, contrastLevel),
+        ColorSpecs.get(specVersion)
+            .getErrorPalette(
+                Variant.EXPRESSIVE, sourceColorHctList.get(0), isDark, platform, contrastLevel));
+  }
 }

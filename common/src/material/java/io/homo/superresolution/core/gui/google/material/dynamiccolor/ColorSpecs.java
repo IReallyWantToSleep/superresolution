@@ -18,26 +18,28 @@ package io.homo.superresolution.core.gui.google.material.dynamiccolor;
 
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.ColorSpec.SpecVersion;
 
-/**
- * A utility class to get the correct color spec for a given spec version.
- */
+/** A utility class to get the correct color spec for a given spec version. */
 public final class ColorSpecs {
 
-    private static final ColorSpec SPEC_2021 = new ColorSpec2021();
-    private static final ColorSpec SPEC_2025 = new ColorSpec2025();
+  private static final ColorSpec SPEC_2021 = new ColorSpec2021();
+  private static final ColorSpec SPEC_2025 = new ColorSpec2025();
+  private static final ColorSpec SPEC_2026 = new ColorSpec2026();
 
-    private ColorSpecs() {
-    }
+  public static final ColorSpec get() {
+    return get(SpecVersion.SPEC_2021);
+  }
 
-    public static final ColorSpec get() {
-        return get(SpecVersion.SPEC_2021);
-    }
+  public static final ColorSpec get(SpecVersion specVersion) {
+    return get(specVersion, false);
+  }
 
-    public static final ColorSpec get(SpecVersion specVersion) {
-        return get(specVersion, false);
-    }
+  public static final ColorSpec get(SpecVersion specVersion, boolean isExtendedFidelity) {
+    return switch (specVersion) {
+      case SPEC_2025 -> SPEC_2025;
+      case SPEC_2026 -> SPEC_2026;
+      default -> SPEC_2021;
+    };
+  }
 
-    public static final ColorSpec get(SpecVersion specVersion, boolean isExtendedFidelity) {
-        return specVersion == SpecVersion.SPEC_2025 ? SPEC_2025 : SPEC_2021;
-    }
+  private ColorSpecs() {}
 }

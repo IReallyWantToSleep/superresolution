@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui;
 
+import io.homo.superresolution.core.gui.google.material.dynamiccolor.ColorSpec;
 import io.homo.superresolution.core.gui.google.material.dynamiccolor.DynamicScheme;
 import io.homo.superresolution.core.gui.google.material.hct.Hct;
 import io.homo.superresolution.core.gui.google.material.scheme.*;
@@ -161,15 +162,24 @@ public class MaterialScheme {
         boolean isDark = theme == MaterialTheme.Dark;
 
         DynamicScheme dynamicScheme = switch (variant) {
-            case MONOCHROME -> new SchemeMonochrome(sourceColor, isDark, contrastLevel);
-            case NEUTRAL -> new SchemeNeutral(sourceColor, isDark, contrastLevel);
-            case TONAL_SPOT -> new SchemeTonalSpot(sourceColor, isDark, contrastLevel);
-            case VIBRANT -> new SchemeVibrant(sourceColor, isDark, contrastLevel);
-            case EXPRESSIVE -> new SchemeExpressive(sourceColor, isDark, contrastLevel);
-            case FIDELITY -> new SchemeFidelity(sourceColor, isDark, contrastLevel);
-            case CONTENT -> new SchemeContent(sourceColor, isDark, contrastLevel);
-            case RAINBOW -> new SchemeRainbow(sourceColor, isDark, contrastLevel);
-            case FRUIT_SALAD -> new SchemeFruitSalad(sourceColor, isDark, contrastLevel);
+            case MONOCHROME ->
+                    new SchemeMonochrome(sourceColor, isDark, contrastLevel, ColorSpec.SpecVersion.SPEC_2026, DynamicScheme.Platform.PHONE);
+            case NEUTRAL ->
+                    new SchemeNeutral(sourceColor, isDark, contrastLevel, ColorSpec.SpecVersion.SPEC_2026, DynamicScheme.Platform.PHONE);
+            case TONAL_SPOT ->
+                    new SchemeTonalSpot(sourceColor, isDark, contrastLevel, ColorSpec.SpecVersion.SPEC_2026, DynamicScheme.Platform.PHONE);
+            case VIBRANT ->
+                    new SchemeVibrant(sourceColor, isDark, contrastLevel, ColorSpec.SpecVersion.SPEC_2026, DynamicScheme.Platform.PHONE);
+            case EXPRESSIVE ->
+                    new SchemeExpressive(sourceColor, isDark, contrastLevel, ColorSpec.SpecVersion.SPEC_2026, DynamicScheme.Platform.PHONE);
+            case FIDELITY ->
+                    new SchemeFidelity(sourceColor, isDark, contrastLevel, ColorSpec.SpecVersion.SPEC_2026, DynamicScheme.Platform.PHONE);
+            case CONTENT ->
+                    new SchemeContent(sourceColor, isDark, contrastLevel, ColorSpec.SpecVersion.SPEC_2026, DynamicScheme.Platform.PHONE);
+            case RAINBOW ->
+                    new SchemeRainbow(sourceColor, isDark, contrastLevel, ColorSpec.SpecVersion.SPEC_2026, DynamicScheme.Platform.PHONE);
+            case FRUIT_SALAD ->
+                    new SchemeFruitSalad(sourceColor, isDark, contrastLevel, ColorSpec.SpecVersion.SPEC_2026, DynamicScheme.Platform.PHONE);
         };
 
         return new MaterialScheme(theme, dynamicScheme);
