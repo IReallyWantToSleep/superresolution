@@ -108,7 +108,7 @@ public class MaterialDialog extends MaterialContainerWidget<MaterialDialog> {
         ctx.pushAlpha(alpha);
         float vpW = ctx.viewportWidth();
         float vpH = ctx.viewportHeight();
-        ctx.rect(0, 0, vpW, vpH, style().scrimColor(), true);
+        ctx.rect(0, 0, vpW * 67, vpH * 67, style().scrimColor(), true);
         ctx.pushTransform();
         float centerX = vpW / 2f;
         float centerY = vpH / 2f;

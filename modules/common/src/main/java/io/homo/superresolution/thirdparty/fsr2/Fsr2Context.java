@@ -177,6 +177,7 @@ public class Fsr2Context {
                         GL41.GL_SHORT,
                         rawData
                 );
+                MemoryUtil.memFree(rawData);
                 glBindTexture(GL_TEXTURE_2D, prevTex);
                 maximumBiasTextureUploaded = true;
             }
