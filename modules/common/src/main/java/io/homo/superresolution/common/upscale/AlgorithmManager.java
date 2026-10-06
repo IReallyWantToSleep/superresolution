@@ -47,7 +47,7 @@ public class AlgorithmManager {
 
     public static boolean isSupportAlgorithm(AlgorithmDescription<?> type) {
         return type.getRequirement().check().support();
-    }
+}
 
     public static boolean supportsJitter(AlgorithmDescription<?> type) {
         return type != null && type.isSupportJitter();

@@ -716,7 +716,6 @@ public final class SuperResolution implements Destroyable {
                 w,
                 h
         );
-        // 分辨率变了，时序历史无效。
         currentAlgorithm.invalidateHistory();
         FrameGeneration.invalidateHistory();
     }
