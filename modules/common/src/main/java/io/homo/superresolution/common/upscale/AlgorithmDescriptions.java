@@ -69,9 +69,9 @@ public class AlgorithmDescriptions {
             )
             .build();
     public static final AlgorithmDescription<FSR2> FSR2 = AlgorithmDescription.builder(FSR2.class)
-            .briefName("AMD FSR 2 (OpenGL)")
+            .briefName("AMD FSR 2 (Legacy)")
             .codeName("fsr2")
-            .displayName("AMD FidelityFX Super Resolution 2 (OpenGL)")
+            .displayName("AMD FidelityFX Super Resolution 2 (Legacy)")
             .requirement(
                     Requirement.nothing()
                             .requiredGlExtension("GL_KHR_shader_subgroup")
@@ -146,9 +146,9 @@ public class AlgorithmDescriptions {
             .build();
     public static final AlgorithmDescription<FfxFSR4D3D12> FSR4_D3D12 =
             AlgorithmDescription.builder(FfxFSR4D3D12.class)
-                    .briefName("AMD FSR 4 (D3D12)")
+                    .briefName("AMD FSR 4")
                     .codeName("fsr4_d3d12")
-                    .displayName("AMD FSR 4 (Direct3D 12)")
+                    .displayName("AMD FidelityFX Super Resolution 4")
                     .requirement(
                             Requirement.nothing()
                                     .addSupportedOS(new OperatingSystem(
