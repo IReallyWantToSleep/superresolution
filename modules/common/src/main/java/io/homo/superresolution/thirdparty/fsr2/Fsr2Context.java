@@ -24,8 +24,11 @@ import io.homo.superresolution.core.graphics.impl.buffer.BufferUsages;
 import io.homo.superresolution.core.graphics.opengl.buffer.GlBuffer;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 import org.lwjgl.opengl.GL41;
+import org.lwjgl.system.MemoryUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.nio.ByteBuffer;
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -154,10 +157,12 @@ public class Fsr2Context {
             GlTexture2D maximumBiasTexture = ((GlTexture2D) resources.resource(Fsr2PipelineResourceType.UPSAMPLE_MAXIMUM_BIAS_LUT).getResource());
             if (maximumBiasTexture != null) {
                 int textureSize = Fsr2MaximumBias.FFX_FSR2_MAXIMUM_BIAS_TEXTURE_WIDTH * Fsr2MaximumBias.FFX_FSR2_MAXIMUM_BIAS_TEXTURE_HEIGHT;
-                short[] data = new short[textureSize];
-                for (int dataIndex = 0; dataIndex < data.length; dataIndex++) {
+                ByteBuffer rawData = MemoryUtil.memAlloc(
+                        textureSize * 2
+                );
+                for (int dataIndex = 0; dataIndex < textureSize; dataIndex++) {
                     short converted = (short) Math.round(Fsr2MaximumBias.ffxFsr2MaximumBiasData[dataIndex] / 2.0f * 32767.0f);
-                    data[dataIndex] = converted;
+                    rawData.putShort(dataIndex,converted);
                 }
                 int prevTex = glGetInteger(GL_TEXTURE_BINDING_2D);
                 glBindTexture(GL_TEXTURE_2D, (int) maximumBiasTexture.handle());
@@ -170,7 +175,7 @@ public class Fsr2Context {
                         maximumBiasTexture.getHeight(),
                         GL41.GL_RED,
                         GL41.GL_SHORT,
-                        data
+                        rawData
                 );
                 glBindTexture(GL_TEXTURE_2D, prevTex);
                 maximumBiasTextureUploaded = true;
