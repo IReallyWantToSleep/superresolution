@@ -82,8 +82,7 @@ allprojects {
 
         tasks.withType(JavaCompile::class.java).configureEach {
             inputs.file(rootProject.layout.projectDirectory.file("build.properties"))
-                .withPropertyName("manifoldDefines")
-                .withPathSensitivity(PathSensitivity.RELATIVE)
+                .withPropertyName("manifoldDefines").withPathSensitivity(PathSensitivity.RELATIVE)
             options.release.set((rootProject.extra["versionConfig"] as multiversion.VersionConfig).common.javaVersion)
             options.compilerArgs.add("-Xplugin:Manifold")
             options.encoding = "UTF-8"
@@ -139,10 +138,8 @@ val orderedNestedBuildTasks = mutableListOf<String>()
 val orderedCollectTasks = mutableListOf<String>()
 
 if (srConfigsDir.exists()) {
-    val configFiles = srConfigsDir.listFiles()
-        ?.filter { it.name.endsWith(".json") }
-        ?.sortedBy { it.name }
-        ?: emptyList()
+    val configFiles =
+        srConfigsDir.listFiles()?.filter { it.name.endsWith(".json") }?.sortedBy { it.name } ?: emptyList()
 
     configFiles.forEach { configFile ->
         val versionName = configFile.name.substringBeforeLast('.')
@@ -242,8 +239,7 @@ tasks.register<GradleBuild>("publishApiToShnexus") {
     startParameter.consoleOutput = ConsoleOutput.Plain
 
     doFirst {
-        val missing = listOf("shnexusUsername", "shnexusPassword")
-            .filterNot { providers.gradleProperty(it).isPresent }
+        val missing = listOf("shnexusUsername", "shnexusPassword").filterNot { providers.gradleProperty(it).isPresent }
         if (missing.isNotEmpty()) {
             throw GradleException("Missing remote publishing credentials: ${missing.joinToString()}")
         }
@@ -306,9 +302,7 @@ tasks.named("buildAllVersions") {
 tasks.register("uploadToModrinth") {
     doLast {
         val (currentVersion, latestChangelog) = findLatestChangelog()
-        val autoConfirm = project.findProperty("modrinth.autoConfirm")
-            ?.toString()
-            ?.toBoolean() ?: false
+        val autoConfirm = project.findProperty("modrinth.autoConfirm")?.toString()?.toBoolean() ?: false
 
         println("\n=== Latest release notes ($currentVersion) ===\n")
         println(latestChangelog)
@@ -362,21 +356,12 @@ tasks.register("uploadToCurseForge") {
     description = "Validate and upload mod artifacts in build_jars to CurseForge"
 
     doLast {
-        val dryRun = project.findProperty("curseforge.dryRun")
-            ?.toString()
-            ?.toBoolean() ?: false
-        val autoConfirm = project.findProperty("curseforge.autoConfirm")
-            ?.toString()
-            ?.toBoolean() ?: false
-        val jarsDir = project.findProperty("curseforge.jarsDir")
-            ?.toString()
-            ?.let(::file)
-            ?: file("$rootDir/build_jars")
+        val dryRun = project.findProperty("curseforge.dryRun")?.toString()?.toBoolean() ?: false
+        val autoConfirm = project.findProperty("curseforge.autoConfirm")?.toString()?.toBoolean() ?: false
+        val jarsDir = project.findProperty("curseforge.jarsDir")?.toString()?.let(::file) ?: file("$rootDir/build_jars")
 
         val uploadPlan = CurseForgeUploader.createUploadPlan(
-            jarsDir,
-            file("$rootDir/configs"),
-            file("$rootDir/changelogs")
+            jarsDir, file("$rootDir/configs"), file("$rootDir/changelogs")
         )
 
         println("\n=== CurseForge upload plan ===")
@@ -386,11 +371,11 @@ tasks.register("uploadToCurseForge") {
         println("File count: ${uploadPlan.artifacts.size}")
         uploadPlan.artifacts.forEachIndexed { index, artifact ->
             println(
-                "${index + 1}. ${artifact.file.name} | "
-                        + "${artifact.loaderName} | "
-                        + "${artifact.gameVersions.joinToString(", ")} | "
-                        + "Client | "
-                        + artifact.releaseType
+                "${index + 1}. ${artifact.file.name} | " + "${artifact.loaderName} | " + "${
+                    artifact.gameVersions.joinToString(
+                        ", "
+                    )
+                } | " + "Client | " + artifact.releaseType
             )
         }
         println("==========================\n")
@@ -406,9 +391,7 @@ tasks.register("uploadToCurseForge") {
         }
 
         if (!autoConfirm) {
-            val confirm = getConsoleInput("Upload the listed files to CurseForge? (Y/N): ")
-                .trim()
-                .lowercase()
+            val confirm = getConsoleInput("Upload the listed files to CurseForge? (Y/N): ").trim().lowercase()
             if (!confirm.startsWith("y")) {
                 println("Upload cancelled")
                 return@doLast
@@ -480,12 +463,10 @@ fun findLatestChangelog(): Pair<String?, String> {
 
     val pattern = Regex("^(\\d+\\.\\d+\\.\\d+(-[a-zA-Z]+(\\.[\\d]+)?)*)\\.md$")
 
-    val versions = changelogsDir.listFiles()
-        ?.mapNotNull { file ->
+    val versions = changelogsDir.listFiles()?.mapNotNull { file ->
             val match = pattern.matchEntire(file.name)
             if (match != null) match.groupValues[1] to file else null
-        }
-        ?.sortedWith { (v1, _), (v2, _) -> -compareSemver(v1, v2) }
+        }?.sortedWith { (v1, _), (v2, _) -> -compareSemver(v1, v2) }
         ?: throw GradleException("No valid changelog file found in changelogs/")
 
     if (versions.isEmpty()) {

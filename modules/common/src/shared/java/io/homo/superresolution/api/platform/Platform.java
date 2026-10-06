@@ -19,11 +19,39 @@
 package io.homo.superresolution.api.platform;
 
 import java.nio.file.Path;
+import java.util.Iterator;
+import java.util.ServiceLoader;
 
 public abstract class Platform {
-    public static Platform currentPlatform = null;
     private static Boolean isInstallIris = null;
+
+    public static final Platform currentPlatform;
+
+    static {
+        Platform platform = loadPlatformService();
+        currentPlatform = platform;
+        platform.init();
+    }
+
     protected IrisPlatform irisPlatform = null;
+
+    private static Platform loadPlatformService() {
+        Iterator<Platform> services = ServiceLoader.load(Platform.class, Platform.class.getClassLoader()).iterator();
+        if (!services.hasNext()) {
+            throw new IllegalStateException(
+                    "No Platform implementation is registered in META-INF/services/" + Platform.class.getName()
+            );
+        }
+        Platform platform = services.next();
+        if (services.hasNext()) {
+            throw new IllegalStateException(
+                    "Multiple Platform implementations are registered in META-INF/services/"
+                            + Platform.class.getName() + ": " + platform.getClass().getName()
+                            + ", " + services.next().getClass().getName()
+            );
+        }
+        return platform;
+    }
 
     public abstract boolean isModLoaded(String modId);
 
@@ -47,7 +75,7 @@ public abstract class Platform {
 
     public boolean isInstallIris() {
         if (isInstallIris == null) {
-            isInstallIris = currentPlatform.isModLoaded("iris") || currentPlatform.isModLoaded("oculus");
+            isInstallIris = isModLoaded("iris") || isModLoaded("oculus");
         }
         return isInstallIris;
     }

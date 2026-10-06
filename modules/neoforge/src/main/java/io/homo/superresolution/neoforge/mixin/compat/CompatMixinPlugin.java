@@ -20,7 +20,6 @@ package io.homo.superresolution.neoforge.mixin.compat;
 
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.neoforge.earlywindow.NeoOpenGLVersionOverride;
-import io.homo.superresolution.neoforge.platform.NeoForgePlatform;
 import org.objectweb.asm.tree.ClassNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,14 +41,6 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
     }
 
     public void onLoad(String s) {
-        #if MC_VER >= MC_26_2
-        Platform.currentPlatform = new NeoForgePlatform();
-        Platform.currentPlatform.init();
-        #else
-        Platform.currentPlatform = new NeoForgePlatform();
-        Platform.currentPlatform.init();
-        #endif
-
         NeoOpenGLVersionOverride.override();
     }
 
