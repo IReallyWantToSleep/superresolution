@@ -162,7 +162,7 @@ public class Fsr2Context {
                 );
                 for (int dataIndex = 0; dataIndex < textureSize; dataIndex++) {
                     short converted = (short) Math.round(Fsr2MaximumBias.ffxFsr2MaximumBiasData[dataIndex] / 2.0f * 32767.0f);
-                    rawData.putShort(dataIndex,converted);
+                    rawData.putShort(dataIndex * 2,converted);
                 }
                 int prevTex = glGetInteger(GL_TEXTURE_BINDING_2D);
                 glBindTexture(GL_TEXTURE_2D, (int) maximumBiasTexture.handle());
