@@ -23,7 +23,6 @@ import io.homo.superresolution.api.config.ModConfigSpecBuilder;
 import io.homo.superresolution.api.config.values.single.BooleanValue;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.ConfigSpecType;
-import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import net.minecraft.network.chat.Component;
 
 import java.util.Map;
@@ -51,11 +50,16 @@ public class FSR1SpecialConfig extends SpecialConfig {
                         .setType(ConfigSpecType.BOOLEAN)
                         .setSaveConsumer((v) -> {
                             getSpecialConfigs().FSR1.FP16.set(v);
-                            if (SuperResolutionAPI.getCurrentAlgorithmDescription() == AlgorithmDescriptions.FSR1) {
+                            if (isCurrentAlgorithm("fsr1")) {
                                 SuperResolution.recreateAlgorithm();
                             }
                         })
                         .setDefaultValue(true)
         );
+    }
+
+    private static boolean isCurrentAlgorithm(String codeName) {
+        return SuperResolutionAPI.getCurrentAlgorithmDescription() != null
+                && codeName.equals(SuperResolutionAPI.getCurrentAlgorithmDescription().getCodeName());
     }
 }

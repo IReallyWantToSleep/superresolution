@@ -430,7 +430,8 @@ public class SuperResolutionConfig {
         try {
             GL.getCapabilities();
         } catch (Exception e) {
-            return AlgorithmDescriptions.FSR1;
+            AlgorithmDescription<?> fsr1 = AlgorithmRegistry.getDescriptionByID("fsr1");
+            return fsr1 != null ? fsr1 : AlgorithmDescriptions.NONE;
         }
         for (AlgorithmDescription<?> algorithmDescription : AlgorithmRegistry.getAlgorithmMap().values()) {
             if (algorithmDescription.requirement.check().support()) {

@@ -200,7 +200,7 @@ public class ConfigPageContext {
 
     public boolean isExperimentalAlgorithm(AlgorithmDescription<?> algorithmDescription){
         return algorithmDescription.equals(AlgorithmDescriptions.FSR4_D3D12) ||
-                algorithmDescription.equals(AlgorithmDescriptions.ANIME4K);
+                "anime4k".equals(algorithmDescription.getCodeName());
     }
 
     /**

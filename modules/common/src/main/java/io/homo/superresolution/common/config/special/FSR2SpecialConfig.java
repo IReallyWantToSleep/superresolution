@@ -21,11 +21,8 @@ package io.homo.superresolution.common.config.special;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.config.ModConfigSpecBuilder;
 import io.homo.superresolution.api.config.values.single.BooleanValue;
-import io.homo.superresolution.api.config.values.single.EnumValue;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.ConfigSpecType;
-import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
-import io.homo.superresolution.thirdparty.fsr2.Fsr2Version;
 import net.minecraft.network.chat.Component;
 
 import java.util.Map;
@@ -54,12 +51,17 @@ public class FSR2SpecialConfig extends SpecialConfig {
                         .setSaveConsumer((v) -> {
                             if (getSpecialConfigs().FSR2.FP16.get() != v) {
                                 getSpecialConfigs().FSR2.FP16.set(v);
-                                if (SuperResolutionAPI.getCurrentAlgorithmDescription() == AlgorithmDescriptions.FSR2) {
+                                if (isCurrentAlgorithm("fsr2")) {
                                     SuperResolution.recreateAlgorithm();
                                 }
                             }
                         })
                         .setDefaultValue(true)
         );
+    }
+
+    private static boolean isCurrentAlgorithm(String codeName) {
+        return SuperResolutionAPI.getCurrentAlgorithmDescription() != null
+                && codeName.equals(SuperResolutionAPI.getCurrentAlgorithmDescription().getCodeName());
     }
 }

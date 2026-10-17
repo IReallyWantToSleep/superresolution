@@ -209,7 +209,7 @@ testSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
 val irisapiSourceSet = sourceSets.maybeCreate("irisapi")
 val sharedSourceSet = sourceSets.maybeCreate("shared")
 val materialSourceSet = sourceSets.maybeCreate("material")
-val hackSourceSet = sourceSets.maybeCreate("hack")
+val legacySourceSet = sourceSets.maybeCreate("legacy")
 val shaderCompatSourceSet = sourceSets.maybeCreate("shadercompat")
 val irisVelocityExtSourceSet = sourceSets.maybeCreate("iris_velocity_ext")
 val irisVelocityExtJavaRoot = file("src/iris_velocity_ext/java")
@@ -309,13 +309,13 @@ if (irisVelocityExtSupported) {
     irisVelocityExtSourceSet.resources.setSrcDirs(emptyList<File>())
 }
 
-hackSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
-hackSourceSet.compileClasspath += mainSourceSet.compileClasspath
-hackSourceSet.compileClasspath += mainSourceSet.output
-hackSourceSet.compileClasspath += sharedSourceSet.output
-hackSourceSet.runtimeClasspath += mainSourceSet.runtimeClasspath
-hackSourceSet.runtimeClasspath += mainSourceSet.output
-hackSourceSet.runtimeClasspath += sharedSourceSet.output
+legacySourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
+legacySourceSet.compileClasspath += mainSourceSet.compileClasspath
+legacySourceSet.compileClasspath += mainSourceSet.output
+legacySourceSet.compileClasspath += sharedSourceSet.output
+legacySourceSet.runtimeClasspath += mainSourceSet.runtimeClasspath
+legacySourceSet.runtimeClasspath += mainSourceSet.output
+legacySourceSet.runtimeClasspath += sharedSourceSet.output
 
 shaderCompatSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
 shaderCompatSourceSet.compileClasspath += mainSourceSet.compileClasspath
@@ -331,7 +331,7 @@ tasks.named<Jar>("jar") {
     from(irisapiSourceSet.output)
     from(sharedSourceSet.output)
     from(materialSourceSet.output)
-    from(hackSourceSet.output)
+    from(legacySourceSet.output)
     from(shaderCompatSourceSet.output)
     if (irisVelocityExtSupported) {
         from(irisVelocityExtSourceSet.output)
@@ -345,7 +345,7 @@ artifacts {
             irisapiSourceSet,
             sharedSourceSet,
             materialSourceSet,
-            hackSourceSet,
+            legacySourceSet,
             shaderCompatSourceSet
         )
     )

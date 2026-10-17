@@ -30,6 +30,19 @@ public class AlgorithmRegistry {
 
     static {
         AlgorithmDescriptions.registryAlgorithms();
+        try {
+            Class<?> bootstrap = Class.forName(
+                    "io.homo.superresolution.common.upscale.algo.legacy.HackAlgorithmBootstrap"
+            );
+            bootstrap.getMethod("register").invoke(null);
+        } catch (ClassNotFoundException ignored) {
+            // Optional source set is not present in API-only consumers.
+        } catch (Throwable throwable) {
+            throw new ExceptionInInitializerError(throwable);
+        }
+        io.homo.superresolution.api.SuperResolutionAPI.EVENT_BUS.post(
+                new io.homo.superresolution.api.event.AlgorithmRegisterEvent()
+        );
     }
 
     public static void registry(AlgorithmDescription<?> description) {

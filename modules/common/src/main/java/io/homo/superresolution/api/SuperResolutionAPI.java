@@ -19,6 +19,7 @@
 package io.homo.superresolution.api;
 
 import io.homo.superresolution.api.registry.AlgorithmDescription;
+import io.homo.superresolution.api.registry.AlgorithmRegistry;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
@@ -58,5 +59,10 @@ public class SuperResolutionAPI {
 
     public static AbstractAlgorithm getCurrentAlgorithm() {
         return SuperResolution.currentAlgorithm;
+    }
+
+    /** Registers an algorithm description supplied by an optional source set or addon. */
+    public static void registerAlgorithm(AlgorithmDescription<?> description) {
+        AlgorithmRegistry.registry(description);
     }
 }

@@ -25,8 +25,6 @@ import static java.lang.Math.floor;
 import static java.lang.Math.pow;
 
 public class Fsr2Utils {
-
-
     public static void spdSetup(int[] dispatchThreadGroupCountXY,
                                 int[] workGroupOffset,
                                 int[] numWorkGroupsAndMips,

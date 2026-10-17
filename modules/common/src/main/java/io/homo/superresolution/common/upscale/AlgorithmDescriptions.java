@@ -19,8 +19,6 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.QualityPreset;
-import io.homo.superresolution.api.SuperResolutionAPI;
-import io.homo.superresolution.api.event.AlgorithmRegisterEvent;
 import io.homo.superresolution.api.platform.OperatingSystem;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
@@ -36,11 +34,6 @@ import io.homo.superresolution.common.upscale.algo.dlss.NgxDlssLatestProvider;
 import io.homo.superresolution.common.upscale.algo.dlssrr.DLSSRR;
 import io.homo.superresolution.common.upscale.algo.ffxfsr.FfxFSR;
 import io.homo.superresolution.common.upscale.algo.ffxfsr.FfxFSR4D3D12;
-import io.homo.superresolution.common.upscale.algo.legacy.anime4k.Anime4K;
-import io.homo.superresolution.common.upscale.algo.legacy.fsr1.FSR1;
-import io.homo.superresolution.common.upscale.algo.legacy.fsr2.FSR2;
-import io.homo.superresolution.common.upscale.algo.legacy.sgsr.v1.Sgsr1;
-import io.homo.superresolution.common.upscale.algo.legacy.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.algo.none.None;
 import io.homo.superresolution.common.upscale.algo.xess.XeSS;
 import io.homo.superresolution.core.NativeLibManager;
@@ -55,54 +48,6 @@ public class AlgorithmDescriptions {
             .codeName("none")
             .displayName("None")
             .requirement(Requirement.nothing())
-            .build();
-    public static final AlgorithmDescription<FSR1> FSR1 = AlgorithmDescription.builder(FSR1.class)
-            .briefName("AMD FSR 1")
-            .codeName("fsr1")
-            .displayName("AMD FidelityFX Super Resolution 1")
-            .requirement(
-                    Requirement.nothing()
-                            .glMajorVersion(4)
-                            .glMinorVersion(3)
-                            .isFalse(Gl::isLegacy)
-                            .isTrue(Gl::isSupportDSA)
-            )
-            .build();
-    public static final AlgorithmDescription<FSR2> FSR2 = AlgorithmDescription.builder(FSR2.class)
-            .briefName("AMD FSR 2 (Legacy)")
-            .codeName("fsr2")
-            .displayName("AMD FidelityFX Super Resolution 2 (Legacy)")
-            .requirement(
-                    Requirement.nothing()
-                            .requiredGlExtension("GL_KHR_shader_subgroup")
-                            .glMajorVersion(4)
-                            .glMinorVersion(5)
-                            .isFalse(Gl::isLegacy)
-                            .isTrue(Gl::isSupportDSA)
-            )
-            .supportJitter(true)
-            .build();
-    public static final AlgorithmDescription<Sgsr1> SGSR1 = AlgorithmDescription.builder(Sgsr1.class)
-            .briefName("SGSR V1")
-            .codeName("sgsr1")
-            .displayName("Snapdragon™ Game Super Resolution 1")
-            .requirement(
-                    Requirement.nothing()
-                            .glMajorVersion(4)
-                            .glMinorVersion(0)
-            )
-            .build();
-    public static final AlgorithmDescription<Sgsr2> SGSR2 = AlgorithmDescription.builder(Sgsr2.class)
-            .briefName("SGSR V2")
-            .codeName("sgsr2")
-            .displayName("Snapdragon™ Game Super Resolution 2")
-            .requirement(
-                    Requirement.nothing()
-                            .glMajorVersion(4)
-                            .glMinorVersion(3)
-                            .isFalse(Gl::isLegacy)
-                            .isTrue(Gl::isSupportDSA)
-            )
             .build();
     private static final List<QualityPreset> FSR_QUALITY_PRESETS = List.of(
             new QualityPreset()
@@ -366,31 +311,8 @@ public class AlgorithmDescriptions {
             .customUpscaleRatio(false)
             .build();
 
-    private static final List<QualityPreset> ANIME4K_QUALITY_PRESETS = List.of(
-            new QualityPreset()
-                    .setUpscaleRatio(2.0f)
-                    .setName(Component.literal("2x"))
-                    .setCodeName("anime4k_2x")
-    );
-    public static final AlgorithmDescription<Anime4K> ANIME4K = AlgorithmDescription.builder(Anime4K.class)
-            .briefName("Anime4K")
-            .codeName("anime4k")
-            .displayName("Anime4K")
-            .requirement(
-                    Requirement.nothing()
-                            .glMajorVersion(4)
-                            .glMinorVersion(3)
-                            .isFalse(Gl::isLegacy)
-                            .isTrue(Gl::isSupportDSA)
-            )
-            .qualityPresets(ANIME4K_QUALITY_PRESETS)
-            .customUpscaleRatio(false)
-            .build();
-
     public static void registryAlgorithms() {
         AlgorithmRegistry.registry(NONE);
-        AlgorithmRegistry.registry(FSR1);
-        AlgorithmRegistry.registry(FSR2);
         AlgorithmRegistry.registry(FSR);
         AlgorithmRegistry.registry(FSR4_D3D12);
         AlgorithmRegistry.registry(XESS);
@@ -398,11 +320,5 @@ public class AlgorithmDescriptions {
         if (SuperResolutionConfig.isEnableDlssRayReconstruction()) {
             AlgorithmRegistry.registry(DLSSRR);
         }
-        AlgorithmRegistry.registry(SGSR1);
-        AlgorithmRegistry.registry(SGSR2);
-        if (Platform.currentPlatform.isDevelopmentEnvironment()) {
-            AlgorithmRegistry.registry(ANIME4K);
-        }
-        SuperResolutionAPI.EVENT_BUS.post(new AlgorithmRegisterEvent());
     }
 }
