@@ -114,6 +114,14 @@ public final class CaptureFrameRing {
                 return frame;
             }
         }
+        for (int offset = 0; offset < slots.length; offset++) {
+            int index = (cursor + offset) % slots.length;
+            FrameResources frame = requireSlot(index);
+            if (frame.state() == FrameResourceState.SUBMITTED) {
+                frame.awaitReusable();
+                return frame;
+            }
+        }
         throw new IllegalStateException(
                 "No reusable capture slot is available; states="
                         + Arrays.toString(Arrays.stream(slots)

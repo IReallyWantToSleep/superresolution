@@ -144,7 +144,7 @@ public abstract class MinecraftMixin {
     #endif
     #if MC_VER > MC_26_1_2
     //just like fabric's invoke point
-    @Inject(method = "stop",at = @At(value = "TAIL"))
+    @Inject(method = "close",at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;close()V",shift = At.Shift.AFTER))
     public void onDestroy(CallbackInfo ci) {
         SuperResolution.onClientStopping();
         SuperResolution.onClientStopped();

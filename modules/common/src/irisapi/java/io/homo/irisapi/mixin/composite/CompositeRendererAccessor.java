@@ -28,7 +28,6 @@ import net.irisshaders.iris.pipeline.CompositeRenderer;
 import net.irisshaders.iris.pipeline.WorldRenderingPipeline;
 import net.irisshaders.iris.shaderpack.texture.TextureStage;
 import net.irisshaders.iris.targets.RenderTargets;
-import net.irisshaders.iris.uniforms.FrameUpdateNotifier;
 import net.irisshaders.iris.uniforms.custom.CustomUniforms;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -39,66 +38,66 @@ import java.util.Set;
 public interface CompositeRendererAccessor {
 
     @Accessor(value = "renderTargets", remap = false)
-    RenderTargets getRenderTargets();
+    RenderTargets sr_irisapi$getRenderTargets();
     @Accessor(value = "renderTargets", remap = false)
-    void setRenderTargets(RenderTargets renderTargets);
+    void sr_irisapi$setRenderTargets(RenderTargets renderTargets);
     @Accessor(value = "passes", remap = false)
-    ImmutableList<Object> getPasses();
+    ImmutableList<Object> sr_irisapi$getPasses();
 
     @Accessor(value = "passes", remap = false)
-    void setPasses(ImmutableList<Object> passes);
+    void sr_irisapi$setPasses(ImmutableList<Object> passes);
 
     @Accessor(value = "pipeline", remap = false)
-    WorldRenderingPipeline getPipeline();
+    WorldRenderingPipeline sr_irisapi$getPipeline();
 
     @Accessor(value = "pipeline", remap = false)
-    void setPipeline(WorldRenderingPipeline pipeline);
+    void sr_irisapi$setPipeline(WorldRenderingPipeline pipeline);
 
     @Accessor(value = "noiseTexture", remap = false)
-    TextureAccess getNoiseTexture();
+    TextureAccess sr_irisapi$getNoiseTexture();
 
     @Accessor(value = "noiseTexture", remap = false)
-    void setNoiseTexture(TextureAccess noiseTexture);
+    void sr_irisapi$setNoiseTexture(TextureAccess noiseTexture);
 
     @Accessor(value = "centerDepthSampler", remap = false)
-    CenterDepthSampler getCenterDepthSampler();
+    CenterDepthSampler sr_irisapi$getCenterDepthSampler();
 
     @Accessor(value = "centerDepthSampler", remap = false)
-    void setCenterDepthSampler(CenterDepthSampler centerDepthSampler);
+    void sr_irisapi$setCenterDepthSampler(CenterDepthSampler centerDepthSampler);
 
     @Accessor(value = "customTextureIds", remap = false)
-    Object2ObjectMap<String, TextureAccess> getCustomTextureIds();
+    Object2ObjectMap<String, TextureAccess> sr_irisapi$getCustomTextureIds();
 
     @Accessor(value = "customTextureIds", remap = false)
-    void setCustomTextureIds(Object2ObjectMap<String, TextureAccess> customTextureIds);
+    void sr_irisapi$setCustomTextureIds(Object2ObjectMap<String, TextureAccess> customTextureIds);
 
     @Accessor(value = "flippedAtLeastOnceFinal", remap = false)
-    ImmutableSet<Integer> getFlippedAtLeastOnceFinal();
+    ImmutableSet<Integer> sr_irisapi$getFlippedAtLeastOnceFinal();
 
     @Accessor(value = "flippedAtLeastOnceFinal", remap = false)
-    void setFlippedAtLeastOnceFinal(ImmutableSet<Integer> flippedAtLeastOnceFinal);
+    void sr_irisapi$setFlippedAtLeastOnceFinal(ImmutableSet<Integer> flippedAtLeastOnceFinal);
 
     @Accessor(value = "customUniforms", remap = false)
-    CustomUniforms getCustomUniforms();
+    CustomUniforms sr_irisapi$getCustomUniforms();
 
     @Accessor(value = "customUniforms", remap = false)
-    void setCustomUniforms(CustomUniforms customUniforms);
+    void sr_irisapi$setCustomUniforms(CustomUniforms customUniforms);
 
     @Accessor(value = "irisCustomTextures", remap = false)
-    Object2ObjectMap<String, TextureAccess> getIrisCustomTextures();
+    Object2ObjectMap<String, TextureAccess> sr_irisapi$getIrisCustomTextures();
 
     @Accessor(value = "irisCustomTextures", remap = false)
-    void setIrisCustomTextures(Object2ObjectMap<String, TextureAccess> irisCustomTextures);
+    void sr_irisapi$setIrisCustomTextures(Object2ObjectMap<String, TextureAccess> irisCustomTextures);
 
     @Accessor(value = "customImages", remap = false)
-    Set<GlImage> getCustomImages();
+    Set<GlImage> sr_irisapi$getCustomImages();
 
     @Accessor(value = "customImages", remap = false)
-    void setCustomImages(Set<GlImage> customImages);
+    void sr_irisapi$setCustomImages(Set<GlImage> customImages);
 
     @Accessor(value = "textureStage", remap = false)
-    TextureStage getTextureStage();
+    TextureStage sr_irisapi$getTextureStage();
 
     @Accessor(value = "textureStage", remap = false)
-    void setTextureStage(TextureStage textureStage);
+    void sr_irisapi$setTextureStage(TextureStage textureStage);
 }

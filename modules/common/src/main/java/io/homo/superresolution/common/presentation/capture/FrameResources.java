@@ -343,7 +343,7 @@ public final class FrameResources {
         return count;
     }
 
-    private void awaitReusable() {
+    public void awaitReusable() {
         FrameResourceState state = lifecycle.state();
         if (state == FrameResourceState.REUSABLE) {
             return;

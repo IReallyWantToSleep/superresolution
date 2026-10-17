@@ -27,17 +27,17 @@ import org.spongepowered.asm.mixin.gen.Accessor;
 @Mixin(IrisRenderingPipeline.class)
 public interface IrisRenderingPipelineAccessor {
     @Accessor(value = "compositeRenderer", remap = false)
-    CompositeRenderer getCompositeRenderer();
+    CompositeRenderer sr_irisapi$getCompositeRenderer();
 
     @Accessor(value = "deferredRenderer", remap = false)
-    CompositeRenderer getDeferredRenderer();
+    CompositeRenderer sr_irisapi$getDeferredRenderer();
 
     @Accessor(value = "beginRenderer", remap = false)
-    CompositeRenderer getBeginRenderer();
+    CompositeRenderer sr_irisapi$getBeginRenderer();
 
     @Accessor(value = "prepareRenderer", remap = false)
-    CompositeRenderer getPrepareRenderer();
+    CompositeRenderer sr_irisapi$getPrepareRenderer();
 
     @Accessor(value = "finalPassRenderer", remap = false)
-    FinalPassRenderer getFinalPassRenderer();
+    FinalPassRenderer sr_irisapi$getFinalPassRenderer();
 }

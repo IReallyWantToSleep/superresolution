@@ -38,7 +38,7 @@ import java.util.EnumSet;
 import java.util.Objects;
 
 public final class FfxFSR4D3D12
-        extends GlD3D12InteropAlgorithm<SRUpscaleContext> {
+        extends GlD3D12InteropAlgorithm {
     public static final String UPSCALER_DLL_NAME =
             "amd_fidelityfx_upscaler_dx12.dll";
     private static final long FSR4_PROVIDER_ID = 0x8000006L;

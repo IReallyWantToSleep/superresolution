@@ -38,9 +38,7 @@ public abstract class VulkanPresentationGlDeviceMixin {
 
     @Inject(method = "close", at = @At("TAIL"))
     private void super_resolution$destroyRenderWindow(CallbackInfo ci) {
-        if (PresentationBackendManager.isVulkanPresentationRequested()) {
-            PresentationWindowState.destroyRenderWindow();
-        }
+
     }
 }
 #else

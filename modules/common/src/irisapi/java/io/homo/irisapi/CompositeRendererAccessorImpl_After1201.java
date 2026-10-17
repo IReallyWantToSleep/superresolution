@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import io.homo.irisapi.mixin.composite.CompositeRendererAccessor;
 import io.homo.irisapi.mixin.composite.IrisRenderingPipelineAccessor;
-import io.homo.irisapi.pipeline.mc1201.NewCompositeRenderer;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import net.irisshaders.iris.gl.image.GlImage;
 import net.irisshaders.iris.gl.texture.TextureAccess;
@@ -51,13 +50,13 @@ public class CompositeRendererAccessorImpl_After1201 implements ICompositeRender
 
     @Override
     public IrisCompositeRenderingPhase getPhase() {
-        if (((IrisRenderingPipelineAccessor) getPipeline()).getCompositeRenderer() == compositeRenderer) {
+        if (((IrisRenderingPipelineAccessor) getPipeline()).sr_irisapi$getCompositeRenderer() == compositeRenderer) {
             return IrisCompositeRenderingPhase.Composite;
-        } else if (((IrisRenderingPipelineAccessor) getPipeline()).getDeferredRenderer() == compositeRenderer) {
+        } else if (((IrisRenderingPipelineAccessor) getPipeline()).sr_irisapi$getDeferredRenderer() == compositeRenderer) {
             return IrisCompositeRenderingPhase.Deferred;
-        } else if (((IrisRenderingPipelineAccessor) getPipeline()).getPrepareRenderer() == compositeRenderer) {
+        } else if (((IrisRenderingPipelineAccessor) getPipeline()).sr_irisapi$getPrepareRenderer() == compositeRenderer) {
             return IrisCompositeRenderingPhase.Prepare;
-        } else if (((IrisRenderingPipelineAccessor) getPipeline()).getBeginRenderer() == compositeRenderer) {
+        } else if (((IrisRenderingPipelineAccessor) getPipeline()).sr_irisapi$getBeginRenderer() == compositeRenderer) {
             return IrisCompositeRenderingPhase.Begin;
         }
         return IrisCompositeRenderingPhase.Unknown;
@@ -65,17 +64,17 @@ public class CompositeRendererAccessorImpl_After1201 implements ICompositeRender
 
     @Override
     public RenderTargets getRenderTargets() {
-        return ((CompositeRendererAccessor)compositeRenderer).getRenderTargets();
+        return ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$getRenderTargets();
     }
 
     @Override
     public void setRenderTargets(RenderTargets renderTargets) {
-        ((CompositeRendererAccessor)compositeRenderer).setRenderTargets(renderTargets);
+        ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setRenderTargets(renderTargets);
     }
 
     @Override
     public ImmutableList<NamedCompositePass> getPasses() {
-        return (ImmutableList<NamedCompositePass>)((Object)ImmutableList.copyOf(((CompositeRendererAccessor)compositeRenderer).getPasses()));
+        return (ImmutableList<NamedCompositePass>)((Object)ImmutableList.copyOf(((CompositeRendererAccessor)compositeRenderer).sr_irisapi$getPasses()));
     }
 
     @Override
@@ -85,91 +84,91 @@ public class CompositeRendererAccessorImpl_After1201 implements ICompositeRender
 
     @Override
     public WorldRenderingPipeline getPipeline() {
-        return ((CompositeRendererAccessor)compositeRenderer).getPipeline();
+        return ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$getPipeline();
     }
 
     @Override
     public void setPipeline(WorldRenderingPipeline pipeline) {
-        ((CompositeRendererAccessor)compositeRenderer).setPipeline(pipeline);
+        ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setPipeline(pipeline);
     }
 
     @Override
     public TextureAccess getNoiseTexture() {
-        return ((CompositeRendererAccessor)compositeRenderer).getNoiseTexture();
+        return ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$getNoiseTexture();
     }
 
     @Override
     public void setNoiseTexture(TextureAccess noiseTexture) {
-        ((CompositeRendererAccessor)compositeRenderer).setNoiseTexture(noiseTexture);
+        ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setNoiseTexture(noiseTexture);
     }
 
     @Override
     public CenterDepthSampler getCenterDepthSampler() {
-        return ((CompositeRendererAccessor)compositeRenderer).getCenterDepthSampler();
+        return ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$getCenterDepthSampler();
     }
 
     @Override
     public void setCenterDepthSampler(CenterDepthSampler centerDepthSampler) {
-        ((CompositeRendererAccessor)compositeRenderer).setCenterDepthSampler(centerDepthSampler);
+        ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setCenterDepthSampler(centerDepthSampler);
     }
 
     @Override
     public Object2ObjectMap<String, TextureAccess> getCustomTextureIds() {
-        return ((CompositeRendererAccessor)compositeRenderer).getCustomTextureIds();
+        return ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$getCustomTextureIds();
     }
 
     @Override
     public void setCustomTextureIds(Object2ObjectMap<String, TextureAccess> customTextureIds) {
-        ((CompositeRendererAccessor)compositeRenderer).setCustomTextureIds(customTextureIds);
+        ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setCustomTextureIds(customTextureIds);
     }
 
     @Override
     public ImmutableSet<Integer> getFlippedAtLeastOnceFinal() {
-        return ((CompositeRendererAccessor)compositeRenderer).getFlippedAtLeastOnceFinal();
+        return ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$getFlippedAtLeastOnceFinal();
     }
 
     @Override
     public void setFlippedAtLeastOnceFinal(ImmutableSet<Integer> flippedAtLeastOnceFinal) {
-        ((CompositeRendererAccessor)compositeRenderer).setFlippedAtLeastOnceFinal(flippedAtLeastOnceFinal);
+        ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setFlippedAtLeastOnceFinal(flippedAtLeastOnceFinal);
     }
 
     @Override
     public CustomUniforms getCustomUniforms() {
-        return ((CompositeRendererAccessor)compositeRenderer).getCustomUniforms();
+        return ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$getCustomUniforms();
     }
 
     @Override
     public void setCustomUniforms(CustomUniforms customUniforms) {
-        ((CompositeRendererAccessor)compositeRenderer).setCustomUniforms(customUniforms);
+        ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setCustomUniforms(customUniforms);
     }
 
     @Override
     public Object2ObjectMap<String, TextureAccess> getIrisCustomTextures() {
-        return ((CompositeRendererAccessor)compositeRenderer).getIrisCustomTextures();
+        return ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$getIrisCustomTextures();
     }
 
     @Override
     public void setIrisCustomTextures(Object2ObjectMap<String, TextureAccess> irisCustomTextures) {
-        ((CompositeRendererAccessor)compositeRenderer).setIrisCustomTextures(irisCustomTextures);
+        ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setIrisCustomTextures(irisCustomTextures);
     }
 
     @Override
     public Set<GlImage> getCustomImages() {
-        return ((CompositeRendererAccessor)compositeRenderer).getCustomImages();
+        return ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$getCustomImages();
     }
 
     @Override
     public void setCustomImages(Set<GlImage> customImages) {
-        ((CompositeRendererAccessor)compositeRenderer).setCustomImages(customImages);
+        ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setCustomImages(customImages);
     }
 
     @Override
     public TextureStage getTextureStage() {
-        return ((CompositeRendererAccessor)compositeRenderer).getTextureStage();
+        return ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$getTextureStage();
     }
 
     @Override
     public void setTextureStage(TextureStage textureStage) {
-        ((CompositeRendererAccessor)compositeRenderer).setTextureStage(textureStage);
+        ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setTextureStage(textureStage);
     }
 }

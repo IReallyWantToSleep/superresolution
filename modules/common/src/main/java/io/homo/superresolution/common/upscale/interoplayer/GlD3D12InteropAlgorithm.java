@@ -46,7 +46,7 @@ import java.util.Objects;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_GENERAL_EXT;
 import static org.lwjgl.opengl.EXTSemaphore.GL_LAYOUT_SHADER_READ_ONLY_EXT;
 
-public abstract class GlD3D12InteropAlgorithm<U> extends AbstractAlgorithm {
+public abstract class GlD3D12InteropAlgorithm extends AbstractAlgorithm {
     private static final int[] GL_HANDOFF_LAYOUTS = {
             GL_LAYOUT_SHADER_READ_ONLY_EXT,
             GL_LAYOUT_SHADER_READ_ONLY_EXT,
