@@ -19,14 +19,14 @@
 package io.homo.superresolution.api.event;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import net.neoforged.bus.api.Event;
 
 public class AlgorithmDispatchFinishEvent extends Event {
     private final AbstractAlgorithm algorithm;
-    private final IFrameBuffer output;
+    private final ITexture output;
 
-    public AlgorithmDispatchFinishEvent(AbstractAlgorithm algorithm, IFrameBuffer output) {
+    public AlgorithmDispatchFinishEvent(AbstractAlgorithm algorithm, ITexture output) {
         this.algorithm = algorithm;
         this.output = output;
     }
@@ -35,7 +35,7 @@ public class AlgorithmDispatchFinishEvent extends Event {
         return algorithm;
     }
 
-    public IFrameBuffer getOutput() {
+    public ITexture getOutput() {
         return output;
     }
 }

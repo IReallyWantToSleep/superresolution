@@ -20,13 +20,12 @@ package io.homo.superresolution.common.upscale.algo.legacy.anime4k;
 
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.sampler.ISampler;
 import io.homo.superresolution.core.graphics.impl.sampler.SamplerDescription;
@@ -47,7 +46,6 @@ public class Anime4K extends AbstractAlgorithm {
     private final List<IShaderProgram> shaders = new ArrayList<>();
     private final List<ComputePipeline> pipelines = new ArrayList<>();
     private final List<PassBinding> passBindings = new ArrayList<>();
-    private IFrameBuffer outputFrameBuffer;
     private ITexture outputColorTexture;
     private ISampler samplerNearest;
     private ISampler samplerLinear;
@@ -112,11 +110,6 @@ public class Anime4K extends AbstractAlgorithm {
         }
 
         outputColorTexture = intermediateTextures.get(model.outputTexture);
-        outputFrameBuffer = RenderSystems.current().device().createFramebuffer(
-                FramebufferDescription.create()
-                        .colorAttachment(outputColorTexture)
-                        .build());
-
         passBindings.clear();
         for (Anime4KModel.PassDesc pass : model.passes) {
             ShaderDescription.Builder shaderBuilder = ShaderDescription
@@ -153,13 +146,11 @@ public class Anime4K extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        super.dispatch(dispatchResource);
-
         ICommandBuffer commandBuffer = RenderSystems.current().device()
                 .defaultCommandPool().createCommandBuffer();
         for (PassBinding pass : passBindings) {
             for (SamplerBinding sb : pass.samplers) {
-                ITexture tex = resolveTextureForDispatch(sb.source);
+                ITexture tex = resolveTextureForDispatch(sb.source, dispatchResource.resources());
                 if (tex != null) {
                     ISampler sampler = "LINEAR".equalsIgnoreCase(sb.filter) ? samplerLinear : samplerNearest;
                     pass.pipeline.descriptorSet().samplerTexture(sb.name, tex, sampler);
@@ -187,10 +178,6 @@ public class Anime4K extends AbstractAlgorithm {
 
     @Override
     public void destroy() {
-        if (outputFrameBuffer != null) {
-            outputFrameBuffer.destroy();
-            outputFrameBuffer = null;
-        }
         outputColorTexture = null;
 
         for (ITexture tex : intermediateTextures.values()) {
@@ -222,13 +209,8 @@ public class Anime4K extends AbstractAlgorithm {
     }
 
     @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return outputFrameBuffer;
-    }
-
-    @Override
-    public int getOutputTextureId() {
-        return Math.toIntExact(outputColorTexture.handle());
+    public ITexture getOutputTexture() {
+        return outputColorTexture;
     }
 
     private ITexture resolveTexture(String name) {
@@ -238,9 +220,9 @@ public class Anime4K extends AbstractAlgorithm {
         return intermediateTextures.get(name);
     }
 
-    private ITexture resolveTextureForDispatch(String source) {
+    private ITexture resolveTextureForDispatch(String source, InputResourceSet inputs) {
         if ("inputColor".equals(source)) {
-            return getResources() != null ? getResources().get(InputResourceType.Color) : null;
+            return inputs == null ? null : inputs.get(InputResourceType.Color);
         }
         return resolveTexture(source);
     }

@@ -18,21 +18,14 @@
 
 package io.homo.superresolution.common.upscale.algo.dlssrr;
 
-import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.interop.InteropResourceRequirement;
 import io.homo.superresolution.api.interop.InteropResourceType;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.perf.PerformanceTracker;
-import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
-import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.common.upscale.interoplayer.*;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
-import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
-import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 import io.homo.superresolution.core.ngx.NgxConstants;
 import io.homo.superresolution.core.ngx.NgxDLSSDCreateParams;
 import io.homo.superresolution.core.ngx.NgxFeature;
@@ -47,7 +40,6 @@ import org.lwjgl.system.MemoryUtil;
 import java.nio.FloatBuffer;
 import java.util.EnumMap;
 import java.util.EnumSet;
-import java.util.IdentityHashMap;
 import java.util.Map;
 import java.util.List;
 import java.util.ArrayList;
@@ -58,7 +50,7 @@ import static io.homo.superresolution.api.interop.InteropResourceRequirement.Pre
 import static io.homo.superresolution.api.interop.InteropResourceType.OutputColor;
 
 /** NVIDIA DLSS Ray Reconstruction implementation. */
-public class DLSSRR extends GlVulkanInteropAlgorithm {
+public class DLSSRR extends VulkanInteropAlgorithm {
     private static final EnumSet<InputResourceType> SUPPLEMENTAL_TYPES = EnumSet.of(
             InputResourceType.DiffuseAlbedo,
             InputResourceType.SpecularAlbedo,
@@ -78,7 +70,8 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
     private NgxParameters parameters;
     private int roughnessMode = -1;
     private int depthType = -1;
-    private final Map<FrameResourcesSet, NgxDispatchResources> dispatchResources = new IdentityHashMap<>();
+    private NgxDispatchResources dispatchResources;
+    private InteropResourceAccess algorithmResources;
 
     @Override
     protected List<InteropResourceRequirement> getInteropResourceRequirements() {
@@ -90,93 +83,71 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
         return List.copyOf(requirements);
     }
 
-    @Override
-    protected boolean isVulkanInteropReady() {
+    private boolean isVulkanInteropReady() {
         return feature != null && feature.isValid() && parameters != null && parameters.isValid();
     }
 
     @Override
-    protected boolean prepareVulkanDispatch(DispatchResource resource) {
-        int requestedRoughnessMode = resource.resources().has(InputResourceType.NormalRoughness)
-                ? NgxConstants.DLSS_ROUGHNESS_MODE_PACKED
-                : NgxConstants.DLSS_ROUGHNESS_MODE_UNPACKED;
-        int requestedDepthType = NgxConstants.DLSS_DEPTH_TYPE_HARDWARE;
-        if (!isVulkanInteropReady()
-                || roughnessMode != requestedRoughnessMode
-                || depthType != requestedDepthType) {
-            RenderSystems.vulkan().device().getMainQueue().waitIdle();
-            destroyDispatchResources();
-            destroyNgxContext();
-            try {
-                recreateNgxContext(requestedRoughnessMode, requestedDepthType);
-                roughnessMode = requestedRoughnessMode;
-                depthType = requestedDepthType;
-            } catch (RuntimeException | Error error) {
-                roughnessMode = -1;
-                depthType = -1;
-                throw error;
-            }
-        }
-        return isVulkanInteropReady();
+    protected boolean validateExecutionResources(InteropResourceSet resources) {
+        return resources.has(InteropResourceType.DiffuseAlbedo)
+                && resources.has(InteropResourceType.SpecularAlbedo)
+                && (resources.has(InteropResourceType.NormalRoughness)
+                    || (resources.has(InteropResourceType.Normals)
+                        && resources.has(InteropResourceType.Roughness)))
+                && (resources.has(InteropResourceType.SpecularMotionVectors)
+                    || resources.has(InteropResourceType.SpecularHitDistance));
     }
 
     @Override
-    protected boolean validateInputResources(InputResourceSet resources) {
-        return super.validateInputResources(resources)
-                && resources.has(InputResourceType.DiffuseAlbedo)
-                && resources.has(InputResourceType.SpecularAlbedo)
-                && (resources.has(InputResourceType.NormalRoughness)
-                    || (resources.has(InputResourceType.Normals) && resources.has(InputResourceType.Roughness)))
-                && (resources.has(InputResourceType.SpecularMotionVectors)
-                    || resources.has(InputResourceType.SpecularHitDistance));
-    }
-
-    @Override
-    protected void onInteropResourcesCreated() {
-        if (roughnessMode != -1 && depthType != -1) {
+    protected void createAlgorithmContext(InteropResourceAccess resources) {
+        algorithmResources = resources;
+        if (validateExecutionResources(resources.resources())) {
+            roughnessMode = resources.resources().has(InteropResourceType.NormalRoughness)
+                    ? NgxConstants.DLSS_ROUGHNESS_MODE_PACKED
+                    : NgxConstants.DLSS_ROUGHNESS_MODE_UNPACKED;
+            depthType = NgxConstants.DLSS_DEPTH_TYPE_HARDWARE;
             recreateNgxContext(roughnessMode, depthType);
+            dispatchResources = new NgxDispatchResources();
         }
     }
 
     @Override
-    protected void onBeforeInteropResourcesDestroyed() {
-        destroyDispatchResources();
+    protected void destroyAlgorithmContext() {
         destroyNgxContext();
+        destroyDispatchResources();
+        algorithmResources = null;
+        roughnessMode = -1;
+        depthType = -1;
     }
 
     @Override
-    protected void dispatchVulkanUpscale(VulkanCommandBuffer commandBuffer, FrameResourcesSet frame) {
-        if (feature == null || parameters == null || frame.frameData == null) {
-            return;
+    protected boolean dispatchAlgorithm(InteropDispatchResource<VulkanCommandContext> frame) {
+        if (!isVulkanInteropReady() || dispatchResources == null) {
+            return false;
         }
-        NgxDispatchResources resources = dispatchResources.computeIfAbsent(frame, key -> new NgxDispatchResources());
+        VulkanCommandBuffer commandBuffer = frame.commandContext().commandBuffer();
+        NgxDispatchResources resources = dispatchResources;
         resources.update(frame);
         NgxVKDLSSDEvalParams eval = resources.eval;
-        eval.jitterOffsetX = frame.frameData.jitterOffset().x;
-        eval.jitterOffsetY = frame.frameData.jitterOffset().y;
-        eval.renderSubrectDimensions.width = frame.frameData.renderWidth();
-        eval.renderSubrectDimensions.height = frame.frameData.renderHeight();
-        eval.motionVectorScaleX = frame.frameData.renderSize().x;
-        eval.motionVectorScaleY = frame.frameData.renderSize().y;
+        eval.jitterOffsetX = frame.frameData().jitterOffset().x;
+        eval.jitterOffsetY = frame.frameData().jitterOffset().y;
+        eval.renderSubrectDimensions.width = frame.frameData().renderWidth();
+        eval.renderSubrectDimensions.height = frame.frameData().renderHeight();
+        eval.motionVectorScaleX = frame.frameData().renderSize().x;
+        eval.motionVectorScaleY = frame.frameData().renderSize().y;
         eval.reset = consumeHistoryReset() ? 1 : 0;
-        eval.preExposure = frame.frameData.preExposure();
+        eval.preExposure = frame.frameData().preExposure();
         eval.exposureScale = 1.0f;
-        eval.frameTimeDeltaInMsec = frame.frameData.frameTimeDelta();
-        VulkanTimestampProfiler profiler = RenderSystems.vulkan().device().timestampProfiler();
-        int timestampSlot = profiler == null
-                ? -1
-                : profiler.beginRegion(commandBuffer.getNativeCommandBuffer(), PerformanceTracker.VK_UPSCALE);
+        eval.frameTimeDeltaInMsec = frame.frameData().frameTimeDelta();
         int result = NgxVulkan.evaluateDLSSD(commandBuffer.getNativeCommandBuffer().address(), feature, parameters, eval);
-        if (timestampSlot >= 0) {
-            profiler.endRegion(commandBuffer.getNativeCommandBuffer(), timestampSlot);
-        }
         if (!NgxConstants.succeeded(result)) {
             SuperResolution.LOGGER.error("NGX DLSS RR evaluation failed. Result: {}", result);
+            return false;
         }
+        return true;
     }
 
     private void recreateNgxContext(int requestedRoughnessMode, int requestedDepthType) {
-        VulkanDevice device = RenderSystems.vulkan().device();
         if (!NgxInitializer.initializeIfSupported(NgxConstants.FEATURE_RAY_RECONSTRUCTION)) {
             NgxInitializer.shutdown();
             if (!NgxInitializer.initializeIfSupported(NgxConstants.FEATURE_RAY_RECONSTRUCTION)) {
@@ -184,38 +155,26 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
             }
         }
         NgxParameters newParameters = new NgxParameters();
+        parameters = newParameters;
         requireSuccess("NVSDK_NGX_VULKAN_GetCapabilityParameters", NgxVulkan.getCapabilityParameters(newParameters));
         NgxFeature newFeature = new NgxFeature();
-        VulkanCommandBuffer commandBuffer = device.createCommandBuffer();
-        try {
-            configurePreset(newParameters);
-            NgxDLSSDCreateParams create = new NgxDLSSDCreateParams();
-            create.feature.width = RenderHandlerManager.getRenderWidth();
-            create.feature.height = RenderHandlerManager.getRenderHeight();
-            create.feature.targetWidth = RenderHandlerManager.getScreenWidth();
-            create.feature.targetHeight = RenderHandlerManager.getScreenHeight();
-            create.featureCreateFlags =
-                    NgxConstants.DLSS_FLAG_MV_LOW_RES
-                    | NgxConstants.DLSS_FLAG_HDR
-                    | (initDesc.isMotionJittered() ? NgxConstants.DLSS_FLAG_MV_JITTERED : 0)
-                            | (initDesc.isDepthInverted() ? NgxConstants.DLSS_FLAG_DEPTH_INVERTED : 0);
-            create.roughnessMode = requestedRoughnessMode;
-            create.depthType = requestedDepthType;
-            commandBuffer.begin();
-            requireSuccess("NGX_VULKAN_CREATE_DLSSD", NgxVulkan.createDLSSD(
-                    commandBuffer.getNativeCommandBuffer().address(), 1, 1, newFeature, newParameters, create));
-            commandBuffer.end();
-            device.submitCommandBuffer(commandBuffer);
-            commandBuffer.waitForFence();
-            parameters = newParameters;
-            feature = newFeature;
-        } catch (RuntimeException | Error error) {
-            newFeature.close();
-            newParameters.close();
-            throw error;
-        } finally {
-            commandBuffer.destroy();
-        }
+        feature = newFeature;
+        configurePreset(newParameters);
+        NgxDLSSDCreateParams create = new NgxDLSSDCreateParams();
+        create.feature.width = algorithmResources.executionTexture(InteropResourceType.Color).getWidth();
+        create.feature.height = algorithmResources.executionTexture(InteropResourceType.Color).getHeight();
+        create.feature.targetWidth = algorithmResources.outputTexture().getWidth();
+        create.feature.targetHeight = algorithmResources.outputTexture().getHeight();
+        create.featureCreateFlags =
+                NgxConstants.DLSS_FLAG_MV_LOW_RES
+                | NgxConstants.DLSS_FLAG_HDR
+                | (initDesc.isMotionJittered() ? NgxConstants.DLSS_FLAG_MV_JITTERED : 0)
+                | (initDesc.isDepthInverted() ? NgxConstants.DLSS_FLAG_DEPTH_INVERTED : 0);
+        create.roughnessMode = requestedRoughnessMode;
+        create.depthType = requestedDepthType;
+        executeInteropCommands(commandContext -> requireSuccess(
+                "NGX_VULKAN_CREATE_DLSSD", NgxVulkan.createDLSSD(
+                        commandContext.nativeHandle(), 1, 1, newFeature, newParameters, create)));
     }
 
     private static void configurePreset(NgxParameters parameters) {
@@ -232,24 +191,24 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
         if (feature != null) {
             int result = feature.release();
             if (!NgxConstants.succeeded(result)) {
-                SuperResolution.LOGGER.error("Failed to release DLSS RR feature: {}", result);
+                throw new IllegalStateException("Failed to release DLSS RR feature: " + result);
             }
             feature = null;
         }
         if (parameters != null) {
             int result = parameters.destroy();
             if (!NgxConstants.succeeded(result)) {
-                SuperResolution.LOGGER.error("Failed to destroy DLSS RR parameters: {}", result);
+                throw new IllegalStateException("Failed to destroy DLSS RR parameters: " + result);
             }
             parameters = null;
         }
     }
 
     private void destroyDispatchResources() {
-        for (NgxDispatchResources value : dispatchResources.values()) {
-            value.close();
+        if (dispatchResources != null) {
+            dispatchResources.close();
+            dispatchResources = null;
         }
-        dispatchResources.clear();
     }
 
     private static NgxResourceVK createResource(VulkanTexture texture, boolean readWrite) {
@@ -282,11 +241,11 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
             eval.viewToClipMatrix = viewToClip;
         }
 
-        private void update(FrameResourcesSet frame) {
+        private void update(InteropDispatchResource<VulkanCommandContext> frame) {
             EnumMap<InputResourceType, VulkanTexture> presentTextures = new EnumMap<>(InputResourceType.class);
-            for (InteropResourceType type : frame.resourceTypes()) {
+            for (InteropResourceType type : frame.resources().types()) {
                 if (type.isInput()) {
-                    presentTextures.put(type.inputType(), frame.vulkan(type));
+                    presentTextures.put(type.inputType(), (VulkanTexture) frame.texture(type));
                 }
             }
             for (InputResourceType type : InputResourceType.values()) {
@@ -312,7 +271,7 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
                 }
             }
             if (output == null) {
-                output = createResource(frame.vulkan(OutputColor), true);
+                output = createResource((VulkanTexture) frame.outputTexture(), true);
             }
             eval.feature.inputColor = resources.get(InputResourceType.Color);
             eval.feature.output = output;
@@ -334,11 +293,11 @@ public class DLSSRR extends GlVulkanInteropAlgorithm {
             eval.screenSpaceSubsurfaceScatteringGuide = resources.get(InputResourceType.ScreenSpaceSubsurfaceScatteringGuide);
             eval.depthOfFieldGuide = resources.get(InputResourceType.DepthOfFieldGuide);
             worldToView.clear();
-            frame.frameData.viewMatrix().get(0, worldToView);
+            frame.frameData().viewMatrix().get(0, worldToView);
             worldToView.limit(16);
             worldToView.position(0);
             viewToClip.clear();
-            frame.frameData.projectionMatrix().get(0, viewToClip);
+            frame.frameData().projectionMatrix().get(0, viewToClip);
             viewToClip.limit(16);
             viewToClip.position(0);
         }

@@ -4,7 +4,6 @@ import io.homo.superresolution.api.interop.InteropResourceContext;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeProvider;
 
-/** The active work mode is the sole owner of its interop format context. */
 public final class InteropResourceContextManager {
     private InteropResourceContextManager() {
     }

@@ -26,7 +26,6 @@ import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.SuperResolutionAPI;
-import io.homo.superresolution.api.interop.InteropInputDispatch;
 import io.homo.superresolution.api.interop.InteropResourceContext;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.api.event.AlgorithmDispatchFinishEvent;
@@ -50,12 +49,12 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.CopyOperation;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlDebug;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.graphics.opengl.utils.GlTextureCopier;
+import io.homo.superresolution.srapi.SRRenderApiType;
 import org.joml.Vector2f;
 import org.lwjgl.opengl.GL41;
 
@@ -183,6 +182,8 @@ public class IrisShaderCompatUpscaleDispatcher {
             resources.with(type, getAlgorithmTexture(supplementalInputTextures.get(type), false));
         }
         return new DispatchResource(
+                SRRenderApiType.OPENGL,
+
                 RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getRenderHeight(),
                 new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
@@ -550,7 +551,7 @@ public class IrisShaderCompatUpscaleDispatcher {
             SuperResolutionAPI.EVENT_BUS.post(
                     new AlgorithmDispatchFinishEvent(
                             SuperResolution.currentAlgorithm,
-                            SuperResolution.currentAlgorithm.getOutputFrameBuffer()
+                            SuperResolution.currentAlgorithm.getOutputTexture()
                     )
             );
         }
@@ -559,7 +560,7 @@ public class IrisShaderCompatUpscaleDispatcher {
          */
         if (!frameGenOnly && dispatched) {
             GlDebug.pushGroup(64108436, "SRUpscale-CopyResult");
-            IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
+            ITexture sourceTexture = SuperResolution.getCurrentAlgorithm().getOutputTexture();
             if (outputConfig.enabled) {
                 for (String targetName : outputConfig.targetNames) {
                     ITexture targetTexture = cachedOutputTargetTextures.computeIfAbsent(targetName,
@@ -569,14 +570,13 @@ public class IrisShaderCompatUpscaleDispatcher {
                                     pass,
                                     false
                             ));
-                    ITexture sourceTexture = outFbo.getTexture(FrameBufferAttachmentType.Color);
                     if (targetTexture != null && sourceTexture != null) {
                         if (
                                 targetTexture.getTextureFormat() != sourceTexture.getTextureFormat()
                         ) {
                             GlTextureCopier.copy(
                                     CopyOperation.create()
-                                            .src(outFbo.getTexture(FrameBufferAttachmentType.Color))
+                                            .src(sourceTexture)
                                             .dst(targetTexture)
                                             .fromTo(CopyOperation.TextureChannel.A, CopyOperation.TextureChannel.A)
                                             .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)

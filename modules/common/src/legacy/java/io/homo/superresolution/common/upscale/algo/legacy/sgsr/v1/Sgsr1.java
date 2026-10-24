@@ -158,12 +158,8 @@ public class Sgsr1 extends AbstractAlgorithm {
     }
 
     @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return outputFbo;
+    public ITexture getOutputTexture() {
+        return output;
     }
 
-    @Override
-    public int getOutputTextureId() {
-        return Math.toIntExact(output.handle());
-    }
 }

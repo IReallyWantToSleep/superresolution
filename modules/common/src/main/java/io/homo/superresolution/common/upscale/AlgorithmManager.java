@@ -29,6 +29,7 @@ import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.srapi.SRRenderApiType;
 import io.homo.superresolution.thirdparty.fsr2.Fsr2Utils;
 import org.joml.Vector2f;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
@@ -195,6 +196,8 @@ public class AlgorithmManager {
             int jitterSequenceLength
     ) {
         return new DispatchResource(
+                SRRenderApiType.OPENGL,
+
                 RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getRenderHeight(),
                 new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),

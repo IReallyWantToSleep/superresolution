@@ -19,14 +19,14 @@
 package io.homo.superresolution.common.upscale.algo.legacy.sgsr.v2;
 
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.Destroyable;
 
 public abstract class AbstractSgsrVariant implements Destroyable {
-    protected IFrameBuffer output;
+    protected ITexture output;
     protected Sgsr2 parentSgsr;
 
-    public void setOutput(IFrameBuffer output) {
+    public void setOutput(ITexture output) {
         this.output = output;
     }
 

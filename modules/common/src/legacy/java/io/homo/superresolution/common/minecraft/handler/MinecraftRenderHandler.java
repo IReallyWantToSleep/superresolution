@@ -51,7 +51,6 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.PostChain;
 import org.joml.Vector2f;
-import org.lwjgl.opengl.GL46;
 #if MC_VER < MC_1_21_4
 import io.homo.superresolution.common.mixin.core.accessor.PostChainAccessor;
 #endif
@@ -300,10 +299,14 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                     }
 
                     if (SuperResolution.currentAlgorithm != null) {
+                        ITexture outputTexture = SuperResolution.currentAlgorithm.getOutputTexture();
+                        if (outputTexture == null) {
+                            outputTexture = colorTexture;
+                        }
                         SuperResolutionAPI.EVENT_BUS.post(
                                 new AlgorithmDispatchFinishEvent(
                                         SuperResolution.currentAlgorithm,
-                                        SuperResolution.currentAlgorithm.getOutputFrameBuffer()
+                                        outputTexture
                                 )
                         );
                     }
@@ -312,15 +315,22 @@ public class MinecraftRenderHandler implements IMinecraftRenderHandler {
                 //TODO:允许指定Filter
                 {
                     GlDebug.pushGroup(0x7190004, "Blit To Screen");
-                    IFrameBuffer outFbo = SuperResolution.getCurrentAlgorithm().getOutputFrameBuffer();
-                    Gl.DSA.blitFramebuffer(
-                            (int) outFbo.handle(),
-                            (int) RenderHandlerManager.getOriginRenderTarget().handle(),
-                            0, 0, outFbo.getWidth(), outFbo.getHeight(),
-                            0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight(),
-                            GL46.GL_COLOR_BUFFER_BIT,
-                            GL46.GL_NEAREST
-                    );
+                    ITexture outputTexture = SuperResolution.getCurrentAlgorithm().getOutputTexture();
+                    if (outputTexture == null) {
+                        outputTexture = colorTexture;
+                    }
+                    IBindableFrameBuffer screenTarget = RenderHandlerManager.getOriginRenderTarget();
+                    try (GlState outputState = new GlState(GlState.STATE_DRAW_FBO | GlState.STATE_VIEWPORT)) {
+                        screenTarget.bind(FrameBufferBindPoint.Write, false);
+                        glViewport(0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight());
+                        GlTexture2D.blitToScreen(
+                                outputTexture.getWidth(),
+                                outputTexture.getHeight(),
+                                RenderHandlerManager.getScreenWidth(),
+                                RenderHandlerManager.getScreenHeight(),
+                                outputTexture
+                        );
+                    }
                     GlDebug.popGroup();
                 }
 

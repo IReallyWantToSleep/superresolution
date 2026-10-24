@@ -28,7 +28,6 @@ import io.homo.superresolution.common.upscale.algo.legacy.sgsr.v2.Sgsr2;
 import io.homo.superresolution.common.upscale.algo.legacy.sgsr.v2.SgsrUtils;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferTextureAdapter;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
@@ -92,7 +91,7 @@ public class Sgsr3PassCompute extends AbstractSgsrVariant {
         upscalePipeline.descriptorSet().samplerTexture("MotionDepthClipAlphaBuffer", MotionDepthClipAlphaBuffer);
         upscalePipeline.descriptorSet().samplerTexture("YCoCgColor", YCoCgColor);
         upscalePipeline.descriptorSet().storageImage("HistoryOutput", HistoryOutput);
-        upscalePipeline.descriptorSet().storageImage("SceneColorOutput", FrameBufferTextureAdapter.ofColor(sgsr.getOutputFrameBuffer()));
+        upscalePipeline.descriptorSet().storageImage("SceneColorOutput", sgsr.getOutputTexture());
         upscalePipeline.descriptorSet().uniformBuffer("Params", sgsr.getParams());
         upscalePipeline.descriptorSet().update();
         ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();

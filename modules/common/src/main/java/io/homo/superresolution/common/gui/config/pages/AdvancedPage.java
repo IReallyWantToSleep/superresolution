@@ -25,7 +25,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.config.enums.InternalTextureFormat;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.common.gui.options.*;
-import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
+import io.homo.superresolution.common.upscale.interoplayer.InteropAlgorithm;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
@@ -75,7 +75,8 @@ public final class AdvancedPage implements ConfigPage {
                             .setDefaultValue(() -> true)
                             .setSaveConsumer(value -> {
                                 SuperResolutionConfig.setFlipVkGlInteropResourcesY(value);
-                                if (SuperResolution.currentAlgorithm instanceof GlVulkanInteropAlgorithm) {
+                                if (SuperResolution.currentAlgorithm instanceof InteropAlgorithm<?> interop
+                                        && interop.supportsInputCapture()) {
                                     SuperResolution.recreateAlgorithm();
                                 }
                             })

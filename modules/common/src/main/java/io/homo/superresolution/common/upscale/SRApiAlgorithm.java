@@ -19,46 +19,40 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.InitializationDescription;
-import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
-import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
+import io.homo.superresolution.common.upscale.interoplayer.InteropDispatchResource;
+import io.homo.superresolution.common.upscale.interoplayer.InteropResourceAccess;
+import io.homo.superresolution.common.upscale.interoplayer.VulkanInteropAlgorithm;
+import io.homo.superresolution.common.upscale.interoplayer.VulkanCommandContext;
 import io.homo.superresolution.srapi.SRUpscaleContext;
 
-/**
- * Vulkan/GL interop algorithm backed by an SR API upscale context.
- */
-public abstract class SRApiAlgorithm extends GlVulkanInteropAlgorithm {
+public abstract class SRApiAlgorithm extends VulkanInteropAlgorithm {
     protected SRUpscaleContext context;
 
-    protected abstract void recreateSRApiContext(InitializationDescription desc);
+    protected abstract void recreateSRApiContext(
+            InitializationDescription desc, InteropResourceAccess resources);
 
     protected abstract void destroySRApiContext();
 
-    protected abstract void dispatchSRApiContext(
-            VulkanCommandBuffer commandBuffer,
-            FrameResourcesSet frameResourcesSet
-    );
+    protected abstract boolean dispatchSRApiContext(
+            InteropDispatchResource<VulkanCommandContext> resource);
 
     @Override
-    protected final boolean isVulkanInteropReady() {
-        return context != null && context.nativePtr > 0;
+    protected final void createAlgorithmContext(InteropResourceAccess resources) {
+        recreateSRApiContext(initDesc, resources);
     }
 
     @Override
-    protected final void onInteropResourcesCreated() {
-        recreateSRApiContext(initDesc);
-    }
-
-    @Override
-    protected final void onBeforeInteropResourcesDestroyed() {
+    protected final void destroyAlgorithmContext() {
         destroySRApiContext();
         context = null;
     }
 
     @Override
-    protected final void dispatchVulkanUpscale(
-            VulkanCommandBuffer commandBuffer,
-            FrameResourcesSet frameResourcesSet
-    ) {
-        dispatchSRApiContext(commandBuffer, frameResourcesSet);
+    protected final boolean dispatchAlgorithm(
+            InteropDispatchResource<VulkanCommandContext> resource) {
+        if (context == null || context.nativePtr <= 0) {
+            return false;
+        }
+        return dispatchSRApiContext(resource);
     }
 }

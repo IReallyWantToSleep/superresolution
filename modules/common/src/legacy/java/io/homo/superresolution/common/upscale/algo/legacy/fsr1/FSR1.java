@@ -28,8 +28,6 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.impl.buffer.*;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
@@ -52,7 +50,6 @@ public class FSR1 extends AbstractAlgorithm {
     private IBuffer fsr1UBO;
 
     private ITexture fsr1TempTexture;
-    private IFrameBuffer outputFbo;
     private ITexture output;
 
     public static int checkFP16Support() {
@@ -100,18 +97,11 @@ public class FSR1 extends AbstractAlgorithm {
                         .usages(TextureUsages.create().sampler().storage())
                         .label("Fsr1OutputTexture")
                         .build());
-        outputFbo = RenderSystems.current().device().createFramebuffer(
-                FramebufferDescription.create()
-                        .colorAttachment(output)
-                        .label("Fsr1OutputFbo")
-                        .build());
 
     }
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        super.dispatch(dispatchResource);
-
         fsr1UBOData.setVec2("renderViewportSize", RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getRenderHeight());
         fsr1UBOData.setVec2("containerTextureSize", RenderHandlerManager.getRenderWidth(),
@@ -124,7 +114,8 @@ public class FSR1 extends AbstractAlgorithm {
         Vector3i workGroupSize = getWorkGroupSize();
 
         // EASU pass
-        fsr1EASUPipeline.descriptorSet().samplerTexture("inImage", getResources().get(InputResourceType.Color));
+        fsr1EASUPipeline.descriptorSet().samplerTexture(
+                "inImage", dispatchResource.resources().get(InputResourceType.Color));
         fsr1EASUPipeline.descriptorSet().storageImage("outImage", fsr1TempTexture);
         fsr1EASUPipeline.descriptorSet().uniformBuffer("fsr1_data", fsr1UBO);
         fsr1EASUPipeline.descriptorSet().update();
@@ -156,10 +147,6 @@ public class FSR1 extends AbstractAlgorithm {
         if (fsr1TempTexture != null) {
             fsr1TempTexture.destroy();
             fsr1TempTexture = null;
-        }
-        if (outputFbo != null) {
-            outputFbo.destroy();
-            outputFbo = null;
         }
         if (fsr1EASUShader != null) {
             fsr1EASUShader.destroy();
@@ -194,13 +181,8 @@ public class FSR1 extends AbstractAlgorithm {
     }
 
     @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return outputFbo;
-    }
-
-    @Override
-    public int getOutputTextureId() {
-        return Math.toIntExact(output.handle());
+    public ITexture getOutputTexture() {
+        return output;
     }
 
     public void initShader() {
