@@ -178,7 +178,7 @@ def call_gradle_task(task: str, arg: str = "") -> bool:
         return False
 
 def copy_build_libs(platform: str) -> None:
-    libs_dir = cur_path / platform / "build" / "libs"
+    libs_dir = cur_path / "modules" / platform / "build" / "libs"
     if not libs_dir.exists():
         print(f"Warning: Build directory does not exist - {libs_dir}")
         return
@@ -241,8 +241,9 @@ if __name__ == "__main__":
         call_gradle_task("clean")
         for platform in config["common"]["platforms"] + ["common"]:
             try:
-                shutil.rmtree(f"{platform}/build", ignore_errors=True)
-                print(f"Cleaned build directory: {platform}/build")
+                build_dir = cur_path / "modules" / platform / "build"
+                shutil.rmtree(build_dir, ignore_errors=True)
+                print(f"Cleaned build directory: {build_dir}")
             except Exception as e:
                 print(f"Failed to clean build directory {platform}: {e}")
         build_args = f"-Pminecraft_version_config={version}"

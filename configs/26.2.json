@@ -30,7 +30,7 @@
             "modrinth": [
                 {
                     "name": "iris",
-                    "version": "1.11.2+26.2-fabric"
+                    "version": "1.11.4+26.2-fabric"
                 },
                 {
                     "name": "sodium",
@@ -63,7 +63,7 @@
                 },
                 {
                     "name": "iris",
-                    "version": "1.11.2+26.2-neoforge"
+                    "version": "1.11.4+26.2-neoforge"
                 },
                 {
                     "name": "distanthorizons",

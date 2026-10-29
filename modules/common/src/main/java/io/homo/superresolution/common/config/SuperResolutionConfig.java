@@ -1,0 +1,915 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025-2026. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package io.homo.superresolution.common.config;
+
+import com.mojang.blaze3d.systems.RenderSystem;
+import io.homo.superresolution.api.AbstractAlgorithm;
+import io.homo.superresolution.api.config.ModConfigSpec;
+import io.homo.superresolution.api.config.ModConfigSpecBuilder;
+import io.homo.superresolution.api.config.values.list.StringListValue;
+import io.homo.superresolution.api.config.values.single.BooleanValue;
+import io.homo.superresolution.api.config.values.single.EnumValue;
+import io.homo.superresolution.api.config.values.single.FloatValue;
+import io.homo.superresolution.api.config.values.single.StringValue;
+import io.homo.superresolution.api.platform.OperatingSystem;
+import io.homo.superresolution.api.platform.OperatingSystemType;
+import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.api.registry.AlgorithmDescription;
+import io.homo.superresolution.api.registry.AlgorithmRegistry;
+import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.config.enums.CaptureMode;
+import io.homo.superresolution.common.config.enums.InternalTextureFormat;
+import io.homo.superresolution.common.config.special.SpecialConfigs;
+import io.homo.superresolution.api.registry.framegeneration.FrameGenerationGroups;
+import io.homo.superresolution.common.framegeneration.FrameGenerationMode;
+import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
+import io.homo.superresolution.common.lowlatency.LowLatency;
+import io.homo.superresolution.common.lowlatency.nv.NVIDIAReflexMode;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
+import io.homo.superresolution.common.presentation.api.PresentationBackendType;
+import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
+import io.homo.superresolution.common.workmode.SRWorkModeManager;
+import io.homo.superresolution.common.workmode.SRWorkModeState;
+import io.homo.superresolution.core.SuperResolutionConstants;
+import io.homo.superresolution.core.graphics.GpuVendor;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.opengl.GlDebug;
+import io.homo.superresolution.core.graphics.vulkan.VulkanDebug;
+import io.homo.superresolution.core.gui.MaterialTheme;
+import io.homo.superresolution.core.gui.SchemeVariant;
+import io.homo.superresolution.core.gui.core.backends.render.GuiScaleManager;
+import io.homo.superresolution.core.utils.Color;
+import net.minecraft.client.Minecraft;
+import org.lwjgl.opengl.GL;
+
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.function.Supplier;
+
+public class SuperResolutionConfig {
+    public static final ModConfigSpec SPEC;
+    public static final SpecialConfigs SPECIAL;
+    public static final BooleanValue ENABLE_UPSCALE;
+    public static final EnumValue<PresentationBackendType> PRESENTATION_BACKEND;
+    public static final FloatValue UPSCALE_RATIO;
+    public static final StringValue UPSCALE_ALGO;
+    public static final FloatValue SHARPNESS;
+    public static final EnumValue<CaptureMode> CAPTURE_MODE;
+    public static final BooleanValue DEBUG_DUMP_SHADER;
+    public static final BooleanValue SKIP_INIT_VULKAN;
+    public static final BooleanValue ENABLE_RENDER_DOC;
+    public static final BooleanValue ENABLE_IMGUI;
+    public static final BooleanValue ENABLE_PRESENT_INDICATOR;
+    public static final BooleanValue PAUSE_GAME_ON_GUI;
+    public static final BooleanValue AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS;
+    public static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
+    public static final BooleanValue ENABLE_COMPAT_SHADER_COMPILER;
+    public static final BooleanValue ENABLE_DETAILED_PROFILING;
+    public static final BooleanValue ENABLE_DEBUG;
+    public static final BooleanValue ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT;
+    public static final BooleanValue ENABLE_IRIS_EXTENSION;
+    public static final EnumValue<InternalTextureFormat> INTERNAL_TEXTURE_FORMAT;
+    public static final EnumValue<MaterialTheme> THEME;
+    public static final EnumValue<SchemeVariant> THEME_SCHEME_VARIANT;
+    public static final FloatValue THEME_CONTRAST_LEVEL;
+    public static final FloatValue UI_SCALE;
+    public static final StringValue THEME_COLOR;
+    public static final StringValue LOW_LATENCY_MODE;
+    public static final EnumValue<NVIDIAReflexMode> NVIDIA_REFLEX_MODE;
+    public static final EnumValue<FrameGenerationMode> FRAME_GENERATION_MODE;
+    public static final StringValue FRAME_GENERATION_PROVIDER;
+    public static final StringValue FRAME_GENERATION_BACKEND;
+    public static final BooleanValue FLIP_VK_GL_INTEROP_RESOURCES_Y;
+    public static final BooleanValue ENABLE_EXPERIMENTAL_ALGORITHMS;
+    public static final BooleanValue ENABLE_DLSS_RAY_RECONSTRUCTION;
+    public static final BooleanValue ENABLE_OPTISCALER;
+    public static final StringValue OPTISCALER_DLL_PATH;
+
+    public static final OperatingSystemType CURRENT_OS_TYPE = new OperatingSystem().type;
+    public static final Runnable resolutionChangeCallback;
+    private static volatile boolean unstableIncompatibleShaderSupportStartup;
+    private static volatile boolean irisExtensionStartup;
+    private static volatile boolean startupOptionsFrozen;
+
+    static {
+        ModConfigSpecBuilder builder = new ModConfigSpecBuilder();
+
+        Supplier<String> defaultAlgoSupplier = () -> getDefaultAlgorithm().codeName;
+
+        ENABLE_UPSCALE = builder.defineBoolean(
+                "enable_upscale",
+                () -> true,
+                "Enable super-resolution upscaling"
+        );
+        PRESENTATION_BACKEND = builder.defineEnum(
+                "presentation/backend",
+                PresentationBackendType.class,
+                () -> PresentationBackendType.OPENGL,
+                "Presentation backend. Requires a game restart."
+        );
+        UPSCALE_RATIO = builder.defineFloat(
+                "upscale_ratio",
+                () -> 1.7f,
+                "Upscale ratio factor",
+                value -> value >= 0.5f && value <= 4.0f
+        );
+        UPSCALE_ALGO = builder.defineString(
+                "upscale_algo",
+                defaultAlgoSupplier,
+                "Algorithm used for upscaling",
+                value -> {
+                    if (value == null) {
+                        return false;
+                    }
+                    AlgorithmDescription<?> algo = AlgorithmRegistry.getDescriptionByID(value);
+                    return algo != null && algo.getExtraResources().checkAll(SuperResolutionConstants.NATIVE_LIBRARIES_DIR).isEmpty();
+                }
+        );
+        SHARPNESS = builder.defineFloat(
+                "sharpness",
+                () -> 0.55f,
+                "Sharpness adjustment factor",
+                value -> value >= 0.0f && value <= 1.0f
+        );
+
+        CAPTURE_MODE = builder.defineEnum(
+                "capture_mode",
+                CaptureMode.class,
+                () -> CaptureMode.A,
+                "Screen capture mode"
+        );
+
+        PAUSE_GAME_ON_GUI = builder.defineBoolean(
+                "pause_game_on_gui",
+                () -> false,
+                "Pause game when GUI is open"
+        );
+
+        AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS = builder.defineBoolean(
+                "auto_hide_shaderpack_disabled_algorithms",
+                () -> false,
+                "Hide algorithms explicitly disabled by the active V3 shader pack from the algorithm selector"
+        );
+
+        INJECT_POST_CHAIN_BLACKLIST = builder.defineStringList(
+                "inject_post_chain_blacklist",
+                ArrayList::new,
+                "List of post-processing chains to skip injection",
+                value -> value != null && !value.isEmpty()
+        );
+
+        FLIP_VK_GL_INTEROP_RESOURCES_Y = builder.defineBoolean(
+                "flip_vk_gl_interop_resources_y",
+                () -> false,
+                "Flip Vulkan-OpenGL interop upscaling resources on the Y axis"
+        );
+
+        THEME = builder.defineEnum(
+                "theme",
+                MaterialTheme.class,
+                () -> MaterialTheme.Light,
+                "Interface theme"
+        );
+
+        THEME_COLOR = builder.defineString(
+                "theme_color",
+                () -> "#78DC77",
+                "Primary color for the interface theme",
+                value -> value != null && value.matches("^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{8})$")
+        );
+
+        THEME_SCHEME_VARIANT = builder.defineEnum(
+                "theme_scheme_variant",
+                SchemeVariant.class,
+                () -> SchemeVariant.FIDELITY,
+                "Color scheme variant for the interface theme"
+        );
+
+        THEME_CONTRAST_LEVEL = builder.defineFloat(
+                "theme_contrast_level",
+                () -> 0.0f,
+                "Contrast level for the interface theme (-1.0 to 1.0)",
+                value -> value >= -1.0f && value <= 1.0f
+        );
+
+        UI_SCALE = builder.defineFloat(
+                "ui_scale",
+                () -> 1.0f,
+                "Super Resolution interface scale",
+                value -> value >= 0.5f && value <= 2.0f
+        );
+        UI_SCALE.onChange((oldValue, newValue) -> GuiScaleManager.getInstance().setUserScale(newValue));
+
+        DEBUG_DUMP_SHADER = builder.defineBoolean(
+                "debug/debug_dump_shader",
+                () -> false,
+                "Dump shaders for debugging purposes"
+        );
+
+        SKIP_INIT_VULKAN = builder.defineBoolean(
+                "debug/skip_init_vulkan",
+                () -> true,
+                "Skip Vulkan initialization (auto-set based on OS)"
+        );
+
+        ENABLE_RENDER_DOC = builder.defineBoolean(
+                "debug/enable_render_doc",
+                () -> false,
+                "Enable RenderDoc integration (auto-disabled on incompatible OS)"
+        );
+
+        ENABLE_IMGUI = builder.defineBoolean(
+                "debug/enable_imgui",
+                () -> false,
+                "Enable ImGui debug interface (auto-disabled on incompatible OS)"
+        );
+
+        ENABLE_DEBUG = builder.defineBoolean(
+                "debug/enable_debug",
+                () -> false,
+                "Enable debug mode"
+        );
+        ENABLE_PRESENT_INDICATOR = builder.defineBoolean(
+                "debug/enable_present_indicator",
+                () -> false,
+                "Stamp a small square onto every presented frame (white = rendered, cyan = generated) to visualize frame generation cadence"
+        );
+        ENABLE_EXPERIMENTAL_ALGORITHMS = builder.defineBoolean(
+                "experiment/enable_experimental_algorithms",
+                () -> false,
+                "Enable experimental algorithms"
+        );
+        ENABLE_DLSS_RAY_RECONSTRUCTION = builder.defineBoolean(
+                "experiment/enable_dlss_ray_reconstruction",
+                () -> false,
+                "Register NVIDIA DLSS Ray Reconstruction during startup"
+        );
+
+        ENABLE_OPTISCALER = builder.defineBoolean(
+                "optiscaler/enabled",
+                () -> false,
+                "Load the selected OptiScaler DLL during early game startup."
+        );
+        OPTISCALER_DLL_PATH = builder.defineString(
+                "optiscaler/dll_path",
+                () -> "",
+                "Absolute path to the OptiScaler DLL file."
+        );
+
+        ENABLE_COMPAT_SHADER_COMPILER = builder.defineBoolean(
+                "compat_shader_compiler",
+                () -> {
+                    try {
+                        if (GL.getCapabilities() == null) {
+                            return false;
+                        }
+                    } catch (Exception e) {
+                        return false;
+                    }
+                    return RenderSystem.isOnRenderThread() ? (
+                            GraphicsCapabilities.detectGpuVendor() == GpuVendor.Intel ||
+                            !GraphicsCapabilities.hasGLExtension("GL_ARB_gl_spirv") ||
+                            (GraphicsCapabilities.getGLVersion()[0] >= 4 && GraphicsCapabilities.getGLVersion()[1] < 2)
+                    ) : false;
+                },
+                "This option enables the use of a compatibility shader compiler for compiling shaders when set to true."
+        );
+
+        ENABLE_DETAILED_PROFILING = builder.defineBoolean(
+                "debug/enable_detailed_profiling",
+                () -> false,
+                "Enable more detailed performance profiling for advanced analysis."
+        );
+        ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT = builder.defineBoolean(
+                "enable_unstable_incompatible_shader_support",
+                () -> false,
+                "Enable unstable super resolution support for incompatible shader packs. Requires a game restart."
+        );
+        ENABLE_IRIS_EXTENSION = builder.defineBoolean(
+                "enable_iris_extension",
+                () -> false,
+                "Enable Super Resolution extensions for Iris (e.g. the irisExt_velocity vertex attribute). Requires a game restart."
+        );
+
+        INTERNAL_TEXTURE_FORMAT = builder.defineEnum(
+                "internal_texture_format",
+                InternalTextureFormat.class,
+                () -> InternalTextureFormat.AUTO,
+                "The precision of the internal texture format affects video memory consumption: higher precision results in greater consumption, while lower precision leads to smaller consumption. Note: Excessively low precision may cause noticeable color banding in the image."
+        );
+        INTERNAL_TEXTURE_FORMAT.onChange(
+                (oldValue, newValue) ->
+                        SuperResolution.recreateAlgorithm()
+        );
+
+        LOW_LATENCY_MODE = builder.defineString(
+                "low_latency/mode",
+                () -> "superresolution:none",
+                "Low latency mode",
+                // Low-latency backends register after the main config is constructed
+                // (and external backends may register even later). Resolve unknown
+                // ids at runtime instead of overwriting persisted configuration here.
+                value -> value != null && !value.isBlank()
+        );
+        LOW_LATENCY_MODE.onChange((oldValue, newValue) -> {
+            LowLatency.setMode(newValue);
+        });
+
+
+        NVIDIA_REFLEX_MODE = builder.defineEnum(
+                "low_latency/nv_reflex/mode",
+                NVIDIAReflexMode.class,
+                () -> NVIDIAReflexMode.OFF,
+                "NVIDIA Reflex low latency mode"
+        );
+
+        NVIDIA_REFLEX_MODE.onChange((oldValue, newValue) -> {
+            if ("superresolution:nv_reflex".equals(LowLatency.modeId()) && LowLatency.lowLatency() != null) {
+                LowLatency.lowLatency().refresh();
+            }
+        });
+
+        FRAME_GENERATION_MODE = builder.defineEnum(
+                "frame_generation/mode",
+                FrameGenerationMode.class,
+                () -> FrameGenerationMode.OFF,
+                "NVIDIA DLSS Frame Generation mode"
+        );
+
+        FRAME_GENERATION_PROVIDER = builder.defineString(
+                "frame_generation/provider",
+                () -> FrameGenerationDescriptions.AUTO_ID,
+                "DLSS Frame Generation algorithm group. The automatic entry considers every registered group.",
+                // Not checked against the registry: backends register later (and external
+                // ones later still), so an id is only resolved when it is used. An
+                // unknown id falls back to the automatic entry in FrameGeneration.mode().
+                value -> value != null && !value.isBlank()
+        );
+
+        FRAME_GENERATION_BACKEND = builder.defineString(
+                "frame_generation/backend",
+                () -> FrameGenerationDescriptions.AUTO_ID,
+                "Concrete DLSS Frame Generation backend preference. Auto keeps the registered backend priority.",
+                value -> value != null && !value.isBlank()
+        );
+
+        SPECIAL = new SpecialConfigs(builder);
+        Path configPath = SuperResolutionConstants.CONFIG_FILE;
+        builder.configPath(configPath);
+        SPEC = builder.build();
+        resolutionChangeCallback = () -> {
+            RenderHandlerManager.resize();
+            Minecraft.getInstance().gameRenderer.resize(
+                    RenderHandlerManager.getScreenWidth(),
+                    RenderHandlerManager.getScreenHeight()
+            );
+            SuperResolution.getInstance().forceResize(
+                    RenderHandlerManager.getScreenWidth(),
+                    RenderHandlerManager.getScreenHeight()
+            );
+
+        };
+    }
+
+    public static synchronized void freezeStartupOptions() {
+        if (startupOptionsFrozen) {
+            return;
+        }
+        unstableIncompatibleShaderSupportStartup = ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT.get();
+        irisExtensionStartup = ENABLE_IRIS_EXTENSION.get();
+        startupOptionsFrozen = true;
+    }
+
+    public static boolean isUnstableIncompatibleShaderSupportEnabledAtStartup() {
+        return startupOptionsFrozen && unstableIncompatibleShaderSupportStartup;
+    }
+
+    public static boolean isIrisExtensionEnabledAtStartup() {
+        return startupOptionsFrozen && irisExtensionStartup;
+    }
+
+    public static boolean isEnableIrisExtension() {
+        return ENABLE_IRIS_EXTENSION.get();
+    }
+
+    public static void setEnableIrisExtension(boolean value) {
+        ENABLE_IRIS_EXTENSION.set(value);
+    }
+
+    public static boolean isEnableUnstableIncompatibleShaderSupport() {
+        return ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT.get();
+    }
+
+    public static void setEnableUnstableIncompatibleShaderSupport(boolean value) {
+        ENABLE_UNSTABLE_INCOMPATIBLE_SHADER_SUPPORT.set(value);
+    }
+
+    public static AlgorithmDescription<?> getDefaultAlgorithm() {
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            return AlgorithmDescriptions.NONE;
+        }
+        try {
+            GL.getCapabilities();
+        } catch (Exception e) {
+            AlgorithmDescription<?> fsr1 = AlgorithmRegistry.getDescriptionByID("fsr1");
+            return fsr1 != null ? fsr1 : AlgorithmDescriptions.NONE;
+        }
+        for (AlgorithmDescription<?> algorithmDescription : AlgorithmRegistry.getAlgorithmMap().values()) {
+            if (algorithmDescription.requirement.check().support()) {
+                return algorithmDescription;
+            }
+        }
+
+        SuperResolution.LOGGER.info("WHAT? Your hardware does not support all algorithms?"); //WHAT?
+        return AlgorithmDescriptions.NONE;
+    }
+
+    public static float getRenderScaleFactor() {
+        return 1/getUpscaleRatio();
+    }
+
+    public static AlgorithmDescription<?> getUpscaleAlgorithm() {
+        String algoName = UPSCALE_ALGO.get();
+        AlgorithmDescription<?> algo = AlgorithmRegistry.getDescriptionByID(algoName);
+
+        if (algo == null) {
+            algo = getDefaultAlgorithm();
+            UPSCALE_ALGO.set(algo.codeName);
+        }
+
+        if (!SuperResolution.isRenderingInitialized) {
+            return algo;
+        }
+
+        if (!algo.requirement.check().support() && !Platform.currentPlatform.isDevelopmentEnvironment()) {
+            SuperResolution.LOGGER.warn("Algorithm {} is unsupported; falling back to the default algorithm", algo.displayName);
+            AlgorithmDescription<?> defaultAlgo = getDefaultAlgorithm();
+            UPSCALE_ALGO.set(defaultAlgo.codeName);
+            return defaultAlgo;
+        }
+
+        if (SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algo.codeName)) {
+            SuperResolution.LOGGER.warn("Algorithm {} is disabled by the current shader pack; falling back to the default algorithm", algo.displayName);
+            return getDefaultAlgorithm();
+        }
+
+        if (AlgorithmDescriptions.NONE.equals(algo)
+                && !SRWorkModeManager.getCurrentState().supportsFrameGeneration()) {
+            SuperResolution.LOGGER.warn("The current shader pack does not support frame-generation-only mode; the None algorithm is unavailable. Falling back to the default algorithm.");
+            return getDefaultAlgorithm();
+        }
+
+        return algo;
+    }
+
+    public static synchronized boolean setUpscaleAlgorithm(AlgorithmDescription<?> newAlgo) {
+        if (newAlgo == null) {
+            newAlgo = getDefaultAlgorithm();
+        }
+
+        String algoName = UPSCALE_ALGO.get();
+        AlgorithmDescription<?> currentAlgo = AlgorithmRegistry.getDescriptionByID(algoName);
+
+        if (currentAlgo == newAlgo) {
+            return true;
+        }
+
+        AbstractAlgorithm oldAlgorithmInstance = SuperResolution.currentAlgorithm;
+        AlgorithmDescription<?> oldDescription = SuperResolution.algorithmDescription;
+
+        try {
+            UPSCALE_ALGO.set(newAlgo.codeName);
+            SuperResolution.algorithmDescription = newAlgo;
+
+            if (!SuperResolution.createAlgorithm()) {
+                throw new RuntimeException("Failed to create algorithm");
+            }
+        } catch (Throwable failure) {
+            SuperResolution.LOGGER.error(
+                    "Failed to switch to algorithm {}; attempting rollback",
+                    newAlgo.displayName,
+                    failure);
+
+            UPSCALE_ALGO.set(oldDescription != null ? oldDescription.codeName : AlgorithmDescriptions.NONE.codeName);
+            SuperResolution.algorithmDescription = oldDescription;
+
+            if (SuperResolution.currentAlgorithm == null && oldDescription != null) {
+                boolean rollbackSucceeded = false;
+                try {
+                    rollbackSucceeded = SuperResolution.createAlgorithm();
+                } catch (Throwable rollbackFailure) {
+                    if (failure != rollbackFailure) {
+                        failure.addSuppressed(rollbackFailure);
+                    }
+                }
+                if (!rollbackSucceeded) {
+                    try {
+                        fallbackToNone();
+                    } catch (Throwable fallbackFailure) {
+                        if (failure != fallbackFailure) {
+                            failure.addSuppressed(fallbackFailure);
+                        }
+                    }
+                }
+            }
+            SuperResolution.rethrowAlgorithmError(failure);
+            return false;
+        }
+
+        AbstractAlgorithm newAlgorithmInstance = SuperResolution.currentAlgorithm;
+        if (oldAlgorithmInstance != null
+                && newAlgorithmInstance != null
+                && newAlgorithmInstance != oldAlgorithmInstance) {
+            try {
+                oldAlgorithmInstance.destroy();
+            } catch (Throwable failure) {
+                SuperResolution.retainAlgorithmForDestroyRetry(
+                        oldAlgorithmInstance,
+                        failure);
+                SuperResolution.rethrowAlgorithmError(failure);
+            }
+        }
+        return true;
+    }
+
+    private static void fallbackToNone() {
+        SuperResolution.LOGGER.error("All rollback attempts failed; using the NONE algorithm");
+        UPSCALE_ALGO.set(AlgorithmDescriptions.NONE.codeName);
+        SuperResolution.algorithmDescription = AlgorithmDescriptions.NONE;
+        SuperResolution.createAlgorithm();
+    }
+
+    public static boolean isEnableUpscaleOriginal() {
+        return ENABLE_UPSCALE.get();
+    }
+
+    public static boolean isEnableUpscale() {
+        if (!SRWorkModeManager.hasAvailableWorkMode()) {
+            return false;
+        }
+        return isEnableUpscaleOriginal();
+    }
+
+    public static boolean setEnableUpscale(boolean value) {
+        if (value && !SRWorkModeManager.hasAvailableWorkMode()) {
+            return false;
+        }
+        boolean previousValue = isEnableUpscale();
+        ENABLE_UPSCALE.set(value);
+        if (previousValue != isEnableUpscale()) {
+            resolutionChangeCallback.run();
+            if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+                SRWorkModeManager.reloadShaderPack();
+            }
+        }
+        return true;
+    }
+
+    public static float getSharpness() {
+        return SHARPNESS.get();
+    }
+
+    public static void setSharpness(float value) {
+        SHARPNESS.set(value);
+    }
+
+    public static CaptureMode getCaptureMode() {
+        return CAPTURE_MODE.get();
+    }
+
+    public static void setCaptureMode(CaptureMode value) {
+        CAPTURE_MODE.set(value);
+    }
+
+    public static float getUpscaleRatio() {
+        return Math.max(UPSCALE_RATIO.get(), getMinUpscaleRatio());
+    }
+
+    public static void setUpscaleRatio(float value) {
+        boolean resolutionChanged = getUpscaleRatio() != value;
+        value = Math.max(value, getMinUpscaleRatio());
+        UPSCALE_RATIO.set(value);
+        if (resolutionChanged) {
+            resolutionChangeCallback.run();
+        }
+    }
+
+    public static boolean isDebugDumpShader() {
+        return DEBUG_DUMP_SHADER.get();
+    }
+
+    public static void setDebugDumpShader(boolean value) {
+        DEBUG_DUMP_SHADER.set(value);
+    }
+
+    public static boolean isSkipInitVulkan() {
+        return SKIP_INIT_VULKAN.get();
+    }
+
+    public static void setSkipInitVulkan(boolean value) {
+        SKIP_INIT_VULKAN.set(value);
+    }
+
+    public static boolean isEnableRenderDoc() {
+        return ENABLE_RENDER_DOC.get();
+    }
+
+    public static void setEnableRenderDoc(boolean value) {
+        ENABLE_RENDER_DOC.set(value);
+    }
+
+    public static boolean isEnableImgui() {
+        return ENABLE_IMGUI.get();
+    }
+
+    public static void setEnableImgui(boolean value) {
+        ENABLE_IMGUI.set(value);
+    }
+
+    public static boolean isEnablePresentIndicator() {
+        return ENABLE_PRESENT_INDICATOR.get();
+    }
+
+    public static void setEnablePresentIndicator(boolean value) {
+        ENABLE_PRESENT_INDICATOR.set(value);
+    }
+
+    public static PresentationBackendType getPresentationBackend() {
+        return PRESENTATION_BACKEND.get();
+    }
+
+    public static void setPresentationBackend(PresentationBackendType value) {
+        PRESENTATION_BACKEND.set(value);
+    }
+
+    public static boolean isPauseGameOnGui() {
+        return PAUSE_GAME_ON_GUI.get();
+    }
+
+    public static void setPauseGameOnGui(boolean value) {
+        PAUSE_GAME_ON_GUI.set(value);
+    }
+
+    public static boolean isAutoHideShaderpackDisabledAlgorithms() {
+        return AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS.get();
+    }
+
+    public static void setAutoHideShaderpackDisabledAlgorithms(boolean value) {
+        AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS.set(value);
+    }
+
+    public static List<String> getInjectPostChainBlackList() {
+        return INJECT_POST_CHAIN_BLACKLIST.get();
+    }
+
+    public static void setInjectPostChainBlackList(List<String> value) {
+        INJECT_POST_CHAIN_BLACKLIST.set(value);
+    }
+
+    public static boolean isEnableCompatShaderCompiler() {
+        return ENABLE_COMPAT_SHADER_COMPILER.get() || ENABLE_COMPAT_SHADER_COMPILER.getDefault();
+    }
+
+    public static void setEnableCompatShaderCompiler(boolean value) {
+        ENABLE_COMPAT_SHADER_COMPILER.set(value);
+    }
+
+    public static boolean isEnableDetailedProfiling() {
+        return ENABLE_DETAILED_PROFILING.get();
+    }
+
+    public static void setEnableDetailedProfiling(boolean value) {
+        ENABLE_DETAILED_PROFILING.set(value);
+    }
+
+    public static boolean isEnableDebug() {
+        return ENABLE_DEBUG.get();
+    }
+
+    public static void setEnableDebug(boolean value) {
+        ENABLE_DEBUG.set(value);
+        GlDebug.setEnabled(value);
+        VulkanDebug.setEnabled(value);
+    }
+
+    public static boolean isEnableExperimentalAlgorithms() {
+        return ENABLE_EXPERIMENTAL_ALGORITHMS.get();
+    }
+
+    public static void setEnableExperimentalAlgorithms(boolean value) {
+        ENABLE_EXPERIMENTAL_ALGORITHMS.set(value);
+    }
+
+    public static boolean isEnableDlssRayReconstruction() {
+        return ENABLE_DLSS_RAY_RECONSTRUCTION.get();
+    }
+
+    public static void setEnableDlssRayReconstruction(boolean value) {
+        ENABLE_DLSS_RAY_RECONSTRUCTION.set(value);
+    }
+
+    public static boolean isEnableOptiScaler() {
+        return ENABLE_OPTISCALER.get();
+    }
+
+    public static void setEnableOptiScaler(boolean value) {
+        ENABLE_OPTISCALER.set(value);
+    }
+
+    public static String getOptiScalerDllPath() {
+        return OPTISCALER_DLL_PATH.get();
+    }
+
+    public static void setOptiScalerDllPath(String value) {
+        OPTISCALER_DLL_PATH.set(value == null ? "" : value);
+    }
+
+    public static String getInternalTextureFormatGlslFormatQualifier() {
+        return getInternalTextureFormat().getGlslFormatQualifier();
+    }
+
+    public static TextureFormat getInternalTextureFormat() {
+        //user settings > shaderPack > default
+        if (INTERNAL_TEXTURE_FORMAT.get() == InternalTextureFormat.AUTO) {
+            SRWorkModeState state = SRWorkModeManager.getCurrentState();
+            TextureFormat format = state.internalTextureFormat();
+            return format == null ? TextureFormat.RGBA16F : format;
+        }
+        return INTERNAL_TEXTURE_FORMAT.get().format();
+    }
+
+    public static void setInternalTextureFormat(InternalTextureFormat format) {
+        INTERNAL_TEXTURE_FORMAT.set(format);
+    }
+
+    public static MaterialTheme getTheme() {
+        return THEME.get();
+    }
+
+    public static void setTheme(MaterialTheme value) {
+        THEME.set(value);
+    }
+
+    public static float getUiScale() {
+        return UI_SCALE.get();
+    }
+
+    public static void setUiScale(float value) {
+        UI_SCALE.set(Math.max(0.5f, Math.min(2.0f, value)));
+    }
+
+    public static boolean isFlipVkGlInteropResourcesY() {
+        return FLIP_VK_GL_INTEROP_RESOURCES_Y.get();
+    }
+
+    public static void setFlipVkGlInteropResourcesY(boolean value) {
+        FLIP_VK_GL_INTEROP_RESOURCES_Y.set(value);
+    }
+
+    public static float getMinUpscaleRatio() {
+        if (SRWorkModeManager.isCurrentMode(SRWorkModeManager.SHADER_COMPAT)) {
+            return 1.0f;
+        }
+        if (
+                getUpscaleAlgorithm().equals(AlgorithmDescriptions.DLSS) ||
+                        getUpscaleAlgorithm().equals(AlgorithmDescriptions.DLSSRR) ||
+                        getUpscaleAlgorithm().equals(AlgorithmDescriptions.XESS)
+
+        ) {
+            return 1.0f;
+        }
+        return 0.5f;
+        /*
+        int maxSize = 16384;
+        if (Minecraft.getInstance().getWindow() == null) return 0.1f;
+        double maxWidth = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenWidth());
+        double maxHeight = 1 / ((double) maxSize / Minecraft.getInstance().getWindow().getScreenHeight());
+        return (float) Math.max(maxWidth, maxHeight);
+        */
+    }
+
+    public static Color getThemeColor() {
+        String colorStr = THEME_COLOR.get();
+        try {
+            return Color.from(colorStr);
+        } catch (IllegalArgumentException e) {
+            SuperResolution.LOGGER.warn("Invalid theme color configuration: {}; using the default color", colorStr);
+            return Color.from("#78DC77");
+        }
+    }
+
+    public static void setThemeColor(Color color) {
+        THEME_COLOR.set(color.hex());
+    }
+
+    public static SchemeVariant getThemeSchemeVariant() {
+        return THEME_SCHEME_VARIANT.get();
+    }
+
+    public static void setThemeSchemeVariant(SchemeVariant value) {
+        THEME_SCHEME_VARIANT.set(value);
+    }
+
+    public static float getThemeContrastLevel() {
+        return THEME_CONTRAST_LEVEL.get();
+    }
+
+    public static void setThemeContrastLevel(float value) {
+        THEME_CONTRAST_LEVEL.set(Math.max(-1.0f, Math.min(1.0f, value)));
+    }
+
+    public static String getLowLatencyMode() {
+        return LOW_LATENCY_MODE.get();
+    }
+
+    public static void setLowLatencyMode(String value) {
+        LOW_LATENCY_MODE.set(value);
+    }
+
+    public static NVIDIAReflexMode getNVIDIAReflexMode() {
+        return NVIDIA_REFLEX_MODE.get();
+    }
+
+    public static void setNVIDIAReflexMode(NVIDIAReflexMode value) {
+        NVIDIA_REFLEX_MODE.set(value);
+    }
+
+    public static FrameGenerationMode getFrameGenerationMode() {
+        return FRAME_GENERATION_MODE.get();
+    }
+
+    public static void setFrameGenerationMode(FrameGenerationMode value) {
+        FRAME_GENERATION_MODE.set(value);
+    }
+
+    public static String getFrameGenerationProvider() {
+        String stored = FRAME_GENERATION_PROVIDER.get();
+        // Configurations written before the algorithm-group split named a concrete backend;
+        // both of those backends now live in the DLSS FG group. Normalized on first read.
+        String migrated = switch (stored) {
+            case "superresolution:streamline", "wisteria:streamline", "wisteria:ngx" ->
+                    FrameGenerationGroups.DLSS_FG.getId();
+            default -> stored;
+        };
+        if (!migrated.equals(stored)) {
+            if (FrameGenerationDescriptions.AUTO_ID.equals(FRAME_GENERATION_BACKEND.get())) {
+                FRAME_GENERATION_BACKEND.set(
+                        "wisteria:ngx".equals(stored)
+                                ? "wisteria:ngx"
+                                : "wisteria:streamline"
+                );
+            }
+            FRAME_GENERATION_PROVIDER.set(migrated);
+        }
+        return migrated;
+    }
+
+    public static void setFrameGenerationProvider(String value) {
+        FRAME_GENERATION_PROVIDER.set(value);
+    }
+
+    public static String getFrameGenerationBackend() {
+        String stored = FRAME_GENERATION_BACKEND.get();
+        if (!FrameGenerationDescriptions.AUTO_ID.equals(stored)) {
+            return stored;
+        }
+
+        // Preserve configurations written before provider selection was split into an
+        // algorithm group and a concrete backend preference.
+        String legacyProvider = FRAME_GENERATION_PROVIDER.get();
+        String migrated = switch (legacyProvider) {
+            case "superresolution:streamline", "wisteria:streamline" -> "wisteria:streamline";
+            case "wisteria:ngx" -> "wisteria:ngx";
+            default -> stored;
+        };
+        if (!migrated.equals(stored)) {
+            FRAME_GENERATION_BACKEND.set(migrated);
+        }
+        return migrated;
+    }
+
+    public static void setFrameGenerationBackend(String value) {
+        FRAME_GENERATION_BACKEND.set(
+                value == null || value.isBlank() ? FrameGenerationDescriptions.AUTO_ID : value
+        );
+    }
+}

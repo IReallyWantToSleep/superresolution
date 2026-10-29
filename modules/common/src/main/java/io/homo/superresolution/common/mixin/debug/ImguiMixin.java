@@ -1,0 +1,100 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025-2026. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package io.homo.superresolution.common.mixin.debug;
+
+import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.debug.imgui.ImguiMain;
+import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
+import net.minecraft.client.Minecraft;
+import net.minecraft.client.renderer.GameRenderer;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+import java.util.Optional;
+import java.util.OptionalInt;
+
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.commands.RenderPass;
+#endif
+
+@Mixin(GameRenderer.class)
+public class ImguiMixin {
+    #if IS_DEV == 1
+    #if MC_VER < MC_1_21_5
+    @Inject(at = @At(value = "TAIL"), method = "render")
+    private void onRender(CallbackInfo ci) {
+        if (!(SuperResolutionConfig.isEnableImgui())) return;
+        if (ImguiMain.getInstance() != null) {
+            ImguiMain.getInstance().render();
+        }
+    }
+    #elif MC_VER >= MC_26_1_2
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/render/GuiRenderer;endFrame()V",shift = At.Shift.AFTER), method = "render")
+    private void onRender(CallbackInfo ci) {
+        if (!(SuperResolutionConfig.isEnableImgui())) return;
+        if (ImguiMain.getInstance() != null) {
+            try (
+                    #if MC_VER >= MC_26_3
+                    RenderPass
+                    #else
+                    com.mojang.blaze3d.systems.RenderPass
+                    #endif
+                    renderPass = com.mojang.blaze3d.systems.RenderSystem.getDevice().createCommandEncoder().createRenderPass(
+                    ()->"SR-Imgui",
+                    MinecraftUtils.getMainRenderTarget().getColorTextureView(),
+                    #if MC_VER >= MC_26_2
+                    Optional.empty()
+                    #else
+                    OptionalInt.empty()
+                    #endif
+            )) {
+                ImguiMain.getInstance().render();
+            }
+        }
+    }
+    #elif MC_VER > MC_1_21_11
+    @Inject(at = @At(value = "INVOKE", target = "Lnet/minecraft/util/profiling/ProfilerFiller;pop()V",ordinal = 2), method = "render")
+    private void onRender(CallbackInfo ci) {
+        if (!(SuperResolutionConfig.isEnableImgui())) return;
+        if (ImguiMain.getInstance() != null) {
+            ImguiMain.getInstance().render();
+        }
+    }
+    #else
+    @Inject(at = @At(value = "RETURN"), method = "render")
+    private void onRender(CallbackInfo ci) {
+        if (!(SuperResolutionConfig.isEnableImgui())) return;
+        if (ImguiMain.getInstance() != null) {
+            ImguiMain.getInstance().render();
+        }
+    }
+    #endif
+
+    @Inject(at = @At(value = "HEAD"), method = "close")
+    private void onExit(CallbackInfo ci) {
+        if (!(SuperResolutionConfig.isEnableImgui())) return;
+        if (ImguiMain.getInstance() != null) {
+            ImguiMain.getInstance().destroy();
+        }
+    }
+    #endif
+}

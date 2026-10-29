@@ -118,35 +118,35 @@ runs/
 # Avoid ignoring Gradle wrapper jar file (.jar files are usually ignored)
 !gradle-wrapper.jar
 !*.jar
-/forge/run
-/fabric/runs
+/modules/forge/run
+/modules/fabric/runs
 /logs/
 /.architectury-transformer/
 
 build.properties
 build_jars
 
-/fabric/bin
-/forge/bin
-/neoforge/bin
-/common/bin
-/native/bin
-/native/cpp/bin/
+/modules/fabric/bin
+/modules/forge/bin
+/modules/neoforge/bin
+/modules/common/bin
+/modules/native/bin
+/modules/native/cpp/bin/
 
 .vscode
 */bin/*
 /bin
 
 *.pdb
-/native/cpp/output/
-/native/cpp/prebuilt/
-/native/cpp/buildLinux*/*
-/native/cpp/buildWindows*/*
+/modules/native/cpp/output/
+/modules/native/cpp/prebuilt/
+/modules/native/cpp/buildLinux*/*
+/modules/native/cpp/buildWindows*/*
 
 __pycache__
-/native/cpp/SRNative*/libraries/
+/modules/native/cpp/SRNative*/libraries/
 /.claude/
-/common/src/main/resources/lib/
+/modules/common/src/main/resources/lib/
 .gradle*
 /AGENTS.md.bak
 /.codemoss/

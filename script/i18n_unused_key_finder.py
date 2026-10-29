@@ -7,10 +7,10 @@ import i18n_validator
 script_path = Path(__file__).resolve()
 cur_path = script_path.parent.parent
 
-forge_src_dir = cur_path / "forge" / "src" / "main" / "java"
-neoforge_src_dir = cur_path / "neoforge" / "src" / "main" / "java"
-fabric_src_dir = cur_path / "fabric" / "src" / "main" / "java"
-common_src_dir = cur_path / "common" / "src" / "main" / "java"
+forge_src_dir = cur_path / "modules" / "forge" / "src" / "main" / "java"
+neoforge_src_dir = cur_path / "modules" / "neoforge" / "src" / "main" / "java"
+fabric_src_dir = cur_path / "modules" / "fabric" / "src" / "main" / "java"
+common_src_dir = cur_path / "modules" / "common" / "src" / "main" / "java"
 
 def find_i18n_keys_in_java_files(file_path: Path) -> List[str]:
     i18n_keys = []

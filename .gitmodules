@@ -1,15 +1,15 @@
-[submodule "native/cpp/SRNativeMain/third_party/freetype"]
-	path = native/cpp/SRNativeMain/third_party/freetype
+[submodule "modules/native/cpp/SRNativeMain/third_party/freetype"]
+	path = modules/native/cpp/SRNativeMain/third_party/freetype
 	url = https://github.com/freetype/freetype
-[submodule "native/cpp/SRNativeMain/third_party/glslang"]
-	path = native/cpp/SRNativeMain/third_party/glslang
+[submodule "modules/native/cpp/SRNativeMain/third_party/glslang"]
+	path = modules/native/cpp/SRNativeMain/third_party/glslang
 	url = https://github.com/KhronosGroup/glslang
-[submodule "native/cpp/SRNativeFSR/SDK"]
-	path = native/cpp/SRNativeFSR/SDK
+[submodule "modules/native/cpp/SRNativeFSR/SDK"]
+	path = modules/native/cpp/SRNativeFSR/SDK
 	url = https://github.com/187J3X1-114514/FidelityFX-SDK-UpscaleOnly
-[submodule "native/cpp/SRNativeXeSS/third_party/XeSS"]
-	path = native/cpp/SRNativeXeSS/third_party/XeSS
+[submodule "modules/native/cpp/SRNativeXeSS/third_party/XeSS"]
+	path = modules/native/cpp/SRNativeXeSS/third_party/XeSS
 	url = https://github.com/intel/xess
-[submodule "native/cpp/SRNativeNGX/third_party/DLSS"]
-	path = native/cpp/SRNativeNGX/third_party/DLSS
+[submodule "modules/native/cpp/SRNativeNGX/third_party/DLSS"]
+	path = modules/native/cpp/SRNativeNGX/third_party/DLSS
 	url = https://github.com/NVIDIA/DLSS

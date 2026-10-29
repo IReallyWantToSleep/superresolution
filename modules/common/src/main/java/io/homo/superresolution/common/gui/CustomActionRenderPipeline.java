@@ -1,0 +1,179 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2026. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package io.homo.superresolution.common.gui;
+#if MC_VER > MC_1_21_5
+
+import net.minecraft.client.renderer.ShaderDefines;
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.pipeline.*;
+import com.mojang.renderpearl.api.vertex.VertexFormat;
+import com.mojang.blaze3d.vertex.DefaultVertexFormat;
+#else
+import com.mojang.blaze3d.platform.*;
+import com.mojang.blaze3d.pipeline.*;
+import com.mojang.blaze3d.vertex.*;
+import com.mojang.blaze3d.*;
+#endif
+
+#endif
+
+#if MC_VER > MC_1_21_10
+import net.minecraft.resources.Identifier;
+#else
+import net.minecraft.resources.ResourceLocation;
+#endif
+
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+
+#if MC_VER > MC_1_21_5
+public class CustomActionRenderPipeline extends RenderPipeline {
+    private Runnable action;
+
+    public CustomActionRenderPipeline(
+            Runnable action
+    ) {
+        #if MC_VER > MC_1_21_11
+        #if MC_VER >= MC_26_3
+        super(
+                Identifier.withDefaultNamespace(""),
+                Map.of(
+                        ShaderType.VERTEX,
+                        Identifier.withDefaultNamespace(""),
+                        ShaderType.FRAGMENT,
+                        Identifier.withDefaultNamespace("")
+                ),
+                ShaderDefines.EMPTY,
+                List.of(),
+                new ColorTargetState[]{ColorTargetState.DEFAULT},
+                DepthStencilState.DEFAULT,
+                PolygonMode.FILL,
+                false,
+                new VertexFormat[]{
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                },
+                PrimitiveTopology.QUADS,
+                0,
+                0
+        );
+        #else
+        super(
+                Identifier.withDefaultNamespace(""),
+                Identifier.withDefaultNamespace(""),
+                Identifier.withDefaultNamespace(""),
+                ShaderDefines.EMPTY,
+                List.of(),
+                #if MC_VER < MC_26_2
+                List.of(),
+                #endif
+                #if MC_VER > MC_26_1_2
+                new ColorTargetState[]{ColorTargetState.DEFAULT},
+                #else
+                ColorTargetState.DEFAULT,
+                #endif
+                DepthStencilState.DEFAULT,
+                PolygonMode.FILL,
+                false,
+                #if MC_VER > MC_26_1_2
+                new VertexFormat[]{
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                        DefaultVertexFormat.POSITION_TEX_COLOR,
+                },
+                #else
+                DefaultVertexFormat.POSITION_TEX_COLOR,
+                #endif
+                #if MC_VER > MC_26_1_2
+                PrimitiveTopology.QUADS,
+                #else
+                VertexFormat.Mode.QUADS,
+                #endif
+                0
+        );
+        #endif
+        #else
+        super(
+                #if MC_VER > MC_1_21_10
+                Identifier.withDefaultNamespace(""),
+                Identifier.withDefaultNamespace(""),
+                Identifier.withDefaultNamespace(""),
+                #else
+                ResourceLocation.withDefaultNamespace(""),
+                ResourceLocation.withDefaultNamespace(""),
+                ResourceLocation.withDefaultNamespace(""),
+                #endif
+                ShaderDefines.EMPTY,
+                List.of(),
+                List.of(),
+                Optional.of(BlendFunction.ADDITIVE),
+                DepthTestFunction.NO_DEPTH_TEST,
+                PolygonMode.FILL,
+                false,
+                false,
+                false,
+                false,
+                LogicOp.NONE,
+                DefaultVertexFormat.POSITION_TEX_COLOR,
+                VertexFormat.Mode.QUADS,
+                1,
+                1,
+                1
+        );
+        #endif
+        this.action = action;
+    }
+
+    public Runnable getAction() {
+        return action;
+    }
+}
+
+#else
+public class CustomActionRenderPipeline {
+}
+#endif

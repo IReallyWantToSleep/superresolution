@@ -1,0 +1,137 @@
+package io.homo.superresolution.shadercompat;
+
+import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.api.interop.InteropResourceContext;
+import io.homo.superresolution.api.platform.Platform;
+import io.homo.superresolution.common.debug.imgui.ImGuiDebugContext;
+import io.homo.superresolution.common.minecraft.handler.IMinecraftRenderHandler;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
+import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
+import io.homo.superresolution.common.workmode.SRWorkModeManager;
+import io.homo.superresolution.common.workmode.SRWorkModeProvider;
+import io.homo.superresolution.common.workmode.SRWorkModeState;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+
+public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
+    private boolean listenersRegistered;
+    // 0 - unchecked
+    // 1 - true
+    // -1 - false
+    private int depthTransformStatus = 0;
+    @Override
+    public String id() {
+        return SRWorkModeManager.SHADER_COMPAT;
+    }
+
+    @Override
+    public InteropResourceContext getInteropResourceContext() {
+        return IrisShaderCompatUpscaleDispatcher.getInteropResourceContext();
+    }
+
+    @Override
+    public boolean isActive() {
+        try {
+            return IrisShaderCompatUtils.shouldApplySuperResolutionChanges();
+        } catch (Throwable ignored) {
+            return false;
+        }
+    }
+
+    @Override
+    public IMinecraftRenderHandler createRenderHandler() {
+        return new ShaderCompatHandler();
+    }
+
+    @Override
+    public SRWorkModeState getState() {
+        Optional<SRShaderCompatData.WorldProfile> profile;
+        try {
+            profile = IrisShaderCompatUtils.getCurrentConfig();
+        } catch (Throwable ignored) {
+            profile = Optional.empty();
+        }
+        InitializationDescription desc = InitializationDescription.defaults();
+        TextureFormat internalFormat = TextureFormat.RGBA16F;
+        String motionVectorPreprocessingFunction = null;
+
+        if (profile.isPresent() && profile.get().enabled) {
+            SRShaderCompatData.UpscaleConfig upscale = profile.get().upscale;
+            desc.setHdrInput(upscale.isHdrInput)
+                    .setAutoExposure(upscale.isAutoExposure)
+                    .setMotionJittered(upscale.isMotionJittered)
+                    .setDepthInverted(isHasDepthTransform());
+            internalFormat = upscale.internalFormat;
+            if (upscale.customs != null) {
+                motionVectorPreprocessingFunction = upscale.customs.motionVectorPreprocessingFunction;
+            }
+        }
+
+        List<String> disabledAlgorithms = Collections.emptyList();
+        if (profile.isPresent() && profile.get().enabled && profile.get().upscale != null) {
+            disabledAlgorithms = profile.get().upscale.disabledAlgorithms;
+        }
+
+        return new SRWorkModeState(
+                desc,
+                internalFormat,
+                motionVectorPreprocessingFunction,
+                ShaderCompatHandler.irisApiIsShaderPackInUse() || ShaderCompatHandler.irisHasShaderPack(),
+                ShaderCompatHandler.isLoadingShader(),
+                profile.isPresent() && profile.get().enabled && profile.get().upscale != null &&
+                        profile.get().upscale.supportsFrameGenerationOnly,
+                disabledAlgorithms
+        );
+    }
+
+    @Override
+    public void onClientSetup() {
+        if (listenersRegistered || !Platform.currentPlatform.isInstallIris()) {
+            return;
+        }
+        IrisShaderCompatEventHandler.registerEventListeners();
+        listenersRegistered = true;
+    }
+
+    @Override
+    public void reloadShaderPack() {
+        ShaderCompatHandler.irisApiReloadShader();
+    }
+
+    @Override
+    public void renderImGuiDebug(ImGuiDebugContext ctx) {
+        SRWorkModeState state = getState();
+        ctx.property("Shader Pack In Use", state.shaderPackInUse());
+        ctx.property("Shader Pack Loading", state.shaderPackLoading());
+        ctx.property("Internal Format", state.internalTextureFormat());
+        ctx.property("Motion Vector Preprocess", state.motionVectorPreprocessingFunction());
+
+        Optional<SRShaderCompatData.WorldProfile> profile = IrisShaderCompatUtils.getCurrentConfig();
+        ctx.property("World Profile Loaded", profile.isPresent());
+        if (profile.isPresent()) {
+            SRShaderCompatData.UpscaleConfig upscale = profile.get().upscale;
+            ctx.property("Profile Enabled", profile.get().enabled);
+            ctx.property("Upscale Enabled", upscale.enabled);
+            ctx.property("Trigger Pass", upscale.trigger.passName);
+            ctx.property("Trigger Order", upscale.trigger.order);
+            ctx.property("HDR Input", upscale.isHdrInput);
+            ctx.property("Auto Exposure", upscale.isAutoExposure);
+            ctx.property("Motion Jittered", upscale.isMotionJittered);
+        }
+    }
+
+    private boolean isHasDepthTransform(){
+        if (depthTransformStatus != 0) return depthTransformStatus == 1;
+        try {
+            Class.forName("net.irisshaders.iris.pipeline.transform.transformer.DepthTransformer");
+            depthTransformStatus = 1;
+        } catch (ClassNotFoundException e) {
+            depthTransformStatus = -1;
+            return false;
+        }
+        return true;
+    }
+}

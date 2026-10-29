@@ -1,0 +1,60 @@
+{
+    "schemaVersion": 1,
+    "id": "super_resolution",
+    "version": "${version}",
+    "name": "Super Resolution",
+    "description": "喵",
+    "authors": [
+        "187J3X1"
+    ],
+    "contact": {
+        "homepage": "https://github.com/187J3X1-114514/superresolution",
+        "issues": "https://github.com/187J3X1-114514/superresolution/issues"
+    },
+    "license": "GPL-3.0",
+    "icon": "assets/super_resolution/textures/gui/logo.png",
+    "environment": "client",
+    "entrypoints": {
+        "main": [
+            "io.homo.superresolution.fabric.SuperResolutionFabric"
+        ],
+        "client": [
+            "io.homo.superresolution.fabric.SuperResolutionFabricClient"
+        ],
+        "modmenu": [
+            "io.homo.superresolution.fabric.compat.modmenu.ModMenu"
+        ],
+        "sodium:config_api_user": [
+            "io.homo.superresolution.fabric.compat.sodium.SodiumConfigBuilder"
+        ]
+    },
+    "mixins": [
+        "super_resolution.mixins.json",
+        "super_resolution.hack.mixins.json",
+        "super_resolution-fabric.mixins.json",
+        "super_resolution-fabric-compat.mixins.json",
+        "super_resolution.shadercompat.mixins.json",
+        "super_resolution_irisapi.mixins.json"{irisVelocityExtMixin}
+    ],
+    "depends": {
+        "fabricloader": "*",
+        "minecraft": "{versionRange}",
+        "java": ">=${javaVersion}",
+        "fabric-api": "*"
+    },
+    "suggests": {
+    },
+    "breaks": {
+        "resolutioncontrol-plus-plus": "*",
+        "resolutioncontrol-plus": "*",
+        "resolutioncontrol": "*",
+        "renderscale": "*",
+        "gpu_booster": "*",
+        "gpu_tape": "*"
+    },
+    "custom": {
+        "sodium:options": {
+            "mixin.features.render.entity": true
+        }
+    }
+}

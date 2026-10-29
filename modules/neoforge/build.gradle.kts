@@ -1,0 +1,271 @@
+import multiversion.VersionConfig
+import utils.MinecraftVersion
+import utils.registerNsightRunTasks
+
+plugins {
+    id("multiloader-loader")
+    id("net.neoforged.moddev")
+}
+
+@Suppress("UNCHECKED_CAST")
+val versionConfig = rootProject.extra["versionConfig"] as VersionConfig
+val isDevBuild = gradle.extensions.extraProperties["isDev"] as? Boolean ?: false
+val imguiVersion =
+    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) >= MinecraftVersion.of("26.1")) "1.92.0" else "1.90.0"
+
+repositories {
+    maven {
+        url = uri("https://cursemaven.com")
+        content {
+            includeGroup("curse.maven")
+        }
+    }
+    maven {
+        name = "Modrinth"
+        url = uri("https://api.modrinth.com/maven")
+        content {
+            includeGroup("maven.modrinth")
+        }
+    }
+    maven {
+        name = "yoga"
+        url = uri("https://repo1.maven.org/maven2")
+        content {
+            includeGroup("org.appliedenergistics.yoga")
+        }
+    }
+    maven {
+        name = "CaffeineMC"
+        url = uri("https://maven.caffeinemc.net/releases")
+        mavenContent { releasesOnly() }
+        content {
+            includeGroup("net.caffeinemc")
+        }
+    }
+
+    maven {
+        name = "CaffeineMC"
+        url = uri("https://maven.caffeinemc.net/snapshots")
+        mavenContent { snapshotsOnly() }
+        content {
+            includeGroup("net.caffeinemc")
+        }
+    }
+}
+
+// Forge JiJ has a bug where native libs in separate nested jars aren't found at runtime.
+// Merge VMA native .dll/.so files directly into the VMA Java jar so they live in a single embedded jar.
+val mergeVmaNatives by tasks.registering(Jar::class) {
+    archiveFileName.set("lwjgl-vma-${versionConfig.common.lwjglVersion}-merged.jar")
+    destinationDirectory.set(layout.buildDirectory.dir("mergedVma"))
+
+    val vmaVersion = versionConfig.common.lwjglVersion
+    val vmaMain = configurations.detachedConfiguration(
+        dependencies.create("org.lwjgl:lwjgl-vma:$vmaVersion")
+    )
+    vmaMain.isTransitive = false
+    from(vmaMain.map { zipTree(it) })
+
+    listOf("natives-windows", "natives-linux").forEach { classifier ->
+        val nativeCfg = configurations.detachedConfiguration(
+            dependencies.create("org.lwjgl:lwjgl-vma:$vmaVersion:$classifier")
+        )
+        nativeCfg.isTransitive = false
+        from(nativeCfg.map { zipTree(it) })
+    }
+
+    manifest {
+        attributes("Automatic-Module-Name" to "org.lwjgl.vma")
+    }
+    exclude("META-INF/*.SF", "META-INF/*.DSA", "META-INF/*.RSA")
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+}
+
+val libraries = configurations.create("libraries")
+
+val sourceSets = extensions.getByType(SourceSetContainer::class.java)
+sourceSets.getByName("main").resources.srcDir("src/generated/resources")
+sourceSets.configureEach {
+    runtimeClasspath += libraries
+}
+
+neoForge {
+    version = versionConfig.neoforge.loaderVersion
+    val parchmentVersion = versionConfig.common.parchmentVersion
+    if (parchmentVersion != null) {
+        val parchmentParts = parchmentVersion.split(":")
+        parchment {
+            minecraftVersion = parchmentParts[0]
+            mappingsVersion = parchmentParts[1]
+        }
+    }
+    runs {
+        configureEach {
+            jvmArguments.add("-XX:+CreateMinidumpOnCrash")
+            jvmArguments.add("-Dmixin.debug.export=true")
+
+            // We force set the lwjgl version to versionConfig.common.lwjglVersion
+            // Sodium will check the lwjgl version,ensure it equals the lwjgl version of corresponding Minecraft version
+            // We must disable the check,otherwise sodium will crash the game.
+            jvmArguments.add("-Dsodium.checks.issue2561=false")
+            systemProperty("neoforge.enabledGameTestNamespaces", rootProject.property("mod_id").toString())
+            ideName =
+                "NeoForge ${name.replaceFirstChar { if (it.isLowerCase()) it.titlecase() else it.toString() }} (${project.path})"
+
+            // ModDevGradle needs manual add non-mod dependencies to runtime classpath
+            if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("1.21.9")) {
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-app:$imguiVersion"))
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-binding:$imguiVersion"))
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("io.github.spair:imgui-java-lwjgl3:$imguiVersion"))
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}"))
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma:${versionConfig.common.lwjglVersion}"))
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma::natives-windows"))
+                additionalRuntimeClasspathConfiguration.dependencies.add(dependencies.create("org.lwjgl:lwjgl-vma::natives-linux"))
+            }
+        }
+        create("client") {
+            client()
+            gameDirectory = rootProject.file("runs/neoforge")
+        }
+    }
+    mods {
+        create(rootProject.property("mod_id").toString()) {
+            sourceSet(sourceSets.getByName("main"))
+        }
+    }
+}
+
+registerNsightRunTasks(
+    taskGroup = "mod development",
+    preparationTaskNames = listOf("prepareClientRun"),
+    workingDirectory = rootProject.file("runs/neoforge")
+)
+
+dependencies {
+    implementation("org.anarres:jcpp:1.4.14")
+
+    val imguiApp = implementation("io.github.spair:imgui-java-app:$imguiVersion")
+    if (imguiApp != null) "libraries"(imguiApp)
+    if (isDevBuild && imguiApp != null) jarJar(imguiApp)
+
+    val imguiBinding = implementation("io.github.spair:imgui-java-binding:$imguiVersion")
+    if (imguiBinding != null) "libraries"(imguiBinding)
+    if (isDevBuild && imguiBinding != null) jarJar(imguiBinding)
+
+    val imguiLwjgl = implementation("io.github.spair:imgui-java-lwjgl3:$imguiVersion")
+    if (imguiLwjgl != null) "libraries"(imguiLwjgl)
+    if (isDevBuild && imguiLwjgl != null) jarJar(imguiLwjgl)
+
+
+    if (MinecraftVersion.of(versionConfig.common.minecraftVersion) < MinecraftVersion.of("26.2")) {
+        implementation("org.lwjgl:lwjgl-vulkan:${versionConfig.common.lwjglVersion}")?.let { jarJar(it); libraries(it) }
+        implementation(files(mergeVmaNatives.get().archiveFile))
+        add("jarJar", files(mergeVmaNatives.get().archiveFile))
+        add("libraries", files(mergeVmaNatives.get().archiveFile))
+    }
+
+    if (versionConfig.common.architecturyApiVersion != null) {
+        implementation("dev.architectury:architectury-neoforge:${versionConfig.common.architecturyApiVersion}")
+    }
+    // Sodium's NeoForge API exposes Fabric's Event type, but this Fabric mod must not be
+    // placed directly on NeoForge's runtime classpath. Sodium provides it at runtime.
+    compileOnly("net.fabricmc.fabric-api:fabric-api-base:0.4.64+9ec45cd8e8")
+
+    for (lib in versionConfig.neoforge.dependencies.modrinth) {
+        var depName =
+            "maven.modrinth:${lib.name}:${lib.version}-neoforge,${lib.minecraftVersion ?: versionConfig.common.minecraftVersion}"
+        if ((lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10")) || lib.name == "sodium.maven") {
+            depName = "net.caffeinemc:sodium-neoforge-mod:${lib.version}"
+            if (lib.compileOnly) {
+                compileOnly(depName)
+            } else {
+                implementation(depName)
+            }
+
+            depName = "net.caffeinemc:sodium-neoforge:${lib.version}"
+            if (lib.compileOnly) {
+                compileOnly(depName)
+            } else {
+                implementation(depName)
+            }
+            continue
+        }
+        if (lib.compileOnly) {
+            if (lib.useJarJar) {
+                compileOnly(utils.JarJar.extractJars(project, depName))
+            } else {
+                compileOnly(depName)
+            }
+        } else {
+            if (lib.useJarJar) {
+                implementation(utils.JarJar.extractJars(project, depName))
+            } else {
+                implementation(depName)
+            }
+        }
+    }
+
+    for (lib in versionConfig.neoforge.dependencies.curseforge) {
+        val depName = lib.curseMavenNotation()
+        if (lib.compileOnly) {
+            if (lib.useJarJar) {
+                compileOnly(utils.JarJar.extractJars(project, depName))
+            } else {
+                compileOnly(depName)
+            }
+        } else {
+            if (lib.useJarJar) {
+                implementation(utils.JarJar.extractJars(project, depName))
+            } else {
+                implementation(depName)
+            }
+        }
+    }
+
+    for (lib in versionConfig.neoforge.dependencies.local) {
+        if (lib.isMod) {
+            if (lib.compileOnly) {
+                if (lib.useJarJar) {
+                    compileOnly(utils.JarJar.extractJars(project, rootProject.file("libs/${lib.name}.jar").absolutePath))
+                } else {
+                    compileOnly(files(rootProject.file("libs/${lib.name}.jar")))
+                }
+            } else {
+                if (lib.useJarJar) {
+                    implementation(utils.JarJar.extractJars(project, rootProject.file("libs/${lib.name}.jar").absolutePath))
+                } else {
+                    implementation(files(rootProject.file("libs/${lib.name}.jar")))
+                }
+            }
+        } else {
+            if (lib.compileOnly) {
+                compileOnly(files(rootProject.file("libs/${lib.name}.jar")))
+            } else {
+                implementation(files(rootProject.file("libs/${lib.name}.jar")))
+            }
+        }
+    }
+}
+
+tasks.named<ProcessResources>("processResources") {
+    val neoModVersion = project.version.toString()
+    val neoVersionRange = versionConfig.common.neoforgeVersionRange.toString()
+
+    inputs.property("version", neoModVersion)
+    inputs.property("versionRange", neoVersionRange)
+
+    filesMatching("META-INF/neoforge.mods.toml") {
+        expand(
+            mapOf(
+                "version" to neoModVersion,
+                "versionRange" to neoVersionRange
+            )
+        )
+    }
+
+    if (gradle.extensions.extraProperties.properties["isUseDebugLib"] as? Boolean == true) {
+        exclude("**/libSuperResolution*+*+release.*")
+    } else {
+        exclude("**/libSuperResolution*+*+debug.*")
+    }
+}

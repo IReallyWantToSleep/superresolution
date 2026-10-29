@@ -1,0 +1,305 @@
+/*
+ * Super Resolution
+ * Copyright (c) 2025-2026. 187J3X1-114514
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ */
+
+package io.homo.superresolution.core.graphics;
+
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.impl.Pair;
+#if MC_VER >= MC_26_3
+import org.lwjgl.sdl.SDLVideo;
+#else
+import org.lwjgl.glfw.GLFW;
+#endif
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
+import org.lwjgl.vulkan.VK10;
+import org.lwjgl.vulkan.VK11;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.nio.IntBuffer;
+import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+
+import static org.lwjgl.opengl.GL43.*;
+
+public class GraphicsCapabilities {
+    public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution/GraphicsCapabilities");
+
+    private static final ArrayList<Pair<Integer, Integer>> glVersions = new ArrayList<>();
+    private static Set<String> glExtensions = null;
+    private static GpuVendor gpuVendor = null;
+    private static int[] glVersion = new int[]{-1, -1};
+
+    public static void init() {
+    }
+
+    public static GpuVendor detectGpuVendor() {
+        if (isB3DVulkan()) {
+            gpuVendor = GpuVendor.Unknown;
+            return gpuVendor;
+        }
+        if (gpuVendor == null) {
+            String renderer = glGetString(GL_RENDERER);
+            String vendor = glGetString(GL_VENDOR);
+            gpuVendor = parseVendorFromName(vendor + " " + renderer);
+        }
+        return gpuVendor;
+    }
+
+    private static GpuVendor parseVendorFromName(String rawName) {
+        if (rawName == null) {
+            return GpuVendor.Unknown;
+        }
+
+        String lowerName = rawName.toLowerCase();
+        if (lowerName.contains("nvidia") || lowerName.contains("geforce")) {
+            return GpuVendor.Nvidia;
+        } else if (lowerName.contains("amd") || lowerName.contains("radeon") || lowerName.contains("ati ")) {
+            return GpuVendor.Amd;
+        } else if (lowerName.contains("intel") || lowerName.contains("iris") || lowerName.contains("hd graphics")) {
+            return GpuVendor.Intel;
+        }
+        return GpuVendor.Unknown;
+    }
+
+    private static int[] detectGLVersion() {
+        if (isB3DVulkan()) {
+            return new int[]{0, 0};
+        }
+        if (glVersion[0] != -1 && glVersion[1] != -1) {
+            return glVersion;
+        }
+        int major = glGetInteger(GL_MAJOR_VERSION);
+        int minor = glGetInteger(GL_MINOR_VERSION);
+        glVersion[0] = major;
+        glVersion[1] = minor;
+        return glVersion;
+    }
+
+    public static void detectSupportedVersions() {
+        #if MC_VER >= MC_26_3
+        detectSupportedVersionsSdl();
+        return;
+        #else
+        if (isB3DVulkan()) {
+            glVersions.clear();
+            return;
+        }
+        glVersions.clear();
+        int[][] versionMatrix = {
+                {4, 6},
+                {4, 5},
+                {4, 3},
+                {4, 2},
+                {4, 1}
+        };
+        for (int[] version : versionMatrix) {
+            int major = version[0];
+            int minor = version[1];
+
+            GLFW.glfwDefaultWindowHints();
+            GLFW.glfwWindowHint(GLFW.GLFW_VISIBLE, GLFW.GLFW_FALSE);
+            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MAJOR, major);
+            GLFW.glfwWindowHint(GLFW.GLFW_CONTEXT_VERSION_MINOR, minor);
+            long testWindow = GLFW.glfwCreateWindow(1, 1, "", 0, 0);
+            if (testWindow != 0) {
+                GLFW.glfwMakeContextCurrent(testWindow);
+                int actualMajor = GLFW.glfwGetWindowAttrib(testWindow, GLFW.GLFW_CONTEXT_VERSION_MAJOR);
+                int actualMinor = GLFW.glfwGetWindowAttrib(testWindow, GLFW.GLFW_CONTEXT_VERSION_MINOR);
+                glVersions.add(Pair.of(actualMajor, actualMinor));
+                GLFW.glfwDestroyWindow(testWindow);
+                LOGGER.info("Added supported OpenGL version {}.{}", actualMajor, actualMinor);
+                break;
+            }
+        }
+        LOGGER.info("Highest supported OpenGL version {}.{}", getHighestOpenGLVersion().left(), getHighestOpenGLVersion().right());
+        GLFW.glfwDefaultWindowHints();
+        #endif
+    }
+
+    #if MC_VER >= MC_26_3
+    private static void detectSupportedVersionsSdl() {
+        if (isB3DVulkan()) {
+            glVersions.clear();
+            return;
+        }
+
+        glVersions.clear();
+        int[][] versionMatrix = {
+                {4, 6},
+                {4, 5},
+                {4, 3},
+                {4, 2},
+                {4, 1},
+                {3, 3}
+        };
+        for (int[] version : versionMatrix) {
+            SDLVideo.SDL_GL_ResetAttributes();
+            SDLVideo.SDL_GL_SetAttribute(17, version[0]);
+            SDLVideo.SDL_GL_SetAttribute(18, version[1]);
+            SDLVideo.SDL_GL_SetAttribute(20, 1);
+            SDLVideo.SDL_GL_SetAttribute(19, 2);
+            SDLVideo.SDL_GL_SetAttribute(22, 1);
+
+            long window = SDLVideo.SDL_CreateWindow(
+                    "Super Resolution OpenGL Capability Probe",
+                    1,
+                    1,
+                    SDLVideo.SDL_WINDOW_OPENGL | SDLVideo.SDL_WINDOW_HIDDEN
+            );
+            if (window == 0L) {
+                continue;
+            }
+
+            long context = SDLVideo.SDL_GL_CreateContext(window);
+            if (context != 0L) {
+                try (MemoryStack stack = MemoryStack.stackPush()) {
+                    IntBuffer actualMajor = stack.mallocInt(1);
+                    IntBuffer actualMinor = stack.mallocInt(1);
+                    SDLVideo.SDL_GL_GetAttribute(17, actualMajor);
+                    SDLVideo.SDL_GL_GetAttribute(18, actualMinor);
+                    glVersions.add(Pair.of(actualMajor.get(0), actualMinor.get(0)));
+                }
+                SDLVideo.SDL_GL_MakeCurrent(0L, 0L);
+                SDLVideo.SDL_GL_DestroyContext(context);
+                SDLVideo.SDL_DestroyWindow(window);
+                LOGGER.info("Added supported OpenGL version {}.{}", glVersions.get(0).left(), glVersions.get(0).right());
+                break;
+            }
+            SDLVideo.SDL_DestroyWindow(window);
+        }
+        SDLVideo.SDL_GL_ResetAttributes();
+        if (glVersions.isEmpty()) {
+            LOGGER.warn("Could not probe an OpenGL version through SDL; using OpenGL 3.3");
+        }
+    }
+    #endif
+
+    public static Pair<Integer, Integer> getHighestOpenGLVersion() {
+        #if MC_VER >= MC_26_3
+        if (glVersions.isEmpty()) {
+            detectSupportedVersions();
+        }
+        if (glVersions.isEmpty()) {
+            return Pair.of(3, 3);
+        }
+        #endif
+        return glVersions.stream()
+                .max(Comparator.comparingInt((Pair<Integer, Integer> p) -> p.left())
+                        .thenComparingInt(Pair::right))
+                .orElse(null);
+    }
+
+    private static Set<String> detectGLExtensions() {
+        if (isB3DVulkan()) {
+            return Collections.emptySet();
+        }
+        int count = glGetInteger(GL_NUM_EXTENSIONS);
+        return Collections.unmodifiableSet(
+                IntStream.range(0, count)
+                        .mapToObj(i -> glGetStringi(GL_EXTENSIONS, i))
+                        .collect(Collectors.toCollection(() ->
+                                new TreeSet<>(String.CASE_INSENSITIVE_ORDER)))
+        );
+    }
+
+
+    private static int[] detectVulkanVersion() {
+        if (!isVulkanSupported()) {
+            return new int[]{0, 0, 0};
+        }
+
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer version = stack.mallocInt(1);
+            VK11.vkEnumerateInstanceVersion(version);
+            return new int[]{
+                    VK10.VK_API_VERSION_MAJOR(version.get(0)),
+                    VK10.VK_API_VERSION_MINOR(version.get(0)),
+                    VK10.VK_API_VERSION_PATCH(version.get(0))
+            };
+        }
+    }
+
+    private static boolean isVulkanSupported() {
+        return RenderSystems.isSupportVulkan();
+    }
+
+    public static int[] getGLVersion() {
+        return detectGLVersion();
+    }
+
+    public static String getGLVersionString() {
+        if (isB3DVulkan()) {
+            return "unavailable";
+        }
+        int[] glVersion = detectGLVersion();
+        return glVersion[0] + "." + glVersion[1];
+    }
+
+    public static Set<String> getGLExtensions() {
+        if (glExtensions == null) {
+            glExtensions = Collections.unmodifiableSet(detectGLExtensions());
+        }
+        return glExtensions;
+    }
+
+    public static boolean hasGLExtension(String name) {
+        if (glExtensions == null) {
+            glExtensions = Collections.unmodifiableSet(detectGLExtensions());
+        }
+        return glExtensions.contains(name);
+    }
+
+    public static int[] getVulkanVersion() {
+        return detectVulkanVersion();
+    }
+
+    public static String getVulkanVersionString() {
+        if (!isVulkanSupported()) {
+            return "0.0.0";
+        }
+        int[] vkVersion = detectVulkanVersion();
+        return vkVersion[0] + "." + vkVersion[1] + "." + vkVersion[2];
+    }
+
+    public static boolean hasVulkanDeviceExtension(String name) {
+        if (isVulkanSupported()) {
+            return RenderSystems.vulkan().getCapabilities().getDeviceExtensions().contains(name);
+        }
+        return false;
+    }
+
+    public static Set<String> getVulkanDeviceExtensions() {
+        if (isVulkanSupported()) {
+            return Set.copyOf(
+                    RenderSystems.vulkan().getCapabilities().getDeviceExtensions().stream()
+                            .collect(Collectors.toCollection(() ->
+                                    new TreeSet<>(String.CASE_INSENSITIVE_ORDER)))
+            );
+        }
+        return new HashSet<>();
+    }
+
+    private static boolean isB3DVulkan() {
+        return B3DVulkanBridge.isB3DVulkanBackend();
+    }
+
+}
