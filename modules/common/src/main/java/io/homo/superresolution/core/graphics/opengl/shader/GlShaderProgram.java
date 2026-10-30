@@ -20,12 +20,12 @@ package io.homo.superresolution.core.graphics.opengl.shader;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.SuperResolutionConstants;
+import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.glslang.GlslangCompileShaderResult;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.glslang.enums.*;
 import io.homo.superresolution.core.graphics.impl.IDebuggableObject;
 import io.homo.superresolution.core.graphics.impl.shader.*;
-import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.shader.ShaderCompiler;
 
 import java.io.IOException;
@@ -84,10 +84,28 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
         }
     }
 
-    protected String preprocessShaderCode(String code) {
+    // Compatibility GLSL ceiling: legacy 4.1/4.2 stay on 410; 4.3/4.4/4.5 map to 430/440/450;
+    // 4.6 and newer stay on 460 rather than an unknown future dialect.
+    static int resolveCompatibilityGlslVersion(int major, int minor) {
+        if (major == 4 && minor < 3) {
+            return 410;
+        }
+        if (major != 4) {
+            return 460;
+        }
+        return switch (minor) {
+            case 3 -> 430;
+            case 4 -> 440;
+            case 5 -> 450;
+            default -> 460;
+        };
+    }
+
+    static String prepareCompatibilityShaderSource(String code, int glslVersion) {
         List<String> codeLines = List.of(code.split("\n"));
         List<String> extensionLines = new ArrayList<>();
         List<String> preprocessedCodeLines = new ArrayList<>();
+        boolean sawVersion = false;
         for (String line : codeLines) {
             if (line.trim().startsWith("#line")) {
                 continue;
@@ -100,7 +118,15 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
                 extensionLines.add(line);
                 continue;
             }
+            if (trimmed.startsWith("#version")) {
+                preprocessedCodeLines.add(applyGlslVersionCeiling(line, glslVersion));
+                sawVersion = true;
+                continue;
+            }
             preprocessedCodeLines.add(line);
+        }
+        if (!sawVersion) {
+            preprocessedCodeLines.add(0, "#version " + glslVersion);
         }
         // Insert #extension directives right after #version
         if (!extensionLines.isEmpty()) {
@@ -114,6 +140,35 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
             preprocessedCodeLines.addAll(insertPos, extensionLines);
         }
         return String.join("\n", preprocessedCodeLines);
+    }
+
+    private static String applyGlslVersionCeiling(String line, int glslVersion) {
+        String trimmed = line.trim();
+        String rest = trimmed.substring("#version".length()).trim();
+        int numberEnd = 0;
+        while (numberEnd < rest.length() && Character.isDigit(rest.charAt(numberEnd))) {
+            numberEnd++;
+        }
+        if (numberEnd == 0) {
+            return "#version " + glslVersion + (rest.isEmpty() ? "" : " " + rest);
+        }
+        int declared = Integer.parseInt(rest.substring(0, numberEnd));
+        if (declared <= glslVersion) {
+            return line;
+        }
+        int leadingWhitespace = 0;
+        while (leadingWhitespace < line.length() && Character.isWhitespace(line.charAt(leadingWhitespace))) {
+            leadingWhitespace++;
+        }
+        return line.substring(0, leadingWhitespace) + "#version " + glslVersion + rest.substring(numberEnd);
+    }
+
+    protected String preprocessShaderCode(String code) {
+        int[] glVersion = GraphicsCapabilities.getGLVersion();
+        return prepareCompatibilityShaderSource(
+                code,
+                resolveCompatibilityGlslVersion(glVersion[0], glVersion[1])
+        );
     }
 
     protected GlShader compileSingleShader(ShaderSource source, boolean compat) {
@@ -130,6 +185,8 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
         try {
             String sourceCode = source.getSource();
             if (compat) {
+                int[] glVersion = GraphicsCapabilities.getGLVersion();
+                int glslVersion = resolveCompatibilityGlslVersion(glVersion[0], glVersion[1]);
                 ShaderCompiler.LOGGER.info("Compiling shader {} with the compatibility shader compiler", description.shaderName());
                 GlslangCompileShaderResult result = GlslangShaderCompiler.compileShaderToSpirv(
                         source.getSource(),
@@ -143,12 +200,12 @@ public class GlShaderProgram implements IShaderProgram, IDebuggableObject {
                         EShTargetClientVersion.EShTargetOpenGL_450,
                         EShTargetLanguage.EShTargetSpv,
                         EShTargetLanguageVersion.EShTargetSpv_1_4,
-                        Gl.isLegacy() ? 410 : 460,
+                        glslVersion,
                         EProfile.ENoProfile,
                         true,
                         false
                 );
-                sourceCode = preprocessShaderCode(result.preprocessedCode());
+                sourceCode = prepareCompatibilityShaderSource(result.preprocessedCode(), glslVersion);
                 if (result.error() == GlslangCompileShaderError.PREPROCESS_ERROR) {
                     String errorDetails = String.format(
                             "%s Shader 预处理失败\n类型: %s\n错误日志:\n%s",
