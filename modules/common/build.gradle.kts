@@ -89,7 +89,7 @@ repositories {
         }
     }
     flatDir {
-        dirs(rootProject.file("libs"))
+        dirs("../../libs")
     }
 }
 
