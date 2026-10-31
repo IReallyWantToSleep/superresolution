@@ -32,8 +32,6 @@ import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferUsages;
 import io.homo.superresolution.core.graphics.impl.buffer.Std140StructBuilder;
 import io.homo.superresolution.core.graphics.impl.buffer.StructuredData;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
@@ -50,7 +48,8 @@ public class Sgsr2 extends AbstractAlgorithm {
     private SgsrVariant currentVariant;
     private StructuredData paramsData;
     private GlBuffer paramsUbo;
-    private IFrameBuffer output;
+    private ITexture output;
+    private InputResourceSet dispatchInputs;
     private int sameFrameNum = 0;
 
     private static boolean isCameraStill(Matrix4f currentMVP, Matrix4f prevMVP, float threshold) {
@@ -78,10 +77,7 @@ public class Sgsr2 extends AbstractAlgorithm {
                 .format(SuperResolutionConfig.getInternalTextureFormat())
                 .label("Sgsr2Output")
                 .build());
-        this.output = RenderSystems.current().device().createFramebuffer(
-                FramebufferDescription.create()
-                        .colorAttachment(outputTex)
-                        .build());
+        this.output = outputTex;
         paramsData = Std140StructBuilder.start()
                 .vec2Entry("renderSize")
                 .vec2Entry("displaySize")
@@ -105,7 +101,7 @@ public class Sgsr2 extends AbstractAlgorithm {
 
     @Override
     public boolean dispatch(DispatchResource dispatchResource) {
-        super.dispatch(dispatchResource);
+        dispatchInputs = dispatchResource.resources();
 
         initVariant();
         updateParams(dispatchResource);
@@ -122,6 +118,7 @@ public class Sgsr2 extends AbstractAlgorithm {
             output.destroy();
             output = null;
         }
+        dispatchInputs = null;
         if (paramsData != null) {
             paramsData.free();
             paramsData = null;
@@ -142,7 +139,7 @@ public class Sgsr2 extends AbstractAlgorithm {
     }
 
     @Override
-    public IFrameBuffer getOutputFrameBuffer() {
+    public ITexture getOutputTexture() {
         return output;
     }
 
@@ -236,6 +233,6 @@ public class Sgsr2 extends AbstractAlgorithm {
     }
 
     public InputResourceSet getInputResourceSet() {
-        return resources;
+        return dispatchInputs;
     }
 }

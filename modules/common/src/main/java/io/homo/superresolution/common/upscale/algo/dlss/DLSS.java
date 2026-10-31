@@ -21,21 +21,17 @@ package io.homo.superresolution.common.upscale.algo.dlss;
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
-import io.homo.superresolution.common.perf.PerformanceTracker;
-import io.homo.superresolution.common.upscale.interoplayer.GlVulkanInteropAlgorithm;
-import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
-import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
+import io.homo.superresolution.common.upscale.interoplayer.InteropDispatchResource;
+import io.homo.superresolution.common.upscale.interoplayer.InteropResourceAccess;
+import io.homo.superresolution.common.upscale.interoplayer.InteropResourceSet;
+import io.homo.superresolution.common.upscale.interoplayer.VulkanInteropAlgorithm;
+import io.homo.superresolution.common.upscale.interoplayer.VulkanCommandContext;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
-import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 import io.homo.superresolution.core.ngx.*;
-
-import java.util.Objects;
 
 import static io.homo.superresolution.api.interop.InteropResourceType.*;
 
-public class DLSS extends GlVulkanInteropAlgorithm {
+public class DLSS extends VulkanInteropAlgorithm {
     private NgxDispatchResources ngxDispatchResource;
     private NgxFeature ngxDlssFeature;
     private NgxParameters ngxParameters;
@@ -53,35 +49,57 @@ public class DLSS extends GlVulkanInteropAlgorithm {
     }
 
     @Override
-    protected void dispatchVulkanUpscale(
-            VulkanCommandBuffer commandBuffer,
-            FrameResourcesSet frameResourcesSet
-    ) {
-        dispatchNgxContext(commandBuffer, frameResourcesSet);
+    protected void createAlgorithmContext(InteropResourceAccess resources) {
+        recreateNgxContext(initDesc, resources);
+        ngxDispatchResource = new NgxDispatchResources(resources.resources());
     }
 
     @Override
-    protected boolean isVulkanInteropReady() {
-        return ngxDlssFeature != null
-                && ngxDlssFeature.isValid()
-                && ngxParameters != null
-                && ngxParameters.isValid();
-    }
-
-    @Override
-    protected void onInteropResourcesCreated() {
-        recreateNgxContext(initDesc);
-        createNgxDispatchResources();
-    }
-
-    @Override
-    protected void onBeforeInteropResourcesDestroyed() {
-        destroyNgxDispatchResources();
+    protected void destroyAlgorithmContext() {
         destroyNgxContext();
+        if (ngxDispatchResource != null) {
+            ngxDispatchResource.close();
+            ngxDispatchResource = null;
+        }
     }
 
-    private void recreateNgxContext(InitializationDescription desc) {
-        VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
+    @Override protected boolean dispatchAlgorithm(InteropDispatchResource<VulkanCommandContext> resource) {
+        if (ngxDlssFeature == null || ngxParameters == null) {
+            return false;
+        }
+
+        try {
+            NgxVKDLSSEvalParams evalParams = ngxDispatchResource.evalParams;
+            evalParams.feature.sharpness = SuperResolutionConfig.getSharpness();
+            evalParams.jitterOffsetX = resource.frameData().jitterOffset().x;
+            evalParams.jitterOffsetY = resource.frameData().jitterOffset().y;
+            evalParams.renderSubrectDimensions.width = resource.frameData().renderWidth();
+            evalParams.renderSubrectDimensions.height = resource.frameData().renderHeight();
+            evalParams.motionVectorScaleX = resource.frameData().renderSize().x;
+            evalParams.motionVectorScaleY = resource.frameData().renderSize().y;
+            evalParams.reset = consumeHistoryReset() ? 1 : 0;
+            evalParams.preExposure = resource.frameData().preExposure();
+            evalParams.exposureScale = 1.0f;
+            evalParams.frameTimeDeltaInMsec = resource.frameData().frameTimeDelta();
+
+            int evaluateResult = NgxVulkan.evaluateDLSS(
+                    resource.commandContext().nativeCommandBuffer().address(),
+                    ngxDlssFeature,
+                    ngxParameters,
+                    evalParams
+            );
+            if (!NgxConstants.succeeded(evaluateResult)) {
+                SuperResolution.LOGGER.error("NGX DLSS evaluation failed. Result: {}", evaluateResult);
+                return false;
+            }
+        } catch (Exception e) {
+            SuperResolution.LOGGER.error("NGX DLSS evaluation failed.", e);
+            return false;
+        }
+        return true;
+    }
+
+    private void recreateNgxContext(InitializationDescription desc, InteropResourceAccess resources) {
         if (!NgxInitializer.initializeIfSupported()) {
             NgxInitializer.shutdown();
             if (!NgxInitializer.initializeIfSupported()) {
@@ -90,45 +108,24 @@ public class DLSS extends GlVulkanInteropAlgorithm {
         }
 
         NgxParameters parameters = new NgxParameters();
+        ngxParameters = parameters;
         int parametersResult = NgxVulkan.getCapabilityParameters(parameters);
         requireNgxSuccess("NVSDK_NGX_VULKAN_GetCapabilityParameters", parametersResult);
 
         NgxFeature feature = new NgxFeature();
-        VulkanCommandBuffer commandBuffer = vulkanDevice.createCommandBuffer();
-        try {
-            configureNgxRenderPreset(parameters);
+        ngxDlssFeature = feature;
+        configureNgxRenderPreset(parameters);
 
-            NgxDLSSCreateParams createParams = new NgxDLSSCreateParams();
-            createParams.feature.width = RenderHandlerManager.getRenderWidth();
-            createParams.feature.height = RenderHandlerManager.getRenderHeight();
-            createParams.feature.targetWidth = RenderHandlerManager.getScreenWidth();
-            createParams.feature.targetHeight = RenderHandlerManager.getScreenHeight();
-            createParams.featureCreateFlags = createNgxFeatureFlags(desc);
+        NgxDLSSCreateParams createParams = new NgxDLSSCreateParams();
+        createParams.feature.width = resources.executionTexture(Color).getWidth();
+        createParams.feature.height = resources.executionTexture(Color).getHeight();
+        createParams.feature.targetWidth = resources.outputTexture().getWidth();
+        createParams.feature.targetHeight = resources.outputTexture().getHeight();
+        createParams.featureCreateFlags = createNgxFeatureFlags(desc);
 
-            commandBuffer.begin();
-            int createResult = NgxVulkan.createDLSS(
-                    commandBuffer.getNativeCommandBuffer().address(),
-                    1,
-                    1,
-                    feature,
-                    parameters,
-                    createParams
-            );
-            commandBuffer.end();
-            requireNgxSuccess("NGX_VULKAN_CREATE_DLSS_EXT", createResult);
-
-            vulkanDevice.submitCommandBuffer(commandBuffer);
-            commandBuffer.waitForFence();
-
-            ngxParameters = parameters;
-            ngxDlssFeature = feature;
-        } catch (RuntimeException | Error e) {
-            feature.close();
-            parameters.close();
-            throw e;
-        } finally {
-            commandBuffer.destroy();
-        }
+        executeInteropCommands(commandContext -> requireNgxSuccess(
+                "NGX_VULKAN_CREATE_DLSS_EXT", NgxVulkan.createDLSS(
+                        commandContext.nativeHandle(), 1, 1, feature, parameters, createParams)));
     }
 
     private int createNgxFeatureFlags(InitializationDescription desc) {
@@ -162,80 +159,16 @@ public class DLSS extends GlVulkanInteropAlgorithm {
         if (ngxDlssFeature != null) {
             int result = ngxDlssFeature.release();
             if (!NgxConstants.succeeded(result)) {
-                SuperResolution.LOGGER.error("Failed to release the DLSS NGX feature. Result: {}", result);
+                throw new IllegalStateException("Failed to release the DLSS NGX feature: " + result);
             }
             ngxDlssFeature = null;
         }
         if (ngxParameters != null) {
             int result = ngxParameters.destroy();
             if (!NgxConstants.succeeded(result)) {
-                SuperResolution.LOGGER.error("Failed to destroy the DLSS NGX parameters. Result: {}", result);
+                throw new IllegalStateException("Failed to destroy the DLSS NGX parameters: " + result);
             }
             ngxParameters = null;
-        }
-    }
-
-    private void dispatchNgxContext(
-            VulkanCommandBuffer commandBuffer,
-            FrameResourcesSet frameResourcesSet
-    ) {
-        if (ngxDlssFeature == null || ngxParameters == null) {
-            return;
-        }
-
-        NgxDispatchResources dispatchResources = ngxDispatchResource;
-        if (dispatchResources == null) {
-            return;
-        }
-
-        NgxVKDLSSEvalParams evalParams = dispatchResources.evalParams;
-        evalParams.feature.sharpness = SuperResolutionConfig.getSharpness();
-        evalParams.jitterOffsetX = frameResourcesSet.frameData.jitterOffset().x;
-        evalParams.jitterOffsetY = frameResourcesSet.frameData.jitterOffset().y;
-        evalParams.renderSubrectDimensions.width = frameResourcesSet.frameData.renderWidth();
-        evalParams.renderSubrectDimensions.height = frameResourcesSet.frameData.renderHeight();
-        evalParams.motionVectorScaleX = frameResourcesSet.frameData.renderSize().x;
-        evalParams.motionVectorScaleY = frameResourcesSet.frameData.renderSize().y;
-        evalParams.reset = consumeHistoryReset() ? 1 : 0;
-        evalParams.preExposure = frameResourcesSet.frameData.preExposure();
-        evalParams.exposureScale = 1.0f;
-        evalParams.frameTimeDeltaInMsec = frameResourcesSet.frameData.frameTimeDelta();
-
-        VulkanTimestampProfiler profiler =
-                RenderSystems.vulkan().device().timestampProfiler();
-        int timestampSlot = profiler == null
-                ? -1
-                : profiler.beginRegion(
-                commandBuffer.getNativeCommandBuffer(),
-                PerformanceTracker.VK_UPSCALE
-        );
-        int evaluateResult = NgxVulkan.evaluateDLSS(
-                commandBuffer.getNativeCommandBuffer().address(),
-                ngxDlssFeature,
-                ngxParameters,
-                evalParams
-        );
-        if (timestampSlot >= 0) {
-            profiler.endRegion(commandBuffer.getNativeCommandBuffer(), timestampSlot);
-        }
-        if (!NgxConstants.succeeded(evaluateResult)) {
-            SuperResolution.LOGGER.error("NGX DLSS evaluation failed. Result: {}", evaluateResult);
-        }
-    }
-
-    private void createNgxDispatchResources() {
-        destroyNgxDispatchResources();
-        try {
-            ngxDispatchResource = new NgxDispatchResources(Objects.requireNonNull(frameResourcesSet));
-        } catch (RuntimeException | Error e) {
-            destroyNgxDispatchResources();
-            throw e;
-        }
-    }
-
-    private void destroyNgxDispatchResources() {
-        if (ngxDispatchResource != null){
-            ngxDispatchResource.close();
         }
     }
 
@@ -260,6 +193,7 @@ public class DLSS extends GlVulkanInteropAlgorithm {
         );
     }
 
+
     private final class NgxDispatchResources implements AutoCloseable {
         private final NgxVKDLSSEvalParams evalParams = new NgxVKDLSSEvalParams();
         private NgxResourceVK color;
@@ -268,13 +202,13 @@ public class DLSS extends GlVulkanInteropAlgorithm {
         private NgxResourceVK exposure;
         private NgxResourceVK output;
 
-        private NgxDispatchResources(FrameResourcesSet frameResourcesSet) {
+        private NgxDispatchResources(InteropResourceSet resourceSet) {
             try {
-                color = createNgxTextureResource(frameResourcesSet.vulkan(Color), true);
-                depth = createNgxTextureResource(frameResourcesSet.vulkan(Depth), false);
-                motionVectors = createNgxTextureResource(frameResourcesSet.vulkan(MotionVectors), true);
-                exposure = createNgxTextureResource(frameResourcesSet.vulkan(Exposure), false);
-                output = createNgxTextureResource(frameResourcesSet.vulkan(OutputColor), true);
+                color = createNgxTextureResource((VulkanTexture) resourceSet.get(Color), true);
+                depth = createNgxTextureResource((VulkanTexture) resourceSet.get(Depth), false);
+                motionVectors = createNgxTextureResource((VulkanTexture) resourceSet.get(MotionVectors), true);
+                exposure = createNgxTextureResource((VulkanTexture) resourceSet.get(Exposure), false);
+                output = createNgxTextureResource((VulkanTexture) resourceSet.get(OutputColor), true);
 
                 evalParams.feature.inputColor = color;
                 evalParams.feature.output = output;

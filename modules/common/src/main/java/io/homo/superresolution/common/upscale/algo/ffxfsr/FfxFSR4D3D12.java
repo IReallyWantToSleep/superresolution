@@ -19,14 +19,15 @@
 package io.homo.superresolution.common.upscale.algo.ffxfsr;
 
 import io.homo.superresolution.api.InitializationDescription;
-import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
-import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.common.upscale.interoplayer.GlD3D12InteropAlgorithm;
+import io.homo.superresolution.common.upscale.interoplayer.D3D12CommandContext;
+import io.homo.superresolution.common.upscale.interoplayer.D3D12InteropAlgorithm;
+import io.homo.superresolution.common.upscale.interoplayer.InteropDispatchResource;
+import io.homo.superresolution.common.upscale.interoplayer.InteropFrameData;
+import io.homo.superresolution.common.upscale.interoplayer.InteropResourceAccess;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.SuperResolutionConstants;
-import io.homo.superresolution.core.graphics.d3d12.D3D12CommandBuffer;
-import io.homo.superresolution.core.graphics.d3d12.D3D12ResourceState;
+import io.homo.superresolution.core.graphics.d3d12.D3D12Device;
 import io.homo.superresolution.core.graphics.d3d12.D3D12Texture2D;
 import io.homo.superresolution.srapi.*;
 import org.joml.Vector2f;
@@ -37,8 +38,10 @@ import java.nio.file.Path;
 import java.util.EnumSet;
 import java.util.Objects;
 
+import static io.homo.superresolution.api.interop.InteropResourceType.*;
+
 public final class FfxFSR4D3D12
-        extends GlD3D12InteropAlgorithm {
+        extends D3D12InteropAlgorithm {
     public static final String UPSCALER_DLL_NAME =
             "amd_fidelityfx_upscaler_dx12.dll";
     private static final long FSR4_PROVIDER_ID = 0x8000006L;
@@ -89,9 +92,10 @@ public final class FfxFSR4D3D12
     }
 
     @Override
-    protected void createD3D12Upscaler(
-            InitializationDescription desc,
-            D3D12InteropResources resources) {
+    protected void createAlgorithmContext(InteropResourceAccess resources) {
+        if (NativeLibManager.LIB_SUPER_RESOLUTION_FSR4 == null) {
+            throw new IllegalStateException("FSR 4 provider library is unavailable");
+        }
         Path providerLibrary = NativeLibManager.LIB_SUPER_RESOLUTION_FSR4
                 .getTargetPath(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath())
                 .toAbsolutePath();
@@ -103,6 +107,7 @@ public final class FfxFSR4D3D12
         requireReadable(upscalerDll, "AMD signed FFX upscaler DLL");
 
         SRUpscaleContext context = new SRUpscaleContext(0);
+        this.context = context;
         try {
             SRReturnCode loadCode =
                     SuperResolutionNativeAPI.srLoadUpscaleProvidersFromLibrary(
@@ -124,14 +129,14 @@ public final class FfxFSR4D3D12
                         SRCreateUpscaleContextDesc createDesc =
                                 SRCreateUpscaleContextDesc.createD3D12(
                                         new SRD3D12DeviceInfo(
-                                                resources.device().nativeDevice()),
+                                                ((D3D12Device) resources.device()).nativeDevice()),
                                         new Vector2i(
-                                                resources.screenWidth(),
-                                                resources.screenHeight()),
+                                                resources.outputTexture().getWidth(),
+                                                resources.outputTexture().getHeight()),
                                         new Vector2i(
-                                                resources.renderWidth(),
-                                                resources.renderHeight()),
-                                        createContextFlags(desc))
+                                                resources.executionTexture(Color).getWidth(),
+                                                resources.executionTexture(Color).getHeight()),
+                                        createContextFlags(initDesc))
                 ) {
                     SRReturnCode pathCode =
                             createDesc.getExtraParams().setString(
@@ -151,72 +156,74 @@ public final class FfxFSR4D3D12
                     requireSuccess(initCode, "initialize the FSR 4 context");
                 }
             }
-            this.context = context;
         } catch (RuntimeException | Error failure) {
             if (context.nativePtr > 0) {
-                destroyD3D12Upscaler();
+                try {
+                    requireSuccess(context.destroy(), "destroy the incomplete FSR 4 context");
+                    this.context = null;
+                } catch (RuntimeException | Error cleanupFailure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
             }
             throw failure;
         }
     }
 
     @Override
-    protected void destroyD3D12Upscaler() {
-        if (context.nativePtr <= 0) {
+    protected void destroyAlgorithmContext() {
+        if (context == null || context.nativePtr <= 0) {
             return;
         }
         SRReturnCode code = context.destroy();
         requireSuccess(code, "destroy the FSR 4 context");
+        context = null;
     }
 
     @Override
-    protected void dispatchUpscale(
-            D3D12CommandBuffer commandBuffer,
-            D3D12InteropResources resources,
-            DispatchResource dispatchResource) {
-        try (
-                D3D12CommandBuffer.NativeCommandListLease commandList =
-                        commandBuffer.leaseNativeCommandList();
-                SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc()
-        ) {
+    protected boolean dispatchAlgorithm(InteropDispatchResource<D3D12CommandContext> resource) {
+        if (context == null || context.nativePtr <= 0) {
+            return false;
+        }
+        InteropFrameData frame = resource.frameData();
+        try (SRDispatchUpscaleDesc desc = new SRDispatchUpscaleDesc()) {
             desc.setCommandBuffer(
-                    SRDispatchCommandBufferInfo.createD3D12(commandList));
+                    SRDispatchCommandBufferInfo.createD3D12(resource.commandContext().leaseNativeCommandList()));
             desc.setColor(textureResource(
-                    resources.inputColor(),
+                    (D3D12Texture2D) resource.texture(Color),
                     SRResourceStates.COMPUTE_READ));
             desc.setDepth(textureResource(
-                    resources.inputDepth(),
+                    (D3D12Texture2D) resource.texture(Depth),
                     SRResourceStates.COMPUTE_READ));
             desc.setMotionVectors(textureResource(
-                    resources.inputMotionVectors(),
+                    (D3D12Texture2D) resource.texture(MotionVectors),
                     SRResourceStates.COMPUTE_READ));
-            if (dispatchResource.resources().has(InputResourceType.Exposure)) {
+            if (resource.has(Exposure)) {
                 desc.setExposure(textureResource(
-                        resources.inputExposure(),
+                        (D3D12Texture2D) resource.texture(Exposure),
                         SRResourceStates.COMPUTE_READ));
             }
             desc.setOutput(textureResource(
-                    resources.outputColor(),
+                    (D3D12Texture2D) resource.outputTexture(),
                     SRResourceStates.COMMON));
 
-            desc.setJitterOffset(new Vector2f(dispatchResource.jitterOffset()));
+            desc.setJitterOffset(new Vector2f(frame.jitterOffset()));
             desc.setMotionVectorScale(new Vector2f(
-                    dispatchResource.renderWidth(),
-                    dispatchResource.renderHeight()));
+                    frame.renderWidth(),
+                    frame.renderHeight()));
             desc.setRenderSize(new Vector2i(
-                    dispatchResource.renderWidth(),
-                    dispatchResource.renderHeight()));
+                    frame.renderWidth(),
+                    frame.renderHeight()));
             desc.setUpscaleSize(new Vector2i(
-                    dispatchResource.screenWidth(),
-                    dispatchResource.screenHeight()));
-            desc.setFrameTimeDelta(dispatchResource.frameTimeDelta());
+                    frame.screenWidth(),
+                    frame.screenHeight()));
+            desc.setFrameTimeDelta(frame.frameTimeDelta());
             desc.setEnableSharpening(true);
             desc.setSharpness(SuperResolutionConfig.getSharpness());
-            desc.setPreExposure(dispatchResource.preExposure());
-            desc.setCameraNear(dispatchResource.cameraNear());
-            desc.setCameraFar(dispatchResource.cameraFar());
+            desc.setPreExposure(frame.preExposure());
+            desc.setCameraNear(frame.cameraNear());
+            desc.setCameraFar(frame.cameraFar());
             desc.setCameraFovAngleVertical(
-                    (float) Math.toRadians(dispatchResource.verticalFov()));
+                    (float) Math.toRadians(frame.verticalFov()));
             desc.setViewSpaceToMetersFactor(1.0f);
             desc.setReset(consumeHistoryReset());
             desc.setFlags(0);
@@ -224,24 +231,7 @@ public final class FfxFSR4D3D12
             SRReturnCode code =
                     SuperResolutionNativeAPI.srDispatchUpscale(context, desc);
             requireSuccess(code, "dispatch FSR 4");
-
-            commandList.setTextureState(
-                    resources.inputColor(),
-                    D3D12ResourceState.COMPUTE_READ);
-            commandList.setTextureState(
-                    resources.inputDepth(),
-                    D3D12ResourceState.COMPUTE_READ);
-            commandList.setTextureState(
-                    resources.inputMotionVectors(),
-                    D3D12ResourceState.COMPUTE_READ);
-            if (dispatchResource.resources().has(InputResourceType.Exposure)) {
-                commandList.setTextureState(
-                        resources.inputExposure(),
-                        D3D12ResourceState.COMPUTE_READ);
-            }
-            commandList.setTextureState(
-                    resources.outputColor(),
-                    D3D12ResourceState.COMMON);
         }
+        return true;
     }
 }

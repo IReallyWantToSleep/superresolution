@@ -5,7 +5,7 @@ import utils.registerNsightRunTasks
 
 plugins {
     id("multiloader-loader")
-    id("net.fabricmc.fabric-loom-remap") version "1.18.2"
+    id("net.fabricmc.fabric-loom") version "1.18.2"
 }
 
 @Suppress("UNCHECKED_CAST")

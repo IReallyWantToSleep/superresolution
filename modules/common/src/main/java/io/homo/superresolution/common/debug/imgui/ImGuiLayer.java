@@ -43,7 +43,6 @@ import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.workmode.SRWorkModeProvider;
 import io.homo.superresolution.common.workmode.SRWorkModeState;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
 import net.minecraft.client.Minecraft;
@@ -410,11 +409,11 @@ public class ImGuiLayer {
         ImGuiDebugContext ctx = new ImGuiDebugContext("base", textures::add, this::openViewer);
         ctx.addTexture("input_color", "Input Color Texture", RenderHandlerManager.getColorTexture(), null, true);
         ctx.addTexture("input_depth", "Input Depth Texture", RenderHandlerManager.getDepthTexture(), null, true);
-        if (SuperResolution.currentAlgorithm != null && SuperResolution.currentAlgorithm.getOutputFrameBuffer() != null) {
+        if (SuperResolution.currentAlgorithm != null && SuperResolution.currentAlgorithm.getOutputTexture() != null) {
             ctx.addTexture(
                     "upscale_output",
                     "Upscale Output",
-                    SuperResolution.currentAlgorithm.getOutputFrameBuffer().getTexture(FrameBufferAttachmentType.Color),
+                    SuperResolution.currentAlgorithm.getOutputTexture(),
                     null,
                     true
             );

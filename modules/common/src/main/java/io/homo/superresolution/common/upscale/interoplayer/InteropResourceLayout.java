@@ -14,12 +14,27 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import java.util.*;
 
 import static io.homo.superresolution.api.interop.InteropResourceRequirement.Presence.Optional;
+import static io.homo.superresolution.api.interop.InteropResourceRequirement.Presence.Required;
 
 public record InteropResourceLayout(Map<InteropResourceType, InteropResourceDescription> resources) {
     public InteropResourceLayout {
         EnumMap<InteropResourceType, InteropResourceDescription> copy = new EnumMap<>(InteropResourceType.class);
         copy.putAll(resources);
         resources = Collections.unmodifiableMap(copy);
+    }
+
+    public static boolean hasRequiredInputs(
+            List<InteropResourceRequirement> requirements, InputResourceSet inputs) {
+        if (inputs == null) {
+            return false;
+        }
+        for (InteropResourceRequirement requirement : requirements) {
+            if (requirement.type().isInput() && requirement.presence() == Required
+                    && !inputs.has(requirement.type().inputType())) {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static InteropResourceLayout resolve(

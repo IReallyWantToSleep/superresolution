@@ -206,6 +206,10 @@ val javaToolchains = extensions.getByType(JavaToolchainService::class.java)
 val mainSourceSet = sourceSets.getByName("main")
 val testSourceSet = sourceSets.getByName("test")
 testSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
+// ModDev supplies Minecraft's libraries (including JOML) to main, not test.
+// Reuse the selected version's classpath for pure Java interop contract tests.
+testSourceSet.compileClasspath += mainSourceSet.compileClasspath
+testSourceSet.runtimeClasspath += mainSourceSet.compileClasspath
 val irisapiSourceSet = sourceSets.maybeCreate("irisapi")
 val sharedSourceSet = sourceSets.maybeCreate("shared")
 val materialSourceSet = sourceSets.maybeCreate("material")

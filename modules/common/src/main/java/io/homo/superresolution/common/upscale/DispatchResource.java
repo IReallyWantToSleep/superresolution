@@ -19,10 +19,13 @@
 package io.homo.superresolution.common.upscale;
 
 import io.homo.superresolution.api.InputResourceSet;
+import io.homo.superresolution.srapi.SRRenderApiType;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 
 public record DispatchResource(
+        SRRenderApiType inputApi,
+
         int renderWidth,
         int renderHeight,
         Vector2f renderSize,

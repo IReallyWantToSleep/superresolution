@@ -19,22 +19,16 @@
 package io.homo.superresolution.api;
 
 import io.homo.superresolution.common.upscale.DispatchResource;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.impl.Destroyable;
 
 public abstract class AbstractAlgorithm implements Destroyable {
-    protected InputResourceSet resources;
     protected InitializationDescription initDesc = new InitializationDescription();
     /** true 时下一次 dispatch 请求算法丢弃累积历史。新实例默认 true。 */
     protected boolean needsHistoryReset = true;
 
     public AbstractAlgorithm() {
 
-    }
-
-    protected InputResourceSet getResources() {
-        return resources;
     }
 
     /** 读取并清除历史复位标志。 */
@@ -63,7 +57,6 @@ public abstract class AbstractAlgorithm implements Destroyable {
      * @return 如果运行成功返回true，否则返回false。
      */
     public boolean dispatch(DispatchResource dispatchResource) {
-        this.resources = dispatchResource.resources();
         return true;
     }
 
@@ -81,19 +74,6 @@ public abstract class AbstractAlgorithm implements Destroyable {
      */
     public abstract void resize(int width, int height);
 
-    /**
-     * 获取输出帧缓冲区。
-     *
-     * @return 输出帧缓冲区。
-     */
-    public abstract IFrameBuffer getOutputFrameBuffer();
-
-    /**
-     * 获取输出帧缓冲区的颜色纹理ID。
-     *
-     * @return 输出帧缓冲区的颜色纹理ID。
-     */
-    public int getOutputTextureId() {
-        return getOutputFrameBuffer().getTextureId(FrameBufferAttachmentType.Color);
-    }
+    /** 获取算法输出纹理，调用方只借用、不负责销毁。 */
+    public abstract ITexture getOutputTexture();
 }

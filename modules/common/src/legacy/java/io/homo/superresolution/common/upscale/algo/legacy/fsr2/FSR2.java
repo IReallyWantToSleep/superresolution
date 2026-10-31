@@ -21,6 +21,7 @@ package io.homo.superresolution.common.upscale.algo.legacy.fsr2;
 import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.InitializationDescription;
+import io.homo.superresolution.api.InputResourceSet;
 import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -28,8 +29,6 @@ import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.common.upscale.algo.legacy.fsr2.impl.*;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
-import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
@@ -41,7 +40,6 @@ import org.joml.Vector2f;
 
 public class FSR2 extends AbstractAlgorithm{
     public Fsr2Context fsr2Context;
-    private IFrameBuffer outputFbo;
     private GlTexture2D output;
     private GlTexture2D exposureTexture;
 
@@ -62,11 +60,6 @@ public class FSR2 extends AbstractAlgorithm{
                 .label("SRFsr2Output")
                 .build()
         );
-        outputFbo = RenderSystems.current().device().createFramebuffer(
-                FramebufferDescription.create()
-                        .colorAttachment(output)
-                        .label("SRFsr2OutputFbo")
-                        .build());
         exposureTexture = (GlTexture2D) RenderSystems.current().device().createTexture(TextureDescription.create()
                 .type(TextureType.Texture2D)
                 .width(1)
@@ -98,7 +91,6 @@ public class FSR2 extends AbstractAlgorithm{
     @Override
     public void destroy() {
         this.output.destroy();
-        outputFbo.destroy();
         fsr2Context.destroy();
         exposureTexture.destroy();
     }
@@ -110,26 +102,21 @@ public class FSR2 extends AbstractAlgorithm{
     }
 
     @Override
-    public IFrameBuffer getOutputFrameBuffer() {
-        return outputFbo;
-    }
-
-    @Override
-    public int getOutputTextureId() {
-        return Math.toIntExact(output.handle());
+    public GlTexture2D getOutputTexture() {
+        return output;
     }
 
     private boolean dispatchFSR2(DispatchResource dispatchResource) {
-        super.dispatch(dispatchResource);
+        InputResourceSet inputs = dispatchResource.resources();
         if (fsr2Context == null) {
             return false;
         }
         Matrix4f projectionMatrix = dispatchResource.projectionMatrix();
         float cameraFovAngleVertical = dispatchResource.verticalFov();
         Fsr2DispatchDescription dispatchDescription = new Fsr2DispatchDescription();
-        dispatchDescription.setColor(resources.get(InputResourceType.Color));
-        dispatchDescription.setDepth(resources.get(InputResourceType.Depth));
-        dispatchDescription.setMotionVectors(resources.get(InputResourceType.MotionVectors));
+        dispatchDescription.setColor(inputs.get(InputResourceType.Color));
+        dispatchDescription.setDepth(inputs.get(InputResourceType.Depth));
+        dispatchDescription.setMotionVectors(inputs.get(InputResourceType.MotionVectors));
         dispatchDescription.setOutput(this.output);
         dispatchDescription.setJitterOffset(dispatchResource.jitterOffset());
         dispatchDescription.setExposure(exposureTexture);
