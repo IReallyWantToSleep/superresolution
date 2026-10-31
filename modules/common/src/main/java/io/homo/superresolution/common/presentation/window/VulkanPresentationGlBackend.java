@@ -50,7 +50,7 @@ import static org.lwjgl.system.MemoryUtil.NULL;
 
 #if MC_VER >= MC_26_1
 public final class VulkanPresentationGlBackend extends GlBackend {
-#if MC_VER >= MC_26_3
+    #if MC_VER >= MC_26_3
     private static final long SDL_WINDOW_OPENGL = 2L;
     private static final long SDL_WINDOW_VULKAN = 268435456L;
     private static final String HELPER_TITLE = "Super Resolution OpenGL Context";
@@ -116,7 +116,7 @@ public final class VulkanPresentationGlBackend extends GlBackend {
         failure.addSuppressed(cause);
         throw failure;
     }
-#else
+    #else
     private static final String HELPER_TITLE = "Super Resolution OpenGL Context";
 
     @Override
@@ -276,6 +276,6 @@ public final class VulkanPresentationGlBackend extends GlBackend {
     private static <E extends Throwable, T> T sneakyThrow(Throwable throwable) throws E {
         throw (E) throwable;
     }
-#endif
+    #endif
 }
 #endif
