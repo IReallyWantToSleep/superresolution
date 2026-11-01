@@ -47,9 +47,11 @@ public final class SRWorkModeManager {
             return;
         }
         bootstrapped = true;
+#if IS_VULKAN == 0
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
             return;
         }
+#endif
         for (String className : BOOTSTRAP_CLASSES) {
             if (className.contains("shadercompat") && !Platform.currentPlatform.isInstallIris()) continue;
             try {

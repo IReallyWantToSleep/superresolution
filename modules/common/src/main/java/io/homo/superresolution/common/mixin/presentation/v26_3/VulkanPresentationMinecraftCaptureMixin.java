@@ -15,7 +15,9 @@ import com.mojang.renderpearl.api.commands.CommandEncoder;
 import com.mojang.renderpearl.api.device.GpuSurface;
 import com.mojang.renderpearl.api.device.SurfaceException;
 import com.mojang.renderpearl.api.textures.GpuTextureView;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
+import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import net.minecraft.client.Minecraft;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
@@ -34,7 +36,24 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             )
     )
     private void super_resolution$renderAndPresent(boolean advanceGameTime, CallbackInfo ci) {
-        if (PresentationBackendManager.isVulkanPresentationRequested()) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()
+                && !B3DVulkanBridge.isB3DVulkanBackend()) {
+            PresentationBackendManager.endMinecraftFrame();
+        }
+    }
+
+    @Inject(
+            method = "renderFrame",
+            at = @At(
+                    value = "INVOKE",
+                    target = "Lcom/mojang/renderpearl/api/commands/CommandEncoder;submit()V",
+                    shift = At.Shift.AFTER
+            )
+    )
+    private void super_resolution$presentSubmittedVulkanFrame(boolean advanceGameTime, CallbackInfo ci) {
+        if (PresentationBackendManager.isVulkanPresentationRequested()
+                && B3DVulkanBridge.isB3DVulkanBackend()) {
+            FrameCaptureManager.onMinecraftCommandsSubmitted();
             PresentationBackendManager.endMinecraftFrame();
         }
     }
@@ -47,7 +66,8 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             )
     )
     private void super_resolution$skipOpenGlBlit(GpuSurface instance, CommandEncoder commandEncoder, GpuTextureView textureView) {
-        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()
+                || B3DVulkanBridge.isB3DVulkanBackend()) {
             instance.blitFromTexture(commandEncoder, textureView);
         }
     }
@@ -60,7 +80,8 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             )
     )
     private void super_resolution$skipOpenGlPresent(GpuSurface instance) {
-        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()
+                || B3DVulkanBridge.isB3DVulkanBackend()) {
             instance.present();
         }
     }
@@ -73,7 +94,8 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             )
     )
     private boolean super_resolution$isAcquired(GpuSurface instance) {
-        return !PresentationBackendManager.isVulkanPresentationRequested() && instance.isAcquired();
+        return (!PresentationBackendManager.isVulkanPresentationRequested()
+                || B3DVulkanBridge.isB3DVulkanBackend()) && instance.isAcquired();
     }
 
     @Redirect(
@@ -84,7 +106,8 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             )
     )
     private void super_resolution$acquireNextTexture(GpuSurface instance) throws SurfaceException {
-        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()
+                || B3DVulkanBridge.isB3DVulkanBackend()) {
             instance.acquireNextTexture();
         }
     }

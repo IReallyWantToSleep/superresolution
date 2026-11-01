@@ -22,6 +22,15 @@ import io.homo.irisapi.*;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
 import org.spongepowered.asm.mixin.Mixin;
 
+#if MC_VER >= MC_26_3
+import io.homo.irisapi.handlers.IrisRenderingPipelineHandler;
+import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+import java.util.Iterator;
+#else
 
 #if MC_VER > MC_1_21_11
 import org.spongepowered.asm.mixin.Shadow;
@@ -51,8 +60,47 @@ import com.mojang.blaze3d.vertex.VertexFormat.IndexType;
 #endif
 import io.homo.irisapi.handlers.IrisRenderingPipelineHandler;
 #endif
+#endif
 @Mixin(CompositeRenderer.class)
 public class CompositeRendererMixin {
+    #if MC_VER >= MC_26_3
+    @Unique
+    private Object superresolution$currentPass;
+
+    @Unique
+    private void superresolution$event(PassEventHandler handler) {
+        Object pass = superresolution$currentPass;
+        if (pass != null) {
+            handler.handle(new CompositeRendererAccessorImpl_After1201((CompositeRenderer) (Object) this),
+                    (NamedCompositePass) pass, IrisReflectionUtils.getCompositePassType(pass));
+        }
+    }
+
+    @Inject(method = "renderAll", at = @At("HEAD"), remap = false)
+    private void superresolution$begin(CallbackInfo ci) {
+        superresolution$currentPass = null;
+    }
+
+    @Redirect(method = "renderAll", at = @At(value = "INVOKE",
+            target = "Ljava/util/Iterator;next()Ljava/lang/Object;", ordinal = 0), remap = false)
+    private Object superresolution$beginPass(Iterator<?> iterator) {
+        Object pass = iterator.next();
+        superresolution$currentPass = pass;
+        superresolution$event(IrisRenderingPipelineHandler::onCompositePassStart);
+        superresolution$event(IrisRenderingPipelineHandler::onCompositePassDispatchBefore);
+        return pass;
+    }
+
+    // Both draw passes and compute-only passes return to this outer loop edge.
+    @Redirect(method = "renderAll", at = @At(value = "INVOKE",
+            target = "Ljava/util/Iterator;hasNext()Z", ordinal = 0), remap = false)
+    private boolean superresolution$endPass(Iterator<?> iterator) {
+        superresolution$event(IrisRenderingPipelineHandler::onCompositePassDispatchAfter);
+        superresolution$event(IrisRenderingPipelineHandler::onCompositePassEnd);
+        superresolution$currentPass = null;
+        return iterator.hasNext();
+    }
+    #else
     #if MC_VER > MC_1_21_11
     @Shadow(remap = false)
     @Final
@@ -205,5 +253,6 @@ public class CompositeRendererMixin {
             superresolution$handlePassEvent(i, IrisRenderingPipelineHandler::onCompositePassEnd);
         }
     }
+    #endif
     #endif
 }

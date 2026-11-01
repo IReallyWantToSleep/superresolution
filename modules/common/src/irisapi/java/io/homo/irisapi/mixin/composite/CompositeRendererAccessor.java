@@ -21,7 +21,12 @@ package io.homo.irisapi.mixin.composite;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+#if IS_VULKAN == 1
+import net.irisshaders.iris.targets.CustomImage;
+import net.irisshaders.iris.pipeline.IrisRenderingPipeline;
+#else
 import net.irisshaders.iris.gl.image.GlImage;
+#endif
 import net.irisshaders.iris.gl.texture.TextureAccess;
 import net.irisshaders.iris.pathways.CenterDepthSampler;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
@@ -48,10 +53,18 @@ public interface CompositeRendererAccessor {
     void sr_irisapi$setPasses(ImmutableList<Object> passes);
 
     @Accessor(value = "pipeline", remap = false)
+    #if IS_VULKAN == 1
+    IrisRenderingPipeline sr_irisapi$getPipeline();
+    #else
     WorldRenderingPipeline sr_irisapi$getPipeline();
+    #endif
 
     @Accessor(value = "pipeline", remap = false)
+    #if IS_VULKAN == 1
+    void sr_irisapi$setPipeline(IrisRenderingPipeline pipeline);
+    #else
     void sr_irisapi$setPipeline(WorldRenderingPipeline pipeline);
+    #endif
 
     @Accessor(value = "noiseTexture", remap = false)
     TextureAccess sr_irisapi$getNoiseTexture();
@@ -90,10 +103,18 @@ public interface CompositeRendererAccessor {
     void sr_irisapi$setIrisCustomTextures(Object2ObjectMap<String, TextureAccess> irisCustomTextures);
 
     @Accessor(value = "customImages", remap = false)
+    #if IS_VULKAN == 1
+    Set<CustomImage> sr_irisapi$getCustomImages();
+    #else
     Set<GlImage> sr_irisapi$getCustomImages();
+    #endif
 
     @Accessor(value = "customImages", remap = false)
+    #if IS_VULKAN == 1
+    void sr_irisapi$setCustomImages(Set<CustomImage> customImages);
+    #else
     void sr_irisapi$setCustomImages(Set<GlImage> customImages);
+    #endif
 
     @Accessor(value = "textureStage", remap = false)
     TextureStage sr_irisapi$getTextureStage();

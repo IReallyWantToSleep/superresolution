@@ -24,6 +24,7 @@ import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.presentation.vulkan.FramePacingTiming;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
@@ -65,7 +66,7 @@ public final class FrameCaptureManager {
         if (!isInitialized() || !isWorldFrame()) {
             return;
         }
-        FrameResources frame = FRAME_RING.activeFrameOrNull();
+        FrameResources frame = beginFrame(GameFrameIndex.current());
         ITexture color = originColorTexture();
         if (frame != null && color != null) {
             frame.copyHudlessColor(color);
@@ -112,6 +113,13 @@ public final class FrameCaptureManager {
         return frame;
     }
 
+    public static void onMinecraftCommandsSubmitted() {
+        FrameResources frame = FRAME_RING.activeFrameOrNull();
+        if (frame != null) {
+            frame.minecraftCommandsSubmitted();
+        }
+    }
+
     public static FrameResources peekCurrentFrame() {
         FrameResources active = FRAME_RING.activeFrameOrNull();
         if (active != null) {
@@ -130,7 +138,8 @@ public final class FrameCaptureManager {
         if (!PresentationBackendManager.isVulkanPresentationRequested()
                 || !isInitialized()
                 || event == null
-                || (event.getAlgorithm() instanceof InteropAlgorithm<?> interop
+                || (!B3DVulkanBridge.isB3DVulkanBackend()
+                    && event.getAlgorithm() instanceof InteropAlgorithm<?> interop
                     && interop.supportsInputCapture())
                 || !isWorldFrame()) {
             return;

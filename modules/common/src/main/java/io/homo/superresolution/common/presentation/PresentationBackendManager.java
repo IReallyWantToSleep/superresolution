@@ -2,6 +2,7 @@ package io.homo.superresolution.common.presentation;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.common.framegeneration.FrameGenerationDescriptions;
 import io.homo.superresolution.common.presentation.api.PresentationBackend;
@@ -100,16 +101,26 @@ public final class PresentationBackendManager {
         if (backend == null) {
             backend();
         }
-        if (configuredBackend != PresentationBackendType.VULKAN) {
+        if (backend != VULKAN) {
             return;
+        }
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            try {
+                VULKAN.shutdown();
+            } catch (Throwable cleanupFailure) {
+                if (failure != cleanupFailure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
+            }
+            throw new IllegalStateException("Vulkan presentation initialization failed", failure);
         }
         SuperResolution.LOGGER.error("Vulkan presentation initialization failed; disabling it for the next launch", failure);
         try {
-            // Keep the Vulkan adapter responsible for releasing a partially-created
-            // surface/context before the effective backend is replaced with OpenGL.
             VULKAN.shutdown();
         } catch (Throwable cleanupFailure) {
-            failure.addSuppressed(cleanupFailure);
+            if (failure != cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
         }
         backend = OPENGL;
         configuredBackend = PresentationBackendType.OPENGL;
@@ -117,7 +128,9 @@ public final class PresentationBackendManager {
             SuperResolutionConfig.setPresentationBackend(PresentationBackendType.OPENGL);
             SuperResolutionConfig.SPEC.save();
         } catch (Throwable saveFailure) {
-            failure.addSuppressed(saveFailure);
+            if (failure != saveFailure) {
+                failure.addSuppressed(saveFailure);
+            }
         }
     }
 
@@ -127,10 +140,6 @@ public final class PresentationBackendManager {
             case VULKAN -> {
                 if (!isVulkanSupported()) {
                     SuperResolution.LOGGER.warn("Vulkan presentation is not supported by this Minecraft version; using OpenGL");
-                    yield OPENGL;
-                }
-                if (SuperResolutionConfig.isSkipInitVulkan()) {
-                    SuperResolution.LOGGER.warn("Vulkan presentation was selected but Vulkan initialization is skipped; using OpenGL");
                     yield OPENGL;
                 }
                 yield VULKAN;

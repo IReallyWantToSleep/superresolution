@@ -21,6 +21,7 @@ package io.homo.superresolution.common.upscale.algo.ffxfsr;
 import io.homo.superresolution.api.InitializationDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.upscale.SRApiAlgorithm;
 import io.homo.superresolution.common.upscale.interoplayer.InteropDispatchResource;
 import io.homo.superresolution.common.upscale.interoplayer.InteropResourceAccess;
@@ -65,15 +66,22 @@ public class FfxFSR extends SRApiAlgorithm {
         }
 
         try (SRUpscaleProvider provider = new SRUpscaleProvider(0)) {
+            VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
+            vulkanDevice.getMainQueue().waitIdle();
+            FSRVersion configuredVersion = SuperResolutionConfig.SPECIAL.FSR.VERSION.get();
             int providerId = switch (SuperResolutionConfig.SPECIAL.FSR.VERSION.get()) {
                 case V2 -> 0x8000002;
                 case V3 -> 0x8000003;
             };
+            if (B3DVulkanBridge.isB3DVulkanBackend() && configuredVersion == FSRVersion.V3) {
+                SuperResolution.LOGGER.warn(
+                        "FSR3 Vulkan native initialization is disabled for the borrowed Minecraft device; using FSR2 Vulkan provider");
+                providerId = 0x8000002;
+            }
             SRReturnCode providerCode = SuperResolutionNativeAPI.srGetUpscaleProvider(provider, providerId);
             SuperResolution.LOGGER.info("FSR provider (0x{}) acquisition: {}", Integer.toHexString(providerId), providerCode);
 
             this.context = new SRUpscaleContext(0);
-            VulkanDevice vulkanDevice = RenderSystems.vulkan().device();
             EnumSet<SRUpscaleContextCreateFlags> flags = EnumSet.noneOf(SRUpscaleContextCreateFlags.class);
             flags.add(SRUpscaleContextCreateFlags.ENABLE_DEBUG);
             if (desc.isAutoExposure()) {

@@ -24,6 +24,7 @@ import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.api.platform.SystemArchitecture;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.GraphicsCapabilities;
+import io.homo.superresolution.srapi.SRRenderApiType;
 
 import java.util.*;
 import java.util.function.Supplier;
@@ -185,6 +186,14 @@ public class Requirement {
     }
 
     public Result check() {
+        return checkForGraphicsPath(SRRenderApiType.OPENGL, SRRenderApiType.OPENGL);
+    }
+
+    public Result checkForGraphicsPath(SRRenderApiType inputApi, SRRenderApiType executionApi) {
+        Objects.requireNonNull(inputApi, "inputApi");
+        Objects.requireNonNull(executionApi, "executionApi");
+        boolean requiresOpenGL = inputApi == SRRenderApiType.OPENGL || executionApi == SRRenderApiType.OPENGL;
+        boolean pathRequiresVulkan = inputApi == SRRenderApiType.VULKAN || executionApi == SRRenderApiType.VULKAN;
         if (System.getenv().containsKey("SR_TEST")) {
             return new Result(
                     true,
@@ -199,10 +208,10 @@ public class Requirement {
         }
         return new Result(
                 checkOSCompatibility(),
-                checkGLVersion(),
-                checkGLExtensions(),
+                !requiresOpenGL || checkGLVersion(),
+                !requiresOpenGL || checkGLExtensions(),
                 checkEnvironment(),
-                checkVulkanSupport(),
+                checkVulkanSupport(pathRequiresVulkan),
                 checkVulkanVersion(),
                 checkVulkanDeviceExtensions(),
                 checkAdditionalConditions()
@@ -239,8 +248,8 @@ public class Requirement {
         return !requiresDevEnv || Platform.currentPlatform.isDevelopmentEnvironment();
     }
 
-    private boolean checkVulkanSupport() {
-        return !requiresVulkan || (RenderSystems.isSupportVulkan());
+    private boolean checkVulkanSupport(boolean pathRequiresVulkan) {
+        return !(requiresVulkan || pathRequiresVulkan) || RenderSystems.isSupportVulkan();
     }
 
     public List<String> getMissingGlExtensions() {
@@ -297,10 +306,25 @@ public class Requirement {
 
             boolean vulkanDeviceExtensionsMet,
 
-            boolean additionalConditionsMet
+            boolean additionalConditionsMet,
+
+            boolean graphicsPathSupported
     ) {
+        public Result(
+                boolean osSupported, boolean glVersionMet, boolean glExtensionsPresent,
+                boolean environmentValid, boolean vulkanAvailable, boolean vulkanVersionMet,
+                boolean vulkanDeviceExtensionsMet, boolean additionalConditionsMet
+        ) {
+            this(osSupported, glVersionMet, glExtensionsPresent, environmentValid,
+                    vulkanAvailable, vulkanVersionMet, vulkanDeviceExtensionsMet, additionalConditionsMet, true);
+        }
+
+        public static Result unsupportedGraphicsPath() {
+            return new Result(true, true, true, true, true, true, true, true, false);
+        }
+
         public boolean support() {
-            return osSupported && glVersionMet && glExtensionsPresent &&
+            return graphicsPathSupported && osSupported && glVersionMet && glExtensionsPresent &&
                     environmentValid && vulkanAvailable && vulkanVersionMet && vulkanDeviceExtensionsMet && additionalConditionsMet;
         }
     }

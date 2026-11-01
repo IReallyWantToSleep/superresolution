@@ -41,6 +41,8 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     private CommandBufferState state = CommandBufferState.Executable;
     private long reusableFence = VK_NULL_HANDLE;
     private boolean inFlight = false;
+    private boolean externalSubmission;
+    private boolean borrowedRecording;
     private long submissionGeneration;
     private VkCommandBuffer nativeCommandBuffer;
     private VulkanRenderPass activeRenderPass;
@@ -69,6 +71,28 @@ public class VulkanCommandBuffer implements ICommandBuffer {
 
     public synchronized VkCommandBuffer getNativeCommandBuffer() {
         return nativeCommandBuffer;
+    }
+
+    private VulkanCommandBuffer(VulkanDevice device, VkCommandBuffer commandBuffer) {
+        this.vulkanDevice = device;
+        this.ownerPool = (VulkanCommandPool) device.defaultCommandPool();
+        this.behavior = CommandBufferBehavior.ReusableSequential;
+        this.nativeCommandBuffer = commandBuffer;
+        this.state = CommandBufferState.Recording;
+        this.borrowedRecording = true;
+    }
+
+    public static VulkanCommandBuffer borrowRecording(VulkanDevice device, VkCommandBuffer commandBuffer) {
+        return new VulkanCommandBuffer(device, commandBuffer);
+    }
+
+    public synchronized void retireBorrowedRecording() {
+        if (!borrowedRecording) {
+            throw new IllegalStateException("Command buffer is not a borrowed recording");
+        }
+        destroyTransientResources();
+        nativeCommandBuffer = null;
+        state = CommandBufferState.Destroyed;
     }
 
     @Override
@@ -187,6 +211,9 @@ public class VulkanCommandBuffer implements ICommandBuffer {
 
     @Override
     public synchronized boolean isFenceSignaled() {
+        if (externalSubmission) {
+            return !inFlight;
+        }
         if (reusableFence == VK_NULL_HANDLE) {
             inFlight = false;
             destroyTransientResourcesIfComplete();
@@ -207,6 +234,11 @@ public class VulkanCommandBuffer implements ICommandBuffer {
 
     @Override
     public synchronized void waitForFence() {
+        if (externalSubmission && inFlight) {
+            io.homo.superresolution.common.minecraft.B3DVulkanBridge.awaitIdle();
+            markExternalComplete();
+            return;
+        }
         if (reusableFence == VK_NULL_HANDLE) {
             inFlight = false;
             destroyTransientResourcesIfComplete();
@@ -274,10 +306,12 @@ public class VulkanCommandBuffer implements ICommandBuffer {
             throw new IllegalStateException("Command buffer must be executable before external submit");
         }
         inFlight = true;
+        externalSubmission = true;
+        submissionGeneration++;
     }
 
     public synchronized boolean isExternallyComplete() {
-        return inFlight;
+        return externalSubmission && !inFlight;
     }
 
     public synchronized void markExternalComplete() {

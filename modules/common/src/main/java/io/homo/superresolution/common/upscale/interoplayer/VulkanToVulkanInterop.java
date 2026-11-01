@@ -1,27 +1,20 @@
 package io.homo.superresolution.common.upscale.interoplayer;
 
-import io.homo.superresolution.api.InitializationDescription;
-import io.homo.superresolution.api.interop.InteropResourceDescription;
-import io.homo.superresolution.api.interop.InteropResourceRequirement;
 import io.homo.superresolution.api.interop.InteropResourceType;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
+import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.srapi.SRRenderApiType;
 
-import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.function.Consumer;
 
-public final class VulkanToVulkanInterop implements InteropImplementation<VulkanCommandContext> {
-    private static UnsupportedOperationException unsupported() {
-        return new UnsupportedOperationException(
-                "Vulkan-to-Vulkan interop is not implemented yet");
-    }
+import static org.lwjgl.vulkan.VK10.*;
 
-    @Override
-    public SRRenderApiType inputApi() {
-        return SRRenderApiType.VULKAN;
-    }
+public final class VulkanToVulkanInterop extends VulkanInputInterop<VulkanCommandContext> {
+    private PendingDispatch pending;
 
     @Override
     public SRRenderApiType executionApi() {
@@ -29,66 +22,118 @@ public final class VulkanToVulkanInterop implements InteropImplementation<Vulkan
     }
 
     @Override
-    public void initialize(InitializationDescription description,
-                           List<InteropResourceRequirement> requirements) {
-        throw unsupported();
-    }
-
-    @Override
-    public InteropResourceAccess resourceAccess() {
-        throw unsupported();
-    }
-
-    @Override
-    public boolean validateInputResources(DispatchResource resource) {
-        throw unsupported();
-    }
-
-    @Override
-    public Map<InteropResourceType, InteropResourceDescription> resourceDescriptions() {
-        return Map.of();
-    }
-
-    @Override
-    public boolean resourcesNeedRebuild(DispatchResource resource) {
-        throw unsupported();
-    }
-
-    @Override
-    public void rebuildForDispatch(DispatchResource resource) {
-        throw unsupported();
-    }
-
-    @Override
     public InteropDispatchResource<VulkanCommandContext> beginDispatch(DispatchResource resource) {
-        throw unsupported();
+        requireReady();
+        if (pending != null || !resolveLayout(resource).equals(builtLayout)) {
+            throw new IllegalStateException("Vulkan dispatch is pending or requires resource rebuild");
+        }
+        VulkanCommandBuffer commands = getCurrentCommandBuffer();
+        VulkanInteropState states = new VulkanInteropState();
+        VulkanCommandContext context = new VulkanCommandContext(commands);
+        try {
+            rememberExecution(states);
+            prepareInputs(commands, states, resource.resources());
+            for (Map.Entry<InteropResourceType, ITexture> entry : vulkanTextures.entrySet()) {
+                states.transition(commands, entry.getValue(),
+                        entry.getKey().isInput() ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL,
+                        entry.getKey().isInput() ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
+                        VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+            }
+            InteropDispatchResource<VulkanCommandContext> prepared = new InteropDispatchResource<>(
+                    InteropFrameData.from(resource), new InteropResourceSet(executionTextures), context);
+            pending = new PendingDispatch(prepared, commands, states);
+            return prepared;
+        } catch (RuntimeException | Error failure) {
+            context.close();
+            throw failure;
+        }
     }
 
     @Override
     public void completeDispatch(InteropDispatchResource<VulkanCommandContext> resource, boolean success) {
-        throw unsupported();
+        PendingDispatch recording = pending;
+        if (recording == null || recording.resource() != resource) {
+            throw new IllegalStateException("Vulkan dispatch context mismatch");
+        }
+        pending = null;
+        try {
+            resource.commandContext().close();
+            if (!success) {
+                return;
+            }
+            restoreGeneral(recording.commands(), recording.states());
+            int output = recordOutput(recording.commands(), recording.states());
+            restoreGeneral(recording.commands(), recording.states());
+            recording.commands().end();
+            publishOutput(output);
+        } catch (RuntimeException | Error failure) {
+            throw failure;
+        }
     }
 
     @Override
     public void executeCommands(Consumer<VulkanCommandContext> recorder) {
-        throw unsupported();
+        Objects.requireNonNull(recorder, "recorder");
+        if (vulkanDevice == null || unusable || pending != null) {
+            throw new IllegalStateException("Vulkan setup recording is unavailable");
+        }
+        VulkanCommandBuffer commands = getCurrentCommandBuffer();
+        VulkanInteropState states = new VulkanInteropState();
+        VulkanCommandContext context = new VulkanCommandContext(commands);
+        try {
+            rememberExecution(states);
+            recorder.accept(context);
+            context.close();
+            restoreGeneral(commands, states);
+        } catch (RuntimeException | Error failure) {
+            throw failure;
+        } finally {
+            context.close();
+        }
     }
 
     @Override
-    public ITexture outputTexture() {
-        return null;
+    protected void initializeExecution() {
     }
 
     @Override
-    public void resize(int width, int height) {
-        throw unsupported();
+    protected ITexture allocateExecution(InteropResourceType type, TextureDescription description) {
+        ITexture texture = vulkanDevice.createTexture(description);
+        vulkanTextures.put(type, texture);
+        return texture;
     }
 
     @Override
-    public void awaitUsers() {
+    protected Object executionDevice() {
+        return vulkanDevice;
     }
 
     @Override
-    public void destroy() {
+    protected void destroyExecution() {
+        for (InteropResourceType type : java.util.List.copyOf(executionTextures.keySet())) {
+            executionTextures.get(type).destroy();
+            executionTextures.remove(type);
+            vulkanTextures.remove(type);
+        }
+    }
+
+    @Override
+    protected boolean hasPendingDispatch() {
+        return pending != null;
+    }
+
+    private void restoreGeneral(VulkanCommandBuffer commands, VulkanInteropState states) {
+        for (ITexture texture : vulkanTextures.values()) {
+            states.transition(commands, texture, VK_IMAGE_LAYOUT_GENERAL,
+                    VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT,
+                    VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
+        }
+    }
+
+    private record PendingDispatch(InteropDispatchResource<VulkanCommandContext> resource,
+
+                                   VulkanCommandBuffer commands,
+
+                                   VulkanInteropState states) {
     }
 }

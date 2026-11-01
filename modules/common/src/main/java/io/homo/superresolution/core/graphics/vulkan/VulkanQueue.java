@@ -22,19 +22,23 @@ import org.lwjgl.PointerBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkQueue;
 
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.vulkan.VK10.VK_OBJECT_TYPE_QUEUE;
 import static org.lwjgl.vulkan.VK10.vkGetDeviceQueue;
 import static org.lwjgl.vulkan.VK10.vkQueueWaitIdle;
 
 public class VulkanQueue {
+    private static final ConcurrentMap<Long, Object> SUBMIT_LOCKS = new ConcurrentHashMap<>();
     private final VulkanDevice device;
     private final int queueFamilyIndex;
     private final int queueIndex;
     private final VulkanQueueRole role;
     // Guards every vkQueueSubmit/vkQueuePresentKHR/vkQueueWaitIdle on this queue;
     // required because the frame-generation pacer presents from its own thread.
-    private final Object submitLock = new Object();
+    private Object submitLock;
     private VkQueue queue;
 
     public VulkanQueue(VulkanDevice device, int queueFamilyIndex) {
@@ -52,6 +56,29 @@ public class VulkanQueue {
         this.queueIndex = queueIndex;
         this.role = role;
         getDeviceQueue();
+    }
+
+    public VulkanQueue(
+            VulkanDevice device,
+            VkQueue queue,
+            int queueFamilyIndex,
+            int queueIndex,
+            VulkanQueueRole role
+    ) {
+        this.device = device;
+        this.queueFamilyIndex = queueFamilyIndex;
+        this.queueIndex = queueIndex;
+        this.role = role;
+        this.queue = queue;
+        this.submitLock = submissionLock(queue);
+    }
+
+    void adoptQueue(VkQueue queue) {
+        if (queue == null || queue.address() == 0L) {
+            throw new IllegalArgumentException("Vulkan queue must be non-null");
+        }
+        this.queue = queue;
+        this.submitLock = submissionLock(queue);
     }
 
     public int getQueueFamilyIndex() {
@@ -77,6 +104,7 @@ public class VulkanQueue {
                                 + queueFamilyIndex + " index " + queueIndex
                 );
             }
+            submitLock = submissionLock(queue);
             device.setDebugName(
                     VK_OBJECT_TYPE_QUEUE,
                     queue.address(),
@@ -92,6 +120,13 @@ public class VulkanQueue {
 
     public Object submitLock() {
         return submitLock;
+    }
+
+    public static Object submissionLock(VkQueue queue) {
+        if (queue == null || queue.address() == 0L) {
+            throw new IllegalArgumentException("Vulkan queue must be non-null");
+        }
+        return SUBMIT_LOCKS.computeIfAbsent(queue.address(), ignored -> new Object());
     }
 
     public void waitIdle() {

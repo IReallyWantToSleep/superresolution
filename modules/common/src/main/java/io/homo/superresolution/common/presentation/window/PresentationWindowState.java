@@ -31,6 +31,7 @@ public final class PresentationWindowState {
     private static long presentationHandle = NULL;
     private static long renderHandle = NULL;
     private static Thread ownerThread;
+    private static boolean nativeVulkanPresentation;
 
     private PresentationWindowState() {
     }
@@ -48,6 +49,18 @@ public final class PresentationWindowState {
             throw new IllegalStateException("Presentation and render handles must be different");
         }
         presentationHandle = handle;
+    }
+
+    public static synchronized void attachNativePresentation(long handle) {
+        if (renderHandle != NULL) {
+            throw new IllegalStateException("Native Vulkan presentation cannot use an OpenGL render window");
+        }
+        attachPresentation(handle);
+        nativeVulkanPresentation = true;
+    }
+
+    public static synchronized boolean isNativeVulkanPresentation() {
+        return nativeVulkanPresentation;
     }
 
     public static synchronized void attachRender(long handle) {
@@ -88,7 +101,7 @@ public final class PresentationWindowState {
     }
 
     public static synchronized boolean isInitialized() {
-        return presentationHandle != NULL && renderHandle != NULL;
+        return presentationHandle != NULL && (nativeVulkanPresentation || renderHandle != NULL);
     }
 
     public static synchronized boolean isRender(long handle) {
@@ -126,6 +139,7 @@ public final class PresentationWindowState {
         }
         requireOwnerThread();
         presentationHandle = NULL;
+        nativeVulkanPresentation = false;
         clearOwnerThreadIfUnused();
     }
 
@@ -133,6 +147,7 @@ public final class PresentationWindowState {
         presentationHandle = NULL;
         renderHandle = NULL;
         ownerThread = null;
+        nativeVulkanPresentation = false;
     }
 
     public static synchronized void requireOwnerThread() {

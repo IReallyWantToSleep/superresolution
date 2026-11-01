@@ -49,6 +49,7 @@ import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkLatencySubmissionPresentIdNV;
 import org.lwjgl.vulkan.VkPhysicalDevice;
+import org.lwjgl.vulkan.VkQueue;
 import org.lwjgl.vulkan.VkSubmitInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +69,7 @@ public class VulkanDevice implements IDevice {
     private final VkInstance instance;
     private final VkPhysicalDevice physicalDevice;
     private final VkDevice device;
-    private final VulkanQueue mainQueue;
+    private VulkanQueue mainQueue;
     private final VulkanQueue frameGenerationQueue;
     private final VulkanQueue presentQueue;
     private final VulkanCommandPool defaultCommandPool;
@@ -114,6 +115,20 @@ public class VulkanDevice implements IDevice {
             VkInstance instance,
             VkPhysicalDevice physicalDevice,
             VkDevice device,
+            VkQueue graphicsQueue,
+            int graphicsQueueFamilyIndex,
+            boolean ownsVkDevice
+    ) {
+        this(instance, physicalDevice, device, graphicsQueueFamilyIndex, ownsVkDevice);
+        if (graphicsQueue != null) {
+            this.mainQueue.adoptQueue(graphicsQueue);
+        }
+    }
+
+    public VulkanDevice(
+            VkInstance instance,
+            VkPhysicalDevice physicalDevice,
+            VkDevice device,
             int graphicsQueueFamilyIndex,
             boolean ownsVkDevice,
             boolean createFrameGenerationQueue,
@@ -140,6 +155,21 @@ public class VulkanDevice implements IDevice {
             boolean createFrameGenerationQueue,
             boolean createPresentQueue,
             VulkanAsyncDispatchCapabilities requestedAsyncDispatchCapabilities
+    ) {
+        this(instance, physicalDevice, device, graphicsQueueFamilyIndex, ownsVkDevice,
+                createFrameGenerationQueue, createPresentQueue, requestedAsyncDispatchCapabilities, false);
+    }
+
+    private VulkanDevice(
+            VkInstance instance,
+            VkPhysicalDevice physicalDevice,
+            VkDevice device,
+            int graphicsQueueFamilyIndex,
+            boolean ownsVkDevice,
+            boolean createFrameGenerationQueue,
+            boolean createPresentQueue,
+            VulkanAsyncDispatchCapabilities requestedAsyncDispatchCapabilities,
+            boolean deferInitialization
     ) {
         this.instance = instance;
         this.physicalDevice = physicalDevice;
@@ -183,10 +213,12 @@ public class VulkanDevice implements IDevice {
                 );
         this.commandDecoder = new VulkanCommandDecoder(this);
         this.validatedCommandDecoder = new ValidatedCommandDecoder(commandDecoder);
-        this.memoryAllocator = new VulkanMemoryAllocator(this);
-        defaultCommandPool.init();
-        if (frameGenerationCommandPool != null) {
-            frameGenerationCommandPool.init();
+        this.memoryAllocator = new VulkanMemoryAllocator(this, !deferInitialization);
+        if (!deferInitialization) {
+            defaultCommandPool.init();
+            if (frameGenerationCommandPool != null) {
+                frameGenerationCommandPool.init();
+            }
         }
         VulkanAsyncDispatchCapabilities capabilities = requestedAsyncDispatchCapabilities;
         VulkanSubmissionTimeline submissionTimeline = null;
@@ -210,6 +242,33 @@ public class VulkanDevice implements IDevice {
         }
         this.presentSubmitTimeline = submissionTimeline;
         this.asyncDispatchCapabilities = capabilities;
+    }
+
+    public static VulkanDevice borrowed(
+            VkInstance instance,
+            VkPhysicalDevice physicalDevice,
+            VkDevice device,
+            VkQueue graphicsQueue,
+            int graphicsQueueFamilyIndex
+    ) {
+        VulkanDevice wrapper = new VulkanDevice(
+                instance, physicalDevice, device, graphicsQueueFamilyIndex,
+                false, false, false,
+                VulkanAsyncDispatchCapabilities.evaluate("", false, graphicsQueueFamilyIndex,
+                        1, false, false, false, false),
+                true);
+        if (graphicsQueue != null) {
+            wrapper.mainQueue.adoptQueue(graphicsQueue);
+        }
+        return wrapper;
+    }
+
+    public void initializeBorrowedResources() {
+        if (ownsVkDevice) {
+            throw new IllegalStateException("Only borrowed Vulkan wrappers support deferred initialization");
+        }
+        memoryAllocator.initialize();
+        defaultCommandPool.init();
     }
 
     @Override

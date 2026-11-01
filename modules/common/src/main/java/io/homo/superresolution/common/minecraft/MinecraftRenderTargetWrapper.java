@@ -26,6 +26,15 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.utils.ColorUtil;
 
 import java.util.List;
+#if MC_VER >= MC_26_3 && IS_VULKAN == 1
+import com.mojang.renderpearl.backend.vulkan.VulkanGpuTextureView;
+import com.mojang.renderpearl.backend.vulkan.VulkanConst;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.vulkan.VulkanExternalTexture;
+import static org.lwjgl.vulkan.VK10.VK_IMAGE_LAYOUT_GENERAL;
+#endif
 
 #if MC_VER < MC_1_21_4
 import net.minecraft.client.Minecraft;
@@ -101,6 +110,11 @@ public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
 
     @Override
     public void destroy() {
+        #if MC_VER >= MC_26_3 && IS_VULKAN == 1
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            return;
+        }
+        #endif
         renderTarget.destroyBuffers();
     }
 
@@ -143,6 +157,24 @@ public class MinecraftRenderTargetWrapper implements IBindableFrameBuffer {
 
     @Override
     public ITexture getTexture(FrameBufferAttachmentType attachmentType) {
+        #if MC_VER >= MC_26_3 && IS_VULKAN == 1
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            var view = attachmentType == FrameBufferAttachmentType.Color
+                    ? renderTarget.getColorTextureView() : renderTarget.getDepthTextureView();
+            if (view == null || view.isClosed() || view.texture().isClosed()) {
+                return null;
+            }
+            if (!(view instanceof VulkanGpuTextureView vkView)) {
+                throw new IllegalStateException("Minecraft Vulkan render target has a non-Vulkan view");
+            }
+            return VulkanExternalTexture.fixedLayout(RenderSystems.vulkan().device(),
+                    vkView.texture().vkImage(), vkView.vkImageView(),
+                    TextureFormat.fromVk(VulkanConst.toVk(view.texture().getFormat())),
+                    TextureType.Texture2D, view.getWidth(0), view.getHeight(0), view.mipLevels(),
+                    VK_IMAGE_LAYOUT_GENERAL,
+                    TextureUsages.create().sampler().transferSource());
+        }
+        #endif
         return switch (attachmentType) {
             case Color -> FrameBufferTextureAdapter.ofColor(this);
             case AnyDepth, Depth, DepthStencil -> FrameBufferTextureAdapter.ofDepth(this);

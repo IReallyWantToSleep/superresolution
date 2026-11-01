@@ -25,6 +25,7 @@ import io.homo.superresolution.core.graphics.impl.shader.ShaderResourcesLayout;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceDescription;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceType;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
+import io.homo.superresolution.core.graphics.impl.texture.ITextureView;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
@@ -308,7 +309,7 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
                             0L,
                             0L,
                             imageView,
-                            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                            descriptorLayout(texture, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL),
                             sampler
                     ));
                 }
@@ -322,7 +323,7 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
                             0L,
                             0L,
                             imageView,
-                            VK_IMAGE_LAYOUT_GENERAL,
+                            descriptorLayout(texture, VK_IMAGE_LAYOUT_GENERAL),
                             0L
                     ));
                 }
@@ -331,6 +332,13 @@ public class VulkanPipelineDescriptorSet extends PipelineDescriptorSet {
         snapshotKeys.sort(Comparator.comparingInt(DescriptorBindingSnapshotKey::binding)
                 .thenComparingInt(DescriptorBindingSnapshotKey::descriptorType));
         return List.copyOf(snapshotKeys);
+    }
+
+    private static int descriptorLayout(ITexture texture, int fallback) {
+        ITexture tracked = texture instanceof ITextureView view ? view.getParent() : texture;
+        return tracked instanceof VulkanExternalTexture external && external.isFixedLayout()
+                ? external.getCurrentLayout()
+                : fallback;
     }
 
     public record DescriptorLayoutKey(List<DescriptorLayoutBindingKey> bindings) {

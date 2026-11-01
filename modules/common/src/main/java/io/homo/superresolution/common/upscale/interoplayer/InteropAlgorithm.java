@@ -85,7 +85,7 @@ public abstract class InteropAlgorithm<C extends InteropCommandContext> extends 
                 throw new IllegalStateException("Interop algorithm still owns resources");
             }
             initDesc = Objects.requireNonNull(description, "description");
-            inputApi = SRRenderApiType.OPENGL;
+            inputApi = io.homo.superresolution.common.upscale.AlgorithmManager.getInputApi();
             destroyed = false;
             interopImplementation = Objects.requireNonNull(
                     createInteropImplementation(inputApi),

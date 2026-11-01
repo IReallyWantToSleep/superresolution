@@ -42,11 +42,16 @@ import net.minecraft.network.chat.Component;
 
 import java.util.List;
 
+import static io.homo.superresolution.srapi.SRRenderApiType.*;
+
 public class AlgorithmDescriptions {
     public static final AlgorithmDescription<None> NONE = AlgorithmDescription.builder(None.class)
             .briefName("None")
             .codeName("none")
             .displayName("None")
+            .graphicsPath(OPENGL, OPENGL)
+            .graphicsPath(VULKAN, VULKAN)
+            .graphicsPath(D3D12, D3D12)
             .requirement(Requirement.nothing())
             .build();
     private static final List<QualityPreset> FSR_QUALITY_PRESETS = List.of(
@@ -75,6 +80,8 @@ public class AlgorithmDescriptions {
             .briefName("AMD FSR")
             .codeName("fsr")
             .displayName("AMD FidelityFX Super Resolution")
+            .graphicsPath(OPENGL, VULKAN)
+            .graphicsPath(VULKAN, VULKAN)
             .requirement(
                     Requirement.nothing()
                             .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
@@ -94,6 +101,8 @@ public class AlgorithmDescriptions {
                     .briefName("AMD FSR 4")
                     .codeName("fsr4_d3d12")
                     .displayName("AMD FidelityFX Super Resolution 4")
+                    .graphicsPath(OPENGL, D3D12)
+                    .graphicsPath(VULKAN, D3D12)
                     .requirement(
                             Requirement.nothing()
                                     .addSupportedOS(new OperatingSystem(
@@ -158,6 +167,8 @@ public class AlgorithmDescriptions {
             .briefName("Intel XeSS")
             .codeName("xess")
             .displayName("Intel Xe Super Sampling")
+            .graphicsPath(OPENGL, VULKAN)
+            .graphicsPath(VULKAN, VULKAN)
             .requirement(
                     Requirement.nothing()
                             .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
@@ -216,6 +227,8 @@ public class AlgorithmDescriptions {
             .briefName("NVIDIA DLSS")
             .codeName("dlss")
             .displayName("NVIDIA DLSS")
+            .graphicsPath(OPENGL, VULKAN)
+            .graphicsPath(VULKAN, VULKAN)
             .requirement(
                     Requirement.nothing()
                             .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))
@@ -267,6 +280,8 @@ public class AlgorithmDescriptions {
             .briefName("NVIDIA DLSS-RR")
             .codeName("dlssrr")
             .displayName("NVIDIA DLSS Ray Reconstruction")
+            .graphicsPath(OPENGL, VULKAN)
+            .graphicsPath(VULKAN, VULKAN)
             .requirement(
                     Requirement.nothing()
                             .addSupportedOS(new OperatingSystem(SystemArchitecture.X86_64, OperatingSystemType.WINDOWS))

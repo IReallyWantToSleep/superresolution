@@ -41,6 +41,11 @@ public class IrisShaderCompatMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String s, String s1) {
+#if IS_VULKAN == 1
+        if (s1.endsWith("MixinTheFuckingStupidGLDebug")) {
+            return false;
+        }
+#endif
         return Platform.currentPlatform.isInstallIris();
     }
 

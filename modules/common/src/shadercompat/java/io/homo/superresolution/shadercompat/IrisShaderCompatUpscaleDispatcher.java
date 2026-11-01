@@ -34,6 +34,9 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
+#if IS_VULKAN == 1
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+#endif
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRCompatProcessor;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
@@ -171,7 +174,9 @@ public class IrisShaderCompatUpscaleDispatcher {
                                                        Vector2f adaptedJitter,
                                                        boolean colorPreProcessed,
                                                        boolean depthPreProcessed,
-                                                       boolean motionVectorsPreProcessed) {
+                                                       boolean motionVectorsPreProcessed,
+                                                       int outputWidth,
+                                                       int outputHeight) {
         ITexture motionVectorsInput = getAlgorithmTexture(motionVectorsTexture, motionVectorsPreProcessed);
         InputResourceSet resources = InputResourceSet.create()
                 .with(InputResourceType.Color, getAlgorithmTexture(colorTexture, colorPreProcessed))
@@ -181,21 +186,28 @@ public class IrisShaderCompatUpscaleDispatcher {
         for (InputResourceType type : SUPPLEMENTAL_INPUT_TYPES) {
             resources.with(type, getAlgorithmTexture(supplementalInputTextures.get(type), false));
         }
+        int[] colorRegion = colorTexture.getResolvedRegion();
+        int renderWidth = colorRegion[2];
+        int renderHeight = colorRegion[3];
         return new DispatchResource(
+                #if IS_VULKAN == 1
+                AlgorithmManager.getInputApi(),
+                #else
                 SRRenderApiType.OPENGL,
+                #endif
 
-                RenderHandlerManager.getRenderWidth(),
-                RenderHandlerManager.getRenderHeight(),
-                new Vector2f(RenderHandlerManager.getRenderWidth(), RenderHandlerManager.getRenderHeight()),
+                renderWidth,
+                renderHeight,
+                new Vector2f(renderWidth, renderHeight),
 
-                RenderHandlerManager.getScreenWidth(),
-                RenderHandlerManager.getScreenHeight(),
-                new Vector2f(RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()),
+                outputWidth,
+                outputHeight,
+                new Vector2f(outputWidth, outputHeight),
 
                 RenderHandlerManager.getFrameCount(),
                 AlgorithmManager.getFrameTimeDeltaMs(),
                 (float) param.verticalFov,
-                (float) Math.tan(param.verticalFov / 2.0) * RenderHandlerManager.getRenderWidth() / RenderHandlerManager.getRenderHeight(),
+                (float) Math.tan(param.verticalFov / 2.0) * renderWidth / renderHeight,
                 MinecraftUtils.getCameraNear(),
                 MinecraftUtils.getCameraFar(),
                 adaptedJitter,
@@ -286,7 +298,17 @@ public class IrisShaderCompatUpscaleDispatcher {
         }
     }
 
+    private static void resetBorrowedTextures() {
+        #if IS_VULKAN == 1
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            B3DVulkanBridge.awaitIdle();
+        }
+        #endif
+        IrisTextureResolver.reset();
+    }
+
     public static void reset(){
+        resetBorrowedTextures();
         clearInteropResourceContext();
         if (colorTexture != null) {
             colorTexture.destroy();
@@ -355,12 +377,16 @@ public class IrisShaderCompatUpscaleDispatcher {
         boolean needsPreProcessExposure = processor != null && processor.needsPreProcessExposure(shaderCompatData, algorithm, description);
 
         if (compositeRenderer != cachedCompositeRenderer && !compositeRenderer.isSameInstance(cachedCompositeRenderer)) {
+            resetBorrowedTextures();
             cachedCompositeRenderer = compositeRenderer;
             cachedOutputTargetTextures.clear();
             needUpdate = true;
         }
 
         if (!pass.equals(cachedNamedCompositePass)) {
+            #if IS_VULKAN == 1
+            resetBorrowedTextures();
+            #endif
             cachedNamedCompositePass = pass;
             cachedOutputTargetTextures.clear();
             needUpdate = true;
@@ -440,7 +466,9 @@ public class IrisShaderCompatUpscaleDispatcher {
                 lastExposureConfig = exposureConfig;
             }
 
+            #if IS_VULKAN == 0
             GlDebug.pushGroup(64108436, "SRUpscale-CopyInput");
+            #endif
             if (colorTexture != null) {
                 colorTexture.updateTexture();
             }
@@ -454,7 +482,9 @@ public class IrisShaderCompatUpscaleDispatcher {
                 exposureTexture.updateTexture();
             }
             updateSupplementalInputTextures(currentConfig, compositeRenderer, pass, needUpdate);
+            #if IS_VULKAN == 0
             GlDebug.popGroup();
+            #endif
         }
 
         if (getAlgorithmTexture(colorTexture, false) == null) {
@@ -469,6 +499,28 @@ public class IrisShaderCompatUpscaleDispatcher {
         }
 
         if (processor != null) {
+            #if IS_VULKAN == 1
+            if (B3DVulkanBridge.isB3DVulkanBackend()) {
+                B3DVulkanBridge.recordCommands(cb -> {
+                    if (needsPreProcessColor) {
+                        processor.preProcessColor(colorTexture.getPreProcessInputTexture(), colorTexture.getPreProcessOutputTexture(),
+                                cb, shaderCompatData, algorithm, description);
+                    }
+                    if (needsPreProcessDepth && depthTexture != null) {
+                        processor.preProcessDepth(depthTexture.getPreProcessInputTexture(), depthTexture.getPreProcessOutputTexture(),
+                                cb, shaderCompatData, algorithm, description);
+                    }
+                    if (needsPreProcessMotionVectors && motionVectorsTexture != null) {
+                        processor.preProcessMotionVectors(motionVectorsTexture.getPreProcessInputTexture(), motionVectorsTexture.getPreProcessOutputTexture(),
+                                cb, shaderCompatData, algorithm, description);
+                    }
+                    if (needsPreProcessExposure && exposureTexture != null) {
+                        processor.preProcessExposure(exposureTexture.getPreProcessInputTexture(), exposureTexture.getPreProcessOutputTexture(),
+                                cb, shaderCompatData, algorithm, description);
+                    }
+                });
+            } else {
+            #endif
             ICommandBuffer cb = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
             try {
                 cb.begin();
@@ -498,6 +550,9 @@ public class IrisShaderCompatUpscaleDispatcher {
             } finally {
                 cb.destroy();
             }
+            #if IS_VULKAN == 1
+            }
+            #endif
 
         }
 
@@ -521,6 +576,12 @@ public class IrisShaderCompatUpscaleDispatcher {
         Vector2f adaptedJitter = (processor != null && processor.needsAdaptJitter(shaderCompatData, algorithm, description))
                 ? processor.adaptJitterForAlgorithm(rawJitter, algorithm, shaderCompatData, description)
                 : rawJitter;
+        int[] outputRegion = frameGenOnly
+                ? new int[]{0, 0, RenderHandlerManager.getScreenWidth(), RenderHandlerManager.getScreenHeight()}
+                : outputConfig.region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize());
+        if (outputRegion[2] < 1 || outputRegion[3] < 1) {
+            throw new IllegalArgumentException("Upscale output region dimensions must be positive");
+        }
         DispatchResource dispatchResource = getDispatchResource(
                 compositeRenderer,
                 preExposure,
@@ -528,7 +589,9 @@ public class IrisShaderCompatUpscaleDispatcher {
                 adaptedJitter,
                 needsPreProcessColor,
                 needsPreProcessDepth,
-                needsPreProcessMotionVectors
+                needsPreProcessMotionVectors,
+                outputRegion[2],
+                outputRegion[3]
         );
         interopResourceContext = InteropResourceContext.fromInputs(dispatchResource.resources());
         if (SuperResolution.currentAlgorithm != null) {
@@ -541,11 +604,23 @@ public class IrisShaderCompatUpscaleDispatcher {
         }
         boolean dispatched = frameGenOnly;
         if (!frameGenOnly) {
+            #if IS_VULKAN == 1
+            if (B3DVulkanBridge.isB3DVulkanBackend()) {
+                dispatched = SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
+            } else {
+                GlDebug.pushGroup(64108436, "SR Upscale");
+                try (GlState ignored_ = new GlState()) {
+                    dispatched = SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
+                }
+                GlDebug.popGroup();
+            }
+            #else
             GlDebug.pushGroup(64108436, "SR Upscale");
             try (GlState ignored_ = new GlState()) {
                 dispatched = SuperResolution.getCurrentAlgorithm().dispatch(dispatchResource);
             }
             GlDebug.popGroup();
+            #endif
         }
         if (dispatched && SuperResolution.currentAlgorithm != null) {
             SuperResolutionAPI.EVENT_BUS.post(
@@ -559,6 +634,7 @@ public class IrisShaderCompatUpscaleDispatcher {
         升采样阶段结束
          */
         if (!frameGenOnly && dispatched) {
+            #if IS_VULKAN == 0
             GlDebug.pushGroup(64108436, "SRUpscale-CopyResult");
             ITexture sourceTexture = SuperResolution.getCurrentAlgorithm().getOutputTexture();
             if (outputConfig.enabled) {
@@ -606,6 +682,52 @@ public class IrisShaderCompatUpscaleDispatcher {
                 }
             }
             GlDebug.popGroup();
+            #else
+            // Vulkan Iris targets are borrowed GENERAL-layout textures; copy them on
+            // Minecraft's command encoder so no OpenGL IDs or intermediate GL image is used.
+            if (B3DVulkanBridge.isB3DVulkanBackend() && outputConfig.enabled) {
+                ITexture sourceTexture = SuperResolution.getCurrentAlgorithm().getOutputTexture();
+                for (String targetName : outputConfig.targetNames) {
+                    ITexture targetTexture = IrisTextureResolver.getIrisTexture(
+                            compositeRenderer, targetName, pass, false);
+                    if (targetTexture != null && sourceTexture != null) {
+                        int[] targetRegion = outputConfig.region.resolveChecked(
+                                RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize(),
+                                targetTexture.getWidth(), targetTexture.getHeight());
+                        if (targetRegion[2] != sourceTexture.getWidth()
+                                || targetRegion[3] != sourceTexture.getHeight()) {
+                            throw new IllegalArgumentException("Upscale output region does not match the algorithm output");
+                        }
+                        B3DVulkanBridge.recordCommands(cb -> cb.copyTexture(
+                                sourceTexture, targetTexture, 0, 0,
+                                sourceTexture.getWidth(), sourceTexture.getHeight(), 0,
+                                targetRegion[0], targetRegion[1],
+                                targetRegion[0] + targetRegion[2],
+                                targetRegion[1] + targetRegion[3], 0));
+                    }
+                }
+            }
+            if (!B3DVulkanBridge.isB3DVulkanBackend() && outputConfig.enabled) {
+                GlDebug.pushGroup(64108436, "SRUpscale-CopyResult");
+                ITexture sourceTexture = SuperResolution.getCurrentAlgorithm().getOutputTexture();
+                for (String targetName : outputConfig.targetNames) {
+                    ITexture targetTexture = cachedOutputTargetTextures.computeIfAbsent(targetName,
+                            name -> IrisTextureResolver.getIrisTexture(compositeRenderer, name, pass, false));
+                    if (targetTexture != null && sourceTexture != null) {
+                        GlTextureCopier.copy(
+                                CopyOperation.create()
+                                        .src(sourceTexture)
+                                        .dst(targetTexture)
+                                        .fromTo(CopyOperation.TextureChannel.A, CopyOperation.TextureChannel.A)
+                                        .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
+                                        .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
+                                        .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B)
+                        );
+                    }
+                }
+                GlDebug.popGroup();
+            }
+            #endif
         }
         PerformanceTracker.pop("Upscale");
     }

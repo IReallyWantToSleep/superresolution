@@ -68,6 +68,17 @@ public final class GeneralPage implements ConfigPage {
         return build(context);
     }
 
+    private static boolean isVulkanUpscalingUnavailable() {
+        if (!B3DVulkanBridge.isB3DVulkanBackend()) {
+            return false;
+        }
+        #if MC_VER == MC_26_3 && IS_VULKAN == 1
+        return SRWorkModeManager.getProvider(SRWorkModeManager.SHADER_COMPAT) == null;
+        #else
+        return true;
+        #endif
+    }
+
     private static Frame build(ConfigPageContext context) {
         ScrollableFrame frame = context.createStandardScrollableFrame();
         ContainerWidget container = context.createStandardContainer();
@@ -87,7 +98,7 @@ public final class GeneralPage implements ConfigPage {
                     .setIcon(MaterialSymbols.iconWarning())
                     .setTitle(Text.translatable("superresolution.screen.config.hint.b3d_vulkan_unavailable.title").getString())
                     .setText(Text.translatable("superresolution.screen.config.hint.b3d_vulkan_unavailable.text").getString())
-                    .setDisplayRequirement(OptionRequirement.isTrue(B3DVulkanBridge::isB3DVulkanBackend))
+                    .setDisplayRequirement(GeneralPage::isVulkanUpscalingUnavailable)
                     .build();
             if (!CURRENT_VERSION_SUPPORTS_VULKAN_PRESENTATION) {
                 builder.hintOption(Text.literal("vulkan_presentation_unavailable"))
@@ -201,7 +212,7 @@ public final class GeneralPage implements ConfigPage {
                     })
                     .setMenuItemTooltipSupplier((algo)->{
                         AlgorithmDescription<?> algorithmDescription = (AlgorithmDescription<?>) algo;
-                        var result = algorithmDescription.getRequirement().check();
+                        var result = algorithmDescription.checkRequirements();
                         StringBuilder sb = new StringBuilder();
                         sb.append(algorithmDescription.getDisplayName());
                         if (SRWorkModeManager.getCurrentState().disabledAlgorithms().contains(algorithmDescription.getCodeName())) {
@@ -225,6 +236,10 @@ public final class GeneralPage implements ConfigPage {
                         if (!result.support()){
                             sb.append("\n");
                             sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.unsupported_reason_header").getString());
+                            if (!result.graphicsPathSupported()){
+                                sb.append("\n");
+                                sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.graphics_path").getString());
+                            }
                             if (!result.glVersionMet()){
                                 sb.append("\n");
                                 sb.append(Text.translatable("superresolution.screen.config.options.tooltip.algo.reason.opengl_version").getString());
@@ -392,11 +407,11 @@ public final class GeneralPage implements ConfigPage {
                         .setDescription(Text.translatable(
                                 "superresolution.screen.config.options.tooltip.presentation_backend"
                         ))
-                        .setItemEnableRequirement(backend -> backend == PresentationBackendType.OPENGL
-                                ? () -> true
-                                : OptionRequirement.isFalse(SuperResolutionConfig::isSkipInitVulkan))
+                        .setItemEnableRequirement(backend -> () -> backend == PresentationBackendType.OPENGL
+                                || B3DVulkanBridge.isB3DVulkanBackend() || !SuperResolutionConfig.isSkipInitVulkan())
                         .setMenuItemTooltipSupplier(backend -> backend == PresentationBackendType.VULKAN
                                 && SuperResolutionConfig.isSkipInitVulkan()
+                                && !B3DVulkanBridge.isB3DVulkanBackend()
                                 ? Optional.of(Tooltip.withContext(Text.translatable(
                                         "superresolution.screen.config.options.tooltip.presentation_backend.vulkan_unavailable"
                                 ).getString()))
@@ -405,6 +420,7 @@ public final class GeneralPage implements ConfigPage {
                                 Text.translatable(
                                         value == PresentationBackendType.VULKAN
                                                 && SuperResolutionConfig.isSkipInitVulkan()
+                                                && !B3DVulkanBridge.isB3DVulkanBackend()
                                                 ? "superresolution.screen.config.options.tooltip.presentation_backend.vulkan_unavailable"
                                                 : "superresolution.screen.config.options.tooltip.presentation_backend"
                                 ).getString()

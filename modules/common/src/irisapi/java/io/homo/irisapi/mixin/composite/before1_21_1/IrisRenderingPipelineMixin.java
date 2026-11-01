@@ -19,8 +19,11 @@
 package io.homo.irisapi.mixin.composite.before1_21_1;
 
 import com.google.common.collect.ImmutableMap;
+#if MC_VER < MC_1_21_1
 import io.homo.irisapi.pipeline.mc1201.CompositePass;
 import io.homo.irisapi.pipeline.mc1201.CompositeRendererWrapper;
+#endif
+#if MC_VER < MC_1_21_1
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
 import net.irisshaders.iris.gl.buffer.ShaderStorageBufferHolder;
 import net.irisshaders.iris.gl.image.GlImage;
@@ -38,6 +41,7 @@ import net.irisshaders.iris.targets.BufferFlipper;
 import net.irisshaders.iris.targets.RenderTargets;
 import net.irisshaders.iris.uniforms.FrameUpdateNotifier;
 import net.irisshaders.iris.uniforms.custom.CustomUniforms;
+#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
@@ -45,6 +49,7 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import java.util.Set;
 import java.util.function.Supplier;
 
+#if MC_VER < MC_1_21_1
 @Mixin(value = IrisRenderingPipeline.class,remap = false)
 public class IrisRenderingPipelineMixin {
     #if MC_VER < MC_1_21_1
@@ -237,3 +242,10 @@ public class IrisRenderingPipelineMixin {
     }
     #endif
 }
+#else
+import org.spongepowered.asm.mixin.Mixin;
+
+@Mixin(targets = "net.irisshaders.iris.pipeline.IrisRenderingPipeline", remap = false)
+public class IrisRenderingPipelineMixin {
+}
+#endif

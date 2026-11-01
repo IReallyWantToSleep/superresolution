@@ -161,6 +161,7 @@ if (srConfigsDir.exists()) {
             dir = rootDir
             setTasks(listOf("clean", "build"))
             startParameter.projectProperties["minecraft_version_config"] = versionName
+            startParameter.projectProperties["is_vulkan"] = versionName.endsWith(".vk").toString()
             startParameter.excludedTaskNames.add(":native:build")
             startParameter.isContinueOnFailure = true
             startParameter.consoleOutput = ConsoleOutput.Plain

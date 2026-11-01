@@ -39,6 +39,7 @@ import io.homo.superresolution.common.optiscaler.OptiScalerLoader;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.presentation.window.PresentationWindowState;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.common.upscale.InteropResourcesPreprocessor;
 import io.homo.superresolution.common.workmode.SRWorkModeManager;
 import io.homo.superresolution.common.upscale.algo.none.None;
 import io.homo.superresolution.core.NativeLibManager;
@@ -180,7 +181,7 @@ public final class SuperResolution implements Destroyable {
         SuperResolution.getInstance().init();
         MaterialUI.init();
         FrameGeneration.initialize();
-        if (Platform.currentPlatform.isInstallIris() && !B3DVulkanBridge.isB3DVulkanBackend()) {
+        if (Platform.currentPlatform.isInstallIris()) {
             try {
                 Class.forName("net.irisshaders.iris.Iris").getMethod("reload").invoke(null);
             } catch (Exception e) {
@@ -283,7 +284,8 @@ public final class SuperResolution implements Destroyable {
 
     public static void initRendering() {
         renderThread = Thread.currentThread();
-        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+        isUsingVulkan = B3DVulkanBridge.isB3DVulkanBackend();
+        if (isUsingVulkan) {
             if (minecraft == null) {
                 minecraft = Minecraft.getInstance();
             }
@@ -295,6 +297,7 @@ public final class SuperResolution implements Destroyable {
             }
             SRWorkModeManager.bootstrapProviders();
             RenderHandlerManager.initialize();
+            AlgorithmManager.init();
             isRenderingInitialized = true;
             algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
             return;
@@ -335,26 +338,35 @@ public final class SuperResolution implements Destroyable {
                 rethrowAlgorithmError(retainedFailure);
                 return false;
             }
-            reserveAlgorithmOwnerCapacity();
             AbstractAlgorithm previous = currentAlgorithm;
-            if (previous != null) {
-                try {
+            AbstractAlgorithm candidate = null;
+            AlgorithmDescription<?> attemptedDescription = null;
+            try {
+                reserveAlgorithmOwnerCapacity();
+                if (previous != null) {
                     previous.destroy();
                     currentAlgorithm = null;
-                } catch (Throwable failure) {
-                    retainAlgorithmOwner(previous);
-                    currentAlgorithm = null;
-                    LOGGER.error(
-                            "Failed to destroy the current algorithm before " +
-                                    "switching to the borrowed Vulkan backend",
-                            failure);
-                    rethrowAlgorithmError(failure);
-                    return false;
                 }
+                defaultAlgorithm.initialize();
+                attemptedDescription = SuperResolutionConfig.getUpscaleAlgorithm();
+                algorithmDescription = attemptedDescription;
+                candidate = algorithmDescription.createNewInstance();
+                candidate.initialize(desc);
+                currentAlgorithm = candidate;
+                cachedWidth = RenderHandlerManager.getScreenWidth();
+                cachedHeight = RenderHandlerManager.getScreenHeight();
+                LOGGER.info("Initializing Vulkan-input algorithm {}", algorithmDescription.getDisplayName());
+                return true;
+            } catch (Throwable failure) {
+                if (currentAlgorithm == candidate) {
+                    currentAlgorithm = previous;
+                }
+                failure = destroyOrRetainAlgorithm(candidate, failure);
+                LOGGER.error("Failed to initialize Vulkan-input algorithm {}",
+                        attemptedDescription == null ? "unknown" : attemptedDescription.getDisplayName(), failure);
+                rethrowAlgorithmError(failure);
+                return false;
             }
-            algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
-            currentAlgorithm = null;
-            return true;
         }
         AbstractAlgorithm previous = currentAlgorithm;
         AbstractAlgorithm candidate = null;
@@ -442,29 +454,40 @@ public final class SuperResolution implements Destroyable {
                 rethrowAlgorithmError(retainedFailure);
                 return false;
             }
-            reserveAlgorithmOwnerCapacity();
             AbstractAlgorithm previous = currentAlgorithm;
-            if (previous != null) {
-                try {
+            AbstractAlgorithm candidate = null;
+            AlgorithmDescription<?> attemptedDescription = null;
+            try {
+                reserveAlgorithmOwnerCapacity();
+                if (previous != null) {
+                    PresentationBackendManager.flushCapturedFrame();
+                    FrameGeneration.invalidateHistory();
                     previous.destroy();
-                } catch (Throwable failure) {
-                    retainAlgorithmOwner(previous);
                     currentAlgorithm = null;
-                    lastAppliedDesc = null;
-                    lastAppliedAlgorithm = null;
-                    LOGGER.error(
-                            "Failed to destroy the current algorithm before " +
-                                    "rebuilding the borrowed Vulkan backend",
-                            failure);
-                    rethrowAlgorithmError(failure);
-                    return false;
                 }
+                defaultAlgorithm.initialize();
+                attemptedDescription = SuperResolutionConfig.getUpscaleAlgorithm();
+                algorithmDescription = attemptedDescription;
+                candidate = algorithmDescription.createNewInstance();
+                candidate.initialize(desc);
+                currentAlgorithm = candidate;
+                cachedWidth = RenderHandlerManager.getScreenWidth();
+                cachedHeight = RenderHandlerManager.getScreenHeight();
+                lastAppliedDesc = desc;
+                lastAppliedAlgorithm = algorithmDescription;
+                return true;
+            } catch (Throwable failure) {
+                if (currentAlgorithm == candidate) {
+                    currentAlgorithm = previous;
+                }
+                failure = destroyOrRetainAlgorithm(candidate, failure);
+                lastAppliedDesc = null;
+                lastAppliedAlgorithm = null;
+                LOGGER.error("Failed to initialize Vulkan-input algorithm {}",
+                        attemptedDescription == null ? "unknown" : attemptedDescription.getDisplayName(), failure);
+                rethrowAlgorithmError(failure);
+                return false;
             }
-            currentAlgorithm = null;
-            algorithmDescription = SuperResolutionConfig.getUpscaleAlgorithm();
-            lastAppliedDesc = null;
-            lastAppliedAlgorithm = null;
-            return true;
         }
         AbstractAlgorithm candidate = null;
         AlgorithmDescription<?> attemptedDescription = null;
@@ -696,9 +719,6 @@ public final class SuperResolution implements Destroyable {
     private static void resizeAlgorithm(int w, int h) {
         cachedWidth = w;
         cachedHeight = h;
-        if (B3DVulkanBridge.isB3DVulkanBackend()) {
-            return;
-        }
         if (currentAlgorithm == null || !SuperResolutionConfig.isEnableUpscaleOriginal()) {
             return;
         }
@@ -766,6 +786,7 @@ public final class SuperResolution implements Destroyable {
                             "Cannot destroy the graphics backend while an algorithm is active"));
         }
         throwAlgorithmFailure(algorithmFailure);
+        InteropResourcesPreprocessor.destroy();
         // GLFW must destroy the hidden OpenGL context before the Vulkan driver is torn down.
         PresentationWindowState.destroyRenderWindow();
         RenderSystems.destroy();

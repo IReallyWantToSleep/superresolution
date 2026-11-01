@@ -207,14 +207,25 @@ public final class VulkanSurface {
             #else
             GLFW.glfwGetFramebufferSize(handle, width, height);
             #endif
-            int newWidth = width.get(0);
-            int newHeight = height.get(0);
-            if (newWidth != framebufferWidth || newHeight != framebufferHeight) {
-                framebufferWidth = newWidth;
-                framebufferHeight = newHeight;
-                framebufferResized = true;
-            }
+            configureFramebufferSize(width.get(0), height.get(0));
         }
+    }
+
+    public void configureFramebufferSize(int width, int height) {
+        if (width != framebufferWidth || height != framebufferHeight) {
+            framebufferWidth = width;
+            framebufferHeight = height;
+            framebufferResized = true;
+        }
+    }
+
+    public void detach() {
+        if (surface != VK_NULL_HANDLE) {
+            throw new IllegalStateException("Cannot detach a presentation window while its Vulkan surface is alive");
+        }
+        handle = VK_NULL_HANDLE;
+        shown = false;
+        framebufferResized = false;
     }
 
     public boolean consumeFramebufferResized() {

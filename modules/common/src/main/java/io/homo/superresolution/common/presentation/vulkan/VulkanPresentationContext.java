@@ -19,7 +19,6 @@
 package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.common.presentation.capture.FrameResources;
-import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import org.lwjgl.system.MemoryStack;
@@ -56,12 +55,23 @@ public final class VulkanPresentationContext {
         this.minimized = surface.isMinimized();
     }
 
-    public static VulkanPresentationContext initialize(VulkanSurface surface) {
-        VkRenderSystem renderSystem = RenderSystems.vulkan();
+    public static VulkanPresentationContext initialize(VkRenderSystem renderSystem, VulkanSurface surface) {
         if (renderSystem == null || renderSystem.device() == null) {
             throw new IllegalStateException("Super Resolution did not initialize a Vulkan device");
         }
         return new VulkanPresentationContext(renderSystem, renderSystem.device(), surface);
+    }
+
+    public void initialize() {
+        swapchain.initialize();
+    }
+
+    public void requestRecreate() {
+        swapchain.requestRecreate();
+    }
+
+    public void setPresentMode(int presentMode) {
+        swapchain.setPresentMode(presentMode);
     }
 
     public boolean present(FrameResources frameResources) {

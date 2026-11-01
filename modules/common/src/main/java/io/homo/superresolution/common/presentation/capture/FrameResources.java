@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.presentation.capture;
 
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.presentation.vulkan.FramePacingTiming;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
@@ -28,6 +29,7 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSemaphoreWaitInfo;
 
+import java.util.Arrays;
 
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO;
@@ -54,6 +56,7 @@ public final class FrameResources {
     private boolean borrowedInputReleaseRequired;
     private boolean borrowedInputReleaseSubmitted;
     private boolean borrowedInputReleaseFailed;
+    private B3DVulkanBridge.CommandCompletion captureCompletion;
 
     FrameResources(
             int index,
@@ -88,26 +91,31 @@ public final class FrameResources {
         fence = 0L;
         clearDlssGInputCompletion();
         resetBorrowedInputReleaseSubmission();
+        captureCompletion = null;
         lifecycle.beginRecording();
     }
 
     void copyFinalColor(ITexture source) {
         requireWritable();
+        trackCaptureSubmission();
         finalColor.copyFrom(source, false);
     }
 
     void copyHudlessColor(ITexture source) {
         requireWritable();
+        trackCaptureSubmission();
         hudlessColor.copyFrom(source, false);
     }
 
     void copyDepth(ITexture source) {
         requireWritable();
+        trackCaptureSubmission();
         depth.copyFrom(source, false);
     }
 
     void copyMotionVector(ITexture source) {
         requireWritable();
+        trackCaptureSubmission();
         motionVector.copyFrom(source, true);
     }
 
@@ -138,13 +146,36 @@ public final class FrameResources {
     }
 
     void seal() {
+        awaitCaptureCompletion();
         lifecycle.seal();
+    }
+
+    void minecraftCommandsSubmitted() {
+        if (captureCompletion != null) {
+            captureCompletion.markSubmitted();
+        }
+    }
+
+    private void trackCaptureSubmission() {
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            // Refresh after any intervening provider submit; the last copy may be
+            // recorded in a newer Minecraft encoder submission than the first.
+            captureCompletion = B3DVulkanBridge.captureCompletion();
+        }
+    }
+
+    private void awaitCaptureCompletion() {
+        if (captureCompletion != null) {
+            captureCompletion.awaitCompletion();
+            captureCompletion = null;
+        }
     }
 
     void discardEmptyRecording() {
         if (hasAnyResource()) {
             throw new IllegalStateException("Cannot discard a capture slot that owns resources");
         }
+        awaitCaptureCompletion();
         lifecycle.discardEmptyRecording();
     }
 
@@ -218,6 +249,7 @@ public final class FrameResources {
     }
 
     void destroy() {
+        awaitCaptureCompletion();
         awaitReusable();
         finalColor.destroy();
         hudlessColor.destroy();
@@ -312,8 +344,8 @@ public final class FrameResources {
         count = addReadySemaphore(semaphores, count, finalColor);
         count = addReadySemaphore(semaphores, count, hudlessColor);
         count = addReadySemaphore(semaphores, count, depth);
-        addReadySemaphore(semaphores, count, motionVector);
-        return semaphores;
+        count = addReadySemaphore(semaphores, count, motionVector);
+        return count == semaphores.length ? semaphores : Arrays.copyOf(semaphores, count);
     }
 
     public long[] releaseSemaphores() {
@@ -322,8 +354,8 @@ public final class FrameResources {
         count = addReleaseSemaphore(semaphores, count, finalColor);
         count = addReleaseSemaphore(semaphores, count, hudlessColor);
         count = addReleaseSemaphore(semaphores, count, depth);
-        addReleaseSemaphore(semaphores, count, motionVector);
-        return semaphores;
+        count = addReleaseSemaphore(semaphores, count, motionVector);
+        return count == semaphores.length ? semaphores : Arrays.copyOf(semaphores, count);
     }
 
     private int validResourceCount() {
@@ -443,7 +475,11 @@ public final class FrameResources {
         if (!resource.isValid()) {
             return count;
         }
-        semaphores[count] = resource.readySemaphore();
+        long semaphore = resource.readySemaphore();
+        if (semaphore == 0L) {
+            return count;
+        }
+        semaphores[count] = semaphore;
         return count + 1;
     }
 
@@ -451,7 +487,11 @@ public final class FrameResources {
         if (!resource.isValid()) {
             return count;
         }
-        semaphores[count] = resource.releaseSemaphore();
+        long semaphore = resource.releaseSemaphore();
+        if (semaphore == 0L) {
+            return count;
+        }
+        semaphores[count] = semaphore;
         return count + 1;
     }
 }
