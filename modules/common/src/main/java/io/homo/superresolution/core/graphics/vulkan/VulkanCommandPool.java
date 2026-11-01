@@ -66,6 +66,9 @@ public class VulkanCommandPool implements ICommandPool {
     }
 
     public void init() {
+        if (commandPool != VK_NULL_HANDLE) {
+            return;
+        }
         this.graphicsQueueFamilyIndex = queue.getQueueFamilyIndex();
         createCommandPool();
     }
@@ -161,7 +164,10 @@ public class VulkanCommandPool implements ICommandPool {
         }
         allocatedBuffers.clear();
         fencePool.destroy();
-        vkDestroyCommandPool(device.getVkDevice(), commandPool, null);
+        if (commandPool != VK_NULL_HANDLE) {
+            vkDestroyCommandPool(device.getVkDevice(), commandPool, null);
+            commandPool = VK_NULL_HANDLE;
+        }
     }
 
     @Override

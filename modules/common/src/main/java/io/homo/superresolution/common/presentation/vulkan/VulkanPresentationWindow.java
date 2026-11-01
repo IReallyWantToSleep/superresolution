@@ -29,7 +29,9 @@ public final class VulkanPresentationWindow {
     private static VulkanPresentationContext context;
     private static VulkanSurface surface;
     private static boolean shown;
+    private static boolean initialized;
     private static boolean requestedVsync = false;
+    private static Integer requestedNativePresentMode;
     private static final ThreadLocal<FramePacingTrace.Span> REAL_FRAME_TRACE = new ThreadLocal<>();
 
     private VulkanPresentationWindow() {
@@ -40,15 +42,33 @@ public final class VulkanPresentationWindow {
             VulkanSurface presentationSurface
     ) {
         if (context != null) {
-            return;
+            throw new IllegalStateException("Vulkan presentation context is already initialized");
         }
+        context = presentationContext;
+        surface = presentationSurface;
+        presentationContext.setVsync(requestedVsync);
+        if (requestedNativePresentMode != null) {
+            presentationContext.setPresentMode(requestedNativePresentMode);
+        }
+        presentationContext.initialize();
         FrameCaptureManager.initialize(
                 presentationContext.device(),
                 presentationContext.framePacingTiming()
         );
-        presentationContext.setVsync(requestedVsync);
-        context = presentationContext;
-        surface = presentationSurface;
+        initialized = true;
+    }
+
+    public static synchronized void configureNativeSurface(int width, int height, int presentMode, boolean vsync) {
+        requestedVsync = vsync;
+        requestedNativePresentMode = presentMode;
+        if (surface != null) {
+            surface.configureFramebufferSize(width, height);
+        }
+        if (context != null) {
+            context.setVsync(vsync);
+            context.setPresentMode(presentMode);
+            context.requestRecreate();
+        }
     }
 
     public static void beginRealFrameRendering() {
@@ -148,6 +168,7 @@ public final class VulkanPresentationWindow {
     }
 
     public static synchronized void shutdown() {
+        initialized = false;
         VulkanPresentationContext presentationContext = context;
         FrameResources pending = FrameCaptureManager.finishFrame();
         if (presentationContext != null && pending != null) {
@@ -163,10 +184,11 @@ public final class VulkanPresentationWindow {
         context = null;
         surface = null;
         shown = false;
+        requestedNativePresentMode = null;
     }
 
     public static boolean isInitialized() {
-        return context != null && surface != null;
+        return initialized;
     }
 
 }

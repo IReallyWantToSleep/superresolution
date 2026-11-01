@@ -72,7 +72,15 @@ val minecraftVersion = commonConfig["minecraft_version"]?.toString()
 
 gradle.extensions.extraProperties["minecraft_version"] = minecraftVersion
 
-gradle.extensions.extraProperties["isVulkan"] = providers.gradleProperty("is_vulkan").orNull?.toBoolean() ?: false
+val vulkanConfiguration = minecraftVersionConfig.endsWith(".vk")
+val explicitVulkan = providers.gradleProperty("is_vulkan").orNull?.let {
+    it.toBooleanStrictOrNull()
+        ?: throw GradleException("is_vulkan must be true or false")
+}
+if (explicitVulkan != null && explicitVulkan != vulkanConfiguration) {
+    throw GradleException("is_vulkan=$explicitVulkan does not match configuration '$minecraftVersionConfig'; select the matching .vk or OpenGL configuration")
+}
+gradle.extensions.extraProperties["isVulkan"] = explicitVulkan ?: vulkanConfiguration
 gradle.extensions.extraProperties["isDev"] = providers.gradleProperty("is_dev").orNull?.toBoolean() ?: false
 gradle.extensions.extraProperties["isEnableAutoDownload"] = providers.gradleProperty("enable_auto_download").orNull?.toBoolean() ?: false
 gradle.extensions.extraProperties["isUseDebugLib"] = providers.gradleProperty("use_debug_lib").orNull?.toBoolean() ?: false

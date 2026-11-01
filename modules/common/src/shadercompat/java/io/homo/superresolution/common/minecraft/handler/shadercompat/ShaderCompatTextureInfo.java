@@ -24,6 +24,9 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
+#if IS_VULKAN == 1
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+#endif
 
 import java.util.List;
 import java.util.function.Supplier;
@@ -36,9 +39,13 @@ public class ShaderCompatTextureInfo {
     private final TextureRegion region;
     private final boolean isOutput;
     private final String name;
+    #if IS_VULKAN == 1
+    private ITexture internalTexture;
+    private ITexture processedTexture;
+    #else
     private GlTexture2D internalTexture;
     private GlTexture2D processedTexture;
-    private ITexture cachedSourceTexture;
+    #endif
 
     public ShaderCompatTextureInfo(Supplier<ITexture> sourceTextureSupplier, TextureRegion region, boolean isOutput, String name) {
         this.sourceTextureSupplier = sourceTextureSupplier;
@@ -58,13 +65,23 @@ public class ShaderCompatTextureInfo {
     }
 
     public ITexture getSourceTexture() {
-        if (cachedSourceTexture == null) {
-            cachedSourceTexture = sourceTextureSupplier.get();
+        // Iris can replace a buffer's view without replacing the renderer or pass.
+        return sourceTextureSupplier.get();
+    }
+
+    public int[] getResolvedRegion() {
+        ITexture sourceTexture = getSourceTexture();
+        if (sourceTexture == null) {
+            throw new IllegalStateException("Shader compatibility input is unavailable: " + name);
         }
-        return cachedSourceTexture;
+        return region.resolveChecked(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize(),
+                sourceTexture.getWidth(), sourceTexture.getHeight());
     }
 
     public ITexture getInternalTexture() {
+        if (!isOutput && canUseSourceTextureDirectly()) {
+            return getSourceTexture();
+        }
         return internalTexture;
     }
 
@@ -85,12 +102,11 @@ public class ShaderCompatTextureInfo {
         if (sourceTexture == null) {
             return false;
         }
-        int[] resolvedRegion = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize());
+        int[] resolvedRegion = getResolvedRegion();
         return resolvedRegion[0] == 0 &&
-                resolvedRegion[1] == 0
-                /*&&
+                resolvedRegion[1] == 0 &&
                 resolvedRegion[2] == sourceTexture.getWidth() &&
-                resolvedRegion[3] == sourceTexture.getHeight()*/;
+                resolvedRegion[3] == sourceTexture.getHeight();
     }
 
     public ITexture getAlgorithmTexture(boolean forceInternalTexture) {
@@ -107,16 +123,22 @@ public class ShaderCompatTextureInfo {
         ITexture sourceTexture = getSourceTexture();
         if (sourceTexture == null) return;
 
-        int width = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[2];
-        int height = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[3];
-        int sourceX = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[0];
-        int sourceY = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize())[1];
+        int[] resolvedRegion = getResolvedRegion();
+        int width = resolvedRegion[2];
+        int height = resolvedRegion[3];
+        int sourceX = resolvedRegion[0];
+        int sourceY = resolvedRegion[1];
+
+        if (!isOutput && canUseSourceTextureDirectly()) {
+            return;
+        }
 
         if (internalTexture == null) {
             createInternalTexture(width, height);
         } else if (internalTexture.getWidth() != width ||
                 internalTexture.getHeight() != height ||
                 internalTexture.getTextureFormat() != sourceTexture.getTextureFormat()) {
+            awaitOwnedTextureUsers();
             internalTexture.destroy();
             destroyProcessedTexture();
             createInternalTexture(width, height);
@@ -144,7 +166,7 @@ public class ShaderCompatTextureInfo {
     private void ensureProcessedTexture() {
         ITexture sourceTexture = getSourceTexture();
         if (sourceTexture == null) return;
-        int[] resolvedRegion = region.resolve(RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize());
+        int[] resolvedRegion = getResolvedRegion();
         int width = resolvedRegion[2];
         int height = resolvedRegion[3];
         if (processedTexture == null) {
@@ -152,14 +174,33 @@ public class ShaderCompatTextureInfo {
         } else if (processedTexture.getWidth() != width ||
                 processedTexture.getHeight() != height ||
                 processedTexture.getTextureFormat() != sourceTexture.getTextureFormat()) {
+            awaitOwnedTextureUsers();
             processedTexture.destroy();
             processedTexture = createTexture(width, height, "SRIrisCompatProcessedTexture-%s".formatted(this.name));
         }
     }
 
+    #if IS_VULKAN == 1
+    private ITexture createTexture(int width, int height, String label) {
+    #else
     private GlTexture2D createTexture(int width, int height, String label) {
+    #endif
         ITexture sourceTexture = getSourceTexture();
         if (sourceTexture == null) return null;
+        #if IS_VULKAN == 1
+        TextureUsages usages = TextureUsages.create().sampler().transferSource().transferDestination();
+        if (sourceTexture.getTextureFormat().isDepth()) {
+            usages.attachmentDepth();
+        } else {
+            usages.storage();
+        }
+        return io.homo.superresolution.core.RenderSystems.current().device().createTexture(
+                TextureDescription.create()
+                        .width(width).height(height)
+                        .type(TextureType.Texture2D).mipmapsDisabled()
+                        .usages(usages)
+                        .format(sourceTexture.getTextureFormat()).label(label).build());
+        #else
         return GlTexture2D.create(
                 TextureDescription.create()
                         .width(width)
@@ -171,23 +212,37 @@ public class ShaderCompatTextureInfo {
                         .label(label)
                         .build()
         );
+        #endif
     }
 
+    #if IS_VULKAN == 1
     public void replaceInternalTexture(ITexture newTexture) {
+    #else
+    public void replaceInternalTexture(GlTexture2D newTexture) {
+    #endif
+        awaitOwnedTextureUsers();
         if (internalTexture != null) {
             internalTexture.destroy();
         }
         destroyProcessedTexture();
-        this.internalTexture = (GlTexture2D) newTexture;
+        this.internalTexture = newTexture;
     }
 
     public void destroy() {
+        awaitOwnedTextureUsers();
         if (internalTexture != null) {
             internalTexture.destroy();
             internalTexture = null;
         }
         destroyProcessedTexture();
-        cachedSourceTexture = null;
+    }
+
+    private void awaitOwnedTextureUsers() {
+        #if IS_VULKAN == 1
+        if ((internalTexture != null || processedTexture != null) && B3DVulkanBridge.isB3DVulkanBackend()) {
+            B3DVulkanBridge.awaitIdle();
+        }
+        #endif
     }
 
     private void destroyProcessedTexture() {
@@ -201,6 +256,14 @@ public class ShaderCompatTextureInfo {
             ITexture src, int srcX, int srcY, int srcWidth, int srcHeight,
             ITexture dest, int destX, int destY
     ) {
+        #if IS_VULKAN == 1
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            B3DVulkanBridge.recordCommands(commandBuffer -> commandBuffer.copyTexture(
+                    src, dest, srcX, srcY, srcX + srcWidth, srcY + srcHeight, 0,
+                    destX, destY, destX + srcWidth, destY + srcHeight, 0));
+            return;
+        }
+        #endif
         glCopyImageSubData(
                 (int) src.handle(), GL_TEXTURE_2D, 0,
                 srcX, srcY, 0,

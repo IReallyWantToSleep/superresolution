@@ -22,7 +22,10 @@ import io.homo.superresolution.api.AbstractAlgorithm;
 import io.homo.superresolution.api.QualityPreset;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.upscale.AlgorithmManager;
+import io.homo.superresolution.srapi.SRRenderApiType;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
@@ -36,6 +39,7 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
     public final boolean supportJitter;
     public final List<QualityPreset> qualityPresets;
     public final boolean customUpscaleRatio;
+    private final List<GraphicsPath> graphicsPaths;
     protected final Class<T> clazz;
     private final String uuid = UUID.randomUUID().toString();
 
@@ -49,6 +53,9 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
         this.supportJitter = builder.supportJitter;
         this.qualityPresets = List.copyOf(builder.qualityPresets);
         this.customUpscaleRatio = builder.customUpscaleRatio;
+        this.graphicsPaths = builder.graphicsPaths.isEmpty()
+                ? List.of(new GraphicsPath(SRRenderApiType.OPENGL, SRRenderApiType.OPENGL))
+                : List.copyOf(builder.graphicsPaths);
     }
 
     public static <T extends AbstractAlgorithm> Builder<T> builder(Class<T> clazz) {
@@ -61,6 +68,30 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
 
     public Requirement getRequirement() {
         return requirement;
+    }
+
+    public List<GraphicsPath> getGraphicsPaths() {
+        return graphicsPaths;
+    }
+
+    public Requirement.Result checkRequirements() {
+        return checkRequirements(AlgorithmManager.getInputApi());
+    }
+
+    public Requirement.Result checkRequirements(SRRenderApiType inputApi) {
+        for (GraphicsPath path : graphicsPaths) {
+            if (path.inputApi() == inputApi) {
+                return requirement.checkForGraphicsPath(path.inputApi(), path.executionApi());
+            }
+        }
+        return Requirement.Result.unsupportedGraphicsPath();
+    }
+
+    public record GraphicsPath(SRRenderApiType inputApi, SRRenderApiType executionApi) {
+        public GraphicsPath {
+            Objects.requireNonNull(inputApi, "inputApi");
+            Objects.requireNonNull(executionApi, "executionApi");
+        }
     }
 
     public String getBriefName() {
@@ -124,6 +155,7 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
         private boolean supportJitter = false;
         private List<QualityPreset> qualityPresets = List.of();
         private boolean customUpscaleRatio = true;
+        private final List<GraphicsPath> graphicsPaths = new ArrayList<>();
 
         private Builder(Class<T> clazz) {
             this.clazz = clazz;
@@ -146,6 +178,11 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
 
         public Builder<T> requirement(Requirement requirement) {
             this.requirement = requirement;
+            return this;
+        }
+
+        public Builder<T> graphicsPath(SRRenderApiType inputApi, SRRenderApiType executionApi) {
+            graphicsPaths.add(new GraphicsPath(inputApi, executionApi));
             return this;
         }
 

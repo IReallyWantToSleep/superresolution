@@ -434,7 +434,7 @@ public class SuperResolutionConfig {
             return fsr1 != null ? fsr1 : AlgorithmDescriptions.NONE;
         }
         for (AlgorithmDescription<?> algorithmDescription : AlgorithmRegistry.getAlgorithmMap().values()) {
-            if (algorithmDescription.requirement.check().support()) {
+            if (algorithmDescription.checkRequirements().support()) {
                 return algorithmDescription;
             }
         }
@@ -460,7 +460,9 @@ public class SuperResolutionConfig {
             return algo;
         }
 
-        if (!algo.requirement.check().support() && !Platform.currentPlatform.isDevelopmentEnvironment()) {
+        var requirements = algo.checkRequirements();
+        if (!requirements.graphicsPathSupported()
+                || (!requirements.support() && !Platform.currentPlatform.isDevelopmentEnvironment())) {
             SuperResolution.LOGGER.warn("Algorithm {} is unsupported; falling back to the default algorithm", algo.displayName);
             AlgorithmDescription<?> defaultAlgo = getDefaultAlgorithm();
             UPSCALE_ALGO.set(defaultAlgo.codeName);
@@ -484,6 +486,12 @@ public class SuperResolutionConfig {
     public static synchronized boolean setUpscaleAlgorithm(AlgorithmDescription<?> newAlgo) {
         if (newAlgo == null) {
             newAlgo = getDefaultAlgorithm();
+        }
+        var requirements = newAlgo.checkRequirements();
+        if (!requirements.graphicsPathSupported()
+                || (!requirements.support() && !Platform.currentPlatform.isDevelopmentEnvironment())) {
+            SuperResolution.LOGGER.warn("Algorithm {} is unsupported for the current graphics path", newAlgo.displayName);
+            return false;
         }
 
         String algoName = UPSCALE_ALGO.get();

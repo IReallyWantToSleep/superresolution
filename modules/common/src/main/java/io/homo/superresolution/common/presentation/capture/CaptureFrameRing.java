@@ -73,15 +73,16 @@ public final class CaptureFrameRing {
 
     synchronized FrameResources finishFrame() {
         FrameResources frame = activeFrame;
-        activeFrame = null;
         if (frame == null) {
             return null;
         }
         if (!frame.hasAnyResource()) {
             frame.discardEmptyRecording();
+            activeFrame = null;
             return null;
         }
         frame.seal();
+        activeFrame = null;
         return frame;
     }
 

@@ -58,11 +58,10 @@ public class RenderHandlerManager {
         RenderSystem.assertOnRenderThread();
         minecraft = Minecraft.getInstance();
         uiOnlyB3DVulkan = B3DVulkanBridge.isB3DVulkanBackend();
+        originRenderTarget = MinecraftRenderTargetWrapper.of(MinecraftUtils.getMainRenderTarget());
         if (uiOnlyB3DVulkan) {
-            originRenderTarget = null;
             return;
         }
-        originRenderTarget = MinecraftRenderTargetWrapper.of(MinecraftUtils.getMainRenderTarget());
         updateHandler();
     }
 
@@ -233,7 +232,9 @@ public class RenderHandlerManager {
                 && SRWorkModeManager.getCurrentState().supportsFrameGeneration()) {
             return 1;
         }
-        return SuperResolutionConfig.isEnableUpscale() ? SuperResolutionConfig.getRenderScaleFactor() : 1;
+        boolean enabled = B3DVulkanBridge.isB3DVulkanBackend()
+                ? SuperResolutionConfig.isEnableUpscaleOriginal() : SuperResolutionConfig.isEnableUpscale();
+        return enabled ? SuperResolutionConfig.getRenderScaleFactor() : 1;
     }
 
     // 某些算法的最小输入尺寸为32x32（比如DLSS），但Minecraft几乎不会小于这个尺寸
@@ -270,6 +271,9 @@ public class RenderHandlerManager {
     }
 
     public static IBindableFrameBuffer getOriginRenderTarget() {
+        if (uiOnlyB3DVulkan) {
+            originRenderTarget = MinecraftRenderTargetWrapper.of(MinecraftUtils.getMainRenderTarget());
+        }
         return originRenderTarget;
     }
 

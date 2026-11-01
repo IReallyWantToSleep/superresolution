@@ -21,6 +21,7 @@ package io.homo.superresolution.common.upscale;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.FullscreenQuad;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
@@ -46,9 +47,9 @@ import java.util.Map;
 
 
 public class InteropResourcesPreprocessor {
-    private static final Map<String, ComputePipeline> textureCopyPipelineCache = new HashMap<>();
+    private static final Map<TextureCopyKey, ComputePipeline> textureCopyPipelineCache = new HashMap<>();
     private static final Map<ProcessInputKey, ComputePipeline> processInputPipelineCache = new HashMap<>();
-    private static final Map<TextureFormat, ComputePipeline> flipMotionVectorYPipelineCache = new HashMap<>();
+    private static final Map<DeviceFormatKey, ComputePipeline> flipMotionVectorYPipelineCache = new HashMap<>();
 
     private static boolean isInit = false;
 
@@ -70,20 +71,20 @@ public class InteropResourcesPreprocessor {
         shader.destroy();
     }
 
-    private static ComputePipeline getOrCreateTextureCopyPipeline(TextureFormat format, boolean flipY) {
+    private static ComputePipeline getOrCreateTextureCopyPipeline(IDevice device, TextureFormat format, boolean flipY) {
         String formatQualifier = format.getGlslFormatQualifier();
         if (formatQualifier == null) {
             throw new IllegalArgumentException("Unsupported texture format for texture copy: " + format);
         }
 
-        String key = (flipY ? "flipY_" : "copy_") + format.name();
+        TextureCopyKey key = new TextureCopyKey(device, format, flipY);
         if (textureCopyPipelineCache.containsKey(key)) {
             return textureCopyPipelineCache.get(key);
         }
 
         ShaderDescription.Builder builder = ShaderDescription.create()
                 .compute(new ShaderSource(ShaderType.Compute, "/shader/interop/flip_y.comp.glsl", true))
-                .name("interop_" + key)
+                .name("interop_" + (flipY ? "flipY_" : "copy_") + format.name())
                 .uniformSamplerTexture("inputTexture", 0)
                 .uniformStorageTexture("outputTexture", 1);
 
@@ -92,11 +93,11 @@ public class InteropResourcesPreprocessor {
             builder.addDefine("FLIP_Y", "1");
         }
 
-        IShaderProgram shader = RenderSystems.current().device().createShaderProgram(builder.build());
+        IShaderProgram shader = device.createShaderProgram(builder.build());
         shader.compile();
         ComputePipeline computePipeline = ComputePipeline.builder()
                 .shader(shader)
-                .build(RenderSystems.current().device());
+                .build(device);
 
         textureCopyPipelineCache.put(key, computePipeline);
         return computePipeline;
@@ -141,14 +142,14 @@ public class InteropResourcesPreprocessor {
         }
 
         TextureFormat outputFormat = output.getTextureFormat();
-        ComputePipeline computePipeline = getOrCreateTextureCopyPipeline(outputFormat, flipY);
+        ComputePipeline computePipeline = getOrCreateTextureCopyPipeline(commandBuffer.getDevice(), outputFormat, flipY);
         computePipeline.descriptorSet().samplerTexture("inputTexture", input);
         computePipeline.descriptorSet().storageImage("outputTexture", output);
         computePipeline.descriptorSet().update();
         commandBuffer.bindPipeline(computePipeline);
         commandBuffer.dispatch(
-                (input.getWidth() + 15) / 16,
-                (input.getHeight() + 15) / 16,
+                (output.getWidth() + 15) / 16,
+                (output.getHeight() + 15) / 16,
                 1
         );
     }
@@ -206,6 +207,28 @@ public class InteropResourcesPreprocessor {
             ITexture inputExposure, ITexture outputExposure,
             @Nullable String motionVectorPreprocessingFunction,
             boolean flipY) {
+        ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
+        try {
+            commandBuffer.begin();
+            processInputTextures(commandBuffer, inputColor, outputColor, inputDepth, outputDepth,
+                    inputMotionVectors, outputMotionVectors, inputExposure, outputExposure,
+                    motionVectorPreprocessingFunction, flipY);
+            commandBuffer.end();
+            commandBuffer.getDevice().submitCommandBuffer(commandBuffer);
+            commandBuffer.waitForFence();
+        } finally {
+            commandBuffer.destroy();
+        }
+    }
+
+    public static void processInputTextures(
+            ICommandBuffer commandBuffer,
+            ITexture inputColor, ITexture outputColor,
+            ITexture inputDepth, ITexture outputDepth,
+            ITexture inputMotionVectors, ITexture outputMotionVectors,
+            ITexture inputExposure, ITexture outputExposure,
+            @Nullable String motionVectorPreprocessingFunction,
+            boolean flipY) {
         if (!isInit) {
             init();
         }
@@ -239,6 +262,7 @@ public class InteropResourcesPreprocessor {
         // Holding the injected function itself also removes the hashCode() collision the
         // old string key had, where two different functions could share a pipeline.
         ProcessInputKey key = new ProcessInputKey(
+                commandBuffer.getDevice(),
                 colorFormat,
                 motionVectorFormat,
                 exposureFormat,
@@ -297,11 +321,11 @@ public class InteropResourcesPreprocessor {
                 builder.addDefine("EXPOSURE_FORMAT", exposureFormatQualifier);
             }
 
-            IShaderProgram shader = RenderSystems.current().device().createShaderProgram(builder.build());
+            IShaderProgram shader = commandBuffer.getDevice().createShaderProgram(builder.build());
             shader.compile();
             pipeline = ComputePipeline.builder()
                     .shader(shader)
-                    .build(RenderSystems.current().device());
+                    .build(commandBuffer.getDevice());
             processInputPipelineCache.put(key, pipeline);
         }
 
@@ -329,24 +353,16 @@ public class InteropResourcesPreprocessor {
         int dispatchHeight = Math.max(Math.max(hasColor ? outputColor.getHeight() : 0,
                         hasDepth ? outputDepth.getHeight() : 0),
                 Math.max(hasMV ? outputMotionVectors.getHeight() : 0, hasExposure ? 1 : 0));
-        ICommandBuffer commandBuffer = RenderSystems.current().device().defaultCommandPool().createCommandBuffer();
-        try {
-            commandBuffer.begin();
-            commandBuffer.bindPipeline(pipeline);
-            commandBuffer.dispatch(
-                    (dispatchWidth + 15) / 16,
-                    (dispatchHeight + 15) / 16,
-                    1
-            );
-            commandBuffer.end();
-            RenderSystems.current().device().submitCommandBuffer(commandBuffer);
-            commandBuffer.waitForFence();
-        } finally {
-            commandBuffer.destroy();
-        }
+        commandBuffer.bindPipeline(pipeline);
+        commandBuffer.dispatch(
+                (dispatchWidth + 15) / 16,
+                (dispatchHeight + 15) / 16,
+                1
+        );
     }
 
     private record ProcessInputKey(
+            IDevice device,
             @Nullable TextureFormat colorFormat,
             @Nullable TextureFormat motionVectorFormat,
             @Nullable TextureFormat exposureFormat,
@@ -393,13 +409,14 @@ public class InteropResourcesPreprocessor {
         }
 
         TextureFormat format = output.getTextureFormat();
-        ComputePipeline pipeline = flipMotionVectorYPipelineCache.get(format);
+        DeviceFormatKey key = new DeviceFormatKey(commandBuffer.getDevice(), format);
+        ComputePipeline pipeline = flipMotionVectorYPipelineCache.get(key);
         if (pipeline == null) {
             String qualifier = format.getGlslFormatQualifier();
             if (qualifier == null) {
                 throw new IllegalArgumentException("Unsupported motion-vector format: " + format);
             }
-            IShaderProgram shader = RenderSystems.current().device().createShaderProgram(
+            IShaderProgram shader = commandBuffer.getDevice().createShaderProgram(
                     ShaderDescription.create()
                             .compute(ShaderSource.file(
                                     ShaderType.Compute, "/shader/interop/flip_motion_vector_y.comp.glsl"))
@@ -409,8 +426,8 @@ public class InteropResourcesPreprocessor {
                             .uniformStorageTexture("outputMotionVector", 1)
                             .build());
             shader.compile();
-            pipeline = ComputePipeline.builder().shader(shader).build(RenderSystems.current().device());
-            flipMotionVectorYPipelineCache.put(format, pipeline);
+            pipeline = ComputePipeline.builder().shader(shader).build(commandBuffer.getDevice());
+            flipMotionVectorYPipelineCache.put(key, pipeline);
         }
         pipeline.descriptorSet().samplerTexture("inputMotionVector", input);
         pipeline.descriptorSet().storageImage("outputMotionVector", output);
@@ -421,5 +438,11 @@ public class InteropResourcesPreprocessor {
                 (input.getHeight() + 15) / 16,
                 1
         );
+    }
+
+    private record TextureCopyKey(IDevice device, TextureFormat format, boolean flipY) {
+    }
+
+    private record DeviceFormatKey(IDevice device, TextureFormat format) {
     }
 }

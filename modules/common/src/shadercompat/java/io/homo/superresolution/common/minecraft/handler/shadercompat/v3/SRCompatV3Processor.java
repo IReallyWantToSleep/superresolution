@@ -40,6 +40,7 @@ import io.homo.superresolution.common.minecraft.handler.shadercompat.UniformRegi
 import io.homo.superresolution.common.upscale.AlgorithmDescriptions;
 import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.shadercompat.IrisShaderCompatUpscaleDispatcher;
 import io.homo.superresolution.shadercompat.IrisShaderCompatUtils;
@@ -149,7 +150,7 @@ public class SRCompatV3Processor implements SRCompatProcessor {
                 .orElse(null);
         if (function == null) return;
 
-        ComputePipeline pipeline = getOrCreateMVPreprocessPipeline(function);
+        ComputePipeline pipeline = getOrCreateMVPreprocessPipeline(function, commandBuffer.getDevice());
         pipeline.descriptorSet().samplerTexture("inputMotionVectors", input);
         pipeline.descriptorSet().storageImage("outputMotionVectors", output);
         pipeline.descriptorSet().update();
@@ -161,7 +162,7 @@ public class SRCompatV3Processor implements SRCompatProcessor {
         );
     }
 
-    private static ComputePipeline getOrCreateMVPreprocessPipeline(String function) {
+    private static ComputePipeline getOrCreateMVPreprocessPipeline(String function, IDevice device) {
         ComputePipeline cached = mvPreprocessPipelineCache.get(function);
         if (cached != null) return cached;
 
@@ -180,11 +181,11 @@ public class SRCompatV3Processor implements SRCompatProcessor {
                 .uniformStorageTexture("outputMotionVectors", 1)
                 .build();
 
-        IShaderProgram shader = RenderSystems.current().device().createShaderProgram(shaderDesc);
+          IShaderProgram shader = device.createShaderProgram(shaderDesc);
         shader.compile();
         ComputePipeline pipeline = ComputePipeline.builder()
                 .shader(shader)
-                .build(RenderSystems.current().device());
+                  .build(device);
         mvPreprocessPipelineCache.put(function, pipeline);
         return pipeline;
     }

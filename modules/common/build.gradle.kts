@@ -331,6 +331,9 @@ shaderCompatSourceSet.runtimeClasspath += mainSourceSet.output
 shaderCompatSourceSet.runtimeClasspath += sharedSourceSet.output
 shaderCompatSourceSet.runtimeClasspath += irisapiSourceSet.output
 
+testSourceSet.compileClasspath += shaderCompatSourceSet.output
+testSourceSet.runtimeClasspath += shaderCompatSourceSet.output
+
 tasks.named<Jar>("jar") {
     from(irisapiSourceSet.output)
     from(sharedSourceSet.output)

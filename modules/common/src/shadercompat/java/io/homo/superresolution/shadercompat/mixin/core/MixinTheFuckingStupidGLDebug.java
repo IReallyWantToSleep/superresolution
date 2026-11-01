@@ -16,6 +16,7 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#if IS_VULKAN == 0
 package io.homo.superresolution.shadercompat.mixin.core;
 
 import net.irisshaders.iris.gl.GLDebug;
@@ -36,3 +37,12 @@ public class MixinTheFuckingStupidGLDebug {
     }
     #endif
 }
+#else
+package io.homo.superresolution.shadercompat.mixin.core;
+
+import org.spongepowered.asm.mixin.Mixin;
+
+@Mixin(targets = "net.irisshaders.iris.gl.GLDebug", remap = false)
+public class MixinTheFuckingStupidGLDebug {
+}
+#endif

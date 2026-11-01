@@ -56,6 +56,10 @@ public abstract class MinecraftMixin {
     private int super_resolution$cacheHeight = 0;
     @Unique
     private boolean super_resolution$b3dVulkanFrame = false;
+    #if MC_VER >= MC_26_3
+    @Unique
+    private boolean super_resolution$stoppedBorrowedVulkan = false;
+    #endif
 
     #if !(MC_VER <= MC_1_20_1)
     #if MC_VER <= MC_1_20_1
@@ -142,10 +146,25 @@ public abstract class MinecraftMixin {
         }
     }
     #endif
+    #if MC_VER >= MC_26_3
+    @Inject(method = "close", at = @At(value = "INVOKE", target = "Lcom/mojang/renderpearl/api/device/GpuSurface;close()V"))
+    private void super_resolution$stopBorrowedVulkan(CallbackInfo ci) {
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            super_resolution$stoppedBorrowedVulkan = true;
+            SuperResolution.onClientStopping();
+            SuperResolution.onClientStopped();
+        }
+    }
+    #endif
     #if MC_VER > MC_26_1_2
     //just like fabric's invoke point
     @Inject(method = "close",at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;close()V",shift = At.Shift.AFTER))
     public void onDestroy(CallbackInfo ci) {
+        #if MC_VER >= MC_26_3
+        if (super_resolution$stoppedBorrowedVulkan) {
+            return;
+        }
+        #endif
         SuperResolution.onClientStopping();
         SuperResolution.onClientStopped();
     }

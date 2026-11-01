@@ -70,6 +70,7 @@ public class VkRenderSystem implements IRenderSystem {
     protected VulkanCapabilities capabilities = new VulkanCapabilities();
     private VulkanDevice vulkanDevice;
     private boolean borrowed;
+    private boolean initialized;
     private boolean presentTimingEnabled;
     private boolean presentId2Enabled;
 
@@ -77,13 +78,43 @@ public class VkRenderSystem implements IRenderSystem {
     }
 
     public static VkRenderSystem borrowed(VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, int graphicsQueueFamilyIndex) {
+        return borrowed(instance, physicalDevice, device, null, graphicsQueueFamilyIndex);
+    }
+
+    public static VkRenderSystem borrowed(
+            VkInstance instance,
+            VkPhysicalDevice physicalDevice,
+            VkDevice device,
+            VkQueue graphicsQueue,
+            int graphicsQueueFamilyIndex
+    ) {
         VkRenderSystem renderSystem = new VkRenderSystem();
         renderSystem.borrowed = true;
         renderSystem.instance = instance;
-        renderSystem.capabilities.init(instance, physicalDevice);
-        renderSystem.vulkanDevice = new VulkanDevice(instance, physicalDevice, device, graphicsQueueFamilyIndex, false);
-        LOGGER.info("Borrowed Vulkan initialization completed");
+        renderSystem.vulkanDevice = VulkanDevice.borrowed(instance, physicalDevice, device, graphicsQueue, graphicsQueueFamilyIndex);
         return renderSystem;
+    }
+
+    public void initializeBorrowedPresentation() {
+        if (!borrowed || instance == null || vulkanDevice == null) {
+            throw new IllegalStateException("A borrowed Vulkan device must be attached before presentation initialization");
+        }
+        VulkanPresentationFeature.prepareBorrowed(this);
+        VulkanPresentationFeature.createSurface(this);
+        VulkanPresentationFeature.validateBorrowedDevice(this);
+        capabilities.init(instance, vulkanDevice.getPhysicalDevice());
+        vulkanDevice.initializeBorrowedResources();
+        VulkanPresentationFeature.completeInitialization(this);
+        initialized = true;
+        LOGGER.info("Borrowed Vulkan initialization completed");
+    }
+
+    public boolean isDestroyed() {
+        return instance == null && vulkanDevice == null;
+    }
+
+    public boolean isInitialized() {
+        return initialized;
     }
 
     private static PointerBuffer asPointerBuffer(MemoryStack stack, List<String> list) {
@@ -152,11 +183,13 @@ public class VkRenderSystem implements IRenderSystem {
         VulkanPresentationFeature.validateDevice(this, physicalDevice);
         this.vulkanDevice = createLogicalDeviceWithCapabilities(physicalDevice);
         VulkanPresentationFeature.completeInitialization(this);
+        initialized = true;
         LOGGER.info("Vulkan initialization completed");
     }
 
     @Override
     public void destroyRenderSystem() {
+        initialized = false;
         if (vulkanDevice != null) {
             vkDeviceWaitIdle(vulkanDevice.getVkDevice());
             vulkanDevice.destroy();

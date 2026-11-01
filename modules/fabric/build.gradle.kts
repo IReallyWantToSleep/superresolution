@@ -11,6 +11,13 @@ plugins {
 @Suppress("UNCHECKED_CAST")
 val versionConfig = rootProject.extra["versionConfig"] as VersionConfig
 val isDevBuild = gradle.extensions.extraProperties["isDev"] as? Boolean ?: false
+val graphicsBackend = providers.gradleProperty("sr.graphicsBackend").orElse("opengl").get().lowercase()
+require(graphicsBackend in setOf("opengl", "vulkan")) {
+    "sr.graphicsBackend must be opengl or vulkan"
+}
+require(graphicsBackend != "vulkan" || gradle.extensions.extraProperties["isVulkan"] == true) {
+    "The Vulkan development backend requires a .vk version configuration"
+}
 val imguiVersion = if (MinecraftVersion.of(versionConfig.common.minecraftVersion) >= MinecraftVersion.of("26.1")) "1.92.0" else "1.90.0"
 
 fun findFirstConfiguration(vararg names: String): String {
@@ -220,7 +227,9 @@ loom {
             jvmArguments.add("-Dsodium.checks.issue2561=false")
 
             // Only effective in 1.21.5+
-            programArguments.add("--graphicsBackend=opengl")
+            //programArguments.add("--graphicsBackend=$graphicsBackend")
+            programArguments.add("--graphicsBackend=vulkan")
+
             programArguments.add("--renderDebugLabels=true")
 
             runDirectory.set(rootProject.file("runs/fabric"))

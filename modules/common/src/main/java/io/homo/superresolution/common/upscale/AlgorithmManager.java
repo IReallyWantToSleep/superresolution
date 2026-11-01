@@ -23,6 +23,7 @@ import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -39,6 +40,12 @@ import org.joml.Matrix4f;
 public class AlgorithmManager {
     public static AlgorithmParam param = new AlgorithmParam();
 
+    public static SRRenderApiType getInputApi() {
+        return B3DVulkanBridge.isB3DVulkanBackend()
+                ? SRRenderApiType.VULKAN
+                : SRRenderApiType.OPENGL;
+    }
+
     public static void destroy() {
 
     }
@@ -47,8 +54,8 @@ public class AlgorithmManager {
     }
 
     public static boolean isSupportAlgorithm(AlgorithmDescription<?> type) {
-        return type.getRequirement().check().support();
-}
+        return type != null && type.checkRequirements().support();
+    }
 
     public static boolean supportsJitter(AlgorithmDescription<?> type) {
         return type != null && type.isSupportJitter();
@@ -196,7 +203,7 @@ public class AlgorithmManager {
             int jitterSequenceLength
     ) {
         return new DispatchResource(
-                SRRenderApiType.OPENGL,
+                getInputApi(),
 
                 RenderHandlerManager.getRenderWidth(),
                 RenderHandlerManager.getRenderHeight(),

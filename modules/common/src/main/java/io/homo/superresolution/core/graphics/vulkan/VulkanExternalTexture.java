@@ -247,9 +247,13 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
         return currentState.layout();
     }
 
+    public boolean isFixedLayout() {
+        return fixedLayout;
+    }
+
     public void setCurrentLayout(int layout) {
         this.currentState = new VulkanResourceState(
-                layout,
+                fixedLayout ? currentState.layout() : layout,
                 currentState.accessMask(),
                 currentState.stageMask(),
                 currentState.accessType()
@@ -263,7 +267,10 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
 
     @Override
     public void setCurrentResourceState(VulkanResourceState state) {
-        this.currentState = state != null ? state : VulkanResourceState.UNDEFINED;
+        VulkanResourceState next = state != null ? state : VulkanResourceState.UNDEFINED;
+        this.currentState = fixedLayout
+                ? new VulkanResourceState(currentState.layout(), next.accessMask(), next.stageMask(), next.accessType())
+                : next;
     }
 
     public int getMipLevels() {

@@ -547,6 +547,28 @@ public final class D3D12CommandBuffer implements ICommandBuffer, AutoCloseable {
         }
     }
 
+    private void transitionExternalTextureLocked(
+            NativeCommandListLease lease,
+            D3D12Texture2D texture,
+            D3D12ResourceState targetState) {
+        nativeLeaseHandleLocked(lease);
+        device.requireTextureLocked(texture, "transitionTexture");
+        D3D12ResourceState currentState = D3D12ResourceState.fromNativeCode(
+                D3D12Native.nGetCommandTextureState(nativeCommandListHandle, texture.nativeHandleLocked()));
+        D3D12ResourceState previousState = recordTextureStateLocked(texture, targetState);
+        try {
+            if (currentState != targetState) {
+                D3D12Exception.check(D3D12Native.nCmdTransitionTexture(
+                        nativeCommandListHandle, texture.nativeHandleLocked(),
+                        currentState.nativeCode(), targetState.nativeCode()),
+                        "Record leased D3D12 texture transition");
+            }
+        } catch (Throwable failure) {
+            restoreRecordedTextureStateLocked(texture, previousState);
+            throw failure;
+        }
+    }
+
     private void refreshCompletionLocked() {
         device.assertLifecycleLockHeld();
         if (state == CommandBufferState.Pending && completionValue != 0 &&
@@ -595,6 +617,11 @@ public final class D3D12CommandBuffer implements ICommandBuffer, AutoCloseable {
                     this,
                     Objects.requireNonNull(texture, "texture"),
                     Objects.requireNonNull(state, "state")));
+        }
+
+        public void transitionTexture(D3D12Texture2D texture, D3D12ResourceState state) {
+            owner.device.withLifecycleLock(() -> owner.transitionExternalTextureLocked(
+                    this, Objects.requireNonNull(texture, "texture"), Objects.requireNonNull(state, "state")));
         }
 
         @Override

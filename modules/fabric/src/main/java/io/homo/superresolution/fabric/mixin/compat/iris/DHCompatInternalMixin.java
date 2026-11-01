@@ -19,8 +19,10 @@
 package io.homo.superresolution.fabric.mixin.compat.iris;
 
 import io.homo.superresolution.common.compat.iris.IrisFramebufferUtils;
+#if IS_VULKAN == 0
 import net.irisshaders.iris.compat.dh.DHCompatInternal;
 import net.irisshaders.iris.gl.framebuffer.GlFramebuffer;
+#endif
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -28,6 +30,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+#if IS_VULKAN == 0
 @Mixin(value = DHCompatInternal.class, remap = false)
 public class DHCompatInternalMixin {
     @Shadow
@@ -66,3 +69,8 @@ public class DHCompatInternalMixin {
         #endif
     }
 }
+#else
+@Mixin(targets = "net.irisshaders.iris.compat.dh.DHCompatInternal", remap = false)
+public class DHCompatInternalMixin {
+}
+#endif

@@ -22,6 +22,7 @@ import com.google.common.collect.ImmutableSet;
 import io.homo.irisapi.ICompositeRendererAccessor;
 import io.homo.irisapi.IrisReflectionUtils;
 import io.homo.irisapi.NamedCompositePass;
+import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlOnlyNameTexture;
 import net.irisshaders.iris.gl.texture.InternalTextureFormat;
@@ -29,6 +30,22 @@ import net.irisshaders.iris.targets.RenderTarget;
 import net.irisshaders.iris.targets.RenderTargets;
 
 import java.util.function.Function;
+#if MC_VER >= MC_26_3 && IS_VULKAN == 1
+import com.mojang.renderpearl.api.textures.GpuTextureView;
+import com.mojang.renderpearl.backend.opengl.GlTexture;
+import com.mojang.renderpearl.backend.opengl.GlConst;
+#if IS_VULKAN == 1
+import com.mojang.renderpearl.backend.vulkan.VulkanGpuTextureView;
+import com.mojang.renderpearl.backend.vulkan.VulkanConst;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.vulkan.VulkanExternalTexture;
+#endif
+import java.util.IdentityHashMap;
+import java.util.Map;
+import static org.lwjgl.vulkan.VK10.VK_IMAGE_LAYOUT_GENERAL;
+#endif
 
 import static org.lwjgl.opengl.GL11.*;
 
@@ -39,6 +56,54 @@ public class IrisTextureResolver {
     private static final String DEPTH_TEX = "depthtex";
     private static final String NO_HAND_DEPTH_TEX = "noHandDepthtex";
     private static final String NO_TRANSLUCENT_DEPTH_TEX = "noTranslucentDepthtex";
+
+    #if MC_VER >= MC_26_3 && IS_VULKAN == 1
+    private static final Map<GpuTextureView, ITexture> borrowedTextures = new IdentityHashMap<>();
+
+    public static void reset() {
+        borrowedTextures.values().forEach(ITexture::destroy);
+        borrowedTextures.clear();
+    }
+
+    public static ITexture getIrisTexture(
+            ICompositeRendererAccessor renderer, String name, NamedCompositePass pass) {
+        return getIrisTexture(renderer, name, pass, false);
+    }
+
+    public static ITexture getIrisTexture(
+            ICompositeRendererAccessor renderer, String name, NamedCompositePass pass,
+            boolean useStageWritesToMain) {
+        GpuTextureView view = resolveTexture(renderer, name,
+                index -> renderer.getRenderTargets().getOrCreate(index).getTextureView(false, false),
+                index -> renderer.getRenderTargets().getOrCreate(index).getTextureView(true, false),
+                index -> renderer.getRenderTargets().getDepthTextureView(index),
+                null, pass, useStageWritesToMain);
+        if (view == null || view.isClosed() || view.texture().isClosed()) {
+            return null;
+        }
+        return borrowedTextures.computeIfAbsent(view, IrisTextureResolver::borrowTexture);
+    }
+
+    private static ITexture borrowTexture(GpuTextureView view) {
+        #if IS_VULKAN == 1
+        if (view instanceof VulkanGpuTextureView vkView) {
+            TextureFormat format = TextureFormat.fromVk(VulkanConst.toVk(view.texture().getFormat()));
+            return VulkanExternalTexture.fixedLayout(RenderSystems.vulkan().device(),
+                    vkView.texture().vkImage(), vkView.vkImageView(), format, TextureType.Texture2D,
+                    view.getWidth(0), view.getHeight(0), view.mipLevels(), VK_IMAGE_LAYOUT_GENERAL,
+                    TextureUsages.create().sampler().storage().transferSource().transferDestination());
+        }
+        #endif
+        if (view.texture() instanceof GlTexture glTexture) {
+            TextureFormat format = TextureFormat.fromGl(GlConst.toGlInternalId(glTexture.getFormat()));
+            return new GlOnlyNameTexture(() -> format, () -> view.getWidth(0), () -> view.getHeight(0),
+                    () -> (long) glTexture.glId());
+        }
+        throw new IllegalStateException("Unsupported Iris texture backend: " + view.texture().getClass().getName());
+    }
+    #else
+    public static void reset() {
+    }
 
     public static GlOnlyNameTexture getIrisTexture(
             ICompositeRendererAccessor renderer,
@@ -79,6 +144,7 @@ public class IrisTextureResolver {
                 () -> (long) getIrisTextureByName(renderer, name,pass,useStageWritesToMain)
         );
     }
+    #endif
 
     public static boolean isColorTextureName(String name) {
         return name.startsWith(COLOR_PREFIX) || name.startsWith(ALT_PREFIX) || name.startsWith(AUTO_PREFIX);
@@ -95,6 +161,7 @@ public class IrisTextureResolver {
         );
     }
 
+    #if MC_VER < MC_26_3 || (MC_VER >= MC_26_3 && IS_VULKAN == 0)
     public static int getIrisTextureByName(ICompositeRendererAccessor renderer, String name,NamedCompositePass pass,boolean useStageWritesToMain) {
         return resolveTexture(renderer, name,
                 texId -> getCompositeRendererRenderTargets(renderer)
@@ -109,6 +176,7 @@ public class IrisTextureResolver {
                 useStageWritesToMain
         );
     }
+    #endif
 
     public static RenderTargets getCompositeRendererRenderTargets(ICompositeRendererAccessor renderer) {
         return renderer.getRenderTargets();
@@ -180,6 +248,19 @@ public class IrisTextureResolver {
         return defaultValue;
     }
 
+    #if IS_VULKAN == 1
+    private static int getDepthTexId(ICompositeRendererAccessor renderer) {
+        return 0;
+    }
+
+    private static int getNoHandDepthTexId(ICompositeRendererAccessor renderer) {
+        return 2;
+    }
+
+    private static int getNoTranslucentDepthTexId(ICompositeRendererAccessor renderer) {
+        return 1;
+    }
+    #else
     #if MC_VER < MC_1_21_5
     private static int getDepthTexId(ICompositeRendererAccessor renderer) {
         return renderer.getRenderTargets().getDepthTexture();
@@ -225,6 +306,7 @@ public class IrisTextureResolver {
                 ) (renderer)
                 .getRenderTargets().getDepthTextureNoTranslucents()).glId();
     }
+    #endif
     #endif
 }
 

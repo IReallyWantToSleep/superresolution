@@ -42,6 +42,11 @@ public class CompatMixinPlugin implements IMixinConfigPlugin {
 
     public boolean shouldApplyMixin(String s, String s1) {
         String modid = s1.replace(CLASS_START, "").split("\\.")[0];
+#if IS_VULKAN == 1
+        if (s1.endsWith("DHCompatInternalMixin")) {
+            return false;
+        }
+#endif
         if (Objects.equals(modid, "reesessodiumoptions")) {
             return Platform.currentPlatform.isModLoaded("reeses-sodium-options");
         }

@@ -21,7 +21,11 @@ package io.homo.irisapi;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSet;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+#if IS_VULKAN == 1
+import net.irisshaders.iris.targets.CustomImage;
+#else
 import net.irisshaders.iris.gl.image.GlImage;
+#endif
 import net.irisshaders.iris.gl.texture.TextureAccess;
 import net.irisshaders.iris.pathways.CenterDepthSampler;
 import net.irisshaders.iris.pipeline.WorldRenderingPipeline;
@@ -53,8 +57,13 @@ public interface ICompositeRendererAccessor {
     void setCustomUniforms(CustomUniforms customUniforms);
     Object2ObjectMap<String, TextureAccess> getIrisCustomTextures();
     void setIrisCustomTextures(Object2ObjectMap<String, TextureAccess> irisCustomTextures);
+    #if IS_VULKAN == 1
+    Set<CustomImage> getCustomImages();
+    void setCustomImages(Set<CustomImage> customImages);
+    #else
     Set<GlImage> getCustomImages();
     void setCustomImages(Set<GlImage> customImages);
+    #endif
     TextureStage getTextureStage();
     void setTextureStage(TextureStage textureStage);
 }

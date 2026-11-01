@@ -23,7 +23,12 @@ import com.google.common.collect.ImmutableSet;
 import io.homo.irisapi.mixin.composite.CompositeRendererAccessor;
 import io.homo.irisapi.mixin.composite.IrisRenderingPipelineAccessor;
 import it.unimi.dsi.fastutil.objects.Object2ObjectMap;
+#if IS_VULKAN == 1
+import net.irisshaders.iris.targets.CustomImage;
+import net.irisshaders.iris.pipeline.IrisRenderingPipeline;
+#else
 import net.irisshaders.iris.gl.image.GlImage;
+#endif
 import net.irisshaders.iris.gl.texture.TextureAccess;
 import net.irisshaders.iris.pathways.CenterDepthSampler;
 import net.irisshaders.iris.pipeline.CompositeRenderer;
@@ -89,7 +94,11 @@ public class CompositeRendererAccessorImpl_After1201 implements ICompositeRender
 
     @Override
     public void setPipeline(WorldRenderingPipeline pipeline) {
-        ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setPipeline(pipeline);
+        ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setPipeline(
+                #if IS_VULKAN == 1
+                (IrisRenderingPipeline)
+                #endif
+                pipeline);
     }
 
     @Override
@@ -153,12 +162,24 @@ public class CompositeRendererAccessorImpl_After1201 implements ICompositeRender
     }
 
     @Override
-    public Set<GlImage> getCustomImages() {
+    public Set<
+            #if IS_VULKAN == 1
+            CustomImage
+            #else
+            GlImage
+            #endif
+            > getCustomImages() {
         return ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$getCustomImages();
     }
 
     @Override
-    public void setCustomImages(Set<GlImage> customImages) {
+    public void setCustomImages(Set<
+            #if IS_VULKAN == 1
+            CustomImage
+            #else
+            GlImage
+            #endif
+            > customImages) {
         ((CompositeRendererAccessor)compositeRenderer).sr_irisapi$setCustomImages(customImages);
     }
 

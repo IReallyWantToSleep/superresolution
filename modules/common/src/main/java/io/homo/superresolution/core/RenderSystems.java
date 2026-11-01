@@ -20,12 +20,13 @@ package io.homo.superresolution.core;
 
 import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
+import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.core.graphics.d3d12.D3D12OpenGlInterop;
 import io.homo.superresolution.core.graphics.d3d12.D3D12RenderSystem;
+import io.homo.superresolution.core.graphics.d3d12.VulkanD3D12Fence;
 import io.homo.superresolution.core.graphics.opengl.GlRenderSystem;
 import io.homo.superresolution.core.graphics.system.IRenderSystem;
 import io.homo.superresolution.core.graphics.vulkan.VkRenderSystem;
@@ -120,7 +121,7 @@ public class RenderSystems {
     }
 
     public static boolean isSupportVulkan() {
-        return vulkan != null;
+        return vulkan != null && vulkan.isInitialized();
     }
 
     public static boolean isSupportOpenGL() {
@@ -132,9 +133,12 @@ public class RenderSystems {
                 NativeLibManager.d3d12Available();
     }
 
-    public static boolean initBorrowedB3DVulkanIfAvailable() {
+    public static synchronized boolean initBorrowedB3DVulkanIfAvailable() {
         #if MC_VER >= MC_26_2
         if (vulkan != null) {
+            if (!vulkan.isInitialized()) {
+                throw new IllegalStateException("An incomplete Vulkan wrapper is retained for cleanup");
+            }
             return true;
         }
         if (!B3DVulkanBridge.isB3DVulkanBackend()) {
@@ -154,12 +158,17 @@ public class RenderSystems {
                     B3DVulkanBridge.vkInstance(),
                     B3DVulkanBridge.vkPhysicalDevice(),
                     B3DVulkanBridge.vkDevice(),
+                    B3DVulkanBridge.graphicsQueue(),
                     B3DVulkanBridge.graphicsQueueFamilyIndex()
             );
+            vulkan.initializeBorrowedPresentation();
             return true;
         } catch (Throwable t) {
             VkRenderSystem.LOGGER.error("Unable to create a Vulkan device from Blaze3D", t);
-            vulkan = null;
+            cleanupFailedVulkanInitialization(t);
+            if (PresentationBackendManager.isVulkanPresentationRequested()) {
+                throw new IllegalStateException("Borrowed Vulkan presentation initialization failed", t);
+            }
             return false;
         }
         #else
@@ -169,6 +178,10 @@ public class RenderSystems {
 
     private static void initVulkan() {
         if (SuperResolutionConfig.isSkipInitVulkan()) {
+            if (PresentationBackendManager.isVulkanPresentationRequested()) {
+                PresentationBackendManager.disableAfterFailure(
+                        new IllegalStateException("Vulkan presentation was selected but Vulkan initialization is disabled"));
+            }
             return;
         }
 
@@ -207,7 +220,8 @@ public class RenderSystems {
                 .addDeviceExtension("VK_KHR_synchronization2")//DLSS-FG
                 .addDeviceExtension("VK_KHR_format_feature_flags2")//DLSS-FG
                 .addDeviceExtension("VK_KHR_timeline_semaphore")//DLSS-FG
-                .addDeviceExtension("VK_EXT_calibrated_timestamps");//DLSS-FG
+                .addDeviceExtension("VK_EXT_calibrated_timestamps")//DLSS-FG
+                .addDeviceExtension("VK_EXT_shader_subgroup_partitioned");//Iris
         if (Platform.currentPlatform.getOS().type == OperatingSystemType.WINDOWS) {
             vulkan.addDeviceExtension(VK_KHR_EXTERNAL_MEMORY_WIN32_EXTENSION_NAME)
                     .addDeviceExtension(VK_KHR_EXTERNAL_SEMAPHORE_WIN32_EXTENSION_NAME);
@@ -221,18 +235,35 @@ public class RenderSystems {
             return;
         } catch (VulkanException vkException) {
             VkRenderSystem.LOGGER.error("Vulkan initialization failed; Vulkan has been disabled", vkException);
+            cleanupFailedVulkanInitialization(vkException);
             if (PresentationBackendManager.isVulkanPresentationRequested()) {
                 PresentationBackendManager.disableAfterFailure(vkException);
                 throw vkException;
             }
         } catch (Throwable e) {
             VkRenderSystem.LOGGER.error("Vulkan initialization failed with an unknown error; Vulkan has been disabled", e);
+            cleanupFailedVulkanInitialization(e);
             if (PresentationBackendManager.isVulkanPresentationRequested()) {
                 PresentationBackendManager.disableAfterFailure(e);
                 throw new RuntimeException("Vulkan presentation initialization failed", e);
             }
         }
         vulkan = null;
+    }
+
+    private static void cleanupFailedVulkanInitialization(Throwable failure) {
+        try {
+            VulkanPresentationFeature.shutdown();
+            if (vulkan != null) {
+                vulkan.destroyRenderSystem();
+                vulkan = null;
+            }
+        } catch (Throwable cleanupFailure) {
+            if (failure != cleanupFailure) {
+                failure.addSuppressed(cleanupFailure);
+            }
+            throw new IllegalStateException("Vulkan initialization failed; resource owners retained for cleanup", failure);
+        }
     }
 
     public static GlRenderSystem opengl() {
@@ -256,8 +287,10 @@ public class RenderSystems {
                     "D3D12 RHI is unavailable on this platform or its native library failed to load.");
         }
 
-        D3D12RenderSystem candidate = new D3D12RenderSystem(
-                D3D12OpenGlInterop.queryAdapterLuid());
+        long adapterLuid = B3DVulkanBridge.isB3DVulkanBackend()
+                ? VulkanD3D12Fence.adapterLuid(vulkan.device())
+                : D3D12OpenGlInterop.queryAdapterLuid();
+        D3D12RenderSystem candidate = new D3D12RenderSystem(adapterLuid);
         try {
             candidate.initRenderSystem();
             d3d12 = candidate;
@@ -279,7 +312,6 @@ public class RenderSystems {
     }
 
     public static IRenderSystem current() {
-
-        return SuperResolution.isUsingVulkan?vulkan: opengl;
+        return B3DVulkanBridge.isB3DVulkanBackend() ? vulkan : opengl;
     }
 }

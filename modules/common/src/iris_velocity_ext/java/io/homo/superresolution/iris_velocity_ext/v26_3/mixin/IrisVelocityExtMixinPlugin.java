@@ -38,7 +38,18 @@ public class IrisVelocityExtMixinPlugin implements IMixinConfigPlugin {
 
     @Override
     public boolean shouldApplyMixin(String targetClassName, String mixinClassName) {
-        return Platform.currentPlatform != null && Platform.currentPlatform.isInstallIris();
+        if (Platform.currentPlatform == null || !Platform.currentPlatform.isInstallIris()) {
+            return false;
+        }
+#if IS_VULKAN == 1
+        // 26.3 Iris Vulkan removed ShaderCreator.link entirely. The velocity
+        // vertex format is bound by RenderPipelineFormatMixin and RenderPearl's
+        // pipeline attribute discovery, so only the obsolete GL redirect is
+        // excluded on this backend.
+        return !mixinClassName.endsWith("ShaderCreatorLinkMixin");
+#else
+        return true;
+#endif
     }
 
     @Override

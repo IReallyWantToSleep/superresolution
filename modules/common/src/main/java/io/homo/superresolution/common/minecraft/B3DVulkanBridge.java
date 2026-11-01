@@ -21,19 +21,30 @@ package io.homo.superresolution.common.minecraft;
 #if MC_VER >= MC_26_2
 import com.mojang.blaze3d.systems.RenderSystem;
 #if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.commands.CommandEncoder;
 import com.mojang.renderpearl.api.commands.GpuFence;
 #else
 import com.mojang.blaze3d.buffers.GpuFence;
 #endif
 #endif
+import io.homo.superresolution.core.graphics.vulkan.B3DVulkanCommandBuffer;
 import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkPhysicalDevice;
+import org.lwjgl.vulkan.VkQueue;
+import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
+import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
+import java.util.function.Consumer;
+import java.util.function.BooleanSupplier;
 
 import java.lang.reflect.Method;
 
 public final class B3DVulkanBridge {
+    #if MC_VER >= MC_26_3 && IS_VULKAN == 1
+    private static final String B3D_VULKAN_DEVICE_CLASS = "com.mojang.renderpearl.backend.vulkan.VulkanDevice";
+    #else
     private static final String B3D_VULKAN_DEVICE_CLASS = "com.mojang.blaze3d.vulkan.VulkanDevice";
+    #endif
 
     private static Object cachedBackend;
     private static VkInstance cachedInstance;
@@ -120,6 +131,22 @@ public final class B3DVulkanBridge {
         return cachedGraphicsQueueFamily;
     }
 
+    public static VkQueue graphicsQueue() {
+        Object backend = requireBackend();
+        try {
+            Object queue = graphicsQueueMethod(backend).invoke(backend);
+            return (VkQueue) queue.getClass().getMethod("vkQueue").invoke(queue);
+        } catch (Throwable t) {
+            throw new IllegalStateException("Failed to read Minecraft Vulkan graphics queue", t);
+        }
+    }
+
+    public static int graphicsQueueIndex() {
+        // Minecraft's graphics queue is always queue zero in RenderPearl's
+        // Vulkan device creation path; keep this explicit for borrowed systems.
+        return 0;
+    }
+
     public static Object createCommandEncoder() {
         Object backend = requireBackend();
         try {
@@ -197,10 +224,86 @@ public final class B3DVulkanBridge {
         cachedDevice = null;
         cachedPhysicalDevice = null;
         cachedGraphicsQueueFamily = null;
+        instanceMethod = null;
+        vkInstanceMethod = null;
+        vkDeviceMethod = null;
+        graphicsQueueMethod = null;
+        queueFamilyIndexMethod = null;
     }
     #else
     public static boolean isB3DVulkanBackend() {
         return false;
     }
     #endif
+
+    public static void awaitIdle() {
+        #if MC_VER >= MC_26_3 && IS_VULKAN == 1
+        if (!isB3DVulkanBackend()) {
+            return;
+        }
+        var encoder = (com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder) createCommandEncoder();
+        try (GpuFence fence = encoder.createFence()) {
+            encoder.submit();
+            if (!fence.awaitCompletion(Long.MAX_VALUE)) {
+                throw new IllegalStateException("Minecraft Vulkan queue did not become idle");
+            }
+        }
+        #endif
+    }
+
+    public static void recordCommands(Consumer<ICommandBuffer> recording) {
+        #if MC_VER >= MC_26_3 && IS_VULKAN == 1
+        recording.accept(new B3DVulkanCommandBuffer(RenderSystem.getDevice().createCommandEncoder()));
+        #else
+        throw new UnsupportedOperationException("Minecraft Vulkan recording requires the Vulkan 26.3 configuration");
+        #endif
+    }
+
+    public static CommandCompletion captureCompletion() {
+        #if MC_VER >= MC_26_3 && IS_VULKAN == 1
+        var encoder = (com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder) createCommandEncoder();
+        GpuFence fence = encoder.createFence();
+        return new CommandCompletion(encoder::submit,
+                () -> fence.awaitCompletion(Long.MAX_VALUE), fence::close);
+        #else
+        throw new UnsupportedOperationException("Minecraft Vulkan capture requires the Vulkan 26.3 configuration");
+        #endif
+    }
+
+    /**
+     * A fence for the current Minecraft encoder submission. An early flush must
+     * submit its recording before waiting; normal frame submission marks it first.
+     */
+    public static final class CommandCompletion {
+        private final Runnable submit;
+        private final BooleanSupplier await;
+        private final Runnable close;
+        private boolean submitted;
+        private boolean completed;
+
+        CommandCompletion(Runnable submit, BooleanSupplier await, Runnable close) {
+            this.submit = submit;
+            this.await = await;
+            this.close = close;
+        }
+
+        public void markSubmitted() {
+            submitted = true;
+        }
+
+        public void awaitCompletion() {
+            if (completed) {
+                return;
+            }
+            if (!submitted) {
+                submit.run();
+                submitted = true;
+            }
+            if (!await.getAsBoolean()) {
+                throw new IllegalStateException("Minecraft Vulkan capture submission did not complete");
+            }
+            completed = true;
+            close.run();
+        }
+    }
 }

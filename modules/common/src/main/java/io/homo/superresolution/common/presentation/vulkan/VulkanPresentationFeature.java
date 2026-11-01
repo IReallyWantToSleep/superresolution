@@ -38,6 +38,8 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkPhysicalDevice;
+import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkQueueFamilyProperties;
 
 import java.nio.IntBuffer;
@@ -59,6 +61,7 @@ import static org.lwjgl.vulkan.VK10.*;
 public final class VulkanPresentationFeature {
     private static final VulkanSurface SURFACE = new VulkanSurface();
     private static VkRenderSystem renderSystem;
+    private static VkInstance surfaceInstance;
     private static boolean isAvailable;
 
     private VulkanPresentationFeature() {
@@ -96,7 +99,6 @@ public final class VulkanPresentationFeature {
         if (!PresentationBackendManager.isVulkanPresentationRequested() || renderSystem != null) {
             return;
         }
-        isAvailable = true;
         long presentationHandle = MinecraftWindow.getWindowHandle();
         if (presentationHandle != PresentationWindowState.presentationHandle()) {
             throw new IllegalStateException("Minecraft window does not match the Vulkan presentation handle");
@@ -120,8 +122,76 @@ public final class VulkanPresentationFeature {
         renderSystem = target;
     }
 
+    /**
+     * RenderPearl creates its surface before Super Resolution starts. Keep the
+     * surface here so the game never constructs a second swapchain for this window.
+     */
+    public static synchronized VulkanSurface attachBorrowedWindow(long windowHandle, VkDevice device, int queueFamily) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
+            throw new IllegalStateException("Native surface takeover requires Vulkan presentation");
+        }
+        PresentationWindowState.attachNativePresentation(windowHandle);
+        SURFACE.attach(windowHandle);
+        VkInstance instance = device.getPhysicalDevice().getInstance();
+        if (surfaceInstance != null && surfaceInstance.address() != instance.address()) {
+            throw new IllegalStateException("Presentation surface belongs to another Vulkan instance");
+        }
+        surfaceInstance = instance;
+        validateBorrowedCapabilities(device);
+        SURFACE.createSurface(instance);
+        validatePresentQueue(device.getPhysicalDevice(), queueFamily);
+        return SURFACE;
+    }
+
+    public static synchronized void prepareBorrowed(VkRenderSystem target) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
+            return;
+        }
+        if (renderSystem != null && renderSystem != target) {
+            throw new IllegalStateException("Another Vulkan render system already owns presentation");
+        }
+        renderSystem = target;
+        attachBorrowedWindow(
+                MinecraftWindow.getWindowHandle(),
+                target.device().getVkDevice(),
+                target.device().getMainQueue().getQueueFamilyIndex()
+        );
+    }
+
+    public static void validateBorrowedDevice(VkRenderSystem target) {
+        if (!PresentationBackendManager.isVulkanPresentationRequested()) {
+            return;
+        }
+        validateBorrowedCapabilities(target.device().getVkDevice());
+        validatePresentQueue(target.device().getPhysicalDevice(), target.device().getMainQueue().getQueueFamilyIndex());
+    }
+
+    private static void validateBorrowedCapabilities(VkDevice device) {
+        VkInstance instance = device.getPhysicalDevice().getInstance();
+        if (!instance.getCapabilities().VK_KHR_surface
+                || !device.getCapabilities().VK_KHR_swapchain
+                || device.getCapabilities().vkCreateSwapchainKHR == VK_NULL_HANDLE
+                || device.getCapabilities().vkAcquireNextImageKHR == VK_NULL_HANDLE
+                || device.getCapabilities().vkQueuePresentKHR == VK_NULL_HANDLE) {
+            throw new IllegalStateException("Minecraft's Vulkan instance/device did not enable surface and swapchain support");
+        }
+        // Borrowed devices cannot enable optional present-id, Reflex or present-timing
+        // features after creation. Their SR feature flags remain disabled.
+    }
+
+    private static void validatePresentQueue(VkPhysicalDevice physicalDevice, int queueFamily) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            IntBuffer supported = stack.ints(0);
+            int result = vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, queueFamily, SURFACE.surface(), supported);
+            if (result != VK_SUCCESS || supported.get(0) == 0) {
+                throw new IllegalStateException("Minecraft's Vulkan graphics queue cannot present to the SR surface, VkResult=" + result);
+            }
+        }
+    }
+
     public static void createSurface(VkRenderSystem target) {
         if (PresentationBackendManager.isVulkanPresentationRequested()) {
+            surfaceInstance = target.getVulkanInstance();
             SURFACE.createSurface(target.getVulkanInstance());
         }
     }
@@ -203,14 +273,17 @@ public final class VulkanPresentationFeature {
         if (target.device() == null || target.getVulkanInstance() == null || SURFACE.surface() == 0L) {
             throw new IllegalStateException("Vulkan presentation initialization did not produce a usable device");
         }
-        VulkanPresentationWindow.initialize(VulkanPresentationContext.initialize(SURFACE), SURFACE);
+        VulkanPresentationWindow.initialize(VulkanPresentationContext.initialize(target, SURFACE), SURFACE);
+        isAvailable = true;
     }
 
     public static synchronized void shutdown() {
         VulkanPresentationWindow.shutdown();
-        if (renderSystem != null && SURFACE.surface() != 0L && renderSystem.getVulkanInstance() != null) {
-            SURFACE.destroySurface(renderSystem.getVulkanInstance());
+        if (SURFACE.surface() != 0L && surfaceInstance != null) {
+            SURFACE.destroySurface(surfaceInstance);
         }
+        SURFACE.detach();
+        surfaceInstance = null;
         renderSystem = null;
         isAvailable = false;
     }

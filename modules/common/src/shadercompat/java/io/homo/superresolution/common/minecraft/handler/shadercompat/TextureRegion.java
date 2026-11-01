@@ -50,6 +50,18 @@ public class TextureRegion {
         };
     }
 
+    public int[] resolveChecked(Vector2i renderSize, Vector2i screenSize, int textureWidth, int textureHeight) {
+        int[] resolved = resolve(renderSize, screenSize);
+        if (resolved[0] < 0 || resolved[1] < 0 || resolved[2] < 1 || resolved[3] < 1
+                || (long) resolved[0] + resolved[2] > textureWidth
+                || (long) resolved[1] + resolved[3] > textureHeight) {
+            throw new IllegalArgumentException("Texture region [" + resolved[0] + ", " + resolved[1]
+                    + ", " + resolved[2] + ", " + resolved[3] + "] exceeds texture "
+                    + textureWidth + "x" + textureHeight);
+        }
+        return resolved;
+    }
+
     private int resolveValue(int value, int renderSize, int screenSize) {
         if (value == -1) return renderSize;
         if (value == -2) return screenSize;

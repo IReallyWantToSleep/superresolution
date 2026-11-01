@@ -90,6 +90,7 @@ final class VulkanSwapchain {
     private int syncIndex;
     private volatile boolean recreateRequested = true;
     private boolean vsync = true;
+    private Integer requestedPresentMode;
     private int imageFormat;
     private int imageCount;
     private int plannedGeneratedFrames;
@@ -107,6 +108,9 @@ final class VulkanSwapchain {
         this.presentTimingSupport = new PresentTimingSupport(context);
         #endif
         this.presentationSuspended = surface.isMinimized();
+    }
+
+    void initialize() {
         createImageAvailableSemaphores();
         recreate();
     }
@@ -217,6 +221,13 @@ final class VulkanSwapchain {
     public void setVsync(boolean enabled) {
         if (vsync != enabled) {
             vsync = enabled;
+            requestRecreate();
+        }
+    }
+
+    public void setPresentMode(int presentMode) {
+        if (requestedPresentMode == null || requestedPresentMode != presentMode) {
+            requestedPresentMode = presentMode;
             requestRecreate();
         }
     }
@@ -1284,7 +1295,9 @@ final class VulkanSwapchain {
             // ACQUIRE_TIMEOUT_NANOS and falls back to a Real-only frame. Vsync is therefore
             // forced off for as long as generation is running.
             boolean frameGenerationActive = plannedGeneratedFrames > 0;
-            int presentMode = (vsync && !frameGenerationActive)
+            int presentMode = requestedPresentMode != null && !frameGenerationActive
+                    ? requestedPresentMode
+                    : (vsync && !frameGenerationActive)
                     ? VK_PRESENT_MODE_FIFO_KHR
                     : chooseNonVsyncPresentMode(
                     stack,
@@ -1482,21 +1495,29 @@ final class VulkanSwapchain {
 
     private void createImageAvailableSemaphores() {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            long[] semaphores = createSemaphores(stack, imageAvailable.length);
-            System.arraycopy(semaphores, 0, imageAvailable, 0, semaphores.length);
+            createSemaphores(stack, imageAvailable);
         }
     }
 
     private long[] createSemaphores(MemoryStack stack, int count) {
         long[] semaphores = new long[count];
+        try {
+            createSemaphores(stack, semaphores);
+            return semaphores;
+        } catch (RuntimeException | Error failure) {
+            destroySemaphores(semaphores);
+            throw failure;
+        }
+    }
+
+    private void createSemaphores(MemoryStack stack, long[] semaphores) {
         VkSemaphoreCreateInfo createInfo = VkSemaphoreCreateInfo.calloc(stack)
                 .sType(VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO);
-        for (int i = 0; i < count; i++) {
+        for (int i = 0; i < semaphores.length; i++) {
             LongBuffer pointer = stack.mallocLong(1);
             check(vkCreateSemaphore(device.getVkDevice(), createInfo, null, pointer), "create semaphore");
             semaphores[i] = pointer.get(0);
         }
-        return semaphores;
     }
 
     private void destroySwapchain() {

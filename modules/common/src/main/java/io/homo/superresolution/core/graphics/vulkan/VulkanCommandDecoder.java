@@ -202,7 +202,12 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             throw new IllegalArgumentException(
                     "declareExternalResource: 仅允许外部导入纹理 (VulkanExternalTexture)");
         }
-        ext.setCurrentResourceState(vkStateFor(currentState));
+        VulkanResourceState state = vkStateFor(currentState);
+        if (ext.isFixedLayout()) {
+            state = new VulkanResourceState(ext.getCurrentLayout(), state.accessMask(),
+                    state.stageMask(), state.accessType());
+        }
+        ext.setCurrentResourceState(state);
     }
 
     @Override
@@ -307,31 +312,38 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     @Override
     public void copyTexture(ICommandBuffer commandBuffer, ITexture src, ITexture dst, int srcX0, int srcY0, int srcX1, int srcY1, int srcLevel, int dstX0, int dstY0, int dstX1, int dstY1, int dstLevel) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            VulkanTexture srcTexture = (VulkanTexture) src;
-            VulkanTexture dstTexture = (VulkanTexture) dst;
+            long srcHandle = resolveImageHandle(src);
+            long dstHandle = resolveImageHandle(dst);
             VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
             VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
             transitionTexture(commandBufferHandle, src, ResourceAccessType.TRANSFER_SRC);
             transitionTexture(commandBufferHandle, dst, ResourceAccessType.TRANSFER_DST);
 
             VkImageCopy.Buffer copyRegion = VkImageCopy.calloc(1, stack);
-            copyRegion.srcSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+            copyRegion.srcSubresource().aspectMask(resolveAspectMask(src));
             copyRegion.srcSubresource().mipLevel(srcLevel);
             copyRegion.srcSubresource().baseArrayLayer(0);
             copyRegion.srcSubresource().layerCount(1);
             copyRegion.srcOffset().set(srcX0, srcY0, 0);
-            copyRegion.dstSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
+            copyRegion.dstSubresource().aspectMask(resolveAspectMask(dst));
             copyRegion.dstSubresource().mipLevel(dstLevel);
             copyRegion.dstSubresource().baseArrayLayer(0);
             copyRegion.dstSubresource().layerCount(1);
             copyRegion.dstOffset().set(dstX0, dstY0, 0);
+            copyRegion.extent().set(
+                    Math.max(0, srcX1 - srcX0),
+                    Math.max(0, srcY1 - srcY0),
+                    1
+            );
+            int srcLayout = copyLayout(src, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+            int dstLayout = copyLayout(dst, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
 
             withLabel(commandBufferHandle, "Copy Texture", () -> vkCmdCopyImage(
                     commandBufferHandle,
-                    srcTexture.handle(),
-                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    dstTexture.handle(),
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    srcHandle,
+                    srcLayout,
+                    dstHandle,
+                    dstLayout,
                     copyRegion
             ));
             markTextureState(src, ResourceAccessType.TRANSFER_SRC);
@@ -881,6 +893,11 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         }
 
         VulkanResourceState current = vlt.getCurrentResourceState();
+        if (texture instanceof VulkanExternalTexture external && external.isFixedLayout()) {
+            target = new VulkanResourceState(
+                    current.layout(), target.accessMask(), target.stageMask(), target.accessType());
+        }
+        VulkanResourceState barrierTarget = target;
         if (!requiresBarrier(current, target)) {
             vlt.setCurrentResourceState(target);
             return;
@@ -908,7 +925,7 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             withLabel(cmd, label, () -> vkCmdPipelineBarrier(
                     cmd,
                     current.stageMask(),
-                    target.stageMask(),
+                    barrierTarget.stageMask(),
                     0, null, null, barrier
             ));
         }
@@ -922,7 +939,8 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         if (current.layout() != target.layout()) {
             return true;
         }
-        if (current.accessType() == target.accessType() && current.stageMask() == target.stageMask() && current.accessMask() == target.accessMask()) {
+        if (current.accessType() == target.accessType() && current.stageMask() == target.stageMask() && current.accessMask() == target.accessMask()
+                && !current.accessType().includesWrite()) {
             return false;
         }
         return current.accessType().includesWrite() || target.accessType().includesWrite();
@@ -992,5 +1010,12 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             return VK_IMAGE_ASPECT_DEPTH_BIT;
         }
         return VK_IMAGE_ASPECT_COLOR_BIT;
+    }
+
+    private int copyLayout(ITexture texture, int fallback) {
+        if (texture instanceof VulkanExternalTexture external && external.isFixedLayout()) {
+            return external.getCurrentLayout();
+        }
+        return fallback;
     }
 }

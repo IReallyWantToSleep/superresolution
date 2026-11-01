@@ -38,8 +38,20 @@ public class VulkanMemoryAllocator {
     private long vmaAllocator;
 
     public VulkanMemoryAllocator(VulkanDevice device) {
+        this(device, true);
+    }
+
+    VulkanMemoryAllocator(VulkanDevice device, boolean initialize) {
         this.device = device;
-        initVma();
+        if (initialize) {
+            initialize();
+        }
+    }
+
+    void initialize() {
+        if (vmaAllocator == NULL) {
+            initVma();
+        }
     }
 
     private void initVma() {
