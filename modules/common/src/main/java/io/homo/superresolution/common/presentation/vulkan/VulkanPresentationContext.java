@@ -39,7 +39,7 @@ public final class VulkanPresentationContext {
     private final VulkanDevice device;
     private final VulkanSurface surface;
     private final FramePacingTiming framePacingTiming = new FramePacingTiming();
-    private final PresentPacer presentPacer = new PresentPacer(System::nanoTime, framePacingTiming);
+    private final PresentPacer presentPacer = new PresentPacer(System::nanoTime);
     private final VulkanSwapchain swapchain;
     private boolean minimized;
 

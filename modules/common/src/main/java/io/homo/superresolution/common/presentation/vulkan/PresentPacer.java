@@ -28,9 +28,9 @@ import java.util.function.LongConsumer;
 final class PresentPacer {
     private static final long MAX_PRESENT_INTERVAL_NANOS = 100_000_000L;
     private static final long FINAL_SPIN_WINDOW_NANOS = 200_000L;
+    private static final long BACKLOG_CATCH_UP_DIVISOR = 8L;
 
     private final AsyncFramePresenter.NanoClock clock;
-    private final FramePacingTiming framePacingTiming;
     private final LongConsumer deadlineWaiter;
     private final ThreadLocal<PhaseStarts> phaseStarts =
             ThreadLocal.withInitial(PhaseStarts::new);
@@ -42,19 +42,13 @@ final class PresentPacer {
     private int previousGeneratedCount = -1;
     private long presentIntervalNanos;
 
-    PresentPacer(AsyncFramePresenter.NanoClock clock, FramePacingTiming framePacingTiming) {
+    PresentPacer(AsyncFramePresenter.NanoClock clock) {
         this.clock = clock;
-        this.framePacingTiming = framePacingTiming;
         this.deadlineWaiter = this::sleepUntil;
     }
 
-    PresentPacer(
-            AsyncFramePresenter.NanoClock clock,
-            FramePacingTiming framePacingTiming,
-            LongConsumer deadlineWaiter
-    ) {
+    PresentPacer(AsyncFramePresenter.NanoClock clock, LongConsumer deadlineWaiter) {
         this.clock = clock;
-        this.framePacingTiming = framePacingTiming;
         this.deadlineWaiter = deadlineWaiter;
     }
 
@@ -62,11 +56,15 @@ final class PresentPacer {
         beginPhase(Phase.REAL_FRAME_RENDERING);
     }
 
+    // The real-frame period is sampled on the wall clock. Subtracting Super Resolution's own
+    // queue and slot waits measured only CPU time whenever the GPU was the bottleneck, since
+    // that backpressure lands on exactly those waits: at 2560x1380 the estimate came out at
+    // ~5 ms for 24 ms frames and the batch went out 2.5 ms apart. A presenter that falls
+    // behind would now throttle production to its own pace, so beginBatch catches up instead.
     void endRealFrameRendering() {
         long completedAtNanos = clock.nanoTime();
         endPhase(Phase.REAL_FRAME_RENDERING, completedAtNanos);
-        long producerTimeNanos = framePacingTiming.producerTimeNanosAt(completedAtNanos);
-        realFrameProducerTimeNanos.set(producerTimeNanos);
+        realFrameProducerTimeNanos.set(completedAtNanos);
         hasRealFrameProducerTime.set(true);
     }
 
@@ -74,7 +72,7 @@ final class PresentPacer {
         if (hasRealFrameProducerTime.compareAndSet(true, false)) {
             return realFrameProducerTimeNanos.get();
         }
-        return framePacingTiming.producerTimeNanos();
+        return clock.nanoTime();
     }
 
     void beginDispatchFrameGenerationBatch() {
@@ -112,6 +110,21 @@ final class PresentPacer {
         endPresentFrame(true);
     }
 
+    /**
+     * Moves the pending deadline up to now when the image only became presentable after
+     * it, so the images behind it keep their full interval instead of bunching up behind
+     * a late GPU completion. A batch whose timeline was just reset is anchored here.
+     */
+    void imageReady() {
+        if (nextDeadlineNanos == 0L) {
+            return;
+        }
+        long now = clock.nanoTime();
+        if (now - nextDeadlineNanos > 0L) {
+            nextDeadlineNanos = now;
+        }
+    }
+
     void sleepAtPresentGeneratedFrame() {
         awaitNextImage();
     }
@@ -144,6 +157,12 @@ final class PresentPacer {
                 || nextDeadlineNanos == 0L;
         if (resetTimeline) {
             nextDeadlineNanos = now;
+        } else {
+            // The batch was queued before the previous one finished: the presenter is behind.
+            // Start a little early so the backlog drains rather than settling at a period the
+            // backlog itself is throttling production to.
+            nextDeadlineNanos = Math.max(now,
+                    nextDeadlineNanos - presentIntervalNanos / BACKLOG_CATCH_UP_DIVISOR);
         }
         previousPacingEnabled = true;
         previousGeneratedCount = generatedCount;

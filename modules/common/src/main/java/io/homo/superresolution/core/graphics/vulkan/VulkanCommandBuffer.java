@@ -268,6 +268,29 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         }
     }
 
+    /**
+     * Waits up to {@code timeoutNanos} for the given submission to retire.
+     *
+     * @return {@code false} if the timeout elapsed first; the submission stays in flight
+     */
+    public synchronized boolean waitForSubmission(long generation, long timeoutNanos) {
+        requireKnownSubmissionGeneration(generation);
+        if (submissionGeneration > generation || reusableFence == VK_NULL_HANDLE) {
+            if (submissionGeneration == generation) {
+                waitForFence();
+            }
+            return true;
+        }
+        int status = vkWaitForFences(vulkanDevice.getVkDevice(), reusableFence, true, timeoutNanos);
+        if (status == VK_TIMEOUT) {
+            return false;
+        }
+        VK_CHECK(status);
+        inFlight = false;
+        destroyTransientResourcesIfComplete();
+        return true;
+    }
+
     public synchronized void markExternalSubmitted() {
         ensureNotDestroyed();
         if (state != CommandBufferState.Executable) {

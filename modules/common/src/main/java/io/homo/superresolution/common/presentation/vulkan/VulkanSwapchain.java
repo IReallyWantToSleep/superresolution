@@ -40,6 +40,7 @@ import java.nio.IntBuffer;
 import java.nio.LongBuffer;
 import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.function.IntSupplier;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
 import static org.lwjgl.vulkan.KHRSwapchain.*;
@@ -64,6 +65,10 @@ final class VulkanSwapchain {
     private final VulkanCommandBufferRing commandBuffers =
             new VulkanCommandBufferRing(MAX_IN_FLIGHT_FRAMES);
     private final Object swapchainLock = new Object();
+    // External synchronization of the swapchain handle for vkAcquireNextImageKHR and
+    // vkQueuePresentKHR. Kept apart from the global Reflex lock so a blocking acquire or
+    // present never holds up the render thread's latency markers.
+    private final Object swapchainAccessLock = new Object();
     private final Object applicationManagedTargetLock = new Object();
     private final long[] imageAvailable = new long[ACQUIRE_SYNC_SLOTS];
     private final AtomicLong nextPresentTimingId = new AtomicLong(1L);
@@ -595,7 +600,7 @@ final class VulkanSwapchain {
         if (!surface.isShown()) {
             return VK_SUCCESS;
         }
-        return VulkanLowLatency.synchronizedSwapchainOperation(() -> {
+        IntSupplier operation = () -> {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 VkPresentInfoKHR presentInfo = VkPresentInfoKHR.calloc(stack)
                         .sType(VK_STRUCTURE_TYPE_PRESENT_INFO_KHR)
@@ -632,8 +637,12 @@ final class VulkanSwapchain {
                 if (pNext != 0L) {
                     presentInfo.pNext(pNext);
                 }
+                // An application-managed real frame reported its in-band present at the
+                // handoff (AsyncFramePresenter.enqueue); only generated frames mark here.
                 if (applicationManaged) {
-                    VulkanLowLatency.presentMarker(markerId, outOfBandPresent, true);
+                    if (outOfBandPresent) {
+                        VulkanLowLatency.presentMarker(markerId, true, true);
+                    }
                 } else {
                     LowLatency.beginPresent();
                 }
@@ -641,19 +650,14 @@ final class VulkanSwapchain {
                     VulkanQueue presentQueue = applicationManaged
                             ? device.getApplicationManagedPresentQueue()
                             : device.getMainQueue();
-                    int result;
-                    synchronized (presentQueue.submitLock()) {
-                        result = vkQueuePresentKHR(presentQueue.getQueue(), presentInfo);
-                    }
+                    int result = presentOnQueue(presentQueue, presentInfo);
                     #if MC_VER >= MC_26_1
                     if (timingPresentId != 0L && presentTimingSupport.isEnabled()) {
                         presentTimingSupport.collect();
                         if (result == EXTPresentTiming.VK_ERROR_PRESENT_TIMING_QUEUE_FULL_EXT) {
                             presentTimingSupport.discard(timingPresentId);
                             presentInfo.pNext(timingBasePNext);
-                            synchronized (presentQueue.submitLock()) {
-                                result = vkQueuePresentKHR(presentQueue.getQueue(), presentInfo);
-                            }
+                            result = presentOnQueue(presentQueue, presentInfo);
                         }
                     }
                     #endif
@@ -667,22 +671,44 @@ final class VulkanSwapchain {
                     throw throwable;
                 } finally {
                     if (applicationManaged) {
-                        VulkanLowLatency.presentMarker(markerId, outOfBandPresent, false);
+                        if (outOfBandPresent) {
+                            VulkanLowLatency.presentMarker(markerId, true, false);
+                        }
                     } else {
                         LowLatency.endPresent();
                         VulkanLowLatency.endPresent();
                     }
                 }
             }
-        });
+        };
+        // The Reflex lock is global and the render thread takes it for its latency markers
+        // and present-id claims every frame. vkQueuePresentKHR may block until the image's
+        // GPU work retires, so holding that lock across an application-managed present
+        // stalled the render thread behind the present thread. The latency calls carry no
+        // external-sync requirement on the swapchain; swapchainAccessLock covers the present.
+        return applicationManaged
+                ? operation.getAsInt()
+                : VulkanLowLatency.synchronizedSwapchainOperation(operation);
+    }
+
+    private int presentOnQueue(VulkanQueue presentQueue, VkPresentInfoKHR presentInfo) {
+        synchronized (swapchainAccessLock) {
+            synchronized (presentQueue.submitLock()) {
+                return vkQueuePresentKHR(presentQueue.getQueue(), presentInfo);
+            }
+        }
     }
 
     private int acquireImage(int syncSlot) {
-        return acquireImage(imageAvailable[syncSlot]);
+        return VulkanLowLatency.synchronizedSwapchainOperation(
+                () -> acquireImage(imageAvailable[syncSlot])
+        );
     }
 
+    // Application-managed acquires skip the Reflex lock for the same reason presents do:
+    // under FIFO this call can block for up to ACQUIRE_TIMEOUT_NANOS.
     private int acquireImage(long acquireSemaphore) {
-        return VulkanLowLatency.synchronizedSwapchainOperation(() -> {
+        synchronized (swapchainAccessLock) {
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 IntBuffer imageIndex = stack.mallocInt(1);
                 int result = vkAcquireNextImageKHR(
@@ -709,7 +735,7 @@ final class VulkanSwapchain {
                 }
                 return imageIndex.get(0);
             }
-        });
+        }
     }
 
     private synchronized AsyncFramePresenter ensureAsyncFramePresenter() {
@@ -813,19 +839,22 @@ final class VulkanSwapchain {
         long[] signals = new long[captureSignals.length + 1];
         signals[0] = target.renderFinishedSemaphore();
         System.arraycopy(captureSignals, 0, signals, 1, captureSignals.length);
-        VulkanLowLatency.renderSubmitMarker(image.latencyMarkerId(), image.outOfBand(), true);
+        // Presentation blits are reported out-of-band even for the real frame. The render
+        // thread already brackets that frame's in-band render submission; a second in-band
+        // pair here, issued a paced 10-25 ms later, read to Reflex as late submission and
+        // drove its sleep into a ~60 ms oscillation.
+        VulkanLowLatency.renderSubmitMarker(image.latencyMarkerId(), true, true);
         try {
             VulkanDevice.IssuedSubmission issued = device.submitCommandBufferIssued(
-                    device.getMainQueue(), buffer, waits, stages, signals,
-                    image.outOfBand() ? 0L : image.latencyMarkerId());
+                    device.getMainQueue(), buffer, waits, stages, signals, 0L);
             return new PresentBlitSubmission(buffer, issued.fence(), issued.submissionTicket(),
-                    GpuReadyFences.completion(buffer));
+                    buffer.submissionGeneration(), GpuReadyFences.completion(buffer));
         } catch (VulkanDevice.SubmissionTicketPublicationException exception) {
             // The GPU wait landed even though its CPU-issued ticket could not be published.
             buffer.waitForSubmission(exception.submissionGeneration());
             throw exception;
         } finally {
-            VulkanLowLatency.renderSubmitMarker(image.latencyMarkerId(), image.outOfBand(), false);
+            VulkanLowLatency.renderSubmitMarker(image.latencyMarkerId(), true, false);
         }
     }
 
@@ -837,7 +866,8 @@ final class VulkanSwapchain {
         int[] stages = new int[waits.length];
         Arrays.fill(stages, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
         long fence = device.submitCommandBuffer(device.getMainQueue(), buffer, waits, stages, signals);
-        return new PresentBlitSubmission(buffer, fence, 0L, GpuReadyFences.completion(buffer));
+        return new PresentBlitSubmission(buffer, fence, 0L, buffer.submissionGeneration(),
+                GpuReadyFences.completion(buffer));
     }
 
     int presentTarget(
@@ -1587,8 +1617,14 @@ final class VulkanSwapchain {
 
             long submissionTicket,
 
+            long submissionGeneration,
+
             FrameGenerationDispatchCompletion completion
     ) {
+        /** Returns {@code false} if the blit is still running after {@code timeoutNanos}. */
+        boolean awaitCompletion(long timeoutNanos) {
+            return commandBuffer.waitForSubmission(submissionGeneration, timeoutNanos);
+        }
     }
 
     static final class PresentTargetUnavailableException extends IllegalStateException {
