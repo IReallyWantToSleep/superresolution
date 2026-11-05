@@ -22,6 +22,8 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.KHRTimelineSemaphore;
 import org.lwjgl.vulkan.VK12;
 import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.VkGetLatencyMarkerInfoNV;
+import org.lwjgl.vulkan.VkLatencyTimingsFrameReportNV;
 import org.lwjgl.vulkan.VkLatencySleepInfoNV;
 import org.lwjgl.vulkan.VkLatencySleepModeInfoNV;
 import org.lwjgl.vulkan.VkOutOfBandQueueTypeInfoNV;
@@ -31,6 +33,8 @@ import org.lwjgl.vulkan.VkSemaphoreWaitInfo;
 import org.lwjgl.vulkan.VkSetLatencyMarkerInfoNV;
 
 import java.nio.LongBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.function.IntSupplier;
 
 import static org.lwjgl.vulkan.NVLowLatency2.*;
@@ -54,6 +58,8 @@ import static org.lwjgl.vulkan.VK10.*;
 public final class VulkanLowLatency {
     private static final int PRESENT_ID_STRIDE = 16;
     private static final long SLEEP_TIMEOUT_NANOS = 250_000_000L;
+    // The driver keeps at most this many frames of latency history.
+    private static final int MAX_LATENCY_REPORTS = 64;
 
     private static final Object LOCK = new Object();
 
@@ -71,6 +77,7 @@ public final class VulkanLowLatency {
     private static long framePresentId;
     private static long lastIssuedPresentId;
     private static long claimedFramePresentId;
+    private static long lastLatencyReportPresentId;
     private static boolean fgQueueOutOfBandNotified;
     private static long[] legacyBatchPresentIds;
     private static int legacyBatchCursor;
@@ -344,6 +351,75 @@ public final class VulkanLowLatency {
         }
     }
 
+    /**
+     * Returns the driver's per-frame latency reports (vkGetLatencyTimingsNV) for frames not
+     * returned by an earlier call, oldest first. Timestamps are the driver's microseconds.
+     */
+    public static List<LatencyFrameReport> takeLatencyReports() {
+        synchronized (LOCK) {
+            if (!enabledLocked()) {
+                return List.of();
+            }
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                VkLatencyTimingsFrameReportNV.Buffer timings =
+                        VkLatencyTimingsFrameReportNV.calloc(MAX_LATENCY_REPORTS, stack);
+                for (int index = 0; index < MAX_LATENCY_REPORTS; index++) {
+                    timings.get(index).sType(VK_STRUCTURE_TYPE_LATENCY_TIMINGS_FRAME_REPORT_NV);
+                }
+                VkGetLatencyMarkerInfoNV info = VkGetLatencyMarkerInfoNV.calloc(stack)
+                        .sType(VK_STRUCTURE_TYPE_GET_LATENCY_MARKER_INFO_NV)
+                        .pTimings(timings)
+                        .timingCount(MAX_LATENCY_REPORTS);
+                vkGetLatencyTimingsNV(device.getVkDevice(), swapchain, info);
+                List<LatencyFrameReport> reports = new ArrayList<>();
+                for (int index = 0; index < Math.min(info.timingCount(), MAX_LATENCY_REPORTS); index++) {
+                    VkLatencyTimingsFrameReportNV timing = timings.get(index);
+                    if (timing.presentID() > lastLatencyReportPresentId) {
+                        reports.add(new LatencyFrameReport(
+                                timing.presentID(),
+                                timing.inputSampleTimeUs(),
+                                timing.simStartTimeUs(),
+                                timing.simEndTimeUs(),
+                                timing.renderSubmitStartTimeUs(),
+                                timing.renderSubmitEndTimeUs(),
+                                timing.presentStartTimeUs(),
+                                timing.presentEndTimeUs(),
+                                timing.driverStartTimeUs(),
+                                timing.driverEndTimeUs(),
+                                timing.osRenderQueueStartTimeUs(),
+                                timing.osRenderQueueEndTimeUs(),
+                                timing.gpuRenderStartTimeUs(),
+                                timing.gpuRenderEndTimeUs()
+                        ));
+                    }
+                }
+                reports.sort((left, right) -> Long.compare(left.presentId(), right.presentId()));
+                if (!reports.isEmpty()) {
+                    lastLatencyReportPresentId = reports.get(reports.size() - 1).presentId();
+                }
+                return reports;
+            }
+        }
+    }
+
+    public record LatencyFrameReport(
+            long presentId,
+            long inputSampleUs,
+            long simStartUs,
+            long simEndUs,
+            long renderSubmitStartUs,
+            long renderSubmitEndUs,
+            long presentStartUs,
+            long presentEndUs,
+            long driverStartUs,
+            long driverEndUs,
+            long osRenderQueueStartUs,
+            long osRenderQueueEndUs,
+            long gpuRenderStartUs,
+            long gpuRenderEndUs
+    ) {
+    }
+
     public record PresentBatchIds(long[] generatedPresentIds, long realPresentId) {
         public PresentBatchIds {
             generatedPresentIds = generatedPresentIds == null
@@ -533,6 +609,7 @@ public final class VulkanLowLatency {
         framePresentId = 0L;
         lastIssuedPresentId = 0L;
         claimedFramePresentId = 0L;
+        lastLatencyReportPresentId = 0L;
         legacyBatchPresentIds = null;
         legacyBatchCursor = 0;
         legacyCurrentPresentId = 0L;

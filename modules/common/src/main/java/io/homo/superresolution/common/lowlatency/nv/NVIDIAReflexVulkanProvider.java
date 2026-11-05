@@ -23,6 +23,7 @@ import io.homo.superresolution.api.registry.lowlatency.LowLatencyProvider;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
+import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 import net.minecraft.client.Minecraft;
 
@@ -36,6 +37,7 @@ import static org.lwjgl.vulkan.NVLowLatency2.*;
 public final class NVIDIAReflexVulkanProvider implements LowLatencyProvider {
     private static final int PACING_WARMUP_FRAMES = 3;
 
+    private final AdaptiveFrameCap frameCap = new AdaptiveFrameCap();
     private OptionsKey lastAppliedOptions;
     private int pacingWarmupRemaining;
 
@@ -69,6 +71,7 @@ public final class NVIDIAReflexVulkanProvider implements LowLatencyProvider {
         VulkanLowLatency.setSleepMode(false, false, 0);
         VulkanLowLatency.setActive(false);
         lastAppliedOptions = null;
+        frameCap.reset();
     }
 
     @Override
@@ -77,7 +80,7 @@ public final class NVIDIAReflexVulkanProvider implements LowLatencyProvider {
         OptionsKey desired = new OptionsKey(
                 reflexMode != NVIDIAReflexMode.OFF.ordinal(),
                 reflexMode == NVIDIAReflexMode.BOOST.ordinal(),
-                realFrameIntervalUs()
+                Math.max(userRealFrameIntervalUs(), stabilizesFrameRate() ? frameCap.capMicros() : 0)
         );
         if (desired.equals(lastAppliedOptions)) {
             return;
@@ -91,6 +94,7 @@ public final class NVIDIAReflexVulkanProvider implements LowLatencyProvider {
     public void invalidatePacing() {
         pacingWarmupRemaining = PACING_WARMUP_FRAMES;
         lastAppliedOptions = null;
+        frameCap.reset();
     }
 
     @Override
@@ -100,6 +104,47 @@ public final class NVIDIAReflexVulkanProvider implements LowLatencyProvider {
             return;
         }
         VulkanLowLatency.sleep();
+        if (stabilizesFrameRate()) {
+            frameCap.onFrameStart(System.nanoTime(), userRealFrameIntervalUs() * 1000L);
+        } else {
+            frameCap.reset();
+        }
+        traceLatencyReports();
+    }
+
+    private static boolean stabilizesFrameRate() {
+        return SuperResolutionConfig.isFrameGenerationStabilizeFrameRate()
+                && SuperResolutionConfig.getNVIDIAReflexMode() != NVIDIAReflexMode.OFF
+                && FrameGeneration.isFrameGenerationEnabled()
+                && Minecraft.getInstance().level != null;
+    }
+
+    // Copies the driver's own per-frame view (vkGetLatencyTimingsNV) into a running
+    // frame-pacing trace. Timestamps stay in the driver's microseconds in the details.
+    private static void traceLatencyReports() {
+        if (!FramePacingTrace.INSTANCE.isRecording()) {
+            return;
+        }
+        for (VulkanLowLatency.LatencyFrameReport report : VulkanLowLatency.takeLatencyReports()) {
+            FramePacingTrace.INSTANCE.instant(
+                    "reflex_latency_report",
+                    new FramePacingTrace.Context(-1, -1L, -1L, -1L, report.presentId(), "REAL", ""),
+                    "complete",
+                    "input=" + report.inputSampleUs()
+                            + ",sim_start=" + report.simStartUs()
+                            + ",sim_end=" + report.simEndUs()
+                            + ",submit_start=" + report.renderSubmitStartUs()
+                            + ",submit_end=" + report.renderSubmitEndUs()
+                            + ",present_start=" + report.presentStartUs()
+                            + ",present_end=" + report.presentEndUs()
+                            + ",driver_start=" + report.driverStartUs()
+                            + ",driver_end=" + report.driverEndUs()
+                            + ",os_queue_start=" + report.osRenderQueueStartUs()
+                            + ",os_queue_end=" + report.osRenderQueueEndUs()
+                            + ",gpu_start=" + report.gpuRenderStartUs()
+                            + ",gpu_end=" + report.gpuRenderEndUs()
+            );
+        }
     }
 
     /**
@@ -108,7 +153,7 @@ public final class NVIDIAReflexVulkanProvider implements LowLatencyProvider {
      * frame interval is scaled by the output multiplier so the displayed rate
      * matches the limit.
      */
-    private static int realFrameIntervalUs() {
+    private static int userRealFrameIntervalUs() {
         int framerateLimit = MinecraftUtils.getFramerateLimit();
         if (framerateLimit <= 0 || framerateLimit >= 260) {
             return 0;

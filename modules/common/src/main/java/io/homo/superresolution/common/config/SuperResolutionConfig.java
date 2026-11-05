@@ -98,6 +98,7 @@ public class SuperResolutionConfig {
     public static final EnumValue<FrameGenerationMode> FRAME_GENERATION_MODE;
     public static final StringValue FRAME_GENERATION_PROVIDER;
     public static final StringValue FRAME_GENERATION_BACKEND;
+    public static final BooleanValue FRAME_GENERATION_STABILIZE_FRAME_RATE;
     public static final BooleanValue FLIP_VK_GL_INTEROP_RESOURCES_Y;
     public static final BooleanValue ENABLE_EXPERIMENTAL_ALGORITHMS;
     public static final BooleanValue ENABLE_DLSS_RAY_RECONSTRUCTION;
@@ -372,6 +373,12 @@ public class SuperResolutionConfig {
                 value -> value != null && !value.isBlank()
         );
 
+        FRAME_GENERATION_STABILIZE_FRAME_RATE = builder.defineBoolean(
+                "frame_generation/stabilize_frame_rate",
+                () -> true,
+                "With NVIDIA Reflex, cap rendered frames slightly below what the GPU sustains so frame generation gets an even cadence"
+        );
+
         SPECIAL = new SpecialConfigs(builder);
         Path configPath = SuperResolutionConstants.CONFIG_FILE;
         builder.configPath(configPath);
@@ -643,6 +650,14 @@ public class SuperResolutionConfig {
 
     public static void setEnableImgui(boolean value) {
         ENABLE_IMGUI.set(value);
+    }
+
+    public static boolean isFrameGenerationStabilizeFrameRate() {
+        return FRAME_GENERATION_STABILIZE_FRAME_RATE.get();
+    }
+
+    public static void setFrameGenerationStabilizeFrameRate(boolean value) {
+        FRAME_GENERATION_STABILIZE_FRAME_RATE.set(value);
     }
 
     public static boolean isEnablePresentIndicator() {

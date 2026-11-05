@@ -487,6 +487,15 @@ public final class GeneralPage implements ConfigPage {
                                 .setSaveConsumer(FrameGeneration::setFrameGenerationMode)
                                 .build();
 
+                        builder.booleanOption(
+                                        Text.translatable("superresolution.screen.config.options.label.frame_generation_stabilize_frame_rate"),
+                                        SuperResolutionConfig.isFrameGenerationStabilizeFrameRate())
+                                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.frame_generation_stabilize_frame_rate"))
+                                .setDefaultValue(() -> true)
+                                .setEnableRequirement(FrameGeneration::isSupported)
+                                .setSaveConsumer(SuperResolutionConfig::setFrameGenerationStabilizeFrameRate)
+                                .build();
+
                         for (FrameGenerationDescription description : FrameGenerationRegistry.getDescriptions().values()) {
                             for (SpecialConfigDescription<?> option : description.getOptionDescriptions()) {
                                 context.buildSpecialConfigOption(

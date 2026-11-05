@@ -180,6 +180,10 @@ public final class FramePacingTrace {
         return clock.getAsLong();
     }
 
+    public boolean isRecording() {
+        return recording != null;
+    }
+
     public void instant(String event, Context context, String status, String details) {
         instantAt(event, context, clock.getAsLong(), status, details);
     }
