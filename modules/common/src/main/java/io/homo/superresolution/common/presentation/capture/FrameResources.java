@@ -37,6 +37,7 @@ public final class FrameResources {
     private final int index;
     private final VulkanDevice device;
     private final FramePacingTiming framePacingTiming;
+    private final Runnable slotStateListener;
     private final FrameTextureResource finalColor;
     private final FrameTextureResource hudlessColor;
     private final FrameTextureResource depth;
@@ -58,14 +59,19 @@ public final class FrameResources {
     FrameResources(
             int index,
             VulkanDevice device,
-            FramePacingTiming framePacingTiming
+            FramePacingTiming framePacingTiming,
+            Runnable slotStateListener
     ) {
         if (framePacingTiming == null) {
             throw new IllegalArgumentException("framePacingTiming cannot be null");
         }
+        if (slotStateListener == null) {
+            throw new IllegalArgumentException("slotStateListener cannot be null");
+        }
         this.index = index;
         this.device = device;
         this.framePacingTiming = framePacingTiming;
+        this.slotStateListener = slotStateListener;
         finalColor = new FrameTextureResource(device, "SRPresentationFinalColor-" + index);
         hudlessColor = new FrameTextureResource(device, "SRPresentationHudlessColor-" + index);
         depth = new FrameTextureResource(device, "SRPresentationDepth-" + index);
@@ -178,11 +184,17 @@ public final class FrameResources {
         motionVector.markSubmitted();
         lifecycle.markSubmitted();
         publishBorrowedInputReleaseSubmission();
+        slotStateListener.run();
     }
 
     public void markUnrecoverable() {
         unrecoverable = true;
         failBorrowedInputReleaseSubmission();
+        slotStateListener.run();
+    }
+
+    boolean isUnrecoverable() {
+        return unrecoverable;
     }
 
     /**
