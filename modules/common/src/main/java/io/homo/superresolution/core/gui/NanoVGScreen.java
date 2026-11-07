@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
@@ -33,6 +34,9 @@ import io.homo.superresolution.core.gui.b3d.B3DGuiVulkanUiRenderer;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGRhiBridge;
 import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.LiquidGlassTooltipRenderer;
+import io.homo.superresolution.core.gui.core.TooltipRenderer;
+import io.homo.superresolution.core.gui.core.view.View;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGRenderContext;
 import io.homo.superresolution.core.gui.core.backends.render.GuiScaleManager;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
@@ -66,7 +70,9 @@ public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
     protected final GuiScaleManager scaleManager;
 
     protected NanoVGScreen(Component title) {
-        super(title);
+        super(title, new View(SuperResolutionConfig.isLiquidGlassEnabled()
+                ? new LiquidGlassTooltipRenderer()
+                : new TooltipRenderer()));
         nvg = NanoVGBackend.context;
         scaleManager = GuiScaleManager.getInstance();
         buildWidgets();

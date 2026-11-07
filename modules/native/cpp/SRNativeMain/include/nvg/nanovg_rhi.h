@@ -104,6 +104,14 @@ int nvSrRhiCreateImageFromHandleRHI(NVGcontext *ctx, GLuint textureId, int w, in
 
 GLuint nvSrRhiImageHandleRHI(NVGcontext *ctx, int image);
 
+int nvSrRhiRoundedRectLiquidGlassRHI(NVGcontext *ctx,
+                                    float x, float y, float w, float h,
+                                    float bottomLeft, float bottomRight, float topLeft, float topRight,
+                                    float lightAngle, float lightIntensity, float refraction,
+                                    float depth, float dispersion, float frost,
+                                    float brightness, float contrast, float saturation, float alpha,
+                                    float tintRed, float tintGreen, float tintBlue, float tintAlpha, float legibility);
+
 // These are additional flags on top of NVGimageFlags.
 enum NVGimageFlagsRHI {
     NVG_IMAGE_NODELETE = 1 << 16, // Do not delete GL texture handle.
@@ -163,6 +171,7 @@ enum SRRHINVGCallType {
     GLNVG_CONVEXFILL,
     GLNVG_STROKE,
     GLNVG_TRIANGLES,
+    GLNVG_LIQUID_GLASS,
 };
 
 struct SRRHINVGCall {
@@ -210,6 +219,33 @@ struct SRRHINVGFragUniforms {
 };
 
 typedef struct SRRHINVGFragUniforms SRRHINVGFragUniforms;
+
+struct SRRHINVGGlassUniforms {
+    float copyRect[4];
+    float textureSize[2];
+    float shapeSize[2];
+    float radii[4];
+    float colorControls[4];
+    float params[4];
+    float optics[4];
+    float lighting[4];
+    float shapeAxes[4];
+    float surfaceTint[4];
+    float material[4];
+};
+
+typedef struct SRRHINVGGlassUniforms SRRHINVGGlassUniforms;
+
+static_assert(sizeof(SRRHINVGGlassUniforms) == 160, "Liquid glass uniforms must match the RHI shader");
+static_assert(offsetof(SRRHINVGGlassUniforms, colorControls) == 48);
+static_assert(offsetof(SRRHINVGGlassUniforms, params) == 64);
+static_assert(offsetof(SRRHINVGGlassUniforms, optics) == 80);
+static_assert(offsetof(SRRHINVGGlassUniforms, lighting) == 96);
+static_assert(offsetof(SRRHINVGGlassUniforms, shapeAxes) == 112);
+static_assert(offsetof(SRRHINVGGlassUniforms, surfaceTint) == 128);
+static_assert(offsetof(SRRHINVGGlassUniforms, material) == 144);
+static_assert(sizeof(SRRHINVGGlassUniforms) <= sizeof(SRRHINVGFragUniforms),
+              "Liquid glass uniforms must fit in one NanoVG fragment slot");
 
 struct SRRHINVGContext {
     SRRHINVGTexture *textures;

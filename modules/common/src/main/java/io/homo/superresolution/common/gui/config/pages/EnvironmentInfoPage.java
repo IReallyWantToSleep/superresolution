@@ -51,7 +51,7 @@ public final class EnvironmentInfoPage implements ConfigPage {
         label.layout().setMargin(YogaEdge.BOTTOM, 6);
         container.addChild(label);
 
-        InfoCard envCard = new InfoCard();
+        InfoCard envCard = context.createInfoCard();
         envCard.addChild(context.createInfoLine(Text.translatable("superresolution.screen.config.info.environment.mod_version").getString(), context.safeGetModVersion()));
         envCard.addChild(context.createInfoLine(Text.translatable("superresolution.screen.config.info.environment.native_version").getString(), context.safeGetNativeVersion()));
         envCard.addChild(context.createInfoLine(Text.translatable("superresolution.screen.config.info.environment.system").getString(), context.safeGetOperatingSystem()));

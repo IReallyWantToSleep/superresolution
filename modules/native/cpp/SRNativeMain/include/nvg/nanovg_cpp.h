@@ -218,6 +218,13 @@ public:
 
     void RoundedRectComplex(float x, float y, float w, float h, float tl, float tr, float bl, float br);
 
+    int RoundedRectLiquidGlass(float x, float y, float w, float h,
+                               float bottomLeft, float bottomRight, float topLeft, float topRight,
+                               float lightAngle, float lightIntensity, float refraction,
+                               float depth, float dispersion, float frost,
+                               float brightness, float contrast, float saturation, float alpha,
+                               float tintRed, float tintGreen, float tintBlue, float tintAlpha, float legibility);
+
     void RoundedRectEllipse(float x, float y, float w, float h, float rw, float rh);
 
     void LineStyle(int lineStyle);

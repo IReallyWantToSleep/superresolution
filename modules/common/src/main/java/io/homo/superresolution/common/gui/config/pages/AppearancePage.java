@@ -45,6 +45,18 @@ public final class AppearancePage implements ConfigPage {
                 container,
                 Text.translatable("superresolution.screen.config.category.appearance"),
                 builder -> {
+                    builder.booleanOption(
+                                    Text.translatable("superresolution.screen.config.options.label.liquid_glass_ui"),
+                                    SuperResolutionConfig.isLiquidGlassEnabled())
+                            .setDefaultValue(() -> false)
+                            .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.liquid_glass_ui"))
+                            .setSaveConsumer(value -> {
+                                if (value != SuperResolutionConfig.isLiquidGlassEnabled()) {
+                                    SuperResolutionConfig.setLiquidGlassEnabled(value);
+                                    context.requestAppearanceRebuild();
+                                }
+                            })
+                            .build();
                     builder.enumSelectorOption(
                                     Text.translatable("superresolution.screen.config.options.label.theme"),
                                     MaterialTheme.class,

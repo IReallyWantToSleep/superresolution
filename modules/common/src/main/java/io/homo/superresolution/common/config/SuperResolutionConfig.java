@@ -89,6 +89,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue ENABLE_IRIS_EXTENSION;
     public static final EnumValue<InternalTextureFormat> INTERNAL_TEXTURE_FORMAT;
     public static final EnumValue<MaterialTheme> THEME;
+    public static final BooleanValue LIQUID_GLASS_ENABLED;
     public static final EnumValue<SchemeVariant> THEME_SCHEME_VARIANT;
     public static final FloatValue THEME_CONTRAST_LEVEL;
     public static final FloatValue UI_SCALE;
@@ -188,6 +189,12 @@ public class SuperResolutionConfig {
                 MaterialTheme.class,
                 () -> MaterialTheme.Light,
                 "Interface theme"
+        );
+
+        LIQUID_GLASS_ENABLED = builder.defineBoolean(
+                "liquid_glass_ui",
+                () -> false,
+                "Use liquid glass controls and surfaces in the configuration interface"
         );
 
         THEME_COLOR = builder.defineString(
@@ -767,6 +774,14 @@ public class SuperResolutionConfig {
 
     public static void setTheme(MaterialTheme value) {
         THEME.set(value);
+    }
+
+    public static boolean isLiquidGlassEnabled() {
+        return LIQUID_GLASS_ENABLED.get();
+    }
+
+    public static void setLiquidGlassEnabled(boolean value) {
+        LIQUID_GLASS_ENABLED.set(value);
     }
 
     public static float getUiScale() {

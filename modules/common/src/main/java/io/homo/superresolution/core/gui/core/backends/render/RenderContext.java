@@ -131,6 +131,64 @@ public interface RenderContext {
                             float bottomLeftRadius, float bottomRightRadius,
                             float topLeftRadius, float topRightRadius);
 
+    default void roundedRectLiquidGlass(float x, float y, float width, float height, float radius) {
+        roundedRectLiquidGlass(x, y, width, height, radius,
+                LiquidGlassParameters.DEFAULT, LiquidGlassColorControls.DEFAULT);
+    }
+
+    default void roundedRectLiquidGlass(float x, float y, float width, float height, float radius,
+                                        LiquidGlassColorControls colorControls) {
+        roundedRectLiquidGlass(x, y, width, height, radius, LiquidGlassParameters.DEFAULT, colorControls);
+    }
+
+    default void roundedRectLiquidGlass(float x, float y, float width, float height, float radius,
+                                        LiquidGlassParameters parameters) {
+        roundedRectLiquidGlass(x, y, width, height, radius, parameters, LiquidGlassColorControls.DEFAULT);
+    }
+
+    default void roundedRectLiquidGlass(float x, float y, float width, float height, float radius,
+                                        LiquidGlassParameters parameters, LiquidGlassColorControls colorControls) {
+        roundedRectLiquidGlass(x, y, width, height, radius, radius, radius, radius, parameters, colorControls);
+    }
+
+    default void roundedRectLiquidGlass(float x, float y, float width, float height,
+                                        float bottomLeftRadius, float bottomRightRadius,
+                                        float topLeftRadius, float topRightRadius,
+                                        LiquidGlassColorControls colorControls) {
+        roundedRectLiquidGlass(x, y, width, height,
+                bottomLeftRadius, bottomRightRadius, topLeftRadius, topRightRadius,
+                LiquidGlassParameters.DEFAULT, colorControls);
+    }
+
+    default void roundedRectLiquidGlass(float x, float y, float width, float height,
+                                        float bottomLeftRadius, float bottomRightRadius,
+                                        float topLeftRadius, float topRightRadius,
+                                        LiquidGlassParameters parameters, LiquidGlassColorControls colorControls) {
+        roundedRectLiquidGlass(x, y, width, height,
+                bottomLeftRadius, bottomRightRadius, topLeftRadius, topRightRadius,
+                parameters, colorControls, LiquidGlassTint.DEFAULT);
+    }
+
+    default void roundedRectLiquidGlass(float x, float y, float width, float height, float radius,
+                                        LiquidGlassParameters parameters, LiquidGlassColorControls colorControls,
+                                        LiquidGlassTint tint) {
+        roundedRectLiquidGlass(x, y, width, height, radius, radius, radius, radius, parameters, colorControls, tint);
+    }
+
+    void roundedRectLiquidGlass(float x, float y, float width, float height,
+                               float bottomLeftRadius, float bottomRightRadius,
+                               float topLeftRadius, float topRightRadius,
+                               LiquidGlassParameters parameters, LiquidGlassColorControls colorControls,
+                               LiquidGlassTint tint);
+
+    static LiquidGlassColorControls colorControls() {
+        return LiquidGlassColorControls.DEFAULT;
+    }
+
+    static LiquidGlassColorControls colorControls(float brightness, float contrast, float saturation) {
+        return new LiquidGlassColorControls(brightness, contrast, saturation);
+    }
+
     default void roundedRectComplex(float x, float y, float width, float height,
                                     float bottomLeftRadius, float bottomRightRadius,
                                     float topLeftRadius, float topRightRadius,

@@ -203,6 +203,8 @@
     "superresolution.screen.config.options.label.sharpness": "Sharpness",
     "superresolution.screen.config.options.label.skip_init_vulkan": "Skip Vulkan Initialization",
     "superresolution.screen.config.options.label.theme": "Theme",
+    "superresolution.screen.config.options.label.liquid_glass_ui": "Liquid glass interface",
+    "superresolution.screen.config.options.tooltip.liquid_glass_ui": "Use translucent glass controls and panels in the configuration interface.",
     "superresolution.screen.config.options.label.ui_scale": "Configuration UI Scale",
     "superresolution.screen.config.options.label.theme_color": "Theme Color",
     "superresolution.screen.config.options.label.theme_contrast_level": "Contrast",

@@ -203,6 +203,8 @@
     "superresolution.screen.config.options.label.sharpness": "锐度",
     "superresolution.screen.config.options.label.skip_init_vulkan": "跳过 Vulkan 初始化",
     "superresolution.screen.config.options.label.theme": "界面主题",
+    "superresolution.screen.config.options.label.liquid_glass_ui": "液态玻璃界面",
+    "superresolution.screen.config.options.tooltip.liquid_glass_ui": "在配置界面中使用半透明的玻璃控件和面板。",
     "superresolution.screen.config.options.label.ui_scale": "配置界面缩放",
     "superresolution.screen.config.options.label.theme_color": "主题色",
     "superresolution.screen.config.options.label.theme_contrast_level": "对比度",

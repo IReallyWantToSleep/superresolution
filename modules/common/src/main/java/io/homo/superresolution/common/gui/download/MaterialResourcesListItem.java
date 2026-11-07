@@ -20,6 +20,7 @@ package io.homo.superresolution.common.gui.download;
 
 import io.homo.superresolution.api.registry.ExtraResource;
 import io.homo.superresolution.common.gui.impl.Text;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.gui.MaterialScheme;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.MaterialSymbols;
@@ -40,6 +41,7 @@ import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuItemSize;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuSize;
 import io.homo.superresolution.core.gui.widgets.progress.MaterialLinearProgressIndicator;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
+import io.homo.superresolution.core.gui.widgets.select.LiquidGlassMaterialSelect;
 import io.homo.superresolution.core.gui.widgets.textfield.MaterialTextFieldSize;
 import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.common.SuperResolution;
@@ -143,7 +145,9 @@ public class MaterialResourcesListItem extends MaterialContainerWidget<MaterialR
             progressContainer.addChild(progressBar);
             contentContainer.addChild(progressContainer);
 
-            sourceSelect = MaterialSelect.create();
+            sourceSelect = SuperResolutionConfig.isLiquidGlassEnabled()
+                    ? LiquidGlassMaterialSelect.<ExtraResource.ResourceSource>create()
+                    : MaterialSelect.<ExtraResource.ResourceSource>create();
             sourceSelect.style().size(SOURCE_SELECT_SIZE);
             sourceSelect.style().labelBackground(MaterialScheme::surfaceContainerHigh);
             sourceSelect.label(Text.translatable("superresolution.screen.download.select.source").getString());

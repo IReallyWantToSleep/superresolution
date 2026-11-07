@@ -24,9 +24,8 @@ import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
-import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
@@ -66,13 +65,26 @@ public class NanoVGContextWrapper {
     }
 
     private GlFrameBuffer createGlFrameBuffer() {
-        return RenderSystems.opengl().device().createFramebuffer(
-                FramebufferDescription.create()
-                        .colorFormat(TextureFormat.R11G11B10F)
-                        .depthFormat(TextureFormat.DEPTH24_STENCIL8)
-                        .size(MinecraftWindow.getWindowWidth(), MinecraftWindow.getWindowHeight())
+        var device = RenderSystems.opengl().device();
+        int width = MinecraftWindow.getWindowWidth();
+        int height = MinecraftWindow.getWindowHeight();
+        ITexture color = device.createTexture(
+                TextureDescription.create()
+                        .type(TextureType.Texture2D)
+                        .format(TextureFormat.R11G11B10F)
+                        .size(width, height)
+                        .usages(TextureUsages.create().storage().sampler().attachmentColor().transferSource())
                         .build()
         );
+        ITexture depth = device.createTexture(
+                TextureDescription.create()
+                        .type(TextureType.Texture2D)
+                        .format(TextureFormat.DEPTH24_STENCIL8)
+                        .size(width, height)
+                        .usages(TextureUsages.create().storage().sampler().attachmentDepth())
+                        .build()
+        );
+        return GlFrameBuffer.create(color, depth, width, height);
     }
 
     public float globalScale() {

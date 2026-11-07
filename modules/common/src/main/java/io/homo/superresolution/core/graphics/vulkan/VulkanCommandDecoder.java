@@ -28,8 +28,8 @@ import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.PipelineDescriptorSet;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
-import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceDescription;
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.ITextureView;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
@@ -47,27 +47,6 @@ public class VulkanCommandDecoder implements ICommandDecoder {
 
     public VulkanCommandDecoder(VulkanDevice vulkanDevice) {
         this.vulkanDevice = vulkanDevice;
-    }
-
-    private void beginLabel(VkCommandBuffer commandBuffer, String label) {
-        vulkanDevice.beginDebugLabel(commandBuffer, label);
-    }
-
-    private void endLabel(VkCommandBuffer commandBuffer) {
-        vulkanDevice.endDebugLabel(commandBuffer);
-    }
-
-    private void insertLabel(VkCommandBuffer commandBuffer, String label) {
-        vulkanDevice.insertDebugLabel(commandBuffer, label);
-    }
-
-    private void withLabel(VkCommandBuffer commandBuffer, String label, Runnable action) {
-        beginLabel(commandBuffer, label);
-        try {
-            action.run();
-        } finally {
-            endLabel(commandBuffer);
-        }
     }
 
     private static int vkLayoutFor(ResourceAccessType access) {
@@ -191,6 +170,27 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         );
     }
 
+    private void beginLabel(VkCommandBuffer commandBuffer, String label) {
+        vulkanDevice.beginDebugLabel(commandBuffer, label);
+    }
+
+    private void endLabel(VkCommandBuffer commandBuffer) {
+        vulkanDevice.endDebugLabel(commandBuffer);
+    }
+
+    private void insertLabel(VkCommandBuffer commandBuffer, String label) {
+        vulkanDevice.insertDebugLabel(commandBuffer, label);
+    }
+
+    private void withLabel(VkCommandBuffer commandBuffer, String label, Runnable action) {
+        beginLabel(commandBuffer, label);
+        try {
+            action.run();
+        } finally {
+            endLabel(commandBuffer);
+        }
+    }
+
     @Override
     public ResourceStateTracker getStateTracker() {
         return new ResourceStateTracker();
@@ -307,12 +307,18 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     @Override
     public void copyTexture(ICommandBuffer commandBuffer, ITexture src, ITexture dst, int srcX0, int srcY0, int srcX1, int srcY1, int srcLevel, int dstX0, int dstY0, int dstX1, int dstY1, int dstLevel) {
         try (MemoryStack stack = MemoryStack.stackPush()) {
-            VulkanTexture srcTexture = (VulkanTexture) src;
-            VulkanTexture dstTexture = (VulkanTexture) dst;
             VulkanCommandBuffer vulkanCommandBuffer = (VulkanCommandBuffer) commandBuffer;
             VkCommandBuffer commandBufferHandle = vulkanCommandBuffer.getNativeCommandBuffer();
             transitionTexture(commandBufferHandle, src, ResourceAccessType.TRANSFER_SRC);
             transitionTexture(commandBufferHandle, dst, ResourceAccessType.TRANSFER_DST);
+            long srcImage = resolveImageHandle(src);
+            long dstImage = resolveImageHandle(dst);
+            int srcLayout = src instanceof VulkanExternalTexture external && external.isFixedLayout()
+                    ? external.getCurrentLayout()
+                    : VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            int dstLayout = dst instanceof VulkanExternalTexture external && external.isFixedLayout()
+                    ? external.getCurrentLayout()
+                    : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 
             VkImageCopy.Buffer copyRegion = VkImageCopy.calloc(1, stack);
             copyRegion.srcSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT);
@@ -325,13 +331,14 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             copyRegion.dstSubresource().baseArrayLayer(0);
             copyRegion.dstSubresource().layerCount(1);
             copyRegion.dstOffset().set(dstX0, dstY0, 0);
+            copyRegion.extent().set(srcX1 - srcX0, srcY1 - srcY0, 1);
 
             withLabel(commandBufferHandle, "Copy Texture", () -> vkCmdCopyImage(
                     commandBufferHandle,
-                    srcTexture.handle(),
-                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                    dstTexture.handle(),
-                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                    srcImage,
+                    srcLayout,
+                    dstImage,
+                    dstLayout,
                     copyRegion
             ));
             markTextureState(src, ResourceAccessType.TRANSFER_SRC);
@@ -727,6 +734,8 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         vkGraphicsPipeline.ensurePipelineCreated();
 
         VulkanPipelineDescriptorSet vkDescriptorSet = (VulkanPipelineDescriptorSet) pipeline.descriptorSet();
+        prepareDescriptorResources(cmd, vkDescriptorSet, VK_PIPELINE_BIND_POINT_GRAPHICS);
+
         long pipelineHandle = vkGraphicsPipeline.getPipeline();
         withLabel(cmd, "Bind Render Pipeline", () -> {
             if (!vcb.isNativePipelineBound(VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineHandle)) {
@@ -881,8 +890,18 @@ public class VulkanCommandDecoder implements ICommandDecoder {
         }
 
         VulkanResourceState current = vlt.getCurrentResourceState();
-        if (!requiresBarrier(current, target)) {
-            vlt.setCurrentResourceState(target);
+        VulkanResourceState transitionTarget = target;
+        if (texture instanceof VulkanExternalTexture external && external.isFixedLayout()) {
+            transitionTarget = new VulkanResourceState(
+                    current.layout(),
+                    target.accessMask(),
+                    target.stageMask(),
+                    target.accessType()
+            );
+        }
+        final VulkanResourceState resolvedTarget = transitionTarget;
+        if (!requiresBarrier(current, resolvedTarget)) {
+            vlt.setCurrentResourceState(resolvedTarget);
             return;
         }
 
@@ -893,9 +912,9 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             VkImageMemoryBarrier.Buffer barrier = VkImageMemoryBarrier.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER)
                     .srcAccessMask(current.accessMask())
-                    .dstAccessMask(target.accessMask())
+                    .dstAccessMask(resolvedTarget.accessMask())
                     .oldLayout(current.layout())
-                    .newLayout(target.layout())
+                    .newLayout(resolvedTarget.layout())
                     .srcQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
                     .dstQueueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
                     .image(imageHandle)
@@ -908,11 +927,11 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             withLabel(cmd, label, () -> vkCmdPipelineBarrier(
                     cmd,
                     current.stageMask(),
-                    target.stageMask(),
+                    resolvedTarget.stageMask(),
                     0, null, null, barrier
             ));
         }
-        vlt.setCurrentResourceState(target);
+        vlt.setCurrentResourceState(resolvedTarget);
     }
 
     private boolean requiresBarrier(VulkanResourceState current, VulkanResourceState target) {
@@ -930,7 +949,16 @@ public class VulkanCommandDecoder implements ICommandDecoder {
 
     private void markTextureState(ITexture texture, ResourceAccessType target) {
         if (texture instanceof VulkanLayoutTracked vlt) {
-            vlt.setCurrentResourceState(vkStateFor(target));
+            VulkanResourceState targetState = vkStateFor(target);
+            if (texture instanceof VulkanExternalTexture external && external.isFixedLayout()) {
+                targetState = new VulkanResourceState(
+                        external.getCurrentLayout(),
+                        targetState.accessMask(),
+                        targetState.stageMask(),
+                        targetState.accessType()
+                );
+            }
+            vlt.setCurrentResourceState(targetState);
         }
     }
 

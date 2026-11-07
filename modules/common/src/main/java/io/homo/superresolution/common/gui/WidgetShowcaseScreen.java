@@ -47,11 +47,13 @@ import io.homo.superresolution.core.gui.widgets.menu.MaterialMenu;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuItem;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuSelectionMode;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuSize;
+import io.homo.superresolution.core.gui.widgets.menu.LiquidGlassMaterialMenu;
 import io.homo.superresolution.core.gui.widgets.navigation.drawer.MaterialNavigationDrawer;
 import io.homo.superresolution.core.gui.widgets.progress.MaterialCircularProgressIndicator;
 import io.homo.superresolution.core.gui.widgets.progress.MaterialLinearProgressIndicator;
 import io.homo.superresolution.core.gui.widgets.progress.MaterialProgressShape;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
+import io.homo.superresolution.core.gui.widgets.select.LiquidGlassMaterialSelect;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSliderSize;
 import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
@@ -554,7 +556,7 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
         addSectionTitle(container, "Standard and compact");
         ContainerWidget selects = createWrappingRow();
 
-        MaterialSelect<String> standardSelect = MaterialSelect.<String>create()
+        MaterialSelect<String> standardSelect = this.<String>createMaterialSelect()
                 .label("Algorithm")
                 .placeholder("Choose an algorithm")
                 .supportingText("Single selection")
@@ -567,7 +569,7 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
         configureSelect(standardSelect);
         selects.addChild(standardSelect);
 
-        MaterialSelect<String> smallSelect = MaterialSelect.<String>create()
+        MaterialSelect<String> smallSelect = this.<String>createMaterialSelect()
                 .label("Quality")
                 .placeholder("Choose a preset")
                 .width(280f)
@@ -586,7 +588,7 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
         container.addChild(selectedValue);
 
         addSectionTitle(container, "Typed values");
-        MaterialSelect<Integer> numericSelect = MaterialSelect.<Integer>create()
+        MaterialSelect<Integer> numericSelect = this.<Integer>createMaterialSelect()
                 .label("Sample count")
                 .placeholder("Choose a count")
                 .supportingText("Integer-backed options with display formatting")
@@ -601,7 +603,7 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
         container.addChild(numericSelect);
 
         addSectionTitle(container, "Disabled");
-        MaterialSelect<String> disabledSelect = MaterialSelect.<String>create()
+        MaterialSelect<String> disabledSelect = this.<String>createMaterialSelect()
                 .label("Disabled")
                 .width(260f)
                 .addOption("fixed", "Fixed value")
@@ -684,7 +686,7 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
         addSectionTitle(container, "Selection modes");
         ContainerWidget menus = createWrappingRow();
 
-        MaterialMenu singleMenu = MaterialMenu.create()
+        MaterialMenu singleMenu = createMaterialMenu()
                 .selectionMode(MaterialMenuSelectionMode.SingleAtLeastOne)
                 .addItem(createMenuItem("Line chart", "line", MaterialSymbols.iconShowChart()))
                 .addItem(createMenuItem("Bar chart", "bar", MaterialSymbols.iconDataUsage()))
@@ -693,7 +695,7 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
         configureMenu(singleMenu, 300f);
         menus.addChild(createMenuColumn("Single selection", singleMenu));
 
-        MaterialMenu multipleMenu = MaterialMenu.create()
+        MaterialMenu multipleMenu = createMaterialMenu()
                 .selectionMode(MaterialMenuSelectionMode.Multiple)
                 .addItem(createMenuItem("CPU timing", "cpu", MaterialSymbols.iconSpeed()))
                 .addItem(createMenuItem("GPU timing", "gpu", MaterialSymbols.iconShowChart()))
@@ -706,7 +708,7 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
         container.addChild(menus);
 
         addSectionTitle(container, "Actions and disabled items");
-        MaterialMenu actionMenu = MaterialMenu.create()
+        MaterialMenu actionMenu = createMaterialMenu()
                 .selectionMode(MaterialMenuSelectionMode.None)
                 .addItem(MaterialMenuItem.create()
                         .text("Open settings")
@@ -820,7 +822,7 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
         container.addChild(dynamicTooltip);
 
         addSectionTitle(container, "Select option tooltips");
-        MaterialSelect<String> tooltipSelect = MaterialSelect.<String>create()
+        MaterialSelect<String> tooltipSelect = this.<String>createMaterialSelect()
                 .label("Rendering backend")
                 .placeholder("Choose a backend")
                 .supportingText("Hover menu options to inspect their descriptions")
@@ -1386,6 +1388,18 @@ public class WidgetShowcaseScreen extends NanoVGScreen<WidgetShowcaseScreen> {
 
     private void configureSelect(MaterialSelect<?> select) {
         select.layout().setMaxWidth(360f);
+    }
+
+    private <T> MaterialSelect<T> createMaterialSelect() {
+        return SuperResolutionConfig.isLiquidGlassEnabled()
+                ? LiquidGlassMaterialSelect.<T>create()
+                : MaterialSelect.<T>create();
+    }
+
+    private MaterialMenu createMaterialMenu() {
+        return SuperResolutionConfig.isLiquidGlassEnabled()
+                ? LiquidGlassMaterialMenu.create()
+                : MaterialMenu.create();
     }
 
     private void configureMenu(MaterialMenu menu, float width) {

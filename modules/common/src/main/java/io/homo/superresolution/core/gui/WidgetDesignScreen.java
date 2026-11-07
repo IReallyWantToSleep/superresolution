@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
 import io.homo.superresolution.common.gui.MaterialConfigScreen;
 import io.homo.superresolution.common.gui.options.OptionBuilder;
@@ -39,6 +40,7 @@ import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.menu.*;
 import io.homo.superresolution.core.gui.widgets.navigation.drawer.MaterialNavigationDrawer;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
+import io.homo.superresolution.core.gui.widgets.select.LiquidGlassMaterialSelect;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
 import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.*;
@@ -753,7 +755,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
                 .color(materialScheme.onSurface());
         container.addChild(basicLabel);
 
-        MaterialSelect<String> basicSelect = MaterialSelect.<String>create()
+        MaterialSelect<String> basicSelect = this.<String>createMaterialSelect()
                 .label("Label")
                 .placeholder("请选择...")
                 .width(280)
@@ -771,7 +773,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         supportLabel.layout().setMargin(YogaEdge.TOP, 30);
         container.addChild(supportLabel);
 
-        MaterialSelect<String> supportSelect = MaterialSelect.<String>create()
+        MaterialSelect<String> supportSelect = this.<String>createMaterialSelect()
                 .label("算法选择")
                 .placeholder("选择超分算法")
                 .supportingText("选择一个超分辨率算法")
@@ -794,7 +796,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         iconLabel.layout().setMargin(YogaEdge.TOP, 30);
         container.addChild(iconLabel);
 
-        MaterialSelect<String> iconSelect = MaterialSelect.<String>create()
+        MaterialSelect<String> iconSelect = this.<String>createMaterialSelect()
                 .label("质量预设")
                 .leadingIcon(MaterialSymbols.iconTune())
                 .width(300)
@@ -813,7 +815,7 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         numLabel.layout().setMargin(YogaEdge.TOP, 30);
         container.addChild(numLabel);
 
-        MaterialSelect<Integer> numSelect = MaterialSelect.<Integer>create()
+        MaterialSelect<Integer> numSelect = this.<Integer>createMaterialSelect()
                 .label("渲染比例")
                 .width(200)
                 .displayFormatter(v -> v + "%")
@@ -859,6 +861,12 @@ public class WidgetDesignScreen extends NanoVGScreen<WidgetDesignScreen> {
         container.layout().setHeightPercent(100);
         frame.setRoot(container);
         return frame;
+    }
+
+    private <T> MaterialSelect<T> createMaterialSelect() {
+        return SuperResolutionConfig.isLiquidGlassEnabled()
+                ? LiquidGlassMaterialSelect.<T>create()
+                : MaterialSelect.<T>create();
     }
 
     @Override

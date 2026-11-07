@@ -50,7 +50,7 @@ public abstract class InteropAlgorithm<C extends InteropCommandContext> extends 
                 InteropResourceRequirement.input(
                         Depth, Required, RenderSize, Fixed, TextureFormat.R32F),
                 InteropResourceRequirement.input(
-                        MotionVectors, Required, RenderSize, Context, TextureFormat.RG16F),
+                        MotionVectors, Required, RenderSize, Fixed, TextureFormat.RG16F),
                 InteropResourceRequirement.input(
                         Exposure, Optional, OneByOne, Fixed, TextureFormat.R32F),
                 InteropResourceRequirement.output(

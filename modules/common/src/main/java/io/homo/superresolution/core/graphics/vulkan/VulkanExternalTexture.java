@@ -247,6 +247,10 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
         return currentState.layout();
     }
 
+    public boolean isFixedLayout() {
+        return fixedLayout;
+    }
+
     public void setCurrentLayout(int layout) {
         this.currentState = new VulkanResourceState(
                 layout,

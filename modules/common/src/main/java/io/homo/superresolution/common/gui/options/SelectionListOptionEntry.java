@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.gui.options;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.impl.OptionRequirement;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
@@ -28,6 +29,7 @@ import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuColors;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuItem;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuItemSize;
 import io.homo.superresolution.core.gui.widgets.menu.MaterialMenuSize;
+import io.homo.superresolution.core.gui.widgets.select.LiquidGlassMaterialSelect;
 import io.homo.superresolution.core.gui.widgets.select.MaterialSelect;
 import io.homo.superresolution.core.gui.widgets.textfield.MaterialTextFieldSize;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
@@ -141,7 +143,9 @@ public class SelectionListOptionEntry<T> extends AbstractOptionEntry<T, Selectio
         selectorContainer.layout().setFlexDirection(YogaFlexDirection.COLUMN);
         selectorContainer.layout().setAlignItems(YogaAlign.FLEX_END);
 
-        materialSelect = MaterialSelect.<T>create()
+        materialSelect = (SuperResolutionConfig.isLiquidGlassEnabled()
+                ? LiquidGlassMaterialSelect.<T>create()
+                : MaterialSelect.<T>create())
                 .minWidth(SELECT_MIN_WIDTH)
                 .displayFormatter(nameProvider);
         materialSelect.style().size(MaterialTextFieldSize.Standard);

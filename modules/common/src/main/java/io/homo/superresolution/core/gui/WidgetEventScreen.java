@@ -32,12 +32,17 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public abstract class WidgetEventScreen<T> extends Screen {
-    protected View view = new View();
+    protected View view;
     protected Frame defaultFrame = new Frame();
     protected YogaNode defaultFrameLayout;
 
     protected WidgetEventScreen(Component title) {
+        this(title, new View());
+    }
+
+    protected WidgetEventScreen(Component title, View view) {
         super(title);
+        this.view = view;
         defaultFrameLayout = view.addFrame(defaultFrame);
         defaultFrameLayout.setWidthPercent(100);
         defaultFrameLayout.setHeightPercent(100);
