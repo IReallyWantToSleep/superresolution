@@ -41,6 +41,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     private CommandBufferState state = CommandBufferState.Executable;
     private long reusableFence = VK_NULL_HANDLE;
     private boolean inFlight = false;
+    private boolean externalSubmission;
     private long submissionGeneration;
     private VkCommandBuffer nativeCommandBuffer;
     private VulkanRenderPass activeRenderPass;
@@ -117,6 +118,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         }
         ensureNotInFlight();
         VK_CHECK(vkResetCommandBuffer(nativeCommandBuffer, 0));
+        destroyTransientResources();
         clearRenderPassState();
         clearBindingState();
         state = CommandBufferState.Executable;
@@ -187,6 +189,9 @@ public class VulkanCommandBuffer implements ICommandBuffer {
 
     @Override
     public synchronized boolean isFenceSignaled() {
+        if (externalSubmission) {
+            return false;
+        }
         if (reusableFence == VK_NULL_HANDLE) {
             inFlight = false;
             destroyTransientResourcesIfComplete();
@@ -207,6 +212,9 @@ public class VulkanCommandBuffer implements ICommandBuffer {
 
     @Override
     public synchronized void waitForFence() {
+        if (externalSubmission) {
+            throw new IllegalStateException("External submissions must be completed by their owner");
+        }
         if (reusableFence == VK_NULL_HANDLE) {
             inFlight = false;
             destroyTransientResourcesIfComplete();
@@ -273,14 +281,17 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         if (state != CommandBufferState.Executable) {
             throw new IllegalStateException("Command buffer must be executable before external submit");
         }
+        ensureNotInFlight();
+        externalSubmission = true;
         inFlight = true;
     }
 
     public synchronized boolean isExternallyComplete() {
-        return inFlight;
+        return !externalSubmission;
     }
 
     public synchronized void markExternalComplete() {
+        externalSubmission = false;
         inFlight = false;
         destroyTransientResourcesIfComplete();
     }

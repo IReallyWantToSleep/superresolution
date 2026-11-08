@@ -118,7 +118,7 @@ public final class GuiRenderInjector {
         int guiHeight = Math.max(1, Minecraft.getInstance().getWindow().getGuiScaledHeight());
         ((GuiGraphicsAccessor) guiGraphics).getGuiRenderState().addBlitToCurrentLayer(
                 new net.minecraft.client.renderer.state.gui.BlitRenderState(
-                        net.minecraft.client.renderer.RenderPipelines.GUI_TEXTURED_PREMULTIPLIED_ALPHA,
+                        net.minecraft.client.renderer.RenderPipelines.GUI_OPAQUE_TEXTURED_BACKGROUND,
                         net.minecraft.client.gui.render.TextureSetup.singleTexture(target.textureView(), target.sampler()),
                         new org.joml.Matrix3x2f(),
                         0,

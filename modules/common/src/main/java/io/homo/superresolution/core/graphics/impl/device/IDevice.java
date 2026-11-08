@@ -42,6 +42,10 @@ import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import io.homo.superresolution.core.graphics.impl.vertex.VertexBufferDescription;
 
 public interface IDevice {
+    default int uniformBufferOffsetAlignment() {
+        throw new UnsupportedOperationException("Uniform buffer alignment is not exposed by this device");
+    }
+
     /**
      * 创建一个纹理。
      *

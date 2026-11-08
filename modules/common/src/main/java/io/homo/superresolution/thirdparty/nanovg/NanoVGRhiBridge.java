@@ -81,7 +81,7 @@ public final class NanoVGRhiBridge {
     private static final long LOAD_RENDER_PASS_KEY = 0L;
     private static final long DEPTH_STENCIL_CLEAR_PASS_KEY = 1L;
     private static final int LIQUID_GLASS_UNIFORM_SIZE = 160;
-    private static final int LIQUID_GLASS_KERNEL_UNIFORM_SIZE = 64;
+    private static final Map<Integer, LiquidGlassFrostResources> LIQUID_GLASS_FROST_CACHE = new HashMap<>();
     private static final IShaderProgram[] LIQUID_GLASS_FROST_SHADERS = new IShaderProgram[3];
 
     private static final Map<Integer, ITexture> TEXTURES = new ConcurrentHashMap<>();
@@ -108,7 +108,6 @@ public final class NanoVGRhiBridge {
     private static TextureFormat targetColorFormat;
     private static ITexture dummyTexture;
     private static ITexture liquidGlassBackdrop;
-    private static LiquidGlassFrostResources liquidGlassFrostResources;
     private static IShaderProgram shader;
     private static IShaderProgram liquidGlassShader;
     private static GraphicsPipeline liquidGlassPipeline;
@@ -167,10 +166,8 @@ public final class NanoVGRhiBridge {
             liquidGlassPipeline.destroy();
             liquidGlassPipeline = null;
         }
-        if (liquidGlassFrostResources != null) {
-            liquidGlassFrostResources.destroy();
-            liquidGlassFrostResources = null;
-        }
+        LIQUID_GLASS_FROST_CACHE.values().forEach(LiquidGlassFrostResources::destroy);
+        LIQUID_GLASS_FROST_CACHE.clear();
         if (liquidGlassFrostQuad != null) {
             liquidGlassFrostQuad.destroy();
             liquidGlassFrostQuad = null;
@@ -540,9 +537,7 @@ public final class NanoVGRhiBridge {
             return;
         }
 
-        prepareLiquidGlassResources(device, drawCommands);
         ByteBuffer packedUniforms = packFragUniforms(uniformsData, maxUniformBytes, fragUniformSourceStride, fragUniformBindingStride);
-        packedUniforms = appendLiquidGlassKernels(packedUniforms, drawCommands);
         ensureBufferCapacity(requiredVertexBytes, packedUniforms.remaining());
         if (recordingCommandBuffer == null) {
             destroyRetiredTextures();
@@ -1112,7 +1107,7 @@ public final class NanoVGRhiBridge {
         renderState.endIfNeeded(commandBuffer);
 
         ITexture colorTarget = targetFramebuffer.getTexture(FrameBufferAttachmentType.Color);
-        ITexture backdrop = liquidGlassBackdrop;
+        ITexture backdrop = ensureLiquidGlassBackdrop(device, colorTarget);
         int sourceY0 = targetFramebuffer.getHeight() - drawCommand.sampleY1;
         int sourceY1 = targetFramebuffer.getHeight() - drawCommand.sampleY0;
         commandBuffer.copyTexture(
@@ -1148,25 +1143,6 @@ public final class NanoVGRhiBridge {
         renderState.endIfNeeded(commandBuffer);
     }
 
-    private static void prepareLiquidGlassResources(IDevice device, List<DrawCommand> drawCommands) {
-        boolean needsBackdrop = false;
-        boolean needsFrost = false;
-        for (DrawCommand drawCommand : drawCommands) {
-            if (drawCommand.liquidGlass) {
-                needsBackdrop = true;
-                needsFrost |= drawCommand.frostScale > 1;
-            }
-        }
-        if (!needsBackdrop) {
-            return;
-        }
-        ITexture backdrop = ensureLiquidGlassBackdrop(device,
-                targetFramebuffer.getTexture(FrameBufferAttachmentType.Color));
-        if (needsFrost && liquidGlassFrostResources == null) {
-            liquidGlassFrostResources = createLiquidGlassFrostResources(device, backdrop);
-        }
-    }
-
     private static ITexture ensureLiquidGlassBackdrop(IDevice device, ITexture colorTarget) {
         if (!colorTarget.getTextureUsages().getUsages().contains(TextureUsage.TransferSource)) {
             throw new IllegalStateException("NanoVG color target must support transfer-source copies for liquid glass");
@@ -1179,10 +1155,8 @@ public final class NanoVGRhiBridge {
         }
         if (liquidGlassBackdrop != null) {
             waitForIdle.run();
-            if (liquidGlassFrostResources != null) {
-                liquidGlassFrostResources.destroy();
-                liquidGlassFrostResources = null;
-            }
+            LIQUID_GLASS_FROST_CACHE.values().forEach(LiquidGlassFrostResources::destroy);
+            LIQUID_GLASS_FROST_CACHE.clear();
             liquidGlassBackdrop.destroy();
         }
         liquidGlassBackdrop = device.createTexture(
@@ -1209,7 +1183,8 @@ public final class NanoVGRhiBridge {
                                                    int uniformOffset,
                                                    ITexture backdrop) {
         int scale = drawCommand.frostScale;
-        LiquidGlassFrostResources resources = liquidGlassFrostResources;
+        LiquidGlassFrostResources resources = LIQUID_GLASS_FROST_CACHE.computeIfAbsent(scale,
+                ignored -> createLiquidGlassFrostResources(device, backdrop, scale));
         if (liquidGlassFrostQuad == null) {
             ByteBuffer vertices = BufferUtils.createByteBuffer(6 * VERTEX_STRIDE_BYTES);
             float[] positions = {0f, 0f, 1f, 0f, 1f, 1f, 0f, 0f, 1f, 1f, 0f, 1f};
@@ -1232,34 +1207,29 @@ public final class NanoVGRhiBridge {
         ITexture source = backdrop;
         int passCount = drawCommand.frostGaussian ? 3 : 1;
         for (int pass = 0; pass < passCount; pass++) {
-            int target = pass & 1;
             GraphicsPipeline pipeline = getOrCreateLiquidGlassFrostPipeline(device, resources, pass);
             pipeline.descriptorSet()
                     .uniformBufferRange("glass", 1, fragUniformBuffer, uniformOffset, LIQUID_GLASS_UNIFORM_SIZE)
-                    .samplerTexture("sourceTexture", 2, source);
-            if (pass > 0) {
-                pipeline.descriptorSet().uniformBufferRange("kernel", 3, fragUniformBuffer,
-                        drawCommand.kernelOffset, LIQUID_GLASS_KERNEL_UNIFORM_SIZE);
-            }
-            pipeline.descriptorSet().update();
+                    .samplerTexture("sourceTexture", 2, source)
+                    .update();
             pipeline.setViewport(0f, 0f, width, height);
             pipeline.setScissor(x0, height - y1, x1 - x0, y1 - y0);
-            commandBuffer.beginRenderPass(resources.passes[target]);
+            commandBuffer.beginRenderPass(resources.passes[pass]);
             commandBuffer.bindPipeline(pipeline);
             commandBuffer.draw(liquidGlassFrostQuad, 6, 0);
             commandBuffer.endRenderPass();
             commandBuffer.memoryBarrier(MemoryBarrierType.ALL);
-            source = resources.textures[target];
+            source = resources.textures[pass];
         }
         return source;
     }
 
     private static LiquidGlassFrostResources createLiquidGlassFrostResources(IDevice device,
-                                                                            ITexture backdrop) {
+                                                                            ITexture backdrop,
+                                                                            int scale) {
         LiquidGlassFrostResources resources = new LiquidGlassFrostResources();
-        // Every frost scale is at least two; one half-size workspace serves them all.
-        int width = (backdrop.getWidth() + 1) / 2;
-        int height = (backdrop.getHeight() + 1) / 2;
+        int width = (backdrop.getWidth() + scale - 1) / scale;
+        int height = (backdrop.getHeight() + scale - 1) / scale;
         try {
             for (int i = 0; i < resources.textures.length; i++) {
                 resources.textures[i] = device.createTexture(TextureDescription.create()
@@ -1270,7 +1240,7 @@ public final class NanoVGRhiBridge {
                         .filterMode(TextureFilterMode.Linear)
                         .wrapMode(TextureWrapMode.ClampToEdge)
                         .mipmapSettings(TextureMipmapSettings.disabled())
-                        .label("NanoVG Frost Workspace " + i)
+                        .label("NanoVG Frost " + scale + "/" + i)
                         .build());
                 resources.framebuffers[i] = device.createFramebuffer(FramebufferDescription.create()
                         .colorAttachment(resources.textures[i]).build());
@@ -1287,23 +1257,20 @@ public final class NanoVGRhiBridge {
                                                                         LiquidGlassFrostResources resources,
                                                                         int pass) {
         if (LIQUID_GLASS_FROST_SHADERS[pass] == null) {
-            ShaderDescription.Builder description = ShaderDescription.graphics(
+            IShaderProgram frostShader = device.createShaderProgram(ShaderDescription.graphics(
                             ShaderSource.file(ShaderType.Fragment, "/shader/nanovg/liquid_glass_frost.frag.glsl"),
                             ShaderSource.file(ShaderType.Vertex, "/shader/nanovg/liquid_glass_frost.vert.glsl"))
                     .addDefine("FROST_PASS", Integer.toString(pass))
                     .uniformBuffer("glass", 1, LIQUID_GLASS_UNIFORM_SIZE)
-                    .uniformSamplerTexture("sourceTexture", 2);
-            if (pass > 0) {
-                description.uniformBuffer("kernel", 3, LIQUID_GLASS_KERNEL_UNIFORM_SIZE);
-            }
-            IShaderProgram frostShader = device.createShaderProgram(description.build());
+                    .uniformSamplerTexture("sourceTexture", 2)
+                    .build());
             frostShader.compile();
             LIQUID_GLASS_FROST_SHADERS[pass] = frostShader;
         }
         if (resources.pipelines[pass] == null) {
             resources.pipelines[pass] = GraphicsPipeline.builder()
                     .shader(LIQUID_GLASS_FROST_SHADERS[pass])
-                    .renderPass(resources.passes[pass & 1])
+                    .renderPass(resources.passes[pass])
                     .primitiveType(PrimitiveType.Triangle)
                     .rasterization(r -> r.cullMode(CullMode.None))
                     .depthStencil(d -> d.depthTestEnable(false).depthWriteEnable(false).stencilTestEnable(false))
@@ -1442,72 +1409,6 @@ public final class NanoVGRhiBridge {
             throw new IllegalArgumentException("Aligned uniform stride is too large: " + aligned);
         }
         return (int) aligned;
-    }
-
-    private static ByteBuffer appendLiquidGlassKernels(ByteBuffer packed, List<DrawCommand> drawCommands) {
-        Map<Integer, Integer> offsets = new HashMap<>();
-        List<float[]> kernels = new ArrayList<>();
-        int firstOffset = alignTo(packed.limit(), uniformBufferAlignment);
-        int stride = alignTo(LIQUID_GLASS_KERNEL_UNIFORM_SIZE, uniformBufferAlignment);
-        for (DrawCommand drawCommand : drawCommands) {
-            if (!drawCommand.liquidGlass || drawCommand.frostScale <= 1 || !drawCommand.frostGaussian) {
-                continue;
-            }
-            float sigma = packed.getFloat(drawCommand.uniformOffset + 92) / (float) drawCommand.frostScale;
-            int key = Float.floatToIntBits(sigma);
-            Integer offset = offsets.get(key);
-            if (offset == null) {
-                offset = Math.toIntExact((long) firstOffset + (long) kernels.size() * stride);
-                kernels.add(createLiquidGlassKernel(sigma));
-                offsets.put(key, offset);
-            }
-            drawCommand.kernelOffset = offset;
-        }
-        if (kernels.isEmpty()) {
-            return packed;
-        }
-
-        int packedBytes = Math.toIntExact((long) firstOffset
-                + (long) (kernels.size() - 1) * stride + LIQUID_GLASS_KERNEL_UNIFORM_SIZE);
-        if (packed.capacity() < packedBytes) {
-            ByteBuffer replacement = BufferUtils.createByteBuffer(growCapacity(packed.capacity(), packedBytes, 1024))
-                    .order(ByteOrder.nativeOrder());
-            replacement.put(packed);
-            stagedFragUniforms = replacement;
-            packed = replacement;
-        }
-        packed.limit(packedBytes);
-        for (int i = 0; i < kernels.size(); i++) {
-            packed.position(firstOffset + i * stride);
-            for (float value : kernels.get(i)) {
-                packed.putFloat(value);
-            }
-        }
-        packed.position(0);
-        return packed;
-    }
-
-    private static float[] createLiquidGlassKernel(float sigma) {
-        int span = Math.min((int) Math.ceil(sigma * 3.0f), 12);
-        float[] weights = new float[span + 1];
-        for (int i = 0; i <= span; i++) {
-            float offset = i;
-            weights[i] = (float) Math.exp(-0.5f * offset * offset / (sigma * sigma));
-        }
-        float total = 0.0f;
-        for (int i = -span; i <= span; i++) {
-            total += weights[Math.abs(i)];
-        }
-        float[] kernel = new float[LIQUID_GLASS_KERNEL_UNIFORM_SIZE / Float.BYTES];
-        kernel[0] = weights[0] / total;
-        kernel[1] = (span + 1) / 2;
-        for (int i = 1, pair = 0; i <= span; i += 2, pair++) {
-            float nextWeight = i < span ? weights[i + 1] : 0.0f;
-            float weight = weights[i] + nextWeight;
-            kernel[4 + pair * 2] = weight / total;
-            kernel[5 + pair * 2] = i + nextWeight / weight;
-        }
-        return kernel;
     }
 
     private static int translateFragUniformOffset(int uniformOffset) {
@@ -1703,9 +1604,9 @@ public final class NanoVGRhiBridge {
     }
 
     private static final class LiquidGlassFrostResources {
-        private final ITexture[] textures = new ITexture[2];
-        private final IFrameBuffer[] framebuffers = new IFrameBuffer[2];
-        private final RenderPass[] passes = new RenderPass[2];
+        private final ITexture[] textures = new ITexture[3];
+        private final IFrameBuffer[] framebuffers = new IFrameBuffer[3];
+        private final RenderPass[] passes = new RenderPass[3];
         private final GraphicsPipeline[] pipelines = new GraphicsPipeline[3];
 
         private void destroy() {
@@ -1745,7 +1646,6 @@ public final class NanoVGRhiBridge {
         private final int sampleY1;
         private final int frostScale;
         private final boolean frostGaussian;
-        private int kernelOffset = -1;
 
         private DrawCommand(PrimitiveType primitive,
                             int firstVertex,

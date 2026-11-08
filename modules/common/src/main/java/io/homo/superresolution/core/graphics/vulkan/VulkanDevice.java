@@ -49,6 +49,7 @@ import org.lwjgl.vulkan.VkDevice;
 import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkLatencySubmissionPresentIdNV;
 import org.lwjgl.vulkan.VkPhysicalDevice;
+import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
 import org.lwjgl.vulkan.VkSubmitInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,6 +63,7 @@ import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.vulkan.NVLowLatency2.VK_STRUCTURE_TYPE_LATENCY_SUBMISSION_PRESENT_ID_NV;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_SUBMIT_INFO;
 import static org.lwjgl.vulkan.VK10.vkQueueSubmit;
+import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceProperties;
 
 public class VulkanDevice implements IDevice {
     private static final Logger LOGGER = LoggerFactory.getLogger(VulkanDevice.class);
@@ -80,6 +82,7 @@ public class VulkanDevice implements IDevice {
     private final VulkanMemoryAllocator memoryAllocator;
     private final List<DeferredDestroy> deferredDestroys = new ArrayList<>();
     private final boolean ownsVkDevice;
+    private final int uniformBufferOffsetAlignment;
     private boolean drainingDeferredDestroys;
     private VulkanTimestampProfiler timestampProfiler;
     private boolean timestampProfilerResolved;
@@ -145,6 +148,11 @@ public class VulkanDevice implements IDevice {
         this.physicalDevice = physicalDevice;
         this.device = device;
         this.ownsVkDevice = ownsVkDevice;
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkPhysicalDeviceProperties properties = VkPhysicalDeviceProperties.malloc(stack);
+            vkGetPhysicalDeviceProperties(physicalDevice, properties);
+            uniformBufferOffsetAlignment = Math.toIntExact(Math.max(1L, properties.limits().minUniformBufferOffsetAlignment()));
+        }
         this.mainQueue = new VulkanQueue(
                 this,
                 graphicsQueueFamilyIndex,
@@ -210,6 +218,11 @@ public class VulkanDevice implements IDevice {
         }
         this.presentSubmitTimeline = submissionTimeline;
         this.asyncDispatchCapabilities = capabilities;
+    }
+
+    @Override
+    public int uniformBufferOffsetAlignment() {
+        return uniformBufferOffsetAlignment;
     }
 
     @Override

@@ -832,15 +832,22 @@ public class VulkanCommandDecoder implements ICommandDecoder {
     public void memoryBarrier(ICommandBuffer commandBuffer, MemoryBarrierType... barriers) {
         VulkanCommandBuffer vcb = (VulkanCommandBuffer) commandBuffer;
         VkCommandBuffer cmd = vcb.getNativeCommandBuffer();
+        boolean all = false;
+        for (MemoryBarrierType barrier : barriers) {
+            all |= barrier == MemoryBarrierType.ALL;
+        }
+        int stageMask = all ? VK_PIPELINE_STAGE_ALL_COMMANDS_BIT : VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+        int srcAccessMask = all ? VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_SHADER_WRITE_BIT;
+        int dstAccessMask = all ? VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_SHADER_READ_BIT;
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkMemoryBarrier.Buffer memBarrier = VkMemoryBarrier.calloc(1, stack)
                     .sType(VK_STRUCTURE_TYPE_MEMORY_BARRIER)
-                    .srcAccessMask(VK_ACCESS_SHADER_WRITE_BIT)
-                    .dstAccessMask(VK_ACCESS_SHADER_READ_BIT);
+                    .srcAccessMask(srcAccessMask)
+                    .dstAccessMask(dstAccessMask);
             withLabel(cmd, "Memory Barrier", () -> vkCmdPipelineBarrier(
                     cmd,
-                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                    VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                    stageMask,
+                    stageMask,
                     0,
                     memBarrier,
                     null,

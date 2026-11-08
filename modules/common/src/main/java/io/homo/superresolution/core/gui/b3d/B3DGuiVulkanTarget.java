@@ -35,6 +35,7 @@ import com.mojang.blaze3d.textures.GpuTexture;
 import com.mojang.blaze3d.textures.GpuTextureView;
 #endif
 import com.mojang.blaze3d.systems.RenderSystem;
+import com.mojang.blaze3d.pipeline.RenderTarget;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
@@ -46,6 +47,7 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanFramebuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 
 import java.lang.reflect.Method;
+import java.util.Objects;
 import java.util.OptionalDouble;
 
 import static org.lwjgl.vulkan.VK10.VK_IMAGE_LAYOUT_GENERAL;
@@ -56,7 +58,6 @@ public final class B3DGuiVulkanTarget implements AutoCloseable {
 
     private final int width;
     private final int height;
-    private final int generation;
     private GpuTexture texture;
     private GpuTextureView textureView;
     private GpuSampler sampler;
@@ -64,15 +65,19 @@ public final class B3DGuiVulkanTarget implements AutoCloseable {
     private VulkanTexture srDepthTexture;
     private VulkanFramebuffer framebuffer;
 
-    private B3DGuiVulkanTarget(int width, int height, int generation) {
+    private B3DGuiVulkanTarget(int width, int height) {
         this.width = width;
         this.height = height;
-        this.generation = generation;
-        create();
+        try {
+            create();
+        } catch (RuntimeException | Error failure) {
+            close();
+            throw failure;
+        }
     }
 
-    public static B3DGuiVulkanTarget create(int width, int height, int generation) {
-        return new B3DGuiVulkanTarget(width, height, generation);
+    public static B3DGuiVulkanTarget create(int width, int height) {
+        return new B3DGuiVulkanTarget(width, height);
     }
 
     private void create() {
@@ -166,10 +171,6 @@ public final class B3DGuiVulkanTarget implements AutoCloseable {
         return height;
     }
 
-    public int generation() {
-        return generation;
-    }
-
     public GpuTextureView textureView() {
         return textureView;
     }
@@ -180,6 +181,13 @@ public final class B3DGuiVulkanTarget implements AutoCloseable {
 
     public VulkanFramebuffer framebuffer() {
         return framebuffer;
+    }
+
+    public void copyBackgroundFrom(RenderTarget source) {
+        // Both render targets use the game's native image orientation.
+        RenderSystem.getDevice().createCommandEncoder().copyTextureToTexture(
+                Objects.requireNonNull(source.getColorTexture(), "Game main target has no color texture"),
+                texture, 0, 0, 0, 0, 0, width, height);
     }
 
     @Override

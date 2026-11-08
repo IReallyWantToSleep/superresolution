@@ -34,6 +34,7 @@ import io.homo.superresolution.core.utils.UIScalingCalculator;
 import io.homo.superresolution.core.gui.b3d.B3DGuiVulkanTarget;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGColor;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGPaint;
+import io.homo.superresolution.thirdparty.nanovg.NanoVGRhiBridge;
 import net.minecraft.client.Minecraft;
 import org.joml.Vector2f;
 import org.lwjgl.opengl.GL42;
@@ -111,6 +112,9 @@ public class NanoVGContextWrapper {
                 frameBuffer.getWidth() != ((int) screenSize.x) ||
                         frameBuffer.getHeight() != ((int) screenSize.y)
         ) {
+            if (NanoVGBackend.USE_RHI) {
+                NanoVGRhiBridge.setTargetFramebuffer(null);
+            }
             ((GlFrameBuffer) frameBuffer).resizeFrameBuffer((int) screenSize.x, (int) screenSize.y);
         }
         ((GlFrameBuffer) frameBuffer).bind(FrameBufferBindPoint.All);
@@ -160,27 +164,28 @@ public class NanoVGContextWrapper {
             rawContext.endFrame();
             return;
         }
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) frameBuffer.handle());
-        rawContext.endFrame();
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) frameBuffer.handle());
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) RenderHandlerManager.getOriginRenderTarget().handle());
-        glEnable(GL_BLEND);
-        GL42.glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ONE);
-
-        glBlitFramebuffer(
-                0,
-                0,
-                frameBuffer.getWidth(),
-                frameBuffer.getHeight(),
-                0,
-                0,
-                MinecraftUtils.getMainRenderTarget().width,
-                MinecraftUtils.getMainRenderTarget().height,
-                GL_COLOR_BUFFER_BIT,
-                GL_LINEAR
-        );
-        GlStates.pop("nanovg-frame").restore();
-
+        try {
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) frameBuffer.handle());
+            rawContext.endFrame();
+            glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) frameBuffer.handle());
+            glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) RenderHandlerManager.getOriginRenderTarget().handle());
+            glEnable(GL_BLEND);
+            GL42.glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ONE);
+            glBlitFramebuffer(
+                    0,
+                    0,
+                    frameBuffer.getWidth(),
+                    frameBuffer.getHeight(),
+                    0,
+                    0,
+                    MinecraftUtils.getMainRenderTarget().width,
+                    MinecraftUtils.getMainRenderTarget().height,
+                    GL_COLOR_BUFFER_BIT,
+                    GL_LINEAR
+            );
+        } finally {
+            GlStates.pop("nanovg-frame").restore();
+        }
     }
 
     public void save() {

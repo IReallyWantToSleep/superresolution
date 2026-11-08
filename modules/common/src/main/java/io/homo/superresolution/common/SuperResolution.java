@@ -48,6 +48,7 @@ import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.gui.MaterialUI;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGBackend;
 import io.homo.superresolution.core.gui.core.backends.render.GuiScaleManager;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.ngx.NgxInitializer;
@@ -766,6 +767,7 @@ public final class SuperResolution implements Destroyable {
                             "Cannot destroy the graphics backend while an algorithm is active"));
         }
         throwAlgorithmFailure(algorithmFailure);
+        NanoVGBackend.destroy();
         // GLFW must destroy the hidden OpenGL context before the Vulkan driver is torn down.
         PresentationWindowState.destroyRenderWindow();
         RenderSystems.destroy();

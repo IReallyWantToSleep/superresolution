@@ -33,7 +33,11 @@ import org.lwjgl.vulkan.VkPhysicalDevice;
 import java.lang.reflect.Method;
 
 public final class B3DVulkanBridge {
+    #if MC_VER >= MC_26_3
+    private static final String B3D_VULKAN_DEVICE_CLASS = "com.mojang.renderpearl.backend.vulkan.VulkanDevice";
+    #else
     private static final String B3D_VULKAN_DEVICE_CLASS = "com.mojang.blaze3d.vulkan.VulkanDevice";
+    #endif
 
     private static Object cachedBackend;
     private static VkInstance cachedInstance;
@@ -142,6 +146,14 @@ public final class B3DVulkanBridge {
             return (GpuFence) encoder.getClass().getMethod("createFence").invoke(encoder);
         } catch (Throwable t) {
             throw new IllegalStateException("Failed to create b3d fence", t);
+        }
+    }
+
+    public static void submit(Object encoder) {
+        try {
+            encoder.getClass().getMethod("submit").invoke(encoder);
+        } catch (ReflectiveOperationException failure) {
+            throw new IllegalStateException("Failed to submit b3d Vulkan commands", failure);
         }
     }
 
