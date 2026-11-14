@@ -49,6 +49,15 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
             .duration(ANIMATION_DURATION)
             .timeInterpolator(TimeInterpolator.easeOutCubic());
     private final MaterialWidgetOverlay<MaterialNavigationDrawerItem> overlay = new MaterialWidgetOverlay<>(this) {
+        // Drawer items keep hover feedback without press tint or ripple animation.
+        @Override
+        public void onMousePress(MouseEvent.MousePressEvent event) {
+        }
+
+        @Override
+        public void onMouseRelease(MouseEvent.MouseReleaseEvent event) {
+        }
+
         @Override
         protected void drawShape(RenderContext ctx, MaterialNavigationDrawerItem widget, Color color) {
             Rectangle bounds = getRawBounds();
@@ -116,7 +125,9 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
 
         float animProgress = selectionAnimator.get();
 
-        if (animProgress > 0) {
+        boolean parentDrawsSelection = getParent() instanceof MaterialNavigationDrawer drawer
+                && drawer.managesItemSelectionBackground();
+        if (animProgress > 0 && !parentDrawsSelection) {
             Color selectedBg = scheme().secondaryContainer().copy().alpha((int) (255 * animProgress));
             ctx.roundedRect(
                     bounds.x,
@@ -157,7 +168,8 @@ public class MaterialNavigationDrawerItem extends MaterialWidget<MaterialNavigat
                     false
             );
         }
-        overlay.render(ctx, scheme().onSecondaryContainer().copy(), scheme().onSurface().copy());
+        overlay.renderHoverOverlay(ctx, selected
+                ? scheme().onSecondaryContainer() : scheme().onSurface());
     }
 
     private void onPress(MouseEvent.MousePressEvent event) {

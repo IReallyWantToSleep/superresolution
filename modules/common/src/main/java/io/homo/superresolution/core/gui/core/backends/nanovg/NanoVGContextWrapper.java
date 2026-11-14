@@ -26,6 +26,7 @@ import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferBindPoint;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
 import io.homo.superresolution.core.graphics.impl.texture.*;
+import io.homo.superresolution.core.graphics.opengl.Gl;
 import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.graphics.opengl.framebuffer.GlFrameBuffer;
 import io.homo.superresolution.core.gui.core.backends.interfaces.Transform;
@@ -117,11 +118,9 @@ public class NanoVGContextWrapper {
             }
             ((GlFrameBuffer) frameBuffer).resizeFrameBuffer((int) screenSize.x, (int) screenSize.y);
         }
-        ((GlFrameBuffer) frameBuffer).bind(FrameBufferBindPoint.All);
-        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT | GL_STENCIL_BUFFER_BIT);
-        glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) RenderHandlerManager.getOriginRenderTarget().handle());
-        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) frameBuffer.handle());
-        glBlitFramebuffer(
+        Gl.DSA.blitFramebuffer(
+                (int) RenderHandlerManager.getOriginRenderTarget().handle(),
+                (int) frameBuffer.handle(),
                 0,
                 0,
                 MinecraftUtils.getMainRenderTarget().width,

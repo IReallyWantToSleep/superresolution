@@ -20,9 +20,6 @@ package io.homo.superresolution.core.gui.core.backends.render;
 
 import io.homo.superresolution.core.utils.Color;
 
-/**
- * Material tint and adaptive legibility from liquid.sksl, independent of color correction.
- */
 public record LiquidGlassTint(float red, float green, float blue, float alpha, float legibility) {
     public static final LiquidGlassTint DEFAULT =
             new LiquidGlassTint(10f / 255f, 11f / 255f, 15f / 255f, 95f / 255f, 0.32f);

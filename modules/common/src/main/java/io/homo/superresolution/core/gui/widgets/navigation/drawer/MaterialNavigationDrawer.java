@@ -190,6 +190,10 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
         return selectedItem;
     }
 
+    protected boolean managesItemSelectionBackground() {
+        return false;
+    }
+
     public MaterialNavigationDrawer setSelectedItem(MaterialNavigationDrawerItem item) {
         if (selectedItem != item) {
             if (selectedItem != null) {

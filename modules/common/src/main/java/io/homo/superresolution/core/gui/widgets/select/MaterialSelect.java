@@ -85,11 +85,16 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
     }
 
     protected MaterialSelect(Supplier<? extends MaterialMenu> menuFactory) {
+        this(MaterialTextField::new, menuFactory);
+    }
+
+    protected MaterialSelect(Supplier<? extends MaterialTextField> fieldFactory,
+                             Supplier<? extends MaterialMenu> menuFactory) {
         this.style = new MaterialTextFieldStyle();
 
         layout().setFlexDirection(YogaFlexDirection.COLUMN);
 
-        field = new MaterialTextField();
+        field = fieldFactory.get();
         field.style(this.style);
         style().variant(MaterialTextFieldVariant.Outlined);
         field.readOnly(true);

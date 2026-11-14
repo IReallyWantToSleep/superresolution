@@ -325,11 +325,7 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
         ctx.beginGroup(style().zIndex());
         ctx.save();
 
-        if (style().variant() == MaterialTextFieldVariant.Filled) {
-            drawFilledContainer(ctx, fieldBounds, size, colors, focusProgress);
-        } else {
-            drawOutlinedContainer(ctx, fieldBounds, size, colors, focusProgress, labelProgress);
-        }
+        drawContainer(ctx, fieldBounds, size, colors, focusProgress, labelProgress);
 
         float contentStartX = fieldBounds.x + size.horizontalPadding();
         float contentEndX = fieldBounds.getLimitX() - size.horizontalPadding();
@@ -567,6 +563,15 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
         return this;
     }
 
+    protected void drawContainer(RenderContext ctx, Rectangle bounds, MaterialTextFieldSize size,
+                                 TextFieldColors colors, float focusProgress, float labelProgress) {
+        if (style().variant() == MaterialTextFieldVariant.Filled) {
+            drawFilledContainer(ctx, bounds, size, colors, focusProgress);
+        } else {
+            drawOutlinedContainer(ctx, bounds, size, colors, focusProgress, labelProgress);
+        }
+    }
+
     private void drawFilledContainer(
             RenderContext ctx,
             Rectangle bounds,
@@ -661,6 +666,10 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
         return startX;
     }
 
+    protected float floatingLabelOffset(MaterialTextFieldSize size) {
+        return style().variant() == MaterialTextFieldVariant.Filled ? 16f : 0f;
+    }
+
     private void drawLabel(
             RenderContext ctx,
             Rectangle bounds,
@@ -676,12 +685,11 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
 
         float labelFontSize = lerp(size.labelCenterFontSize(), size.labelFontSize(), labelProgress);
         float restingY = bounds.getCenterY();
-        float floatingY = style().variant() == MaterialTextFieldVariant.Filled
-                ? bounds.y + 16f
-                : bounds.y;
+        float floatingY = bounds.y + floatingLabelOffset(size);
         float labelY = lerp(restingY, floatingY, labelProgress);
 
-        if (style().variant() == MaterialTextFieldVariant.Outlined && labelProgress > 0f) {
+        if (style().variant() == MaterialTextFieldVariant.Outlined
+                && floatingY <= bounds.y && labelProgress > 0f) {
             float labelWidth = ctx.measureTextWidth(label, labelFontSize, labelFontSize + 2f);
             float backgroundAlpha = 255f * Math.min(1f, labelProgress);
             Color labelBg = style().labelBackground() != null
@@ -1225,7 +1233,7 @@ public class MaterialTextField extends MaterialWidget<MaterialTextField> {
         return start + (end - start) * amount;
     }
 
-    private static class TextFieldColors {
+    protected static class TextFieldColors {
         Color containerColor;
         Color outlineColor;
         Color indicatorColor;
