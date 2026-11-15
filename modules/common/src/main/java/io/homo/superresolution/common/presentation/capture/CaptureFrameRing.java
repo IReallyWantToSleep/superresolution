@@ -22,10 +22,16 @@ import io.homo.superresolution.common.presentation.vulkan.FramePacingTiming;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 
 import java.util.Arrays;
+import java.util.concurrent.TimeUnit;
 
 public final class CaptureFrameRing {
     public static final int MAX_IN_FLIGHT_FRAMES = 3;
+    private static final long SLOT_WAIT_TIMEOUT_NANOS = TimeUnit.SECONDS.toNanos(5);
     private final FrameResources[] slots = new FrameResources[MAX_IN_FLIGHT_FRAMES];
+    // Separate from the ring monitor: workers signal slot submission through it while the
+    // render thread may hold the ring monitor during a GPU wait in FrameResources.begin.
+    private final Object slotStateMonitor = new Object();
+    private FramePacingTiming framePacingTiming;
     private int cursor;
     private long generation;
     private volatile FrameResources activeFrame;
@@ -37,9 +43,10 @@ public final class CaptureFrameRing {
         if (slots[0] != null) {
             return;
         }
+        this.framePacingTiming = framePacingTiming;
         try {
             for (int i = 0; i < slots.length; i++) {
-                slots[i] = new FrameResources(i, device, framePacingTiming);
+                slots[i] = new FrameResources(i, device, framePacingTiming, this::onSlotStateChanged);
             }
         } catch (Throwable throwable) {
             destroy();
@@ -95,39 +102,85 @@ public final class CaptureFrameRing {
         Arrays.fill(slots, null);
         cursor = 0;
         generation = 0;
+        framePacingTiming = null;
+    }
+
+    private void onSlotStateChanged() {
+        synchronized (slotStateMonitor) {
+            slotStateMonitor.notifyAll();
+        }
     }
 
     private FrameResources selectReusableSlot() {
+        FrameResources frame = findAvailableSlot();
+        return frame != null ? frame : awaitAvailableSlot();
+    }
+
+    // The render thread is throttled only by the generation queue, which is shorter than the
+    // ring, so every slot can still be QUEUED or DISPATCHING on the presentation workers.
+    // Wait for a worker to submit one instead of failing the frame.
+    private FrameResources awaitAvailableSlot() {
+        long startedAtNanos = System.nanoTime();
+        long deadlineNanos = startedAtNanos + SLOT_WAIT_TIMEOUT_NANOS;
+        try {
+            synchronized (slotStateMonitor) {
+                while (true) {
+                    FrameResources frame = findAvailableSlot();
+                    if (frame != null) {
+                        return frame;
+                    }
+                    if (allSlotsUnrecoverable()) {
+                        throw new IllegalStateException(
+                                "Every capture slot failed ownership recovery; states=" + describeStates()
+                        );
+                    }
+                    long remainingNanos = deadlineNanos - System.nanoTime();
+                    if (remainingNanos <= 0L) {
+                        throw new IllegalStateException(
+                                "Timed out waiting for a reusable capture slot; states=" + describeStates()
+                        );
+                    }
+                    TimeUnit.NANOSECONDS.timedWait(slotStateMonitor, remainingNanos);
+                }
+            }
+        } catch (InterruptedException exception) {
+            Thread.currentThread().interrupt();
+            throw new IllegalStateException("Interrupted while waiting for a reusable capture slot", exception);
+        } finally {
+            if (framePacingTiming != null) {
+                framePacingTiming.recordExcludedWait(Math.max(0L, System.nanoTime() - startedAtNanos));
+            }
+        }
+    }
+
+    private FrameResources findAvailableSlot() {
+        FrameResources frame = findSlot(FrameResourceState.REUSABLE);
+        return frame != null ? frame : findSlot(FrameResourceState.SUBMITTED);
+    }
+
+    private FrameResources findSlot(FrameResourceState state) {
         for (int offset = 0; offset < slots.length; offset++) {
             int index = (cursor + offset) % slots.length;
             FrameResources frame = requireSlot(index);
-            if (frame.state() == FrameResourceState.REUSABLE) {
+            if (frame.state() == state) {
                 cursor = (index + 1) % slots.length;
                 return frame;
             }
         }
-        for (int offset = 0; offset < slots.length; offset++) {
-            int index = (cursor + offset) % slots.length;
-            FrameResources frame = requireSlot(index);
-            if (frame.state() == FrameResourceState.SUBMITTED) {
-                cursor = (index + 1) % slots.length;
-                return frame;
+        return null;
+    }
+
+    private boolean allSlotsUnrecoverable() {
+        for (int index = 0; index < slots.length; index++) {
+            if (!requireSlot(index).isUnrecoverable()) {
+                return false;
             }
         }
-        for (int offset = 0; offset < slots.length; offset++) {
-            int index = (cursor + offset) % slots.length;
-            FrameResources frame = requireSlot(index);
-            if (frame.state() == FrameResourceState.SUBMITTED) {
-                frame.awaitReusable();
-                return frame;
-            }
-        }
-        throw new IllegalStateException(
-                "No reusable capture slot is available; states="
-                        + Arrays.toString(Arrays.stream(slots)
-                                .map(FrameResources::state)
-                                .toArray())
-        );
+        return true;
+    }
+
+    private String describeStates() {
+        return Arrays.toString(Arrays.stream(slots).map(FrameResources::state).toArray());
     }
 
     private FrameResources requireSlot(int index) {

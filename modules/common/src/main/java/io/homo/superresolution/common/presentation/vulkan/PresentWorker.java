@@ -32,6 +32,8 @@ import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 
 /** Owns swapchain preparation, ordered presentation and all pacing sleeps. */
 final class PresentWorker {
+    private static final long GPU_READY_TIMEOUT_NANOS = 100_000_000L;
+
     private final AsyncFramePresenter presenter;
     private final VulkanSwapchain swapchain;
     private final VulkanDevice device;
@@ -214,6 +216,7 @@ final class PresentWorker {
                         pacer.reset();
                         break;
                     }
+                    awaitPresentable(batch, image);
                     FramePacingTrace.Span waitTrace =
                             beginTrace("present_pacing_wait", batch, image.image);
                     try {
@@ -306,6 +309,31 @@ final class PresentWorker {
     private boolean isPaused() {
         synchronized (presenter.stateLock) {
             return paused || presenter.hasFailed();
+        }
+    }
+
+    // vkQueuePresentKHR can block until the image's GPU work retires. Presenting at the CPU
+    // deadline then spent the next image's interval inside the call and sent the batch out
+    // back to back. Wait for the blit here, outside every lock, and let the pacer start the
+    // interval from when the image actually became presentable. On timeout the present
+    // still waits on renderFinished, so correctness only falls back to the driver.
+    private void awaitPresentable(PresentImageBatch batch, PreparedImage image) {
+        FramePacingTrace.Span readyTrace = beginTrace("present_gpu_ready_wait", batch, image.image);
+        try {
+            if (image.submission.awaitCompletion(GPU_READY_TIMEOUT_NANOS)) {
+                presenter.pacer.imageReady();
+            } else {
+                readyTrace.complete("timeout", "timeout_ms=" + GPU_READY_TIMEOUT_NANOS / 1_000_000L);
+            }
+        } catch (Throwable throwable) {
+            readyTrace.complete(
+                    "failed",
+                    throwable.getClass().getSimpleName() + ": "
+                            + String.valueOf(throwable.getMessage())
+            );
+            throw throwable;
+        } finally {
+            readyTrace.close();
         }
     }
 
