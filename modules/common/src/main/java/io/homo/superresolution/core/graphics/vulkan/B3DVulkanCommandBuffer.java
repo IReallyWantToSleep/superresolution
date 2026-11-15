@@ -39,6 +39,7 @@ public class B3DVulkanCommandBuffer extends VulkanCommandBuffer {
                 new FakeVulkanCommandPool(((VulkanCommandEncoderAccessor) ((FrontendCommandEncoderAccessor)b3dEncoder).backend()).currentCommandBuffer()),
                 CommandBufferBehavior.OneTimeSubmit
         );
+        this.state = CommandBufferState.Recording;
     }
 
     private static class FakeVulkanCommandPool extends VulkanCommandPool {
@@ -59,10 +60,12 @@ public class B3DVulkanCommandBuffer extends VulkanCommandBuffer {
 
         }
     }
+
     @Override
     public synchronized CommandBufferState state() {
         return CommandBufferState.Recording;
     }
+
     @Override
     public synchronized void begin() {
     }

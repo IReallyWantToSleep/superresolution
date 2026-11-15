@@ -29,12 +29,22 @@ public final class VulkanD3D12Texture extends VulkanExternalTexture {
     }
 
     private VulkanD3D12Texture(VulkanDevice device, D3D12Texture2D source, Imported imported) {
-        super(device, imported.image(), imported.view(), source.getTextureFormat(), source.getTextureType(),
-                source.getWidth(), source.getHeight(), 1, VK_IMAGE_LAYOUT_UNDEFINED);
+        super(
+                device,
+                imported.image(),
+                imported.view(),
+                source.getTextureFormat(),
+                source.getTextureType(),
+                source.getWidth(),
+                source.getHeight(),
+                1,
+                VK_IMAGE_LAYOUT_UNDEFINED
+        );
         this.device = device;
         this.source = source;
         this.memory = imported.memory();
         this.sourceBorrow = imported.borrow();
+        this.usages = getTextureUsages().copy().storage();
     }
 
     private static Imported create(VulkanDevice device, D3D12Texture2D source) {
@@ -69,18 +79,16 @@ public final class VulkanD3D12Texture extends VulkanExternalTexture {
             VK_CHECK(vkGetMemoryWin32HandlePropertiesKHR(device.getVkDevice(),
                     VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT, source.sharedHandleLocked(), properties),
                     "Query D3D12 resource Vulkan memory types");
-            if (source.allocationSize() < requirements.size()) {
-                throw new IllegalStateException("D3D12 allocation is smaller than the Vulkan image requirements");
-            }
             VkImportMemoryWin32HandleInfoKHR importInfo = VkImportMemoryWin32HandleInfoKHR.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_IMPORT_MEMORY_WIN32_HANDLE_INFO_KHR)
                     .handleType(VK_EXTERNAL_MEMORY_HANDLE_TYPE_D3D12_RESOURCE_BIT)
                     .handle(source.sharedHandleLocked());
             VkMemoryDedicatedAllocateInfo dedicated = VkMemoryDedicatedAllocateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO).image(image).pNext(importInfo.address());
+            // D3D12 resource imports query the OS allocation; the dedicated image uses Vulkan requirements.
             VkMemoryAllocateInfo allocation = VkMemoryAllocateInfo.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO).pNext(dedicated)
-                    .allocationSize(source.allocationSize())
+                    .allocationSize(requirements.size())
                     .memoryTypeIndex(device.getMemoryAllocator().findMemoryType(
                             requirements.memoryTypeBits() & properties.memoryTypeBits(),
                             VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT));

@@ -28,22 +28,21 @@ import static org.lwjgl.system.MemoryStack.stackPush;
 import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
+    protected final VulkanDevice device;
+    protected final long image;
+    protected final long imageView;
+    protected final boolean ownsView;
+    protected final TextureFormat format;
+    protected final TextureType type;
+    protected TextureUsages usages;
+    protected final int width;
+    protected final int height;
+    protected final int aspectMask;
+    protected final int mipLevels;
+    protected final boolean fixedLayout;
 
-    private final VulkanDevice device;
-    private final long image;
-    private final long imageView;
-    private final boolean ownsView;
-    private final TextureFormat format;
-    private final TextureType type;
-    private final TextureUsages usages;
-    private final int width;
-    private final int height;
-    private final int aspectMask;
-    private final int mipLevels;
-    private final boolean fixedLayout;
-
-    private VulkanResourceState currentState;
-    private boolean destroyed = false;
+    protected VulkanResourceState currentState;
+    protected boolean destroyed = false;
 
     public VulkanExternalTexture(
             VulkanDevice device,

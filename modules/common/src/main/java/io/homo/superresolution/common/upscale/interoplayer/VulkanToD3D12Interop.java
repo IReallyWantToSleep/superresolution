@@ -1,6 +1,7 @@
 package io.homo.superresolution.common.upscale.interoplayer;
 
 import io.homo.superresolution.api.interop.InteropResourceType;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
@@ -128,6 +129,8 @@ public final class VulkanToD3D12Interop extends VulkanInputInterop<D3D12CommandC
             prepareInputs(inputCopy, states, resource.resources());
             releaseShared(inputCopy, states);
             submissionAttempted = true;
+            // The host timeline signal must follow GPU completion of the input copies and release.
+            B3DVulkanBridge.awaitIdle();
             externalOwned = true;
             timeline.signal(ready);
             released = true;

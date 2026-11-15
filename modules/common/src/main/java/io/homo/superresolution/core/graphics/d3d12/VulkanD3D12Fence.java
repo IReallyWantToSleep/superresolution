@@ -2,6 +2,7 @@ package io.homo.superresolution.core.graphics.d3d12;
 
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkImportSemaphoreWin32HandleInfoKHR;
 import org.lwjgl.vulkan.VkPhysicalDeviceIDProperties;
 import org.lwjgl.vulkan.VkPhysicalDeviceProperties2;
@@ -39,7 +40,8 @@ public final class VulkanD3D12Fence implements AutoCloseable {
                 VkImportSemaphoreWin32HandleInfoKHR info = VkImportSemaphoreWin32HandleInfoKHR.calloc(stack)
                         .sType(VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR)
                         .semaphore(semaphore).handleType(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT)
-                        .handle(source.sharedHandleLocked());
+                        .handle(source.sharedHandleLocked())
+                        .name(MemoryUtil.memUTF16("WHAT"));
                 VK_CHECK(vkImportSemaphoreWin32HandleKHR(device.getVkDevice(), info),
                         "Import D3D12 shared fence into Vulkan");
             } catch (RuntimeException | Error failure) {
