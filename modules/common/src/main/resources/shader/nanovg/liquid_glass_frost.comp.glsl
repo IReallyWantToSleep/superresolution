@@ -1,6 +1,9 @@
-#version 460
+#version 430 core
+
+layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;
 
 layout(binding = 2) uniform sampler2D sourceTexture;
+layout(binding = 4, rgba8) uniform writeonly image2D outputImage;
 
 layout(std140, binding = 1) uniform glass {
     vec4 copyRect;
@@ -22,9 +25,6 @@ layout(std140, binding = 3) uniform kernel {
     vec4 kernelPairs[3];
 };
 #endif
-
-layout(location = 0) in vec2 position;
-layout(location = 0) out vec4 outColor;
 
 vec4 sampleSource(vec2 p) {
     #if FROST_PASS == 0
@@ -85,5 +85,23 @@ vec4 frost(vec2 p) {
 }
 
 void main() {
-    outColor = frost(position);
+    ivec2 outputSize = imageSize(outputImage);
+    ivec2 regionOrigin = ivec2(floor(copyRect.xy / params.z));
+    ivec2 regionEnd = ivec2(ceil((copyRect.xy + copyRect.zw) / params.z));
+    ivec2 logicalCoord = regionOrigin + ivec2(gl_GlobalInvocationID.xy);
+    if (logicalCoord.x < regionOrigin.x || logicalCoord.y < regionOrigin.y
+            || logicalCoord.x >= regionEnd.x || logicalCoord.y >= regionEnd.y) {
+        return;
+    }
+
+    ivec2 outputCoord = logicalCoord;
+    if (params.w > 0.5) {
+        outputCoord.y = outputSize.y - 1 - outputCoord.y;
+    }
+    if (outputCoord.x < 0 || outputCoord.y < 0
+            || outputCoord.x >= outputSize.x || outputCoord.y >= outputSize.y) {
+        return;
+    }
+
+    imageStore(outputImage, outputCoord, frost(vec2(logicalCoord) + vec2(0.5)));
 }

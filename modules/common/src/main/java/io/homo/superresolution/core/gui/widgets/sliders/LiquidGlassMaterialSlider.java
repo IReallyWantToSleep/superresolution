@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.gui.widgets.sliders;
 
 import io.homo.superresolution.core.gui.MaterialTheme;
+import io.homo.superresolution.core.gui.core.backends.render.LiquidGlassParameters;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.glass.LiquidGlassStyle;
@@ -27,7 +28,6 @@ import io.homo.superresolution.core.utils.Color;
 public class LiquidGlassMaterialSlider extends MaterialSlider {
     public LiquidGlassMaterialSlider(MaterialSliderSize size, float width) {
         super(size, width);
-        // Follow Yoga's resolved width when the option row needs to shrink.
         setElementWidth(-1);
         layout().setWidth(width);
     }
@@ -66,7 +66,8 @@ public class LiquidGlassMaterialSlider extends MaterialSlider {
             float innerRadius = Math.min(2, activeTrackWidth / 2);
             LiquidGlassStyle.draw(ctx, bounds.x, trackY(bounds), activeTrackWidth, style().size().trackHeight(),
                     outerRadius, innerRadius, outerRadius, innerRadius,
-                    LiquidGlassStyle.CONTROL, colors.activeTrackColor);
+                    new LiquidGlassParameters(-45f, 0.15f, 0.8f, 20f, 0.5f, 0f),
+                    colors.activeTrackColor.copy().alpha((int) (255 * 0.5f)));
         }
         return activeTrackWidth;
     }
@@ -85,7 +86,8 @@ public class LiquidGlassMaterialSlider extends MaterialSlider {
             LiquidGlassStyle.draw(ctx, bounds.getLimitX() - inactiveTrackWidth, trackY(bounds),
                     inactiveTrackWidth, style().size().trackHeight(),
                     innerRadius, outerRadius, innerRadius, outerRadius,
-                    LiquidGlassStyle.CONTROL, colors.inactiveTrackColor);
+                    new LiquidGlassParameters(-45f, 0.15f, 0.8f, 20f, 0.5f, 0f),
+                    colors.inactiveTrackColor.copy().alpha((int) (255 * 0.2f)));
         }
     }
 
@@ -97,7 +99,7 @@ public class LiquidGlassMaterialSlider extends MaterialSlider {
         }
         LiquidGlassStyle.draw(ctx, handleXPosition - handleWidth / 2 + style().size().stepsSize(), bounds.y,
                 handleWidth, style().size().handleHeight(), Math.min(2, handleWidth / 2),
-                LiquidGlassStyle.CONTROL, colors.handleColor);
+                new LiquidGlassParameters(-45f, 0.15f, 0.8f, 20f, 0.5f, 0f), colors.handleColor);
     }
 
     @Override

@@ -41,15 +41,15 @@ public class LiquidGlassMaterialSelect<T> extends MaterialSelect<T> {
     }
 
     private static final class LiquidGlassSelectField extends MaterialTextField {
-        private final Animator.FloatAnimator cornerAnimator = Animator.ofFloat(style().size().cornerRadius()*2, style().size().cornerRadius() * 4)
-                .duration(160)
-                .timeInterpolator(TimeInterpolator.easeOutQuint());
+        private final Animator.FloatAnimator cornerAnimator = Animator.ofFloat(style().size().cornerRadius()*2, style().size().cornerRadius() * 5)
+                .duration(200)
+                .timeInterpolator(TimeInterpolator.easeOutExpo());
 
         @Override
         public MaterialTextField setFocused(boolean focused) {
             super.setFocused(focused);
             if (focused) {
-                cornerAnimator.to(style().size().cornerRadius() * 4).start();
+                cornerAnimator.to(style().size().cornerRadius() * 5).start();
             } else {
                 cornerAnimator.to(style().size().cornerRadius()*2).start();
             }
@@ -64,11 +64,6 @@ public class LiquidGlassMaterialSelect<T> extends MaterialSelect<T> {
                 super.drawContainer(ctx, bounds, size, colors, focusProgress, labelProgress);
                 return;
             }
-            Color tint = Color.lerp(
-                    scheme().surfaceContainerHighest().copy().alpha(Math.round(255f * 0.18f)),
-                    scheme().primary().copy().alpha(Math.round(255f * 0.14f)),
-                    focusProgress
-            );
             ctx.roundedRectLiquidGlass(
                     bounds.x,
                     bounds.y,
@@ -76,8 +71,8 @@ public class LiquidGlassMaterialSelect<T> extends MaterialSelect<T> {
                     bounds.height,
                     cornerAnimator.get(),
                     new LiquidGlassParameters(-45f, 0.5f, 0.7f, 70f, 0.73f, 1f),
-                    new LiquidGlassColorControls(-0.007f + (0.06f * focusProgress), 1.04f, 1.04f),
-                    LiquidGlassTint.DEFAULT
+                    new LiquidGlassColorControls(-0.003f + (0.06f * focusProgress), 1.04f, 1.04f),
+                    new LiquidGlassTint(0,0,0,0,0)
             );
         }
 

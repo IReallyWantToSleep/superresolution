@@ -36,13 +36,13 @@ public class LiquidGlassMaterialSwitch extends MaterialSwitch {
     @Override
     protected Color getCheckedTrackColor() {
         return isDisabled() ? super.getCheckedTrackColor()
-                : scheme().primary().copy().alpha(Math.round(255 * (isDark() ? 0.4f : 0.6f)));
+                : scheme().primary().copy().alpha(Math.round(255 * (isDark() ? 0.5f : 0.6f)));
     }
 
     @Override
     protected Color getUncheckedTrackColor() {
         return isDisabled() ? super.getUncheckedTrackColor()
-                : scheme().surfaceContainerHighest().copy().alpha(Math.round(255 * (isDark() ? 0.4f : 0.55f)));
+                : scheme().surfaceContainerHighest().copy().alpha(Math.round(255 * (isDark() ? 0.7f : 0.55f)));
     }
 
     @Override

@@ -27,8 +27,8 @@ import io.homo.superresolution.core.graphics.impl.command.CommandBufferState;
 import io.homo.superresolution.core.graphics.impl.command.MemoryBarrierType;
 import io.homo.superresolution.core.graphics.impl.device.IDevice;
 import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
-import io.homo.superresolution.core.graphics.impl.framebuffer.FramebufferDescription;
 import io.homo.superresolution.core.graphics.impl.framebuffer.IFrameBuffer;
+import io.homo.superresolution.core.graphics.impl.pipeline.ComputePipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.GraphicsPipeline;
 import io.homo.superresolution.core.graphics.impl.pipeline.RenderPass;
 import io.homo.superresolution.core.graphics.impl.pipeline.state.*;
@@ -36,6 +36,7 @@ import io.homo.superresolution.core.graphics.impl.shader.IShaderProgram;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderDescription;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderSource;
 import io.homo.superresolution.core.graphics.impl.shader.ShaderType;
+import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceAccess;
 import io.homo.superresolution.core.graphics.impl.texture.*;
 import io.homo.superresolution.core.graphics.impl.vertex.*;
 import org.lwjgl.BufferUtils;
@@ -81,6 +82,7 @@ public final class NanoVGRhiBridge {
     private static final long DEPTH_STENCIL_CLEAR_PASS_KEY = 1L;
     private static final int LIQUID_GLASS_UNIFORM_SIZE = 160;
     private static final int LIQUID_GLASS_KERNEL_UNIFORM_SIZE = 64;
+    private static final int LIQUID_GLASS_FROST_LOCAL_SIZE = 16;
     private static final IShaderProgram[] LIQUID_GLASS_FROST_SHADERS = new IShaderProgram[3];
 
     private static final Map<Integer, ITexture> TEXTURES = new ConcurrentHashMap<>();
@@ -111,7 +113,6 @@ public final class NanoVGRhiBridge {
     private static IShaderProgram shader;
     private static IShaderProgram liquidGlassShader;
     private static GraphicsPipeline liquidGlassPipeline;
-    private static IVertexBuffer liquidGlassFrostQuad;
     private static IBuffer frameUniformBuffer;
     private static IBuffer fragUniformBuffer;
     private static IVertexBuffer dynamicVertexBuffer;
@@ -169,10 +170,6 @@ public final class NanoVGRhiBridge {
         if (liquidGlassFrostResources != null) {
             liquidGlassFrostResources.destroy();
             liquidGlassFrostResources = null;
-        }
-        if (liquidGlassFrostQuad != null) {
-            liquidGlassFrostQuad.destroy();
-            liquidGlassFrostQuad = null;
         }
         if (liquidGlassBackdrop != null) {
             liquidGlassBackdrop.destroy();
@@ -1209,21 +1206,6 @@ public final class NanoVGRhiBridge {
                                                    ITexture backdrop) {
         int scale = drawCommand.frostScale;
         LiquidGlassFrostResources resources = liquidGlassFrostResources;
-        if (liquidGlassFrostQuad == null) {
-            ByteBuffer vertices = BufferUtils.createByteBuffer(6 * VERTEX_STRIDE_BYTES);
-            float[] positions = {0f, 0f, 1f, 0f, 1f, 1f, 0f, 0f, 1f, 1f, 0f, 1f};
-            for (int i = 0; i < positions.length; i += 2) {
-                vertices.putFloat(positions[i]).putFloat(positions[i + 1])
-                        .putFloat(positions[i]).putFloat(positions[i + 1]);
-            }
-            vertices.flip();
-            liquidGlassFrostQuad = device.createVertexBuffer(
-                    VertexBufferDescription.create(vertices.remaining(), true, getVertexFormat()));
-            commandBuffer.writeToBuffer(liquidGlassFrostQuad, 0, vertices);
-        }
-
-        int width = resources.textures[0].getWidth();
-        int height = resources.textures[0].getHeight();
         int x0 = drawCommand.sampleX0 / scale;
         int y0 = drawCommand.sampleY0 / scale;
         int x1 = (drawCommand.sampleX1 + scale - 1) / scale;
@@ -1232,25 +1214,30 @@ public final class NanoVGRhiBridge {
         int passCount = drawCommand.frostGaussian ? 3 : 1;
         for (int pass = 0; pass < passCount; pass++) {
             int target = pass & 1;
-            GraphicsPipeline pipeline = getOrCreateLiquidGlassFrostPipeline(device, resources, pass);
+            ComputePipeline pipeline = getOrCreateLiquidGlassFrostPipeline(device, resources, pass);
             pipeline.descriptorSet()
                     .uniformBufferRange("glass", 1, fragUniformBuffer, uniformOffset, LIQUID_GLASS_UNIFORM_SIZE)
                     .samplerTexture("sourceTexture", 2, source);
+            pipeline.descriptorSet().storageImage("outputImage", 4, resources.textures[target]);
             if (pass > 0) {
                 pipeline.descriptorSet().uniformBufferRange("kernel", 3, fragUniformBuffer,
                         drawCommand.kernelOffset, LIQUID_GLASS_KERNEL_UNIFORM_SIZE);
             }
             pipeline.descriptorSet().update();
-            pipeline.setViewport(0f, 0f, width, height);
-            pipeline.setScissor(x0, height - y1, x1 - x0, y1 - y0);
-            commandBuffer.beginRenderPass(resources.passes[target]);
             commandBuffer.bindPipeline(pipeline);
-            commandBuffer.draw(liquidGlassFrostQuad, 6, 0);
-            commandBuffer.endRenderPass();
-            commandBuffer.memoryBarrier(MemoryBarrierType.ALL);
+            commandBuffer.dispatch(
+                    divideRoundUp(x1 - x0, LIQUID_GLASS_FROST_LOCAL_SIZE),
+                    divideRoundUp(y1 - y0, LIQUID_GLASS_FROST_LOCAL_SIZE),
+                    1
+            );
             source = resources.textures[target];
         }
+        commandBuffer.memoryBarrier(MemoryBarrierType.ALL);
         return source;
+    }
+
+    private static int divideRoundUp(int value, int divisor) {
+        return (value + divisor - 1) / divisor;
     }
 
     private static LiquidGlassFrostResources createLiquidGlassFrostResources(IDevice device,
@@ -1265,15 +1252,12 @@ public final class NanoVGRhiBridge {
                         .type(TextureType.Texture2D)
                         .format(TextureFormat.RGBA8)
                         .size(width, height)
-                        .usages(TextureUsages.create().sampler().attachmentColor())
+                        .usages(TextureUsages.create().sampler().storage())
                         .filterMode(TextureFilterMode.Linear)
                         .wrapMode(TextureWrapMode.ClampToEdge)
                         .mipmapSettings(TextureMipmapSettings.disabled())
                         .label("NanoVG Frost Workspace " + i)
                         .build());
-                resources.framebuffers[i] = device.createFramebuffer(FramebufferDescription.create()
-                        .colorAttachment(resources.textures[i]).build());
-                resources.passes[i] = RenderPass.builder().frameBuffer(resources.framebuffers[i]).build(device);
             }
             return resources;
         } catch (RuntimeException exception) {
@@ -1282,16 +1266,16 @@ public final class NanoVGRhiBridge {
         }
     }
 
-    private static GraphicsPipeline getOrCreateLiquidGlassFrostPipeline(IDevice device,
-                                                                        LiquidGlassFrostResources resources,
-                                                                        int pass) {
+    private static ComputePipeline getOrCreateLiquidGlassFrostPipeline(IDevice device,
+                                                                       LiquidGlassFrostResources resources,
+                                                                       int pass) {
         if (LIQUID_GLASS_FROST_SHADERS[pass] == null) {
-            ShaderDescription.Builder description = ShaderDescription.graphics(
-                            ShaderSource.file(ShaderType.Fragment, "/shader/nanovg/liquid_glass_frost.frag.glsl"),
-                            ShaderSource.file(ShaderType.Vertex, "/shader/nanovg/liquid_glass_frost.vert.glsl"))
+            ShaderDescription.Builder description = ShaderDescription.compute(
+                            ShaderSource.file(ShaderType.Compute, "/shader/nanovg/liquid_glass_frost.comp.glsl"))
                     .addDefine("FROST_PASS", Integer.toString(pass))
                     .uniformBuffer("glass", 1, LIQUID_GLASS_UNIFORM_SIZE)
-                    .uniformSamplerTexture("sourceTexture", 2);
+                    .uniformSamplerTexture("sourceTexture", 2)
+                    .uniformStorageTexture("outputImage", ShaderResourceAccess.Write, 4);
             if (pass > 0) {
                 description.uniformBuffer("kernel", 3, LIQUID_GLASS_KERNEL_UNIFORM_SIZE);
             }
@@ -1300,17 +1284,8 @@ public final class NanoVGRhiBridge {
             LIQUID_GLASS_FROST_SHADERS[pass] = frostShader;
         }
         if (resources.pipelines[pass] == null) {
-            resources.pipelines[pass] = GraphicsPipeline.builder()
+            resources.pipelines[pass] = ComputePipeline.builder()
                     .shader(LIQUID_GLASS_FROST_SHADERS[pass])
-                    .renderPass(resources.passes[pass & 1])
-                    .primitiveType(PrimitiveType.Triangle)
-                    .rasterization(r -> r.cullMode(CullMode.None))
-                    .depthStencil(d -> d.depthTestEnable(false).depthWriteEnable(false).stencilTestEnable(false))
-                    .dynamicStates(DynamicStateFlags.ViewportScissor)
-                    .colorBlend(cb -> cb.addAttachment(new ColorBlendAttachment(false,
-                            BlendFactor.One, BlendFactor.Zero, BlendOp.Add,
-                            BlendFactor.One, BlendFactor.Zero, BlendOp.Add, ColorComponentFlags.ALL)))
-                    .vertexFormat(getVertexFormat())
                     .build(device);
         }
         return resources.pipelines[pass];
@@ -1703,19 +1678,11 @@ public final class NanoVGRhiBridge {
 
     private static final class LiquidGlassFrostResources {
         private final ITexture[] textures = new ITexture[2];
-        private final IFrameBuffer[] framebuffers = new IFrameBuffer[2];
-        private final RenderPass[] passes = new RenderPass[2];
-        private final GraphicsPipeline[] pipelines = new GraphicsPipeline[3];
+        private final ComputePipeline[] pipelines = new ComputePipeline[3];
 
         private void destroy() {
-            for (GraphicsPipeline pipeline : pipelines) {
+            for (ComputePipeline pipeline : pipelines) {
                 if (pipeline != null) pipeline.destroy();
-            }
-            for (RenderPass pass : passes) {
-                if (pass != null) pass.destroy();
-            }
-            for (IFrameBuffer framebuffer : framebuffers) {
-                if (framebuffer != null) framebuffer.destroy();
             }
             for (ITexture texture : textures) {
                 if (texture != null) texture.destroy();
