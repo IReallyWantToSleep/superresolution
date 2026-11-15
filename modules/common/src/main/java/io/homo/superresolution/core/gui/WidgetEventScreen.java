@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui;
 
+import net.minecraft.client.Minecraft;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.frame.Frame;
@@ -27,7 +28,7 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
 import net.minecraft.client.gui.GuiGraphics;
 #endif
 #if MC_VER >= MC_26_3
-import net.minecraft.client.Minecraft;
+
 import org.lwjgl.sdl.SDLMouse;
 #endif
 import net.minecraft.client.gui.screens.Screen;
