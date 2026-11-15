@@ -78,7 +78,6 @@ public class LiquidGlassMaterialNavigationDrawer extends MaterialNavigationDrawe
         if (target.isEmpty()) {
             return;
         }
-        // Keep animation coordinates local to the drawer so scrolling moves the whole control.
         target.translate(-drawerBounds.x, -drawerBounds.y);
         if (selectionBounds == null) {
             selectionStartBounds = new Rectangle(target);

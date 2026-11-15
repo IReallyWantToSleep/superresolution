@@ -195,7 +195,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
     @Override
     public void draw(RenderContext ctx, UIInputState inputState) {
-        if (Minecraft.getInstance().level == null) {
+        if (Minecraft.getInstance().level == null && !SuperResolutionConfig.isLiquidGlassEnabled()) {
             Vector2f screenSize = MinecraftWindow.getWindowSize();
             ctx.rect(
                     0,
