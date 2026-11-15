@@ -81,11 +81,20 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
             .timeInterpolator(TimeInterpolator.easeOutCubic());
 
     public MaterialSelect() {
+        this(MaterialMenu::create);
+    }
+
+    protected MaterialSelect(Supplier<? extends MaterialMenu> menuFactory) {
+        this(MaterialTextField::new, menuFactory);
+    }
+
+    protected MaterialSelect(Supplier<? extends MaterialTextField> fieldFactory,
+                             Supplier<? extends MaterialMenu> menuFactory) {
         this.style = new MaterialTextFieldStyle();
 
         layout().setFlexDirection(YogaFlexDirection.COLUMN);
 
-        field = new MaterialTextField();
+        field = fieldFactory.get();
         field.style(this.style);
         style().variant(MaterialTextFieldVariant.Outlined);
         field.readOnly(true);
@@ -97,7 +106,7 @@ public class MaterialSelect<T> extends MaterialContainerWidget<MaterialSelect<T>
         });
         addChild(field);
 
-        menu = MaterialMenu.create()
+        menu = menuFactory.get()
                 .selectionMode(MaterialMenuSelectionMode.SingleAtLeastOne)
                 .setExpanded(false);
         menu.layout().setWidth(width);

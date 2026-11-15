@@ -78,15 +78,31 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     private long contentTransitionStartMs;
     private float contentTransitionOffsetY;
     private ConfigPageContext pageContext;
+    private boolean liquidGlassEnabled;
+    private boolean appearanceRebuildRequested;
 
     public MaterialConfigScreen(Screen parentScreen) {
         super(Component.translatable("superresolution.screen.config.name"));
         this.parentScreen = parentScreen;
     }
 
+    private MaterialConfigScreen(Screen parentScreen, String initialPage) {
+        this(parentScreen);
+        getView().removeFrame(currentContentFrame);
+        currentContentKey = initialPage;
+        currentContentFrame = getOrCreateContentFrame(initialPage);
+        contentLayout = getView().addFrame(currentContentFrame);
+        contentLayout.setFlexGrow(1f);
+        contentLayout.setHeightPercent(100);
+        contentLayout.setPadding(YogaEdge.ALL, 0);
+        drawer.setSelectedByValue(initialPage);
+        view.markLayoutDirty();
+    }
+
     @Override
     protected void buildWidgets() {
         clearContentTransitionState();
+        liquidGlassEnabled = SuperResolutionConfig.isLiquidGlassEnabled();
 
         MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
                 SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
@@ -97,7 +113,8 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
                 scheme -> this.materialScheme = scheme,
                 this::openRestartRequiredDialog,
                 this::invalidateContentFrame,
-                () -> MinecraftUtils.getScreen() == this
+                () -> MinecraftUtils.getScreen() == this,
+                () -> appearanceRebuildRequested = true
         );
         contentFrames = new HashMap<>();
         currentContentKey = "general";
@@ -120,11 +137,28 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
     @Override
     public void onClose() {
         clearContentTransitionState();
-        if (pageContext != null) {
-            pageContext.destroy();
-        }
+        destroyPageContext();
         MinecraftUtils.setScreen(parentScreen);
         MouseCursor.ARROW.use();
+    }
+
+    @Override
+    public void tick() {
+        if (appearanceRebuildRequested && MinecraftUtils.getScreen() == this) {
+            appearanceRebuildRequested = false;
+            MaterialConfigScreen rebuilt = new MaterialConfigScreen(parentScreen, "appearance");
+            destroyPageContext();
+            MinecraftUtils.setScreen(rebuilt);
+            return;
+        }
+        super.tick();
+    }
+
+    private void destroyPageContext() {
+        if (pageContext != null) {
+            pageContext.destroy();
+            pageContext = null;
+        }
     }
 
     #if MC_VER > MC_1_21_8
@@ -161,7 +195,7 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
 
     @Override
     public void draw(RenderContext ctx, UIInputState inputState) {
-        if (Minecraft.getInstance().level == null) {
+        if (Minecraft.getInstance().level == null && !SuperResolutionConfig.isLiquidGlassEnabled()) {
             Vector2f screenSize = MinecraftWindow.getWindowSize();
             ctx.rect(
                     0,
@@ -175,11 +209,12 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         float drawerWidth = drawer.getPreferredWidth(ctx);
         float widthPercent = 0.185f;
         drawerWidth = Math.max(drawerWidth, ctx.viewportWidth() * widthPercent);
+        float navigationGap = liquidGlassEnabled ? 10f : 0f;
         if (drawerWidth > 0) {
-            navigationDrawerLayout.setWidth(drawerWidth);
+            navigationDrawerLayout.setWidth(drawerWidth + navigationGap * 2f);
             view.markLayoutDirty();
         }
-        drawer.layout().setMinHeight(ctx.viewportHeight());
+        drawer.layout().setMinHeight(Math.max(0f, ctx.viewportHeight() - navigationGap * 2f));
         view.markLayoutDirty();
 
         updateContentTransition();
@@ -360,11 +395,16 @@ public class MaterialConfigScreen extends NanoVGScreen<MaterialConfigScreen> {
         ScrollableFrame frame = new ScrollableFrame();
         frame.setHorizontalScrollEnabled(false);
         frame.setVerticalScrollEnabled(true);
+        if (liquidGlassEnabled) {
+            frame.setContentPadding(20f,12f,0f,12f);
+        }
         ContainerWidget container = new ContainerWidget();
         container.layout().setFlexDirection(YogaFlexDirection.COLUMN);
         container.layout().setWidthPercent(100);
 
-        drawer = MaterialNavigationDrawer.create()
+        drawer = (liquidGlassEnabled
+                ? new LiquidGlassMaterialNavigationDrawer()
+                : new MaterialNavigationDrawer())
                 .addHeader(Text.literal("Super Resolution").getString(), LogoRenderer.Logo)
                 .addSectionHeader(Text.translatable("superresolution.screen.config.section.config").getString())
                 .addItem(Text.translatable("superresolution.screen.config.section.general").getString(), MaterialSymbols.iconSettings(), "general")

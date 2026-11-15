@@ -16,6 +16,7 @@
 // 3. This notice may not be removed or altered from any source distribution.
 //
 
+#include <algorithm>
 #include <cstdlib>
 #include <cmath>
 #include <cstring>
@@ -401,6 +402,126 @@ static int rhinvg_allocFragUniforms(SRRHINVGContext *gl, int n) {
     ret = gl->nuniforms * structSize;
     gl->nuniforms += n;
     return ret;
+}
+
+static void glnvg_vset(NVGvertex *vtx, float x, float y, float u, float v);
+
+int nvSrRhiRoundedRectLiquidGlassRHI(NVGcontext *ctx,
+                                    float x, float y, float w, float h,
+                                    float bottomLeft, float bottomRight, float topLeft, float topRight,
+                                    float lightAngle, float lightIntensity, float refraction,
+                                    float depth, float dispersion, float frost,
+                                    float brightness, float contrast, float saturation, float alpha,
+                                    float tintRed, float tintGreen, float tintBlue, float tintAlpha, float legibility) {
+    if (ctx == nullptr || w <= 0.0f || h <= 0.0f ||
+        !std::isfinite(x) || !std::isfinite(y) || !std::isfinite(w) || !std::isfinite(h) ||
+        !std::isfinite(lightAngle) || !std::isfinite(lightIntensity) || !std::isfinite(refraction) ||
+        !std::isfinite(depth) || !std::isfinite(dispersion) || !std::isfinite(frost) ||
+        !std::isfinite(tintRed) || !std::isfinite(tintGreen) || !std::isfinite(tintBlue) ||
+        !std::isfinite(tintAlpha) || !std::isfinite(legibility)) {
+        return 0;
+    }
+
+    auto *gl = static_cast<SRRHINVGContext *>(nvgInternalParams(ctx)->userPtr);
+    if (gl == nullptr || gl->fragSize < static_cast<int>(sizeof(SRRHINVGGlassUniforms))) {
+        return 0;
+    }
+
+    SRRHINVGCall *call = rhinvg_allocCall(gl);
+    if (call == nullptr) {
+        return 0;
+    }
+
+    constexpr int vertexCount = 6;
+    int vertexOffset = rhinvg_allocVerts(gl, vertexCount);
+    if (vertexOffset < 0) {
+        gl->ncalls--;
+        return 0;
+    }
+    int uniformOffset = rhinvg_allocFragUniforms(gl, 1);
+    if (uniformOffset < 0) {
+        gl->nverts = vertexOffset;
+        gl->ncalls--;
+        return 0;
+    }
+
+    float transform[6];
+    nvgCurrentTransform(ctx, transform);
+    float scaleX = std::sqrt(transform[0] * transform[0] + transform[1] * transform[1]);
+    float scaleY = std::sqrt(transform[2] * transform[2] + transform[3] * transform[3]);
+    float glassWidth = w * scaleX;
+    float glassHeight = h * scaleY;
+    float radiusScale = std::sqrt(scaleX * scaleY);
+
+    auto transformedPoint = [&transform](float px, float py, float &outX, float &outY) {
+        outX = transform[0] * px + transform[2] * py + transform[4];
+        outY = transform[1] * px + transform[3] * py + transform[5];
+    };
+    // liquid.rs draw bounds: shadow radius + offset + antialiasing margin.
+    float margin = 7.0f * radiusScale + 2.0f * radiusScale + 2.0f;
+    float marginX = scaleX > 0.0f ? margin / scaleX : 0.0f;
+    float marginY = scaleY > 0.0f ? margin / scaleY : 0.0f;
+    float x0, y0, x1, y1, x2, y2, x3, y3;
+    transformedPoint(x - marginX, y - marginY, x0, y0);
+    transformedPoint(x + w + marginX, y - marginY, x1, y1);
+    transformedPoint(x + w + marginX, y + h + marginY, x2, y2);
+    transformedPoint(x - marginX, y + h + marginY, x3, y3);
+
+    NVGvertex *vertices = &gl->verts[vertexOffset];
+    glnvg_vset(&vertices[0], x0, y0, -margin, -margin);
+    glnvg_vset(&vertices[1], x1, y1, glassWidth + margin, -margin);
+    glnvg_vset(&vertices[2], x2, y2, glassWidth + margin, glassHeight + margin);
+    glnvg_vset(&vertices[3], x0, y0, -margin, -margin);
+    glnvg_vset(&vertices[4], x2, y2, glassWidth + margin, glassHeight + margin);
+    glnvg_vset(&vertices[5], x3, y3, -margin, glassHeight + margin);
+
+    auto *glass = reinterpret_cast<SRRHINVGGlassUniforms *>(&gl->uniforms[uniformOffset]);
+    memset(glass, 0, sizeof(*glass));
+    glass->shapeSize[0] = glassWidth;
+    glass->shapeSize[1] = glassHeight;
+    glass->radii[0] = std::max(topLeft, 0.0f) * radiusScale;
+    glass->radii[1] = std::max(topRight, 0.0f) * radiusScale;
+    glass->radii[2] = std::max(bottomRight, 0.0f) * radiusScale;
+    glass->radii[3] = std::max(bottomLeft, 0.0f) * radiusScale;
+    glass->colorControls[0] = std::isfinite(brightness) ? brightness : 0.0f;
+    glass->colorControls[1] = std::isfinite(contrast) ? contrast : 1.0f;
+    glass->colorControls[2] = std::isfinite(saturation) ? saturation : 1.0f;
+    glass->colorControls[3] = std::clamp(std::isfinite(alpha) ? alpha : 1.0f, 0.0f, 1.0f);
+    // LiquidMaterial::island/with_optics and draw_liquid_glass's size adjustment.
+    float referenceBezel = 18.0f * radiusScale;
+    float bezel = std::max(1.0f, std::min(referenceBezel, std::min(glassWidth, glassHeight) * 0.35f));
+    glass->params[0] = 1.45f;
+    glass->params[1] = radiusScale;
+    glass->params[2] = 1.0f; // Filled with the backdrop reduction scale by the RHI bridge.
+    glass->optics[0] = std::max(depth, 0.0f) * radiusScale * bezel / std::max(referenceBezel, 1.0f);
+    glass->optics[1] = 1.1f * std::max(refraction, 0.0f);
+    glass->optics[2] = std::clamp(dispersion, 0.0f, 1.0f) * 0.5f;
+    glass->optics[3] = std::max(frost, 0.0f) * radiusScale;
+    float lightRadians = std::fmod(lightAngle, 360.0f) * (3.14159265358979323846f / 180.0f);
+    glass->lighting[0] = -std::cos(lightRadians);
+    glass->lighting[1] = -std::sin(lightRadians);
+    glass->lighting[2] = std::clamp(lightIntensity, 0.0f, 1.0f);
+    glass->lighting[3] = bezel;
+    glass->shapeAxes[0] = scaleX > 0.0f ? transform[0] / scaleX : 1.0f;
+    glass->shapeAxes[1] = scaleX > 0.0f ? transform[1] / scaleX : 0.0f;
+    glass->shapeAxes[2] = scaleY > 0.0f ? transform[2] / scaleY : 0.0f;
+    glass->shapeAxes[3] = scaleY > 0.0f ? transform[3] / scaleY : 1.0f;
+    glass->surfaceTint[0] = std::clamp(tintRed, 0.0f, 1.0f);
+    glass->surfaceTint[1] = std::clamp(tintGreen, 0.0f, 1.0f);
+    glass->surfaceTint[2] = std::clamp(tintBlue, 0.0f, 1.0f);
+    glass->surfaceTint[3] = std::clamp(tintAlpha, 0.0f, 1.0f);
+    glass->material[0] = std::clamp(legibility, 0.0f, 1.0f);
+
+    call->type = GLNVG_LIQUID_GLASS;
+    call->triangleOffset = vertexOffset;
+    call->triangleCount = vertexCount;
+    call->uniformOffset = uniformOffset;
+    call->uniformCount = 1;
+    call->blendFunc.srcRGB = NVG_ONE;
+    call->blendFunc.dstRGB = NVG_ONE_MINUS_SRC_ALPHA;
+    call->blendFunc.srcAlpha = NVG_ONE;
+    call->blendFunc.dstAlpha = NVG_ONE_MINUS_SRC_ALPHA;
+    return 1;
 }
 
 static SRRHINVGFragUniforms *nvg_fragUniformPtr(SRRHINVGContext *gl, int i) {

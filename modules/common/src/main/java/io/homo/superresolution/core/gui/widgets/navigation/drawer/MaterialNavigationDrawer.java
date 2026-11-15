@@ -71,7 +71,12 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
     public void render(RenderContext ctx, UIInputState inputState) {
         Rectangle bounds = getBounds();
         ctx.beginGroup(style().zIndex());
+        renderBackground(ctx, bounds);
+        renderSelf(ctx, inputState);
+        ctx.endGroup();
+    }
 
+    protected void renderBackground(RenderContext ctx, Rectangle bounds) {
         Color backgroundColor = scheme().surfaceContainerLow();
         ctx.beginPath();
         ctx.fillColor(backgroundColor);
@@ -86,8 +91,6 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
                 CORNER_RADIUS
         );
         ctx.endPath(true);
-        renderSelf(ctx, inputState);
-        ctx.endGroup();
     }
 
     @Override
@@ -185,6 +188,10 @@ public class MaterialNavigationDrawer extends MaterialContainerWidget<MaterialNa
 
     public MaterialNavigationDrawerItem getSelectedItem() {
         return selectedItem;
+    }
+
+    protected boolean managesItemSelectionBackground() {
+        return false;
     }
 
     public MaterialNavigationDrawer setSelectedItem(MaterialNavigationDrawerItem item) {

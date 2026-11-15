@@ -28,6 +28,7 @@ import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlign;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextAlignType;
 import io.homo.superresolution.core.gui.core.backends.interfaces.TextMetrics;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
+import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.core.impl.Tooltip;
 import org.joml.Vector2f;
 
@@ -158,24 +159,7 @@ public class TooltipRenderer {
         ctx.save();
         ctx.pushAlpha(Math.min(currentAlpha, 1.0f));
 
-        MaterialElevation.draw(
-                ctx,
-                2,
-                baseX,
-                baseY,
-                animatedWidth,
-                height,
-                radius
-        );
-        ctx.roundedRect(
-                baseX,
-                baseY,
-                animatedWidth,
-                height,
-                radius,
-                scheme.surfaceContainerHigh(),
-                true
-        );
+        drawBackground(ctx, scheme, new Rectangle(baseX, baseY, animatedWidth, height), radius);
 
         ctx.resetScissor();
 
@@ -205,6 +189,28 @@ public class TooltipRenderer {
         ctx.resetScissor();
         ctx.popAlpha();
         ctx.restore();
+    }
+
+    protected void drawBackground(RenderContext ctx, MaterialScheme scheme,
+                                  Rectangle bounds, float radius) {
+        MaterialElevation.draw(
+                ctx,
+                2,
+                bounds.x,
+                bounds.y,
+                bounds.width,
+                bounds.height,
+                radius
+        );
+        ctx.roundedRect(
+                bounds.x,
+                bounds.y,
+                bounds.width,
+                bounds.height,
+                radius,
+                scheme.surfaceContainerHigh(),
+                true
+        );
     }
 
     private void showTooltip() {

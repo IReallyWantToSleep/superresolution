@@ -20,22 +20,21 @@ package io.homo.superresolution.core.gui.b3d;
 
 #if MC_VER >= MC_26_2
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGRhiBridge;
-import net.minecraft.client.Minecraft;
-import org.lwjgl.vulkan.VkCommandBuffer;
-
-import java.util.ArrayList;
-import java.util.Iterator;
-import java.util.List;
+#if MC_VER >= MC_26_3
+import com.mojang.renderpearl.api.commands.GpuFence;
+#else
+import com.mojang.blaze3d.buffers.GpuFence;
+#endif
 
 public final class B3DGuiVulkanUiRenderer {
-    private static final List<B3DGuiFrameJob> PENDING_JOBS = new ArrayList<>();
+    private static B3DGuiFrameInput pendingInput;
     private static B3DGuiVulkanTarget target;
     private static B3DGuiPrimaryCommandRing commandRing;
-    private static final List<B3DGuiVulkanTarget> DEFERRED_DESTROY_TARGETS = new ArrayList<>();
-    private static int generation;
+    private static boolean pendingSubmission;
 
     private B3DGuiVulkanUiRenderer() {
     }
@@ -48,28 +47,26 @@ public final class B3DGuiVulkanUiRenderer {
         if (!isAvailable()) {
             return;
         }
-        PENDING_JOBS.add(new B3DGuiFrameJob(input));
+        pendingInput = input;
     }
 
     public static boolean hasPendingJobs() {
-        return !PENDING_JOBS.isEmpty();
+        return pendingInput != null;
     }
 
     public static void preRenderAll() {
-        if (!isAvailable() || PENDING_JOBS.isEmpty()) {
+        if (!isAvailable() || pendingInput == null) {
             return;
         }
         if (!RenderSystems.initBorrowedB3DVulkanIfAvailable()) {
-            PENDING_JOBS.clear();
+            pendingInput = null;
             return;
         }
         ensureCommandRing();
         commandRing.reapCompleted();
-        reapDeferredTargets();
 
-        B3DGuiFrameJob job = PENDING_JOBS.get(PENDING_JOBS.size() - 1);
-        PENDING_JOBS.clear();
-        B3DGuiFrameInput input = job.input();
+        B3DGuiFrameInput input = pendingInput;
+        pendingInput = null;
         ensureTarget(input.framebufferWidth(), input.framebufferHeight());
         if (target == null) {
             return;
@@ -80,15 +77,31 @@ public final class B3DGuiVulkanUiRenderer {
             return;
         }
 
+        pendingSubmission = true;
+        target.copyBackgroundFrom(MinecraftUtils.getMainRenderTarget());
+
         VulkanCommandBuffer commandBuffer = slot.commandBuffer();
-        NanoVGRhiBridge.beginB3DVulkanBatch(RenderSystems.vulkan().device(), target.framebuffer(), commandBuffer, slot.index());
-        input.screen().preRender(target, input);
-        NanoVGRhiBridge.endB3DVulkanBatch();
+        commandBuffer.begin();
+        try {
+            NanoVGRhiBridge.beginFrame(target.framebuffer(), commandBuffer, true);
+            try {
+                input.screen().preRender(target, input);
+            } finally {
+                NanoVGRhiBridge.endFrame();
+            }
+            commandBuffer.end();
+        } catch (RuntimeException | Error failure) {
+            NanoVGRhiBridge.cancelFrame();
+            slot.discard();
+            throw failure;
+        }
 
         Object encoder = B3DVulkanBridge.createCommandEncoder();
-        VkCommandBuffer nativeCommandBuffer = commandBuffer.getNativeCommandBuffer();
-        B3DVulkanBridge.execute(encoder, nativeCommandBuffer);
-        slot.markSubmitted(B3DVulkanBridge.createFence(encoder), target.generation());
+        GpuFence fence = B3DVulkanBridge.createFence(encoder);
+        // Keep the lease if execute() fails after appending the buffer to the game submission.
+        slot.markSubmitted(fence);
+        pendingSubmission = true;
+        B3DVulkanBridge.execute(encoder, commandBuffer.getNativeCommandBuffer());
     }
 
     public static void ensureTarget(int width, int height) {
@@ -97,14 +110,13 @@ public final class B3DGuiVulkanUiRenderer {
         }
         ensureCommandRing();
         commandRing.reapCompleted();
-        reapDeferredTargets();
         int safeWidth = Math.max(1, width);
         int safeHeight = Math.max(1, height);
         if (target != null && target.width() == safeWidth && target.height() == safeHeight) {
             return;
         }
         destroyTarget();
-        target = B3DGuiVulkanTarget.create(safeWidth, safeHeight, ++generation);
+        target = B3DGuiVulkanTarget.create(safeWidth, safeHeight);
     }
 
     public static B3DGuiVulkanTarget target() {
@@ -118,37 +130,39 @@ public final class B3DGuiVulkanUiRenderer {
     }
 
     public static void destroy() {
-        PENDING_JOBS.clear();
+        pendingInput = null;
+        if (commandRing != null) {
+            waitForIdle();
+        }
         destroyTarget();
         if (commandRing != null) {
             commandRing.close();
             commandRing = null;
         }
-        for (B3DGuiVulkanTarget target : DEFERRED_DESTROY_TARGETS) {
-            target.close();
-        }
-        DEFERRED_DESTROY_TARGETS.clear();
     }
 
     private static void destroyTarget() {
         if (target != null) {
-            DEFERRED_DESTROY_TARGETS.add(target);
+            waitForIdle();
+            NanoVGRhiBridge.setTargetFramebuffer(null);
+            target.close();
             target = null;
         }
     }
 
-    private static void reapDeferredTargets() {
-        if (commandRing == null || DEFERRED_DESTROY_TARGETS.isEmpty()) {
-            return;
+    public static void waitForIdle() {
+        if (pendingSubmission) {
+            B3DVulkanBridge.submit(B3DVulkanBridge.createCommandEncoder());
+            pendingSubmission = false;
         }
-        Iterator<B3DGuiVulkanTarget> iterator = DEFERRED_DESTROY_TARGETS.iterator();
-        while (iterator.hasNext()) {
-            B3DGuiVulkanTarget oldTarget = iterator.next();
-            if (!commandRing.isGenerationInUse(oldTarget.generation())) {
-                oldTarget.close();
-                iterator.remove();
-            }
+        RenderSystems.vulkan().finish();
+        if (commandRing != null) {
+            commandRing.reapCompleted();
         }
+    }
+
+    public static void onGameSubmission() {
+        pendingSubmission = false;
     }
 }
 #else

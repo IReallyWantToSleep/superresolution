@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.gui.options;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialElevation;
 import io.homo.superresolution.core.gui.core.UIInputState;
@@ -114,7 +115,8 @@ public class OptionBuilder {
     }
 
     public OptionsContainer build() {
-        OptionsContainer container = new OptionsContainer();
+        OptionsContainer container = SuperResolutionConfig.isLiquidGlassEnabled()
+                ? new LiquidGlassOptionsContainer() : new OptionsContainer();
 
         for (AbstractOptionEntry<?, ?> entry : category.getEntries()) {
             entry.setSaveRunnable(createEntrySaveRunnable(entry));
@@ -171,7 +173,7 @@ public class OptionBuilder {
                     bounds.width,
                     bounds.height,
                     CORNER_RADIUS,
-                    scheme().surfaceContainer(),
+                    scheme().surfaceContainerLow(),
                     true
             );
         }

@@ -85,19 +85,7 @@ public class MaterialChart extends MaterialWidget<MaterialChart> {
 
         ctx.beginGroup(s.zIndex());
 
-        Color bgColor = scheme().surfaceContainer();
-        MaterialElevation.draw(
-                ctx,
-                2,
-                bounds.x,
-                bounds.y,
-                bounds.width,
-                bounds.height,
-                s.cornerRadius()
-        );
-
-        ctx.roundedRect(bounds.x, bounds.y, bounds.width, bounds.height,
-                s.cornerRadius(), bgColor, true);
+        renderBackground(ctx, bounds);
 
         float titleHeight = 0;
         if (title != null && !title.isEmpty()) {
@@ -169,6 +157,22 @@ public class MaterialChart extends MaterialWidget<MaterialChart> {
         ctx.restore();
 
         ctx.endGroup();
+    }
+
+    protected void renderBackground(RenderContext ctx, Rectangle bounds) {
+        Color bgColor = scheme().surfaceContainer();
+        MaterialElevation.draw(
+                ctx,
+                2,
+                bounds.x,
+                bounds.y,
+                bounds.width,
+                bounds.height,
+                style().cornerRadius()
+        );
+
+        ctx.roundedRect(bounds.x, bounds.y, bounds.width, bounds.height,
+                style().cornerRadius(), bgColor, true);
     }
 
     public MaterialChart title(String title) {

@@ -207,6 +207,8 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
 
         if (step.doubleValue() > 0 && style().steps()) {
             drawSteps(ctx, bounds, colors, handleXPosition, availableWidth, progress);
+        } else {
+            drawStopIndicator(ctx, bounds, colors, handleXPosition, handleWidth);
         }
         ctx.restore();
         ctx.endGroup();
@@ -230,7 +232,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         setElementHeight(style().size().handleHeight());
     }
 
-    private float drawTrack(RenderContext ctx, Rectangle bounds, SliderColors colors, float progress, float handleWidth, float availableWidth) {
+    protected float drawTrack(RenderContext ctx, Rectangle bounds, SliderColors colors, float progress, float handleWidth, float availableWidth) {
         float activeTrackWidth = (availableWidth * progress) - (handleWidth / 2) - style().size().handleHorizontalPadding() + style().size().stepsSize();
         if (activeTrackWidth > 1) {
             ctx.beginPath();
@@ -250,7 +252,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         return activeTrackWidth;
     }
 
-    private void drawHandle(RenderContext ctx, Rectangle bounds, SliderColors colors, float handleXPosition, float handleWidth) {
+    protected void drawHandle(RenderContext ctx, Rectangle bounds, SliderColors colors, float handleXPosition, float handleWidth) {
         ctx.roundedRect(
                 handleXPosition - (handleWidth / 2) + style().size().stepsSize(),
                 bounds.y,
@@ -262,7 +264,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         );
     }
 
-    private void drawInactiveTrack(RenderContext ctx, Rectangle bounds, SliderColors colors, float activeTrackWidth, float handleWidth) {
+    protected void drawInactiveTrack(RenderContext ctx, Rectangle bounds, SliderColors colors, float activeTrackWidth, float handleWidth) {
         float inactiveTrackWidth = bounds.width - activeTrackWidth - handleWidth - style().size().handleHorizontalPadding() - style().size().handleHorizontalPadding();
         if (inactiveTrackWidth > 1) {
             ctx.beginPath();
@@ -279,6 +281,9 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
             );
             ctx.endPath();
         }
+    }
+
+    protected void drawStopIndicator(RenderContext ctx, Rectangle bounds, SliderColors colors, float handleXPosition, float handleWidth) {
     }
 
     private void drawSteps(
@@ -312,7 +317,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         }
     }
 
-    private void drawValueIndicator(RenderContext ctx, Rectangle bounds, SliderColors colors, float handleXPosition) {
+    protected void drawValueIndicator(RenderContext ctx, Rectangle bounds, SliderColors colors, float handleXPosition) {
         String valueIndicatorString = valueIndicatorTextFormater == null ? String.valueOf(value()) : valueIndicatorTextFormater.apply(value());
         Vector2f valueIndicatorStringRegion = ctx.measureText(valueIndicatorString, 14f, 14f);
         Rectangle valueIndicatorRegion = new Rectangle();
@@ -327,15 +332,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         ctx.translate(pivotX, pivotY);
         ctx.scale(scaleValue, scaleValue);
         ctx.translate(-pivotX, -pivotY);
-        ctx.roundedRect(
-                valueIndicatorRegion.x,
-                valueIndicatorRegion.y,
-                valueIndicatorRegion.width,
-                valueIndicatorRegion.height,
-                valueIndicatorRegion.height / 2,
-                colors.valueIndicatorColor,
-                true
-        );
+        drawValueIndicatorBackground(ctx, valueIndicatorRegion, colors);
         ctx.drawAlignedText(
                 ctx.font(),
                 14,
@@ -351,17 +348,41 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
         ctx.restore();
     }
 
+    protected void drawValueIndicatorBackground(RenderContext ctx, Rectangle region, SliderColors colors) {
+        ctx.roundedRect(
+                region.x,
+                region.y,
+                region.width,
+                region.height,
+                region.height / 2,
+                colors.valueIndicatorColor,
+                true
+        );
+    }
+
     private SliderColors getSliderColors() {
         SliderColors colors = new SliderColors();
-        colors.inactiveTrackColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.1)) : scheme().secondaryContainer();
-        colors.activeTrackColor = isDisabled() ? scheme().onSurface() : scheme().primary();
-        colors.handleColor = isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38)) : scheme().primary();
+        colors.inactiveTrackColor = getInactiveTrackColor();
+        colors.activeTrackColor = getActiveTrackColor();
+        colors.handleColor = getHandleColor();
         colors.stepInactiveIndicatorsColor = isDisabled() ? scheme().onSurface() : scheme().onSecondaryContainer();
         colors.stepActiveIndicatorsColor = isDisabled() ? scheme().inverseOnSurface() : scheme().onPrimary();
         colors.insetIconColor = isDisabled() ? scheme().inverseOnSurface() : scheme().onPrimary();
         colors.valueIndicatorColor = scheme().inverseSurface();
         colors.valueIndicatorTextColor = scheme().inverseOnSurface();
         return colors;
+    }
+
+    protected Color getInactiveTrackColor() {
+        return isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.1)) : scheme().secondaryContainer();
+    }
+
+    protected Color getActiveTrackColor() {
+        return isDisabled() ? scheme().onSurface() : scheme().primary();
+    }
+
+    protected Color getHandleColor() {
+        return isDisabled() ? scheme().onSurface().copy().alpha((int) (255 * 0.38)) : scheme().primary();
     }
 
     private void onHover(Vector2f mousePosition, boolean hover) {
@@ -509,7 +530,7 @@ public class MaterialSlider extends MaterialWidget<MaterialSlider> {
                 .start();
     }
 
-    private static class SliderColors {
+    protected static class SliderColors {
         Color insetIconColor;
         Color stepActiveIndicatorsColor;
         Color stepInactiveIndicatorsColor;

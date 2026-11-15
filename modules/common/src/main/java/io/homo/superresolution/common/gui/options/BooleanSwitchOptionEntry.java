@@ -18,8 +18,10 @@
 
 package io.homo.superresolution.common.gui.options;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
+import io.homo.superresolution.core.gui.widgets.switchs.LiquidGlassMaterialSwitch;
 import io.homo.superresolution.core.gui.widgets.switchs.MaterialSwitch;
 
 public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, BooleanSwitchOptionEntry> {
@@ -42,7 +44,8 @@ public class BooleanSwitchOptionEntry extends AbstractOptionEntry<Boolean, Boole
 
     @Override
     protected void initWidget() {
-        aSwitch = MaterialSwitch.create()
+        aSwitch = (SuperResolutionConfig.isLiquidGlassEnabled()
+                ? LiquidGlassMaterialSwitch.create() : MaterialSwitch.create())
                 .setChecked(value);
         aSwitch.onChange(event -> {
             this.value = (Boolean) event.getNewValue();

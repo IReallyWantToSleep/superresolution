@@ -157,6 +157,14 @@ public class NanoVGContext implements AutoCloseable {
 
     private static native void nRoundedRectComplex(long ctx, float x, float y, float w, float h, float tl, float tr, float bl, float br);
 
+    private static native int nRoundedRectLiquidGlass(long ctx, float x, float y, float w, float h,
+                                                       float bottomLeft, float bottomRight, float topLeft, float topRight,
+                                                       float lightAngle, float lightIntensity, float refraction,
+                                                       float depth, float dispersion, float frost,
+                                                       float brightness, float contrast, float saturation, float alpha,
+                                                       float tintRed, float tintGreen, float tintBlue, float tintAlpha,
+                                                       float legibility);
+
     private static native void nRoundedRectEllipse(long ctx, float x, float y, float w, float h, float rw, float rh);
 
     private static native void nEllipse(long ctx, float cx, float cy, float rx, float ry);
@@ -435,6 +443,32 @@ public class NanoVGContext implements AutoCloseable {
 
     public void roundedRectComplex(float x, float y, float w, float h, float tl, float tr, float bl, float br) {
         nRoundedRectComplex(nativeHandle, x, y, w, h, tl, tr, bl, br);
+    }
+
+    public void roundedRectLiquidGlass(float x, float y, float w, float h,
+                                      float bottomLeft, float bottomRight, float topLeft, float topRight,
+                                      float lightAngle, float lightIntensity, float refraction,
+                                      float depth, float dispersion, float frost,
+                                      float brightness, float contrast, float saturation, float alpha) {
+        roundedRectLiquidGlass(x, y, w, h, bottomLeft, bottomRight, topLeft, topRight,
+                lightAngle, lightIntensity, refraction, depth, dispersion, frost,
+                brightness, contrast, saturation, alpha,
+                10f / 255f, 11f / 255f, 15f / 255f, 95f / 255f, 0.32f);
+    }
+
+    public void roundedRectLiquidGlass(float x, float y, float w, float h,
+                                      float bottomLeft, float bottomRight, float topLeft, float topRight,
+                                      float lightAngle, float lightIntensity, float refraction,
+                                      float depth, float dispersion, float frost,
+                                      float brightness, float contrast, float saturation, float alpha,
+                                      float tintRed, float tintGreen, float tintBlue, float tintAlpha, float legibility) {
+        if (nRoundedRectLiquidGlass(nativeHandle, x, y, w, h,
+                bottomLeft, bottomRight, topLeft, topRight,
+                lightAngle, lightIntensity, refraction, depth, dispersion, frost,
+                brightness, contrast, saturation, alpha,
+                tintRed, tintGreen, tintBlue, tintAlpha, legibility) == 0) {
+            throw new IllegalStateException("Failed to queue NanoVG liquid glass draw");
+        }
     }
 
     public void roundedRectEllipse(float x, float y, float w, float h, float rw, float rh) {

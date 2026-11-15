@@ -21,6 +21,8 @@ package io.homo.superresolution.core.gui.core.backends.nanovg;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.gui.b3d.B3DGuiVulkanUiRenderer;
+import io.homo.superresolution.core.graphics.impl.framebuffer.FrameBufferAttachmentType;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGBackendMode;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGContext;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGRhiBridge;
@@ -41,17 +43,36 @@ public class NanoVGBackend {
             if (!RenderSystems.initBorrowedB3DVulkanIfAvailable()) {
                 throw new IllegalStateException("Failed to initialize borrowed b3d Vulkan device for NanoVG");
             }
-            NanoVGRhiBridge.setDevice(RenderSystems.vulkan().device());
-            NanoVGRhiBridge.createVkResources();
+            NanoVGRhiBridge.setDevice(RenderSystems.vulkan().device(), B3DGuiVulkanUiRenderer::waitForIdle);
         } else {
-            NanoVGRhiBridge.setDevice(RenderSystems.opengl().device());
+            NanoVGRhiBridge.setDevice(RenderSystems.opengl().device(), RenderSystems.opengl()::finish);
         }
         #else
-        NanoVGRhiBridge.setDevice(RenderSystems.opengl().device());
+        NanoVGRhiBridge.setDevice(RenderSystems.opengl().device(), RenderSystems.opengl()::finish);
         #endif
         context = new NanoVGContextWrapper(NanoVGContext.NVG_ANTIALIAS | NanoVGContext.NVG_STENCIL_STROKES);
         RENDERER = new NanoVGRenderers();
         NanoVGFontLoader.initAndLoad();
+    }
+
+    public static void destroy() {
+        if (context == null) {
+            return;
+        }
+        #if MC_VER >= MC_26_2
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            B3DGuiVulkanUiRenderer.destroy();
+        }
+        #endif
+        context.rawContext.close();
+        if (context.frameBuffer != null) {
+            context.frameBuffer.getTexture(FrameBufferAttachmentType.Color).destroy();
+            context.frameBuffer.getTexture(FrameBufferAttachmentType.AnyDepth).destroy();
+            context.frameBuffer.destroy();
+            context.frameBuffer = null;
+        }
+        context = null;
+        RENDERER = null;
     }
 
     public static float getScreenWidth() {

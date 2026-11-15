@@ -18,10 +18,12 @@
 
 package io.homo.superresolution.common.gui.options;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
+import io.homo.superresolution.core.gui.widgets.sliders.LiquidGlassMaterialSlider;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSliderSize;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
@@ -33,6 +35,7 @@ import java.util.function.Function;
 
 public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberSliderOptionEntry> {
     private static final float SLIDER_WIDTH = 250f;
+    private static final float GLASS_SLIDER_WIDTH = 300f;
     protected MaterialSlider slider;
     protected MaterialLabel valueLabel;
     protected ContainerWidget sliderContainer;
@@ -78,7 +81,22 @@ public class NumberSliderOptionEntry extends AbstractOptionEntry<Number, NumberS
                 .fontSize(14);
         valueLabel.layout().setMinWidth(50);
 
-        slider = MaterialSlider.create(MaterialSliderSize.Small, SLIDER_WIDTH);
+        if (SuperResolutionConfig.isLiquidGlassEnabled()) {
+            slider = LiquidGlassMaterialSlider.create(MaterialSliderSize.Small, GLASS_SLIDER_WIDTH);
+            container.getLeftContainer().layout().setMinWidth(0);
+            container.getRightContainer().layout().setMinWidth(0);
+            container.getRightContainer().layout().setFlexShrink(1f);
+            container.getRightContainer().layout().setMaxWidthPercent(100);
+            sliderContainer.layout().setMinWidth(0);
+            sliderContainer.layout().setFlexShrink(1f);
+            sliderContainer.layout().setMaxWidth(GLASS_SLIDER_WIDTH + 62f);
+            valueLabel.layout().setFlexShrink(0f);
+            slider.layout().setMinWidth(0);
+            slider.layout().setFlexShrink(1f);
+            slider.layout().setMaxWidth(GLASS_SLIDER_WIDTH);
+        } else {
+            slider = MaterialSlider.create(MaterialSliderSize.Small, SLIDER_WIDTH);
+        }
         slider.style().valueIndicator(true);
         slider.setMin(min);
         slider.setMax(max);

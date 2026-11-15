@@ -18,21 +18,19 @@
 
 package io.homo.superresolution.core.gui;
 
-import io.homo.superresolution.common.minecraft.MinecraftUtils;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftWindow;
-import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
-import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.opengl.GlStates;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGBackend;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGContextWrapper;
-import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGFont;
 import io.homo.superresolution.core.gui.b3d.B3DGuiFrameInput;
 import io.homo.superresolution.core.gui.b3d.B3DGuiVulkanTarget;
 import io.homo.superresolution.core.gui.b3d.B3DGuiVulkanUiRenderer;
-import io.homo.superresolution.core.utils.Color;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGRhiBridge;
 import io.homo.superresolution.core.gui.core.UIInputState;
+import io.homo.superresolution.core.gui.core.LiquidGlassTooltipRenderer;
+import io.homo.superresolution.core.gui.core.TooltipRenderer;
+import io.homo.superresolution.core.gui.core.view.View;
 import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGRenderContext;
 import io.homo.superresolution.core.gui.core.backends.render.GuiScaleManager;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
@@ -51,22 +49,15 @@ import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.opengl.GL41;
-import org.lwjgl.opengl.GL42;
-
-import static org.lwjgl.opengl.GL11.GL_BLEND;
-import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
-import static org.lwjgl.opengl.GL11.GL_LINEAR;
-import static org.lwjgl.opengl.GL11.GL_ONE;
-import static org.lwjgl.opengl.GL11.GL_ZERO;
-import static org.lwjgl.opengl.GL11.glEnable;
-import static org.lwjgl.opengl.GL30.*;
 
 public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
     protected final NanoVGContextWrapper nvg;
     protected final GuiScaleManager scaleManager;
 
     protected NanoVGScreen(Component title) {
-        super(title);
+        super(title, new View(SuperResolutionConfig.isLiquidGlassEnabled()
+                ? new LiquidGlassTooltipRenderer()
+                : new TooltipRenderer()));
         nvg = NanoVGBackend.context;
         scaleManager = GuiScaleManager.getInstance();
         buildWidgets();
@@ -118,18 +109,10 @@ public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
         #endif
         Runnable renderAction = () -> {
             GL41.glBindSampler(0, 0);
-            boolean useRhi = NanoVGBackend.USE_RHI;
-            boolean useVulkan = false;
-            if (useVulkan) {
-                NanoVGRhiBridge.beginBatch(RenderSystems.vulkan().device());
-            } else if (useRhi) {
-                NanoVGRhiBridge.beginBatch(RenderSystems.current().device());
-            }
-
             boolean frameBegun = false;
             try {
                 nvg.begin(true);
-                if (useRhi) {
+                if (NanoVGBackend.USE_RHI) {
                     NanoVGRhiBridge.setTargetFramebuffer(nvg.frameBuffer);
                 }
 
@@ -153,35 +136,8 @@ public abstract class NanoVGScreen<T> extends WidgetEventScreen<T> {
                 ctx.flush();
                 PerformanceTracker.pop("GUI");
             } finally {
-                try {
-                    if (frameBegun && !useRhi) {
-                        nvg.end();
-                    }
-                } finally {
-                    if (useRhi) {
-                        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) nvg.frameBuffer.handle());
-                        nvg.rawContext.endFrame();
-                        NanoVGRhiBridge.endBatch();
-                        glBindFramebuffer(GL_READ_FRAMEBUFFER, (int) nvg.frameBuffer.handle());
-                        glBindFramebuffer(GL_DRAW_FRAMEBUFFER, (int) RenderHandlerManager.getOriginRenderTarget().handle());
-                        glEnable(GL_BLEND);
-                        GL42.glBlendFuncSeparate(GL_ONE, GL_ZERO, GL_ZERO, GL_ONE);
-
-                        glBlitFramebuffer(
-                                0,
-                                0,
-                                nvg.frameBuffer.getWidth(),
-                                nvg.frameBuffer.getHeight(),
-                                0,
-                                0,
-                                MinecraftUtils.getMainRenderTarget().width,
-                                MinecraftUtils.getMainRenderTarget().height,
-                                GL_COLOR_BUFFER_BIT,
-                                GL_LINEAR
-                        );
-
-                        GlStates.pop("nanovg-frame").restore();
-                    }
+                if (frameBegun) {
+                    nvg.end();
                 }
             }
         };

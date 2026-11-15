@@ -28,6 +28,8 @@ import io.homo.superresolution.common.minecraft.MinecraftWindow;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGBackend;
+import io.homo.superresolution.core.gui.b3d.B3DGuiVulkanUiRenderer;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.multiplayer.ClientLevel;
@@ -125,6 +127,19 @@ public abstract class MinecraftMixin {
         SuperResolution.onClientTickEnd();
     }
 
+    #if MC_VER >= MC_26_2
+    @Inject(method = "renderFrame", at = @At(value = "INVOKE",
+            #if MC_VER >= MC_26_3
+            target = "Lcom/mojang/renderpearl/api/commands/CommandEncoder;submit()V",
+            #else
+            target = "Lcom/mojang/blaze3d/systems/CommandEncoder;submit()V",
+            #endif
+            shift = At.Shift.AFTER))
+    private void super_resolution$onUiCommandsSubmitted(CallbackInfo ci) {
+        B3DGuiVulkanUiRenderer.onGameSubmission();
+    }
+    #endif
+
     #if MC_VER <= MC_1_21_11
     @Inject(method = "resizeDisplay", at = @At(value = "HEAD"), cancellable = true)
     private void onResize(CallbackInfo ci) {
@@ -157,6 +172,11 @@ public abstract class MinecraftMixin {
     }
     #endif
     #if MC_VER > MC_26_1_2
+    @Inject(method = "close", at = @At("HEAD"))
+    private void super_resolution$closeNanoVG(CallbackInfo ci) {
+        NanoVGBackend.destroy();
+    }
+
     //just like fabric's invoke point
     @Inject(method = "close",at = @At(value = "INVOKE", target = "Lcom/mojang/blaze3d/platform/Window;close()V",shift = At.Shift.AFTER))
     public void onDestroy(CallbackInfo ci) {

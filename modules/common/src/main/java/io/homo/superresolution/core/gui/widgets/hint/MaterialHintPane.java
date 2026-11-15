@@ -126,12 +126,7 @@ public class MaterialHintPane extends MaterialWidget<MaterialHintPane> {
         Rectangle bounds = getBounds();
         if (bounds.width <= 0 || bounds.height <= 0) return;
 
-        ctx.roundedRect(
-                bounds.x, bounds.y, bounds.width, bounds.height,
-                s.cornerRadius(),
-                scheme().surfaceContainerLow(),
-                true
-        );
+        renderBackground(ctx, bounds);
 
         float contentX = bounds.x + s.paddingHorizontal();
         float headerY = bounds.y + s.paddingVertical();
@@ -190,5 +185,14 @@ public class MaterialHintPane extends MaterialWidget<MaterialHintPane> {
                 );
             }
         }
+    }
+
+    protected void renderBackground(RenderContext ctx, Rectangle bounds) {
+        ctx.roundedRect(
+                bounds.x, bounds.y, bounds.width, bounds.height,
+                style().cornerRadius(),
+                scheme().surfaceContainerLow(),
+                true
+        );
     }
 }

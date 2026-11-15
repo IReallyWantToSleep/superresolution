@@ -89,6 +89,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue ENABLE_IRIS_EXTENSION;
     public static final EnumValue<InternalTextureFormat> INTERNAL_TEXTURE_FORMAT;
     public static final EnumValue<MaterialTheme> THEME;
+    public static final BooleanValue LIQUID_GLASS_ENABLED;
     public static final EnumValue<SchemeVariant> THEME_SCHEME_VARIANT;
     public static final FloatValue THEME_CONTRAST_LEVEL;
     public static final FloatValue UI_SCALE;
@@ -98,6 +99,7 @@ public class SuperResolutionConfig {
     public static final EnumValue<FrameGenerationMode> FRAME_GENERATION_MODE;
     public static final StringValue FRAME_GENERATION_PROVIDER;
     public static final StringValue FRAME_GENERATION_BACKEND;
+    public static final BooleanValue FRAME_GENERATION_STABILIZE_FRAME_RATE;
     public static final BooleanValue FLIP_VK_GL_INTEROP_RESOURCES_Y;
     public static final BooleanValue ENABLE_EXPERIMENTAL_ALGORITHMS;
     public static final BooleanValue ENABLE_DLSS_RAY_RECONSTRUCTION;
@@ -188,6 +190,12 @@ public class SuperResolutionConfig {
                 MaterialTheme.class,
                 () -> MaterialTheme.Light,
                 "Interface theme"
+        );
+
+        LIQUID_GLASS_ENABLED = builder.defineBoolean(
+                "liquid_glass_ui",
+                () -> false,
+                "Use liquid glass controls and surfaces in the configuration interface"
         );
 
         THEME_COLOR = builder.defineString(
@@ -370,6 +378,12 @@ public class SuperResolutionConfig {
                 () -> FrameGenerationDescriptions.AUTO_ID,
                 "Concrete DLSS Frame Generation backend preference. Auto keeps the registered backend priority.",
                 value -> value != null && !value.isBlank()
+        );
+
+        FRAME_GENERATION_STABILIZE_FRAME_RATE = builder.defineBoolean(
+                "frame_generation/stabilize_frame_rate",
+                () -> true,
+                "With NVIDIA Reflex, cap rendered frames slightly below what the GPU sustains so frame generation gets an even cadence"
         );
 
         SPECIAL = new SpecialConfigs(builder);
@@ -653,6 +667,14 @@ public class SuperResolutionConfig {
         ENABLE_IMGUI.set(value);
     }
 
+    public static boolean isFrameGenerationStabilizeFrameRate() {
+        return FRAME_GENERATION_STABILIZE_FRAME_RATE.get();
+    }
+
+    public static void setFrameGenerationStabilizeFrameRate(boolean value) {
+        FRAME_GENERATION_STABILIZE_FRAME_RATE.set(value);
+    }
+
     public static boolean isEnablePresentIndicator() {
         return ENABLE_PRESENT_INDICATOR.get();
     }
@@ -770,11 +792,23 @@ public class SuperResolutionConfig {
     }
 
     public static MaterialTheme getTheme() {
-        return THEME.get();
+        return isLiquidGlassEnabled() ? MaterialTheme.Dark : THEME.get();
     }
 
     public static void setTheme(MaterialTheme value) {
-        THEME.set(value);
+        THEME.set(isLiquidGlassEnabled() ? MaterialTheme.Dark : value);
+    }
+
+    public static boolean isLiquidGlassEnabled() {
+        return LIQUID_GLASS_ENABLED.get();
+    }
+
+    public static void setLiquidGlassEnabled(boolean value) {
+        LIQUID_GLASS_ENABLED.set(value);
+        if (value) {
+            setTheme(MaterialTheme.Dark);
+            setThemeSchemeVariant(SchemeVariant.CONTENT);
+        }
     }
 
     public static float getUiScale() {
@@ -830,11 +864,11 @@ public class SuperResolutionConfig {
     }
 
     public static SchemeVariant getThemeSchemeVariant() {
-        return THEME_SCHEME_VARIANT.get();
+        return isLiquidGlassEnabled() ? SchemeVariant.CONTENT : THEME_SCHEME_VARIANT.get();
     }
 
     public static void setThemeSchemeVariant(SchemeVariant value) {
-        THEME_SCHEME_VARIANT.set(value);
+        THEME_SCHEME_VARIANT.set(isLiquidGlassEnabled() ? SchemeVariant.CONTENT : value);
     }
 
     public static float getThemeContrastLevel() {

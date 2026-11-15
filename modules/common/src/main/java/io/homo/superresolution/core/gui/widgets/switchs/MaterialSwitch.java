@@ -222,14 +222,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
         SwitchColors colors = getSwitchColors();
         ctx.beginGroup(style().zIndex());
 
-        ctx.roundedRect(
-                bounds.x,
-                bounds.y,
-                MaterialSwitchSize.Default.trackWidth(),
-                MaterialSwitchSize.Default.trackHeight(),
-                MaterialSwitchSize.Default.trackHeight() / 2,
-                colors.trackColor,
-                true);
+        drawTrack(ctx, bounds, colors.trackColor);
 
         if (colors.outlineAlpha > 0.001f) {
             ctx.beginPath();
@@ -247,12 +240,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
         float handleSize = handleSizeAnimator.get();
         float handleX = bounds.x + 16 + handlePositionAnimator.get();
 
-        ctx.arc(
-                handleX,
-                bounds.getCenterY(),
-                handleSize / 2,
-                colors.handleColor,
-                true);
+        drawHandle(ctx, handleX, bounds.getCenterY(), handleSize, colors.handleColor);
 
         if (!isDisabled() && (isHovered() || hoverAnimator.get() > 0.001)) {
             ctx.arc(
@@ -285,6 +273,21 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
         ctx.endGroup();
     }
 
+    protected void drawTrack(RenderContext ctx, Rectangle bounds, Color color) {
+        ctx.roundedRect(
+                bounds.x,
+                bounds.y,
+                MaterialSwitchSize.Default.trackWidth(),
+                MaterialSwitchSize.Default.trackHeight(),
+                MaterialSwitchSize.Default.trackHeight() / 2,
+                color,
+                true);
+    }
+
+    protected void drawHandle(RenderContext ctx, float centerX, float centerY, float size, Color color) {
+        ctx.arc(centerX, centerY, size / 2, color, true);
+    }
+
     private void updateRectangle() {
         setElementSize(MaterialSwitchSize.Default.trackWidth(), MaterialSwitchSize.Default.trackHeight());
     }
@@ -293,7 +296,7 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
         return Math.min(max, Math.max(value, min));
     }
 
-    private float getCheckedProgress() {
+    protected float getCheckedProgress() {
         if (changeAnimator == null || changeAnimator.get() == null) {
             return isChecked() ? 1f : 0f;
         }
@@ -344,25 +347,25 @@ public class MaterialSwitch extends MaterialWidget<MaterialSwitch> {
         return colors;
     }
 
-    private Color getCheckedTrackColor() {
+    protected Color getCheckedTrackColor() {
         return isDisabled()
                 ? scheme().onSurface().copy().alpha((int) (255 * 0.1))
                 : scheme().primary();
     }
 
-    private Color getUncheckedTrackColor() {
+    protected Color getUncheckedTrackColor() {
         return isDisabled()
                 ? scheme().surfaceVariant().copy().alpha((int) (255 * 0.1))
                 : scheme().surfaceContainerHighest();
     }
 
-    private Color getCheckedHandleColor() {
+    protected Color getCheckedHandleColor() {
         return isDisabled()
                 ? scheme().surface()
                 : scheme().onPrimary();
     }
 
-    private Color getUncheckedHandleColor() {
+    protected Color getUncheckedHandleColor() {
         return isDisabled()
                 ? scheme().onSurface().copy().alpha((int) (255 * 0.38))
                 : scheme().outline();

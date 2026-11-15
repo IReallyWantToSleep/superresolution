@@ -31,11 +31,8 @@ import com.mojang.renderpearl.api.commands.GpuFence;
 import com.mojang.blaze3d.buffers.GpuFence;
 #endif
 
-import java.util.ArrayList;
-import java.util.List;
-
 public final class B3DGuiPrimaryCommandRing implements AutoCloseable {
-    private static final int SLOT_COUNT = 5;
+    private static final int SLOT_COUNT = 2;
 
     private final VulkanCommandPool pool;
     private final Slot[] slots = new Slot[SLOT_COUNT];
@@ -43,7 +40,7 @@ public final class B3DGuiPrimaryCommandRing implements AutoCloseable {
     public B3DGuiPrimaryCommandRing() {
         pool = RenderSystems.vulkan().device().createCommandPool(CommandPoolFlags.Reset);
         for (int i = 0; i < slots.length; i++) {
-            slots[i] = new Slot(i, pool.createCommandBuffer(CommandBufferBehavior.ReusableSequential));
+            slots[i] = new Slot(pool.createCommandBuffer(CommandBufferBehavior.ReusableSequential));
         }
     }
 
@@ -63,16 +60,6 @@ public final class B3DGuiPrimaryCommandRing implements AutoCloseable {
         }
     }
 
-    public boolean isGenerationInUse(int generation) {
-        for (Slot slot : slots) {
-            slot.reapIfComplete();
-            if (slot.generation == generation) {
-                return true;
-            }
-        }
-        return false;
-    }
-
     @Override
     public void close() {
         for (Slot slot : slots) {
@@ -83,12 +70,9 @@ public final class B3DGuiPrimaryCommandRing implements AutoCloseable {
 
     public static final class Slot implements AutoCloseable {
         private final VulkanCommandBuffer commandBuffer;
-        private final int index;
         private GpuFence fence;
-        private int generation = -1;
 
-        private Slot(int index, VulkanCommandBuffer commandBuffer) {
-            this.index = index;
+        private Slot(VulkanCommandBuffer commandBuffer) {
             this.commandBuffer = commandBuffer;
         }
 
@@ -105,18 +89,13 @@ public final class B3DGuiPrimaryCommandRing implements AutoCloseable {
             return commandBuffer;
         }
 
-        public int index() {
-            return index;
-        }
-
-        public void markSubmitted(GpuFence fence, int generation) {
+        public void markSubmitted(GpuFence fence) {
             this.fence = fence;
-            this.generation = generation;
             commandBuffer.markExternalSubmitted();
         }
 
-        public int generation() {
-            return generation;
+        public void discard() {
+            commandBuffer.reset();
         }
 
         private void reapIfComplete() {
@@ -128,7 +107,6 @@ public final class B3DGuiPrimaryCommandRing implements AutoCloseable {
             }
             closeFence();
             commandBuffer.markExternalComplete();
-            generation = -1;
         }
 
         private void closeFence() {

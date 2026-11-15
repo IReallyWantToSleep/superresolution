@@ -61,6 +61,6 @@ public class D3D12Exception extends RuntimeException {
 
     static UnsupportedOperationException unsupported(String capability) {
         return new UnsupportedOperationException(
-                "D3D12 RHI capability is unavailable in stage 1: " + capability);
+                "D3D12 RHI capability is unavailable" + capability);
     }
 }

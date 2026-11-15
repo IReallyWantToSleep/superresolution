@@ -18,10 +18,12 @@
 
 package io.homo.superresolution.common.gui.options;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.MaterialSymbol;
 import io.homo.superresolution.core.gui.MaterialSymbols;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
+import io.homo.superresolution.core.gui.widgets.hint.LiquidGlassMaterialHintPane;
 import io.homo.superresolution.core.gui.widgets.hint.MaterialHintPane;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaAlign;
 import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaEdge;
@@ -68,7 +70,8 @@ public class HintEntry extends AbstractOptionEntry<Void, HintEntry> {
 
     @Override
     protected void initWidget() {
-        hintPane = MaterialHintPane.create()
+        hintPane = (SuperResolutionConfig.isLiquidGlassEnabled()
+                ? LiquidGlassMaterialHintPane.create() : MaterialHintPane.create())
                 .iconProvider(iconSupplier)
                 .titleProvider(titleSupplier)
                 .textProvider(textSupplier);

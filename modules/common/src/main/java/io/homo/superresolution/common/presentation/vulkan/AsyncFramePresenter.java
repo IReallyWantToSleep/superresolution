@@ -68,7 +68,7 @@ final class AsyncFramePresenter implements AutoCloseable {
             VulkanSwapchain swapchain, VulkanDevice device, String providerId,
             FramePacingTiming timing, NanoClock clock
     ) {
-        this(swapchain, device, providerId, timing, new PresentPacer(clock, timing), clock);
+        this(swapchain, device, providerId, timing, new PresentPacer(clock), clock);
     }
 
     private AsyncFramePresenter(
@@ -143,6 +143,10 @@ final class AsyncFramePresenter implements AutoCloseable {
                 "REAL",
                 providerId
         );
+        // The handoff is this frame's in-band Reflex present, as an application's Present call
+        // is under Streamline's pacer. The paced vkQueuePresentKHR happens up to a frame later
+        // and only carries the present id.
+        VulkanLowLatency.presentMarker(work.realPresentId(), false, true);
         try {
             framePacingTiming.recordExcludedWait(generationQueue.put(work));
             return true;
@@ -155,6 +159,7 @@ final class AsyncFramePresenter implements AutoCloseable {
             throwIfFailed();
             throw exception;
         } finally {
+            VulkanLowLatency.presentMarker(work.realPresentId(), false, false);
             enqueueTrace.close();
         }
     }

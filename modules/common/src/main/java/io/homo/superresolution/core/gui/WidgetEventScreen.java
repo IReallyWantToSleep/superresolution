@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.gui;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.view.View;
@@ -26,18 +27,24 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
 import net.minecraft.client.gui.GuiGraphics;
 #endif
 #if MC_VER >= MC_26_3
+import net.minecraft.client.Minecraft;
 import org.lwjgl.sdl.SDLMouse;
 #endif
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 public abstract class WidgetEventScreen<T> extends Screen {
-    protected View view = new View();
+    protected View view;
     protected Frame defaultFrame = new Frame();
     protected YogaNode defaultFrameLayout;
 
     protected WidgetEventScreen(Component title) {
+        this(title, new View());
+    }
+
+    protected WidgetEventScreen(Component title, View view) {
         super(title);
+        this.view = view;
         defaultFrameLayout = view.addFrame(defaultFrame);
         defaultFrameLayout.setWidthPercent(100);
         defaultFrameLayout.setHeightPercent(100);
@@ -253,21 +260,31 @@ public abstract class WidgetEventScreen<T> extends Screen {
 
     #if MC_VER > MC_1_21_11
     @Override
-    public void extractMenuBackground(net.minecraft.client.gui.GuiGraphicsExtractor guiGraphics)
+    public void extractMenuBackground(net.minecraft.client.gui.GuiGraphicsExtractor graphics)
     {
-        return;
+        if (Minecraft.getInstance().level != null) {
+            return;
+        }
+        super.extractMenuBackground(graphics);
     }
 
     @Override
     protected void extractBlurredBackground(net.minecraft.client.gui.GuiGraphicsExtractor graphics) {
-        return;
+        if (Minecraft.getInstance().level != null) {
+            return;
+        }
+        super.extractBlurredBackground(graphics);
     }
     #else
     @Override
     public void renderBackground(GuiGraphics guiGraphics, int mouseX, int mouseY, float partialTick)
     {
-        return;
+        if (Minecraft.getInstance().level != null) {
+            return;
+        }
+        super.extractBlurredBackground(guiGraphics,mouseX,mouseY,partialTick);
     }
     #endif
+
     #endif
 }
