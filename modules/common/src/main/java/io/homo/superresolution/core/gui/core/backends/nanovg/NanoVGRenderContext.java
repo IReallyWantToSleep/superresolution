@@ -305,6 +305,39 @@ public class NanoVGRenderContext implements RenderContext {
     }
 
     @Override
+    public void roundedRectLiquidGlass(float x, float y, float width, float height,
+                                       float bottomLeftRadius, float bottomRightRadius,
+                                       float topLeftRadius, float topRightRadius,
+                                       LiquidGlassParameters parameters, LiquidGlassColorControls colorControls,
+                                       LiquidGlassTint tint) {
+        nvg.rawContext.roundedRectLiquidGlass(
+                x,
+                y,
+                width,
+                height,
+                bottomLeftRadius,
+                bottomRightRadius,
+                topLeftRadius,
+                topRightRadius,
+                parameters.lightAngle(),
+                parameters.lightIntensity(),
+                parameters.refraction(),
+                parameters.depth(),
+                parameters.dispersion(),
+                parameters.frost(),
+                colorControls.brightness(),
+                colorControls.contrast(),
+                colorControls.saturation(),
+                globalAlpha(),
+                tint.red(),
+                tint.green(),
+                tint.blue(),
+                tint.alpha(),
+                tint.legibility()
+        );
+    }
+
+    @Override
     public void strokeWidth(float width) {
         nvg.strokeWidth(width);
     }

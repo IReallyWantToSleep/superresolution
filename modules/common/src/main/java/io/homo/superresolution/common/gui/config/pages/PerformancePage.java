@@ -24,6 +24,7 @@ import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
 import io.homo.superresolution.core.gui.core.frame.Frame;
 import io.homo.superresolution.core.gui.core.frame.ScrollableFrame;
+import io.homo.superresolution.core.gui.widgets.chart.LiquidGlassMaterialChart;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChart;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartDataSeries;
 import io.homo.superresolution.core.gui.widgets.chart.MaterialChartType;
@@ -81,7 +82,8 @@ public final class PerformancePage implements ConfigPage {
             Pair<String, Text>[] operations = operationList.toArray(new Pair[0]);
 
         for (Pair<String, Text> operation : operations) {
-            MaterialChart cpuChart = MaterialChart.create()
+            MaterialChart cpuChart = (SuperResolutionConfig.isLiquidGlassEnabled()
+                    ? LiquidGlassMaterialChart.create() : MaterialChart.create())
                     .title(operation.right().getString())
                     .addSeries(new MaterialChartDataSeries("CPU (ms)", Color.from("#4FC3F7"), MaterialChartType.Line, 256))
                     .addSeries(new MaterialChartDataSeries("GPU (ms)", Color.from("#BA53FF"), MaterialChartType.Line, 256))

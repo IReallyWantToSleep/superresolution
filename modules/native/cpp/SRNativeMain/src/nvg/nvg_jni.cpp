@@ -674,6 +674,20 @@ JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGCont
     ctx->RoundedRectComplex(x, y, w, h, tl, tr, bl, br);
 }
 
+JNIEXPORT jint JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nRoundedRectLiquidGlass(
+    JNIEnv *, jclass, jlong ptr, jfloat x, jfloat y, jfloat w, jfloat h,
+    jfloat bottomLeft, jfloat bottomRight, jfloat topLeft, jfloat topRight,
+    jfloat lightAngle, jfloat lightIntensity, jfloat refraction, jfloat depth, jfloat dispersion, jfloat frost,
+    jfloat brightness, jfloat contrast, jfloat saturation, jfloat alpha,
+    jfloat tintRed, jfloat tintGreen, jfloat tintBlue, jfloat tintAlpha, jfloat legibility) {
+    auto *ctx = reinterpret_cast<NanoVGContext *>(ptr);
+    return ctx->RoundedRectLiquidGlass(x, y, w, h,
+                                       bottomLeft, bottomRight, topLeft, topRight,
+                                       lightAngle, lightIntensity, refraction, depth, dispersion, frost,
+                                       brightness, contrast, saturation, alpha,
+                                       tintRed, tintGreen, tintBlue, tintAlpha, legibility);
+}
+
 JNIEXPORT void JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nRoundedRectEllipse(
     JNIEnv *, jclass, jlong ptr, jfloat x, jfloat y, jfloat w, jfloat h, jfloat rw, jfloat rh) {
     auto *ctx = reinterpret_cast<NanoVGContext *>(ptr);

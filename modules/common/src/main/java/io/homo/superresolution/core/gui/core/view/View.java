@@ -18,7 +18,6 @@
 
 package io.homo.superresolution.core.gui.core.view;
 
-import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.TooltipRenderer;
 import io.homo.superresolution.core.gui.core.UIInputState;
@@ -38,18 +37,24 @@ import org.joml.Vector2f;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 
 public class View {
     private final List<FrameEntry> frames = new ArrayList<>();
     private final YogaNode rootNode;
-    private final TooltipRenderer tooltipRenderer = new TooltipRenderer();
+    private final TooltipRenderer tooltipRenderer;
     private float viewportWidth;
     private float viewportHeight;
     private boolean layoutDirty = true;
     private MaterialDialog activeDialog;
 
     public View() {
+        this(new TooltipRenderer());
+    }
+
+    public View(TooltipRenderer tooltipRenderer) {
+        this.tooltipRenderer = Objects.requireNonNull(tooltipRenderer);
         this.rootNode = new YogaNode();
         this.rootNode.setDebugName("ViewRoot");
         this.rootNode.setFlexDirection(YogaFlexDirection.ROW);

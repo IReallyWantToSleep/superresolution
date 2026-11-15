@@ -141,6 +141,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         }
         ensureNotInFlight();
         VK_CHECK(vkResetCommandBuffer(nativeCommandBuffer, 0));
+        destroyTransientResources();
         clearRenderPassState();
         clearBindingState();
         state = CommandBufferState.Executable;
@@ -212,7 +213,7 @@ public class VulkanCommandBuffer implements ICommandBuffer {
     @Override
     public synchronized boolean isFenceSignaled() {
         if (externalSubmission) {
-            return !inFlight;
+            return false;
         }
         if (reusableFence == VK_NULL_HANDLE) {
             inFlight = false;
@@ -234,10 +235,8 @@ public class VulkanCommandBuffer implements ICommandBuffer {
 
     @Override
     public synchronized void waitForFence() {
-        if (externalSubmission && inFlight) {
-            io.homo.superresolution.common.minecraft.B3DVulkanBridge.awaitIdle();
-            markExternalComplete();
-            return;
+        if (externalSubmission) {
+            throw new IllegalStateException("External submissions must be completed by their owner");
         }
         if (reusableFence == VK_NULL_HANDLE) {
             inFlight = false;
@@ -300,21 +299,46 @@ public class VulkanCommandBuffer implements ICommandBuffer {
         }
     }
 
+    /**
+     * Waits up to {@code timeoutNanos} for the given submission to retire.
+     *
+     * @return {@code false} if the timeout elapsed first; the submission stays in flight
+     */
+    public synchronized boolean waitForSubmission(long generation, long timeoutNanos) {
+        requireKnownSubmissionGeneration(generation);
+        if (submissionGeneration > generation || reusableFence == VK_NULL_HANDLE) {
+            if (submissionGeneration == generation) {
+                waitForFence();
+            }
+            return true;
+        }
+        int status = vkWaitForFences(vulkanDevice.getVkDevice(), reusableFence, true, timeoutNanos);
+        if (status == VK_TIMEOUT) {
+            return false;
+        }
+        VK_CHECK(status);
+        inFlight = false;
+        destroyTransientResourcesIfComplete();
+        return true;
+    }
+
     public synchronized void markExternalSubmitted() {
         ensureNotDestroyed();
         if (state != CommandBufferState.Executable) {
             throw new IllegalStateException("Command buffer must be executable before external submit");
         }
-        inFlight = true;
+        ensureNotInFlight();
         externalSubmission = true;
+        inFlight = true;
         submissionGeneration++;
     }
 
     public synchronized boolean isExternallyComplete() {
-        return externalSubmission && !inFlight;
+        return !externalSubmission;
     }
 
     public synchronized void markExternalComplete() {
+        externalSubmission = false;
         inFlight = false;
         destroyTransientResourcesIfComplete();
     }

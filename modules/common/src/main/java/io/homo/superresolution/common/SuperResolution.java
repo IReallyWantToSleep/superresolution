@@ -28,6 +28,7 @@ import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.debug.AutoFramePacingTrace;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
@@ -49,6 +50,7 @@ import io.homo.superresolution.core.graphics.GraphicsCapabilities;
 import io.homo.superresolution.core.graphics.glslang.GlslangShaderCompiler;
 import io.homo.superresolution.core.graphics.opengl.GlState;
 import io.homo.superresolution.core.gui.MaterialUI;
+import io.homo.superresolution.core.gui.core.backends.nanovg.NanoVGBackend;
 import io.homo.superresolution.core.gui.core.backends.render.GuiScaleManager;
 import io.homo.superresolution.core.impl.Destroyable;
 import io.homo.superresolution.core.ngx.NgxInitializer;
@@ -211,6 +213,7 @@ public final class SuperResolution implements Destroyable {
                     ConfigScreenBuilder.create().buildConfigScreen(MinecraftUtils.getScreen())
             );
         }
+        AutoFramePacingTrace.onFrameEnd();
     }
 
     public static void registerEvents() {
@@ -786,6 +789,7 @@ public final class SuperResolution implements Destroyable {
                             "Cannot destroy the graphics backend while an algorithm is active"));
         }
         throwAlgorithmFailure(algorithmFailure);
+        NanoVGBackend.destroy();
         InteropResourcesPreprocessor.destroy();
         // GLFW must destroy the hidden OpenGL context before the Vulkan driver is torn down.
         PresentationWindowState.destroyRenderWindow();

@@ -368,6 +368,19 @@ void NanoVGContext::RoundedRectComplex(float x, float y, float w, float h, float
     nvgRoundedRectComplex(ctx, x, y, w, h, tl, tr, br, bl);
 }
 
+int NanoVGContext::RoundedRectLiquidGlass(float x, float y, float w, float h,
+                                          float bottomLeft, float bottomRight, float topLeft, float topRight,
+                                          float lightAngle, float lightIntensity, float refraction,
+                                          float depth, float dispersion, float frost,
+                                          float brightness, float contrast, float saturation, float alpha,
+                                          float tintRed, float tintGreen, float tintBlue, float tintAlpha, float legibility) {
+    return nvSrRhiRoundedRectLiquidGlassRHI(ctx, x, y, w, h,
+                                            bottomLeft, bottomRight, topLeft, topRight,
+                                            lightAngle, lightIntensity, refraction, depth, dispersion, frost,
+                                            brightness, contrast, saturation, alpha,
+                                            tintRed, tintGreen, tintBlue, tintAlpha, legibility);
+}
+
 void NanoVGContext::RoundedRectEllipse(float x, float y, float w, float h, float rw, float rh) {
     nvgRoundedRectEllipse(ctx, x, y, w, h, rw, rh);
 }

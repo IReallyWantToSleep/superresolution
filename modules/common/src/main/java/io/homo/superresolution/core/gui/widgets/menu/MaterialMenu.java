@@ -280,9 +280,13 @@ public class MaterialMenu extends MaterialContainerWidget<MaterialMenu> {
         return this;
     }
 
+    protected MaterialMenuGroup createGroup() {
+        return new MaterialMenuGroup(this);
+    }
+
     public MaterialMenu addItem(MaterialMenuItem item) {
         if (getChildren().isEmpty()) {
-            addChild(new MaterialMenuGroup(this));
+            addChild(createGroup());
         }
         AbstractLayoutElement lastChild = (AbstractLayoutElement) getChildren().get(getChildren().size() - 1);
         if (lastChild instanceof MaterialMenuGroup group) {

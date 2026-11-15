@@ -153,23 +153,12 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
         float animatedHeight = bounds.height * expandProgress;
 
         ctx.save();
-        MaterialElevation.draw(
-                ctx,
-                2,
-                bounds.x,
-                bounds.y,
-                bounds.width,
-                bounds.height,
+        drawBackground(ctx, bounds, animatedHeight,
                 Math.min(bottomLeft, animatedHeight / 2),
                 Math.min(bottomRight, animatedHeight / 2),
                 Math.min(topLeft, animatedHeight / 2),
-                Math.min(topRight, animatedHeight / 2)
-        );
-        ctx.beginPath();
-        ctx.roundedRectComplex(bounds.x, bounds.y, bounds.width, animatedHeight,
-                Math.min(bottomLeft, animatedHeight / 2), Math.min(bottomRight, animatedHeight / 2), Math.min(topLeft, animatedHeight / 2), Math.min(topRight, animatedHeight / 2));
-        ctx.fillColor(backgroundColor);
-        ctx.endPath(true);
+                Math.min(topRight, animatedHeight / 2),
+                backgroundColor);
         ctx.restore();
 
         for (ILayoutElement child : getChildren()) {
@@ -179,6 +168,28 @@ public class MaterialMenuGroup extends MaterialContainerWidget<MaterialMenuGroup
                 }
             }
         }
+    }
+
+    protected void drawBackground(RenderContext ctx, Rectangle bounds, float animatedHeight,
+                                  float bottomLeft, float bottomRight, float topLeft, float topRight,
+                                  Color backgroundColor) {
+        MaterialElevation.draw(
+                ctx,
+                2,
+                bounds.x,
+                bounds.y,
+                bounds.width,
+                bounds.height,
+                bottomLeft,
+                bottomRight,
+                topLeft,
+                topRight
+        );
+        ctx.beginPath();
+        ctx.roundedRectComplex(bounds.x, bounds.y, bounds.width, animatedHeight,
+                bottomLeft, bottomRight, topLeft, topRight);
+        ctx.fillColor(backgroundColor);
+        ctx.endPath(true);
     }
 
     public MaterialMenuGroup addItem(MaterialMenuItem item) {

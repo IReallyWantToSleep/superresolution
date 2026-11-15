@@ -16,7 +16,19 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-package io.homo.superresolution.core.gui.b3d;
+package io.homo.superresolution.core.gui.widgets.hint;
 
-public record B3DGuiFrameJob(B3DGuiFrameInput input) {
+import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
+import io.homo.superresolution.core.gui.core.impl.Rectangle;
+import io.homo.superresolution.core.gui.widgets.glass.LiquidGlassStyle;
+
+public class LiquidGlassMaterialHintPane extends MaterialHintPane {
+    public static LiquidGlassMaterialHintPane create() {
+        return new LiquidGlassMaterialHintPane();
+    }
+
+    @Override
+    protected void renderBackground(RenderContext ctx, Rectangle bounds) {
+        LiquidGlassStyle.drawPanel(ctx, bounds, style().cornerRadius());
+    }
 }

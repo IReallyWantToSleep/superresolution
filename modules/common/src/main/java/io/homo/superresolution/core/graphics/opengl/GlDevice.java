@@ -50,15 +50,27 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import java.util.Collections;
 import java.util.EnumSet;
 
+import static org.lwjgl.opengl.GL11.glGetInteger;
+import static org.lwjgl.opengl.GL31.GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT;
+
 public class GlDevice implements IDevice {
     private final GlCommandDecoder commandDecoder;
     private final GlCommandPool defaultCommandPool;
     private final ValidatedCommandDecoder validatedCommandDecoder;
+    private int uniformBufferOffsetAlignment;
 
     public GlDevice() {
         this.commandDecoder = new GlCommandDecoder(this);
         this.defaultCommandPool = new GlCommandPool(this, java.util.EnumSet.of(CommandPoolFlags.Reset));
         this.validatedCommandDecoder = new ValidatedCommandDecoder(this.commandDecoder);
+    }
+
+    @Override
+    public int uniformBufferOffsetAlignment() {
+        if (uniformBufferOffsetAlignment == 0) {
+            uniformBufferOffsetAlignment = Math.max(1, glGetInteger(GL_UNIFORM_BUFFER_OFFSET_ALIGNMENT));
+        }
+        return uniformBufferOffsetAlignment;
     }
 
     @Override

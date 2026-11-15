@@ -448,6 +448,16 @@ extern "C" {
 
     /*
      * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
+     * Method:    nRoundedRectLiquidGlass
+     * Signature: (JFFFFFFFFFFFFFFFFFFFFFFF)I
+     */
+    JNIEXPORT jint JNICALL Java_io_homo_superresolution_thirdparty_nanovg_NanoVGContext_nRoundedRectLiquidGlass
+    (JNIEnv *, jclass, jlong, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat,
+     jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat, jfloat,
+     jfloat, jfloat, jfloat, jfloat, jfloat);
+
+    /*
+     * Class:     io_homo_superresolution_thirdparty_nanovg_NanoVGContext
      * Method:    nRoundedRectEllipse
      * Signature: (JFFFFFF)V
      */

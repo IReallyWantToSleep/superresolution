@@ -51,11 +51,13 @@ public enum FramePacingEvent {
     PRESENT_BATCH("present_batch"),
     PRESENT_TARGET_ACQUIRE("present_target_acquire"),
     PRESENT_BLIT_SUBMIT("present_blit_submit"),
+    PRESENT_GPU_READY_WAIT("present_gpu_ready_wait"),
     PRESENT_PACING_WAIT("present_pacing_wait"),
     PRESENT_CALL("present_call"),
     PRESENT_IMAGE_FIRST_PIXEL_VISIBLE("present_image_first_pixel_visible"),
     PRESENT_IMAGE_FIRST_PIXEL_OUT("present_image_first_pixel_out"),
     PRESENT_BATCH_RELEASE("present_batch_release"),
+    REFLEX_LATENCY_REPORT("reflex_latency_report"),
 
     EXTERNAL_FRAME_GENERATION_PREPARE("external_frame_generation_prepare"),
     EXTERNAL_PRESENT_BLIT_SUBMIT("external_present_blit_submit"),

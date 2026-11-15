@@ -66,6 +66,8 @@ import io.homo.superresolution.core.gui.widgets.button.MaterialButton;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonSize;
 import io.homo.superresolution.core.gui.widgets.button.MaterialButtonVariant;
 import io.homo.superresolution.common.gui.widgets.SponsorChip;
+import io.homo.superresolution.common.gui.widgets.glass.LiquidGlassInfoCard;
+import io.homo.superresolution.common.gui.widgets.glass.LiquidGlassTitlePill;
 import io.homo.superresolution.core.gui.widgets.dialog.MaterialDialog;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
 import io.homo.superresolution.core.gui.widgets.progress.MaterialCircularProgressIndicator;
@@ -113,6 +115,7 @@ public class ConfigPageContext {
     private final Runnable restartRequiredCallback;
     private final Consumer<String> invalidatePageCallback;
     private final BooleanSupplier activeScreen;
+    private final Runnable rebuildAppearanceCallback;
     public Map<String, List<QualityPresetOption>> qualityPresetOptionsCache = new HashMap<>();
     public SelectionListOptionEntry<FrameGenerationMode> frameGenerationEntry;
     public final List<Destroyable> destroyables = new ArrayList<>();
@@ -122,13 +125,14 @@ public class ConfigPageContext {
 
     public ConfigPageContext(View view, MaterialScheme materialScheme, Consumer<MaterialScheme> schemeSetter,
                              Runnable restartRequiredCallback, Consumer<String> invalidatePageCallback,
-                             BooleanSupplier activeScreen) {
+                             BooleanSupplier activeScreen, Runnable rebuildAppearanceCallback) {
         this.view = view;
         this.materialScheme = materialScheme;
         this.schemeSetter = schemeSetter;
         this.restartRequiredCallback = restartRequiredCallback;
         this.invalidatePageCallback = invalidatePageCallback;
         this.activeScreen = activeScreen;
+        this.rebuildAppearanceCallback = rebuildAppearanceCallback;
     }
 
     public View getView() {
@@ -146,6 +150,12 @@ public class ConfigPageContext {
 
     public void invalidateContentFrame(String key) {
         invalidatePageCallback.accept(key);
+    }
+
+    public void requestAppearanceRebuild() {
+        if (activeScreen.getAsBoolean()) {
+            rebuildAppearanceCallback.run();
+        }
     }
 
     public void destroy() {
@@ -562,7 +572,7 @@ public class ConfigPageContext {
     }
 
     public void addFrameTitle(ContainerWidget container, Text title) {
-        container.addChild(SpacerWidget.vertical(20f));
+        container.addChild(SpacerWidget.vertical(12f));
         TitlePill titlePill = createTitlePill(
                 title.getString(),
                 FRAME_TITLE_PILL_FONT_SIZE,
@@ -570,7 +580,7 @@ public class ConfigPageContext {
                 FRAME_TITLE_PILL_HORIZONTAL_PADDING,
                 12
         );
-        titlePill.layout().setMargin(YogaEdge.BOTTOM, 20);
+        titlePill.layout().setMargin(YogaEdge.BOTTOM, 4);
         container.addChild(titlePill);
     }
 
@@ -597,7 +607,7 @@ public class ConfigPageContext {
                 -1
         );
         groupPill.layout().setMargin(YogaEdge.TOP, 8);
-        groupPill.layout().setMargin(YogaEdge.BOTTOM, 3);
+        groupPill.layout().setMargin(YogaEdge.BOTTOM, 8);
         container.addChild(groupPill);
 
         OptionBuilder builder = createOptionBuilder(groupLabel);
@@ -622,7 +632,9 @@ public class ConfigPageContext {
             float horizontalPadding,
             float radius
     ) {
-        return new TitlePill(text, fontSize, minHeight, horizontalPadding, radius);
+        return SuperResolutionConfig.isLiquidGlassEnabled()
+                ? new LiquidGlassTitlePill(text, fontSize, minHeight, horizontalPadding, radius)
+                : new TitlePill(text, fontSize, minHeight, horizontalPadding, radius);
     }
 
     public void finalizeFrame(ScrollableFrame frame, ContainerWidget container) {
@@ -750,8 +762,14 @@ public class ConfigPageContext {
 
 
 
+    public InfoCard createInfoCard() {
+        return SuperResolutionConfig.isLiquidGlassEnabled()
+                ? new LiquidGlassInfoCard()
+                : new InfoCard();
+    }
+
     public InfoCard createGraphicsInfoCard(String title, String version, Set<String> extensions) {
-        InfoCard card = new InfoCard();
+        InfoCard card = createInfoCard();
         card.addChild(createInfoLine(Text.translatable("superresolution.screen.config.info.environment.version").getString(), version));
 
         ContainerWidget extensionsContainer = new ContainerWidget();
@@ -912,7 +930,7 @@ public class ConfigPageContext {
     }
 
     public InfoCard createAboutBrandCard() {
-        InfoCard card = new InfoCard();
+        InfoCard card = createInfoCard();
         card.layout().setAlignItems(YogaAlign.CENTER);
         card.layout().setJustifyContent(YogaJustify.CENTER);
 
@@ -1207,7 +1225,7 @@ public class ConfigPageContext {
         private final float horizontalPadding;
         private final float radius;
 
-        TitlePill(String text, float fontSize, float minHeight, float horizontalPadding, float radius) {
+        protected TitlePill(String text, float fontSize, float minHeight, float horizontalPadding, float radius) {
             this.text = text == null ? "" : text;
             this.fontSize = fontSize;
             this.minHeight = minHeight;
@@ -1235,15 +1253,7 @@ public class ConfigPageContext {
         @Override
         public void render(RenderContext ctx, UIInputState inputState) {
             Rectangle bounds = getBounds();
-            ctx.roundedRect(
-                    bounds.x,
-                    bounds.y,
-                    bounds.width,
-                    bounds.height,
-                    radius < 0 ? bounds.height / 2f : radius,
-                    scheme().surfaceContainerLow(),
-                    true
-            );
+            renderBackground(ctx, bounds);
 
             ctx.drawAlignedText(
                     ctx.font(),
@@ -1257,6 +1267,22 @@ public class ConfigPageContext {
                     scheme().onSurface(),
                     TextAlign.of(TextAlignType.ALIGN_LEFT, TextAlignType.ALIGN_MIDDLE),
                     false
+            );
+        }
+
+        protected float getBackgroundRadius(Rectangle bounds) {
+            return radius < 0 ? bounds.height / 2f : radius;
+        }
+
+        protected void renderBackground(RenderContext ctx, Rectangle bounds) {
+            ctx.roundedRect(
+                    bounds.x,
+                    bounds.y,
+                    bounds.width,
+                    bounds.height,
+                    getBackgroundRadius(bounds),
+                    scheme().surfaceContainerLow(),
+                    true
             );
         }
     }
@@ -1290,7 +1316,7 @@ public class ConfigPageContext {
     }
 
     public static class InfoCard extends MaterialContainerWidget<InfoCard> {
-        InfoCard() {
+        protected InfoCard() {
 
         }
 

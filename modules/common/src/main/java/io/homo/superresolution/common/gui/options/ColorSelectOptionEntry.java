@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.gui.options;
 
+import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.gui.impl.Text;
 import io.homo.superresolution.core.gui.core.AbstractWidget;
 import io.homo.superresolution.core.gui.core.ContainerWidget;
@@ -25,6 +26,7 @@ import io.homo.superresolution.core.gui.core.UIInputState;
 import io.homo.superresolution.core.gui.core.backends.render.RenderContext;
 import io.homo.superresolution.core.gui.core.impl.Rectangle;
 import io.homo.superresolution.core.gui.widgets.label.MaterialLabel;
+import io.homo.superresolution.core.gui.widgets.sliders.LiquidGlassMaterialSlider;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSlider;
 import io.homo.superresolution.core.gui.widgets.sliders.MaterialSliderSize;
 import io.homo.superresolution.core.utils.Color;
@@ -89,7 +91,9 @@ public class ColorSelectOptionEntry extends AbstractOptionEntry<Color, ColorSele
                 .fontSize(14);
         redValueLabel.layout().setMinWidth(50);
 
-        redSlider = MaterialSlider.create(MaterialSliderSize.ExtraSmall, SLIDER_WIDTH);
+        redSlider = SuperResolutionConfig.isLiquidGlassEnabled()
+                ? LiquidGlassMaterialSlider.create(MaterialSliderSize.ExtraSmall, SLIDER_WIDTH)
+                : MaterialSlider.create(MaterialSliderSize.ExtraSmall, SLIDER_WIDTH);
         redSlider.style().valueIndicator(false);
         redSlider.setMin(0);
         redSlider.setMax(255);
@@ -129,7 +133,9 @@ public class ColorSelectOptionEntry extends AbstractOptionEntry<Color, ColorSele
                 .fontSize(14);
         greenValueLabel.layout().setMinWidth(50);
 
-        greenSlider = MaterialSlider.create(MaterialSliderSize.ExtraSmall, SLIDER_WIDTH);
+        greenSlider = SuperResolutionConfig.isLiquidGlassEnabled()
+                ? LiquidGlassMaterialSlider.create(MaterialSliderSize.ExtraSmall, SLIDER_WIDTH)
+                : MaterialSlider.create(MaterialSliderSize.ExtraSmall, SLIDER_WIDTH);
         greenSlider.style().valueIndicator(false);
         greenSlider.setMin(0);
         greenSlider.setMax(255);
@@ -170,7 +176,9 @@ public class ColorSelectOptionEntry extends AbstractOptionEntry<Color, ColorSele
                 .fontSize(14);
         blueValueLabel.layout().setMinWidth(50);
 
-        blueSlider = MaterialSlider.create(MaterialSliderSize.ExtraSmall, SLIDER_WIDTH);
+        blueSlider = SuperResolutionConfig.isLiquidGlassEnabled()
+                ? LiquidGlassMaterialSlider.create(MaterialSliderSize.ExtraSmall, SLIDER_WIDTH)
+                : MaterialSlider.create(MaterialSliderSize.ExtraSmall, SLIDER_WIDTH);
         blueSlider.style().valueIndicator(false);
         blueSlider.setMin(0);
         blueSlider.setMax(255);

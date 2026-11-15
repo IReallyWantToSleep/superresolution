@@ -64,7 +64,7 @@ public final class AboutInfoPage implements ConfigPage {
                 "/assets/super_resolution/textures/gui/contributors/114514.png"
         );
 
-        InfoCard authorCard = new InfoCard();
+        InfoCard authorCard = context.createInfoCard();
         authorCard.addChild(context.createContributorRow(author));
         container.addChild(authorCard);
 
@@ -90,7 +90,7 @@ public final class AboutInfoPage implements ConfigPage {
 
         container.addChild(contributorSectionRow);
 
-        InfoCard contributorsCard = new InfoCard();
+        InfoCard contributorsCard = context.createInfoCard();
         List<ContributorInfo> contributors = new ArrayList<>(List.of(
                 new ContributorInfo("异世界美西螈", Text.translatable("superresolution.screen.config.info.about.contributor.ysjmxy.desc").getString(), "https://github.com/ysjmxy", "/assets/super_resolution/textures/gui/contributors/mxy.png"),
                 new ContributorInfo("yu", Text.translatable("superresolution.screen.config.info.about.contributor.yu.desc").getString(), "https://github.com/yu234567", "/assets/super_resolution/textures/gui/contributors/yu.png"),
@@ -127,7 +127,7 @@ public final class AboutInfoPage implements ConfigPage {
         sponsorSection.layout().setMargin(YogaEdge.BOTTOM, 6);
         container.addChild(sponsorSection);
 
-        InfoCard sponsorsCard = new InfoCard();
+        InfoCard sponsorsCard = context.createInfoCard();
         ContainerWidget sponsorsContainer = new SponsorWrappingRow();
         sponsorsContainer.layout().setWidthPercent(100);
         sponsorsContainer.layout().setMinHeight(100);
@@ -143,7 +143,7 @@ public final class AboutInfoPage implements ConfigPage {
         librarySection.layout().setMargin(YogaEdge.BOTTOM, 6);
         container.addChild(librarySection);
 
-        InfoCard librariesCard = new InfoCard();
+        InfoCard librariesCard = context.createInfoCard();
         List<LibraryInfo> libraries = new ArrayList<>(List.of(
                 new LibraryInfo("Architectury API", "https://github.com/architectury/architectury-api"),
                 new LibraryInfo("Night Config", "https://github.com/TheElectronWill/night-config"),
@@ -178,7 +178,7 @@ public final class AboutInfoPage implements ConfigPage {
         legalSection.layout().setMargin(YogaEdge.BOTTOM, 6);
         container.addChild(legalSection);
 
-        InfoCard noticesCard = new InfoCard();
+        InfoCard noticesCard = context.createInfoCard();
         noticesCard.layout().setGap(YogaGutter.ROW, 12);
 
         {
