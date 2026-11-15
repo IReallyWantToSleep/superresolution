@@ -769,11 +769,11 @@ public class SuperResolutionConfig {
     }
 
     public static MaterialTheme getTheme() {
-        return THEME.get();
+        return isLiquidGlassEnabled() ? MaterialTheme.Dark : THEME.get();
     }
 
     public static void setTheme(MaterialTheme value) {
-        THEME.set(value);
+        THEME.set(isLiquidGlassEnabled() ? MaterialTheme.Dark : value);
     }
 
     public static boolean isLiquidGlassEnabled() {
@@ -782,6 +782,10 @@ public class SuperResolutionConfig {
 
     public static void setLiquidGlassEnabled(boolean value) {
         LIQUID_GLASS_ENABLED.set(value);
+        if (value) {
+            setTheme(MaterialTheme.Dark);
+            setThemeSchemeVariant(SchemeVariant.CONTENT);
+        }
     }
 
     public static float getUiScale() {
@@ -837,11 +841,11 @@ public class SuperResolutionConfig {
     }
 
     public static SchemeVariant getThemeSchemeVariant() {
-        return THEME_SCHEME_VARIANT.get();
+        return isLiquidGlassEnabled() ? SchemeVariant.CONTENT : THEME_SCHEME_VARIANT.get();
     }
 
     public static void setThemeSchemeVariant(SchemeVariant value) {
-        THEME_SCHEME_VARIANT.set(value);
+        THEME_SCHEME_VARIANT.set(isLiquidGlassEnabled() ? SchemeVariant.CONTENT : value);
     }
 
     public static float getThemeContrastLevel() {

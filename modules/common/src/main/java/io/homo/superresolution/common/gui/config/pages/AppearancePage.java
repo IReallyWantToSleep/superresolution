@@ -61,11 +61,12 @@ public final class AppearancePage implements ConfigPage {
                                     Text.translatable("superresolution.screen.config.options.label.theme"),
                                     MaterialTheme.class,
                                     SuperResolutionConfig.getTheme())
-                            .setDefaultValue(MaterialTheme.Light)
+                            .setDefaultValue(() -> SuperResolutionConfig.isLiquidGlassEnabled() ? MaterialTheme.Dark : MaterialTheme.Light)
                             .setEnumNameProvider(t -> Text.translatable("superresolution.enum.theme." + t.name().toLowerCase()).getString())
+                            .setItemEnableRequirement(value -> () -> !SuperResolutionConfig.isLiquidGlassEnabled() || value == MaterialTheme.Dark)
                             .setSaveConsumer(value -> {
                                 SuperResolutionConfig.setTheme(value);
-                                MaterialUI.setScheme(MaterialScheme.from(value, SuperResolutionConfig.getThemeColor(),
+                                MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
                                         SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
                                 context.setMaterialScheme(MaterialUI.Scheme);
                             })
@@ -92,10 +93,11 @@ public final class AppearancePage implements ConfigPage {
                                     SuperResolutionConfig.getThemeSchemeVariant())
                             .setDefaultValue(SchemeVariant.CONTENT)
                             .setEnumNameProvider(v -> Text.translatable("superresolution.enum.schemevarinat." + v.name().toLowerCase()).getString())
+                            .setItemEnableRequirement(value -> () -> !SuperResolutionConfig.isLiquidGlassEnabled() || value == SchemeVariant.CONTENT)
                             .setSaveConsumer(value -> {
                                 SuperResolutionConfig.setThemeSchemeVariant(value);
                                 MaterialUI.setScheme(MaterialScheme.from(SuperResolutionConfig.getTheme(), SuperResolutionConfig.getThemeColor(),
-                                        value, SuperResolutionConfig.getThemeContrastLevel()));
+                                        SuperResolutionConfig.getThemeSchemeVariant(), SuperResolutionConfig.getThemeContrastLevel()));
                                 context.setMaterialScheme(MaterialUI.Scheme);
                             })
                             .build();
