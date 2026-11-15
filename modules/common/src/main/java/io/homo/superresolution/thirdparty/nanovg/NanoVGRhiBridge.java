@@ -562,9 +562,11 @@ public final class NanoVGRhiBridge {
             commandBuffer.writeToBuffer(dynamicVertexBuffer, 0, vertsData);
             commandBuffer.writeToBuffer(fragUniformBuffer, 0, packedUniforms);
             uploadFrameUniform(commandBuffer);
+            commandBuffer.memoryBarrier(MemoryBarrierType.ALL);
             for (DrawCommand drawCommand : drawCommands) {
                 executeDrawCommand(device, commandBuffer, renderState, drawCommand);
             }
+            commandBuffer.memoryBarrier(MemoryBarrierType.ALL);
             renderState.endIfNeeded(commandBuffer);
             if (ownedCommandBuffer) {
                 commandBuffer.end();

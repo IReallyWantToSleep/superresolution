@@ -331,6 +331,24 @@ public class ValidatedCommandDecoder implements ICommandDecoder {
     }
 
     @Override
+    public void writeToBuffer(ICommandBuffer commandBuffer, IVertexBuffer dst, long dstOffset, ByteBuffer data) {
+        requireNonNull(commandBuffer, "writeToBuffer(vertex)", "commandBuffer");
+        requireNonNull(dst, "writeToBuffer(vertex)", "dst");
+        requireRecording(commandBuffer, "writeToBuffer(vertex)");
+        requireNonNegative(dstOffset, "writeToBuffer(vertex)", "dstOffset");
+        requireNonNull(data, "writeToBuffer(vertex)", "data");
+        int size = data.remaining();
+        if (size == 0) {
+            return;
+        }
+        if (!rangeFits(dstOffset, size, dst.getSizeInBytes())) {
+            throw new IllegalArgumentException("writeToBuffer(vertex): write range exceeds vertex buffer size");
+        }
+
+        rawCommandDecoder.writeToBuffer(commandBuffer, dst, dstOffset, data);
+    }
+
+    @Override
     public void writeToTexture(ICommandBuffer commandBuffer, ITexture texture, ByteBuffer data, int x, int y, int width, int height, int mipLevel) {
         requireNonNull(commandBuffer, "writeToTexture", "commandBuffer");
         requireNonNullTexture(texture, "writeToTexture");
