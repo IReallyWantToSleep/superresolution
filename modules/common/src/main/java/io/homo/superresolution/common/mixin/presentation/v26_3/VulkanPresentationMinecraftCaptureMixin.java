@@ -46,6 +46,22 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
             method = "renderFrame",
             at = @At(
                     value = "INVOKE",
+                    target = "Lcom/mojang/renderpearl/api/commands/CommandEncoder;submit()V"
+            )
+    )
+    private void super_resolution$capturePendingFinalColor(boolean advanceGameTime, CallbackInfo ci) {
+        // The final color normally comes from the surface blit. Minecraft skips that blit when the
+        // surface is not acquired, so capture the main target before the frame is submitted.
+        if (PresentationBackendManager.isVulkanPresentationRequested()
+                && B3DVulkanBridge.isB3DVulkanBackend()) {
+            FrameCaptureManager.flushPendingFinalColor();
+        }
+    }
+
+    @Inject(
+            method = "renderFrame",
+            at = @At(
+                    value = "INVOKE",
                     target = "Lcom/mojang/renderpearl/api/commands/CommandEncoder;submit()V",
                     shift = At.Shift.AFTER
             )

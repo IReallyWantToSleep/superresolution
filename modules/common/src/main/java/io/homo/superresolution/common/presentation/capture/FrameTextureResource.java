@@ -261,7 +261,7 @@ final class FrameTextureResource {
             throw new IllegalArgumentException("Minecraft Vulkan capture requires a Vulkan texture");
         }
         TextureFormat format = source.getTextureFormat().isDepth()
-                ? TextureFormat.R32F : source.getTextureFormat();
+                ? TextureFormat.R32F : nativeStorageFormat(source.getTextureFormat());
         ensureOwned(source.getWidth(), source.getHeight(), format);
         B3DVulkanBridge.recordCommands(commands -> {
             VulkanCommandBuffer vkCommands = (VulkanCommandBuffer) commands;
@@ -282,6 +282,17 @@ final class FrameTextureResource {
             nativeMemoryBarrier(vkCommands);
         });
         valid = true;
+    }
+
+    /**
+     * The capture writes through a storage image. On Minecraft's Vulkan device that is limited
+     * to the core storage formats, because Minecraft does not enable
+     * {@code shaderStorageImageExtendedFormats}. RGBA16 (UNORM) is not core, and an HDR output
+     * mod's PQ frame arrives in it. RGBA16F is core and resolves [0, 1] in 11-bit steps, finer
+     * than the 10-bit window that frame is shown in.
+     */
+    private static TextureFormat nativeStorageFormat(TextureFormat format) {
+        return format == TextureFormat.RGBA16 ? TextureFormat.RGBA16F : format;
     }
 
     private void restoreSnapshotForConsumers(VulkanCommandBuffer commands) {

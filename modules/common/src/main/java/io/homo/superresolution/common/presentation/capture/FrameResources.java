@@ -108,6 +108,18 @@ public final class FrameResources {
         finalColor.copyFrom(source, false);
     }
 
+    /**
+     * The final color for SR's Vulkan surface backend: the image handed to its blit, already in
+     * the window's encoding. It is kept apart from {@link #copyFinalColor} because hooks on that
+     * method's OpenGL capture convert the main target into the window encoding. The HDR mod's
+     * PQ conversion is one such hook, and it must not run on an image that is converted already.
+     */
+    void copyPresentedColor(ITexture source) {
+        requireWritable();
+        trackCaptureSubmission();
+        finalColor.copyFrom(source, false);
+    }
+
     void copyHudlessColor(ITexture source) {
         requireWritable();
         trackCaptureSubmission();
