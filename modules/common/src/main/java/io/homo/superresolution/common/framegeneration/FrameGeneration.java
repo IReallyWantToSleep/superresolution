@@ -611,6 +611,14 @@ public final class FrameGeneration {
      * {@link BackendNegotiator#resolve} calls per frame, which is what the predicates
      * used to achieve by short-circuiting before they reached the negotiator.
      */
+    /**
+     * Whether presentation should capture the HUD-less color, depth and motion vectors. Only frame
+     * generation reads them, and each is a full-screen GPU copy every frame.
+     */
+    public static boolean needsCapturedInputs() {
+        return frameGenerationConfigured();
+    }
+
     private static boolean frameGenerationConfigured() {
         FrameGenerationMode configured = SuperResolutionConfig.getFrameGenerationMode();
         return configured != null

@@ -23,6 +23,7 @@ import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
@@ -63,13 +64,17 @@ public final class FrameCaptureManager {
     }
 
     public static void captureHudlessColor() {
-        if (!isInitialized() || !isWorldFrame()) {
+        if (!isInitialized() || !FrameGeneration.needsCapturedInputs() || !isWorldFrame()) {
             return;
         }
         FrameResources frame = beginFrame(GameFrameIndex.current());
         ITexture color = originColorTexture();
         if (frame != null && color != null) {
-            frame.copyHudlessColor(color);
+            if (B3DVulkanBridge.isB3DVulkanBackend()) {
+                frame.copyNativeHudlessColor(color);
+            } else {
+                frame.copyHudlessColor(color);
+            }
         }
     }
 
@@ -141,6 +146,7 @@ public final class FrameCaptureManager {
                 || (!B3DVulkanBridge.isB3DVulkanBackend()
                     && event.getAlgorithm() instanceof InteropAlgorithm<?> interop
                     && interop.supportsInputCapture())
+                || !FrameGeneration.needsCapturedInputs()
                 || !isWorldFrame()) {
             return;
         }

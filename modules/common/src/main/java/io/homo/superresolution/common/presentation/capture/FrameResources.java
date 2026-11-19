@@ -114,6 +114,18 @@ public final class FrameResources {
         hudlessColor.copyFrom(source, false);
     }
 
+    /**
+     * The HUD-less color on Minecraft's Vulkan backend. It is kept apart from
+     * {@link #copyHudlessColor} because hooks on that method convert an OpenGL capture: the HDR
+     * mod's PQ conversion is one. On Vulkan that hook throws on every frame, logs the stack
+     * trace and leaves the image as it was.
+     */
+    void copyNativeHudlessColor(ITexture source) {
+        requireWritable();
+        trackCaptureSubmission();
+        hudlessColor.copyFrom(source, false);
+    }
+
     void copyDepth(ITexture source) {
         requireWritable();
         trackCaptureSubmission();
