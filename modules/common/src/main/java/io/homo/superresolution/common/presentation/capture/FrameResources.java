@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.presentation.capture;
 
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.common.presentation.vulkan.FramePacingTiming;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.opengl.texture.GlImportableTexture2D;
@@ -57,7 +58,7 @@ public final class FrameResources {
     private boolean borrowedInputReleaseRequired;
     private boolean borrowedInputReleaseSubmitted;
     private boolean borrowedInputReleaseFailed;
-    private B3DVulkanBridge.CommandCompletion captureCompletion;
+    private volatile B3DVulkanBridge.CommandCompletion captureCompletion;
 
     FrameResources(
             int index,
@@ -152,8 +153,46 @@ public final class FrameResources {
     }
 
     void seal() {
-        awaitCaptureCompletion();
+        // Submit the capture if Minecraft's recording still holds it, but leave the wait for the
+        // GPU to the threads that read it (awaitCaptureReady). Waiting here held the render thread
+        // until the GPU had finished each frame, so the CPU never prepared the next frame while the
+        // GPU was busy, and frame time became CPU time plus GPU time.
+        B3DVulkanBridge.CommandCompletion completion = captureCompletion;
+        if (completion != null) {
+            completion.ensureSubmitted();
+        }
         lifecycle.seal();
+    }
+
+    /**
+     * The timeline semaphore that the submission holding this frame's captures signals, for a GPU
+     * wait in place of {@link #awaitCaptureReady()}; {@code VK_NULL_HANDLE} when there is none.
+     */
+    public long captureTimelineSemaphore() {
+        B3DVulkanBridge.CommandCompletion completion = captureCompletion;
+        return completion == null ? 0L : completion.semaphore();
+    }
+
+    /** The value {@link #captureTimelineSemaphore()} reaches once the captures are written. */
+    public long captureTimelineValue() {
+        B3DVulkanBridge.CommandCompletion completion = captureCompletion;
+        return completion == null ? 0L : completion.value();
+    }
+
+    /**
+     * Waits until the GPU has finished Minecraft's work that wrote this frame's captures. Call it
+     * on the thread that is about to submit work reading them, after the frame is sealed. OpenGL
+     * captures have no such wait: their readiness travels in {@link #readySemaphores()}.
+     */
+    public void awaitCaptureReady() {
+        B3DVulkanBridge.CommandCompletion completion = captureCompletion;
+        if (completion == null) {
+            return;
+        }
+        try (FramePacingTrace.Span ignored = FramePacingTrace.INSTANCE.begin("capture_ready_wait",
+                logicalFrameIndex, -1L, -1L, -1L, -1L, "REAL", "")) {
+            completion.awaitCompletion();
+        }
     }
 
     void minecraftCommandsSubmitted() {
@@ -170,9 +209,12 @@ public final class FrameResources {
         }
     }
 
+    // Render thread only, because it may have to submit Minecraft's recording first.
     private void awaitCaptureCompletion() {
-        if (captureCompletion != null) {
-            captureCompletion.awaitCompletion();
+        B3DVulkanBridge.CommandCompletion completion = captureCompletion;
+        if (completion != null) {
+            completion.ensureSubmitted();
+            completion.awaitCompletion();
             captureCompletion = null;
         }
     }
@@ -401,6 +443,11 @@ public final class FrameResources {
         long commandBufferGeneration = submittedCommandBufferGeneration;
         if (commandBuffer != null && commandBufferGeneration > 0L) {
             commandBuffer.waitForSubmission(commandBufferGeneration);
+        }
+        // Paths that release a frame without reading it never wait for its capture.
+        B3DVulkanBridge.CommandCompletion completion = captureCompletion;
+        if (completion != null) {
+            completion.awaitCompletion();
         }
         awaitDlssGInputs();
         finalColor.awaitOwnedRelease();

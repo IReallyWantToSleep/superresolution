@@ -162,6 +162,10 @@ final class PresentWorker {
                 boolean real = index == batch.generatedCount();
                 long[] waits;
                 if (batch.gpuReadyFences().size() == 0) {
+                    if (index == 0) {
+                        // Off the render thread: the blit reads the captured final color.
+                        batch.frameResources().awaitCaptureReady();
+                    }
                     waits = index == 0 ? batch.frameResources().readySemaphores() : new long[0];
                 } else {
                     waits = new long[]{batch.gpuReadyFences().handoffSemaphoreFor(index)};

@@ -303,6 +303,8 @@ final class FrameGenerationWorker {
                     providerId
             );
             try {
+                // The provider records and submits work that reads the captured inputs.
+                work.frameResources().awaitCaptureReady();
                 result = FrameGeneration.dispatchAsync(input);
                 String invalidReason = validateDispatchResult(result, input);
                 if (invalidReason != null) {

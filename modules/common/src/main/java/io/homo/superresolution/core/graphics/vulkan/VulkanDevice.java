@@ -52,9 +52,12 @@ import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkPhysicalDeviceProperties;
 import org.lwjgl.vulkan.VkQueue;
 import org.lwjgl.vulkan.VkSubmitInfo;
+import org.lwjgl.vulkan.VkTimelineSemaphoreSubmitInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.nio.IntBuffer;
+import java.nio.LongBuffer;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
@@ -62,7 +65,9 @@ import java.util.function.Consumer;
 
 import static io.homo.superresolution.core.graphics.vulkan.VulkanUtils.VK_CHECK;
 import static org.lwjgl.vulkan.NVLowLatency2.VK_STRUCTURE_TYPE_LATENCY_SUBMISSION_PRESENT_ID_NV;
+import static org.lwjgl.vulkan.VK10.VK_NULL_HANDLE;
 import static org.lwjgl.vulkan.VK10.VK_STRUCTURE_TYPE_SUBMIT_INFO;
+import static org.lwjgl.vulkan.VK12.VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
 import static org.lwjgl.vulkan.VK10.vkQueueSubmit;
 import static org.lwjgl.vulkan.VK10.vkGetPhysicalDeviceProperties;
 
@@ -468,6 +473,25 @@ public class VulkanDevice implements IDevice {
             int[] waitDstStageMask,
             long[] signalSemaphores
     ) {
+        return submitCommandBuffer(queue, commandBuffer, waitSemaphores, waitDstStageMask, signalSemaphores,
+                VK_NULL_HANDLE, 0L, 0);
+    }
+
+    /**
+     * Submits with the binary semaphore waits and signals, plus an optional wait for a timeline
+     * semaphore to reach {@code timelineWaitValue}. No timeline wait when the semaphore is
+     * {@code VK_NULL_HANDLE}.
+     */
+    public long submitCommandBuffer(
+            VulkanQueue queue,
+            VulkanCommandBuffer commandBuffer,
+            long[] waitSemaphores,
+            int[] waitDstStageMask,
+            long[] signalSemaphores,
+            long timelineWaitSemaphore,
+            long timelineWaitValue,
+            int timelineWaitStage
+    ) {
         validateQueueSubmission(queue, commandBuffer);
         if ((waitSemaphores == null) != (waitDstStageMask == null)) {
             throw new IllegalArgumentException(
@@ -486,10 +510,30 @@ public class VulkanDevice implements IDevice {
                         .sType(VK_STRUCTURE_TYPE_SUBMIT_INFO)
                         .pCommandBuffers(stack.pointers(commandBuffer.getNativeCommandBuffer().address()));
 
-                if (waitSemaphores != null && waitSemaphores.length > 0) {
-                    submitInfo.waitSemaphoreCount(waitSemaphores.length);
-                    submitInfo.pWaitSemaphores(stack.longs(waitSemaphores));
-                    submitInfo.pWaitDstStageMask(stack.ints(waitDstStageMask));
+                int binaryWaitCount = waitSemaphores == null ? 0 : waitSemaphores.length;
+                boolean timelineWait = timelineWaitSemaphore != VK_NULL_HANDLE;
+                int waitCount = binaryWaitCount + (timelineWait ? 1 : 0);
+                if (waitCount > 0) {
+                    LongBuffer waits = stack.mallocLong(waitCount);
+                    IntBuffer stages = stack.mallocInt(waitCount);
+                    for (int index = 0; index < binaryWaitCount; index++) {
+                        waits.put(index, waitSemaphores[index]);
+                        stages.put(index, waitDstStageMask[index]);
+                    }
+                    if (timelineWait) {
+                        waits.put(binaryWaitCount, timelineWaitSemaphore);
+                        stages.put(binaryWaitCount, timelineWaitStage);
+                        // One value per wait; binary semaphores ignore theirs.
+                        LongBuffer values = stack.callocLong(waitCount);
+                        values.put(binaryWaitCount, timelineWaitValue);
+                        submitInfo.pNext(VkTimelineSemaphoreSubmitInfo.calloc(stack)
+                                .sType(VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO)
+                                .pWaitSemaphoreValues(values)
+                                .address());
+                    }
+                    submitInfo.waitSemaphoreCount(waitCount);
+                    submitInfo.pWaitSemaphores(waits);
+                    submitInfo.pWaitDstStageMask(stages);
                 }
                 if (signalSemaphores != null && signalSemaphores.length > 0) {
                     submitInfo.pSignalSemaphores(stack.longs(signalSemaphores));

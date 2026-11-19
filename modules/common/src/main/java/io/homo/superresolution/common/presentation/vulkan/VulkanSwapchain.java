@@ -338,6 +338,12 @@ final class VulkanSwapchain {
                 }
             }
 
+            // This runs on the render thread, so the blit waits for the captured frame on the GPU
+            // (see the submit below). An external frame generation provider may also submit work
+            // of its own that reads the captures, so wait on the CPU while one is enabled.
+            if (FrameGeneration.isFrameGenerationEnabled()) {
+                frame.awaitCaptureReady();
+            }
             VulkanCommandBuffer commandBuffer = commandBuffers.acquire(device);
             commandBuffer.reset();
             commandBuffer.begin();
@@ -400,7 +406,9 @@ final class VulkanSwapchain {
                 signals[0] = renderFinished[imageIndex];
                 System.arraycopy(resourceSignals, 0, signals, 1, resourceSignals.length);
 
-                long fence = device.submitCommandBuffer(commandBuffer, waits, stages, signals);
+                long fence = device.submitCommandBuffer(device.getMainQueue(), commandBuffer, waits, stages,
+                        signals, frame.captureTimelineSemaphore(), frame.captureTimelineValue(),
+                        VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
                 frame.markSubmitted(commandBuffer, fence);
                 blitTrace.complete("complete", "");
             } catch (Throwable throwable) {
