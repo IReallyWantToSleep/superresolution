@@ -69,7 +69,7 @@ public class AlgorithmManager {
             return 0;
         }
 
-        if (SuperResolution.algorithmDescription.equals(AlgorithmDescriptions.DLSSRR)){
+        if (AlgorithmDescriptions.DLSSRR.equals(type)){
             return Math.max(Fsr2Utils.ffxFsr2GetJitterPhaseCount(
                     RenderHandlerManager.getRenderWidth(),
                     RenderHandlerManager.getScreenWidth()),32

@@ -36,6 +36,8 @@ Minecraft に組み込みの超解像アルゴリズムを導入し、パフォ�
 * Voxy 正常に動作
 * OptiFine 非対応
 
+Minecraft 26.3 の Fabric 用 `26.3.vk` ビルドでは Iris のネイティブ Vulkan に対応しています。対応するシェーダーパックを有効にすると、設定から FSR 1、AMD FSR、NVIDIA DLSS を選択できます。[ビルドと動作確認の手順](README_EN.md#minecraft-263-iris-on-native-vulkan-fabric)。
+
 # 要件
 
 ## システム要件

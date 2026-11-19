@@ -36,6 +36,8 @@
 * Voxy 正常工作
 * OptiFine 不支持
 
+Minecraft 26.3 的 Fabric `26.3.vk` 构建支持 Iris 原生 Vulkan。FSR 1、AMD FSR 和 NVIDIA DLSS 使用同一个算法选择器；着色器包必须提供对应的输入。[构建和测试说明](docs/README_EN.md#minecraft-263-iris-on-native-vulkan-fabric)。
+
 # 要求
 
 ## 系统要求

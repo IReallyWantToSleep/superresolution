@@ -32,10 +32,10 @@ import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VK10;
 import org.lwjgl.vulkan.VK12;
 import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.VkSemaphoreWaitInfo;
 import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkQueue;
-import org.lwjgl.vulkan.VkSemaphoreWaitInfo;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import java.util.function.Consumer;
@@ -273,6 +273,15 @@ public final class B3DVulkanBridge {
         throw new UnsupportedOperationException("Minecraft Vulkan recording requires the Vulkan 26.3 configuration");
         #endif
     }
+
+    #if MC_VER == MC_26_3 && IS_VULKAN == 1
+    public static void memoryBarrier() {
+        var encoder = (VulkanCommandEncoderAccessor) createCommandEncoder();
+        try (var stack = MemoryStack.stackPush()) {
+            VulkanCommandEncoder.memoryBarrier(encoder.currentCommandBuffer(), stack);
+        }
+    }
+    #endif
 
     public static CommandCompletion captureCompletion() {
         #if MC_VER == MC_26_3 && IS_VULKAN == 1

@@ -403,6 +403,10 @@ public class VulkanDevice implements IDevice {
         return validatedCommandDecoder;
     }
 
+    public void blitColor(VulkanCommandBuffer commands, ITexture source, ITexture target, int left, int top) {
+        commandDecoder.blitColor(commands, source, target, left, top);
+    }
+
     @Override
     public void submitCommandBuffer(ICommandBuffer commandBuffer) {
         VulkanCommandBuffer vkCommandBuffer = (VulkanCommandBuffer) commandBuffer;

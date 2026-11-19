@@ -90,6 +90,17 @@ public class IrisReflectionUtils {
         }
     }
 
+    #if MC_VER >= MC_26_3 && IS_VULKAN == 1
+    public static void setCompositePassReadsFromAlt(Object pass, ImmutableSet<Integer> readsFromAlt) {
+        ensureInitialized();
+        try {
+            stageReadsFromAltField.set(pass, readsFromAlt);
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException("Cannot record the compute pass's read targets", e);
+        }
+    }
+    #endif
+
     public static ImmutableSet<Integer> getCompositePassStateReadsFromAlt(Object object) {
         ensureInitialized();
         try {

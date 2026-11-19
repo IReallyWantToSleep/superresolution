@@ -81,7 +81,28 @@ public class IrisTextureResolver {
         if (view == null || view.isClosed() || view.texture().isClosed()) {
             return null;
         }
-        return borrowedTextures.computeIfAbsent(view, IrisTextureResolver::borrowTexture);
+        ITexture borrowed = borrowedTextures.get(view);
+        if (borrowed == null) {
+            // A miss means Iris created a new view, usually by reallocating its targets on a
+            // resize. Drop wrappers of views it has closed so they don't pile up until reset().
+            pruneClosedBorrowedTextures();
+            borrowed = borrowTexture(view);
+            borrowedTextures.put(view, borrowed);
+        }
+        return borrowed;
+    }
+
+    private static void pruneClosedBorrowedTextures() {
+        // The wrappers own no Vulkan objects (fixedLayout does not own the view), so destroying
+        // them only marks them dead.
+        borrowedTextures.entrySet().removeIf(entry -> {
+            GpuTextureView view = entry.getKey();
+            if (view.isClosed() || view.texture().isClosed()) {
+                entry.getValue().destroy();
+                return true;
+            }
+            return false;
+        });
     }
 
     private static ITexture borrowTexture(GpuTextureView view) {

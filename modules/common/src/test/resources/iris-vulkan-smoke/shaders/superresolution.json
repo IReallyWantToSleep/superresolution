@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "profiles": {
+    "*": {
+      "upscale": {
+        "enabled": true,
+        "trigger": { "type": "before", "pass": "composite1" },
+        "inputs": {
+          "color": { "enabled": true, "src": "autotex0", "region": [7, 11, 376, 235] },
+          "depth": { "enabled": true, "src": "autotex2", "region": [7, 11, 376, 235] },
+          "motion_vectors": { "enabled": true, "src": "autotex1", "region": [7, 11, 376, 235] }
+        },
+        "outputs": { "upscaled_color": { "enabled": true, "target": ["autotex0"], "region": [0, 0, -2, -2] } }
+      }
+    }
+  }
+}

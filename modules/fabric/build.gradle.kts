@@ -11,7 +11,8 @@ plugins {
 @Suppress("UNCHECKED_CAST")
 val versionConfig = rootProject.extra["versionConfig"] as VersionConfig
 val isDevBuild = gradle.extensions.extraProperties["isDev"] as? Boolean ?: false
-val graphicsBackend = providers.gradleProperty("sr.graphicsBackend").orElse("opengl").get().lowercase()
+val graphicsBackend = providers.gradleProperty("sr.graphicsBackend")
+    .orElse(if (gradle.extensions.extraProperties["isVulkan"] == true) "vulkan" else "opengl").get().lowercase()
 require(graphicsBackend in setOf("opengl", "vulkan")) {
     "sr.graphicsBackend must be opengl or vulkan"
 }
@@ -139,11 +140,12 @@ dependencies {
     for (lib in versionConfig.fabric.dependencies.modrinth) {
         var depName = "maven.modrinth:${lib.name}:${lib.version}-fabric,${lib.minecraftVersion ?: versionConfig.common.minecraftVersion}"
         if ((lib.name == "sodium" && MinecraftVersion.of(versionConfig.common.minecraftVersion) > MinecraftVersion.of("1.21.10")) || lib.name == "sodium.maven") {
-            depName = "net.caffeinemc:sodium-fabric:${lib.version}"
+            val localSodium = gradle.extensions.extraProperties.properties["sodiumJar"] as? File
+            val sodium = localSodium?.let { files(it) } ?: "net.caffeinemc:sodium-fabric:${lib.version}"
             if (lib.compileOnly) {
-                modCompileOnlyCompat(depName)
+                modCompileOnlyCompat(sodium)
             } else {
-                modImplementationCompat(depName)
+                modImplementationCompat(sodium)
             }
             continue
         }
@@ -181,25 +183,27 @@ dependencies {
     }
 
     for (lib in versionConfig.fabric.dependencies.local) {
+        val overrideJar = gradle.extensions.extraProperties.properties["irisVulkanJar"] as? File
+        val jar = if (lib.name == "iris_263_vk" && overrideJar != null) overrideJar else rootProject.file("libs/${lib.name}.jar")
         if (lib.isMod) {
             if (lib.compileOnly) {
                 if (lib.useJarJar) {
-                    modCompileOnlyCompat(utils.JarJar.extractJars(project, rootProject.file("libs/${lib.name}.jar").absolutePath))
+                    modCompileOnlyCompat(utils.JarJar.extractJars(project, jar.absolutePath))
                 } else {
-                modCompileOnlyCompat(files(rootProject.file("libs/${lib.name}.jar")))
+                    modCompileOnlyCompat(files(jar))
                 }
             } else {
                 if (lib.useJarJar) {
-                    modImplementationCompat(utils.JarJar.extractJars(project, rootProject.file("libs/${lib.name}.jar").absolutePath))
+                    modImplementationCompat(utils.JarJar.extractJars(project, jar.absolutePath))
                 } else {
-                    modImplementationCompat(files(rootProject.file("libs/${lib.name}.jar")))
+                    modImplementationCompat(files(jar))
                 }
             }
         } else {
             if (lib.compileOnly) {
-                compileOnly(files(rootProject.file("libs/${lib.name}.jar")))
+                compileOnly(files(jar))
             } else {
-                implementation(files(rootProject.file("libs/${lib.name}.jar")))
+                implementation(files(jar))
             }
         }
     }
@@ -227,12 +231,11 @@ loom {
             jvmArguments.add("-Dsodium.checks.issue2561=false")
 
             // Only effective in 1.21.5+
-            //programArguments.add("--graphicsBackend=$graphicsBackend")
-            programArguments.add("--graphicsBackend=vulkan")
+            programArguments.add("--graphicsBackend=$graphicsBackend")
 
             programArguments.add("--renderDebugLabels=true")
 
-            runDirectory.set(rootProject.file("runs/fabric"))
+            runDirectory.set(rootProject.file(if (graphicsBackend == "vulkan") "runs/fabric-iris-vulkan" else "runs/fabric"))
         }
     }
 }

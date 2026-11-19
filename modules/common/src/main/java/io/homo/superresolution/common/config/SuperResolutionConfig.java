@@ -439,6 +439,10 @@ public class SuperResolutionConfig {
 
     public static AlgorithmDescription<?> getDefaultAlgorithm() {
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            #if MC_VER == MC_26_3 && IS_VULKAN == 1
+            AlgorithmDescription<?> spatial = AlgorithmRegistry.getDescriptionByID("fsr1");
+            if (spatial != null && Platform.currentPlatform.isInstallIris()) return spatial;
+            #endif
             return AlgorithmDescriptions.NONE;
         }
         try {

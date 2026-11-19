@@ -29,6 +29,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.UUID;
+import java.util.function.Supplier;
 
 public class AlgorithmDescription<T extends AbstractAlgorithm> {
     public final String briefName;
@@ -41,10 +42,12 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
     public final boolean customUpscaleRatio;
     private final List<GraphicsPath> graphicsPaths;
     protected final Class<T> clazz;
+    private final Supplier<? extends T> factory;
     private final String uuid = UUID.randomUUID().toString();
 
     private AlgorithmDescription(Builder<T> builder) {
         this.clazz = builder.clazz;
+        this.factory = builder.factory;
         this.briefName = builder.briefName;
         this.codeName = builder.codeName;
         this.displayName = builder.displayName;
@@ -123,6 +126,7 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
     }
 
     public T createNewInstance() {
+        if (factory != null) return factory.get();
         try {
             return this.clazz.getDeclaredConstructor().newInstance();
         } catch (Exception e) {
@@ -147,6 +151,7 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
 
     public static class Builder<T extends AbstractAlgorithm> {
         private final Class<T> clazz;
+        private Supplier<? extends T> factory;
         private String briefName;
         private String codeName;
         private String displayName;
@@ -163,6 +168,11 @@ public class AlgorithmDescription<T extends AbstractAlgorithm> {
 
         public Builder<T> briefName(String briefName) {
             this.briefName = briefName;
+            return this;
+        }
+
+        public Builder<T> factory(Supplier<? extends T> factory) {
+            this.factory = Objects.requireNonNull(factory);
             return this;
         }
 

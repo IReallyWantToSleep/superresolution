@@ -65,13 +65,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.*;
 
-#if MC_VER > MC_26_1_2
-import java.io.*;
-import com.google.common.io.Files;
-import com.google.common.base.*;
-import java.nio.charset.StandardCharsets;
-#endif
-
 public final class SuperResolution implements Destroyable {
     public static final String MOD_ID = "super_resolution";
     public static final Logger LOGGER = LoggerFactory.getLogger("SuperResolution");
@@ -99,59 +92,13 @@ public final class SuperResolution implements Destroyable {
     public static int cachedWidth;
     public static int cachedHeight;
     public static Thread renderThread;
-    #if MC_VER < MC_26_2
     public static boolean isUsingVulkan = false;
-    #else
-    public static boolean isUsingVulkan = false;
-    #endif
     // Guards the interop OpenGL context + Vulkan device teardown so it runs once per
     // shutdown, whether triggered early (no presentation) or deferred to destroy() TAIL.
     private static boolean graphicsBackendDestroyed = false;
 
     private static Minecraft minecraft = Minecraft.getInstance();
     private static SuperResolution instance;
-
-    static {
-        #if MC_VER > MC_26_1_2
-        BufferedReader reader = null;
-        boolean check = true;
-        try {
-            reader = Files.newReader(Platform.currentPlatform.getGameFolder().resolve("options.txt").toFile(), StandardCharsets.UTF_8);
-        } catch (FileNotFoundException e) {
-            check = false;
-        }
-
-        if (check) {
-            Map<String, String> options = new HashMap<>();
-
-            try {
-                reader.lines().forEach(line -> {
-                    try {
-                        Iterator<String> iterator = Splitter.on(':').limit(2).split(line).iterator();
-                        options.put(iterator.next(), iterator.next());
-                    } catch (Exception var3) {
-                    }
-                });
-            } catch (Throwable var6) {
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    } catch (Throwable var5) {
-                        var6.addSuppressed(var5);
-                    }
-                }
-
-                throw var6;
-            }
-
-            if (options.get("preferredGraphicsBackend") != null) {
-                isUsingVulkan = options.get("preferredGraphicsBackend").toLowerCase(Locale.ROOT).contains("vulkan");
-            } else {
-                isUsingVulkan = false;
-            }
-        }
-        #endif
-    }
 
     public SuperResolution() {
         instance = this;
@@ -169,6 +116,7 @@ public final class SuperResolution implements Destroyable {
             SuperResolution.LOGGER.warn("Super Resolution appears to be initialized more than once");
             return;
         }
+        isUsingVulkan = B3DVulkanBridge.isB3DVulkanBackend();
         SuperResolutionConfig.SPEC.load();
         GuiScaleManager.getInstance().setUserScale(SuperResolutionConfig.getUiScale());
         gameIsStarted = true;
