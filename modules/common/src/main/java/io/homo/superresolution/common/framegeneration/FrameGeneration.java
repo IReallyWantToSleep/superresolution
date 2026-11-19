@@ -619,6 +619,11 @@ public final class FrameGeneration {
         return frameGenerationConfigured();
     }
 
+    /** Whether frame generation is configured on and its presentation requirements are met. */
+    public static boolean isFrameGenerationConfigured() {
+        return frameGenerationConfigured();
+    }
+
     private static boolean frameGenerationConfigured() {
         FrameGenerationMode configured = SuperResolutionConfig.getFrameGenerationMode();
         return configured != null

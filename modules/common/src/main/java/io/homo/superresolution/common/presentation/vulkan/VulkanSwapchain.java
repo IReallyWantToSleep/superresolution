@@ -23,6 +23,7 @@ import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispa
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
+import io.homo.superresolution.common.lowlatency.LowLatencyDescriptions;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.perf.FramePacingTrace;
@@ -80,6 +81,8 @@ final class VulkanSwapchain {
     private VulkanCommandBufferRing presentationCommandBuffers;
     private VulkanBinarySemaphorePool applicationManagedAcquireSemaphores;
     private AsyncFramePresenter asyncFramePresenter;
+    // Render thread only. Created on the first frame the no-worker path presents off-thread.
+    private RealFramePresentThread realFramePresentThread;
     private boolean presentationSuspended;
     // 1x1 solid-color sources for the per-present cadence indicator (white = real
     // frame, cyan = interpolated); blitted into a corner of the swapchain image.
@@ -202,6 +205,7 @@ final class VulkanSwapchain {
     }
 
     public void suspendPresentation() {
+        drainRealFramePresentThread();
         requestRecreate();
         if (asyncFramePresenter != null) {
             asyncFramePresenter.awaitPresentationDrain();
@@ -240,6 +244,7 @@ final class VulkanSwapchain {
     public boolean present(FrameResources frame) {
         AsyncFramePresenter scheduler = ensureAsyncFramePresenter();
         if (scheduler != null) {
+            drainRealFramePresentThread();
             updateApplicationManagedFramePlan();
             recreateIfRequestedOnControlThread();
             FramePacingTrace.Span enqueueTrace = FramePacingTrace.INSTANCE.begin(
@@ -258,6 +263,10 @@ final class VulkanSwapchain {
                 enqueueTrace.close();
             }
         }
+        if (presentsOffRenderThread()) {
+            return presentOffRenderThread(frame);
+        }
+        drainRealFramePresentThread();
         String externalProviderId = FrameGeneration.mode().getId();
         FramePacingTrace.Span externalTrace = FramePacingTrace.INSTANCE.begin(
                 "external_present",
@@ -270,7 +279,7 @@ final class VulkanSwapchain {
                 externalProviderId
         );
         try {
-            ExternalPresentSubmission submission = submitPresentFrame(frame);
+            ExternalPresentSubmission submission = submitPresentFrame(frame, false, externalProviderId);
             if (submission == null) {
                 externalTrace.complete("fallback", "present_submission_unavailable");
                 return false;
@@ -282,7 +291,8 @@ final class VulkanSwapchain {
                         submission.imageIndex(),
                         frame.logicalFrameIndex(),
                         externalProviderId,
-                        timingPresentId
+                        timingPresentId,
+                        true
                 );
                 externalTrace.complete(
                         "complete",
@@ -304,26 +314,120 @@ final class VulkanSwapchain {
         }
     }
 
-    private ExternalPresentSubmission submitPresentFrame(FrameResources frame) {
+    /**
+     * Whether this frame is presented on {@link RealFramePresentThread}. Only without frame
+     * generation and without a low-latency mode: both tie present-time work to the render
+     * thread (provider callbacks around the present, Reflex markers and the Reflex lock).
+     */
+    private boolean presentsOffRenderThread() {
+        return !presentationSuspended
+                && !FrameGeneration.isFrameGenerationConfigured()
+                && LowLatencyDescriptions.NONE_ID.equals(LowLatency.modeId());
+    }
+
+    private boolean presentOffRenderThread(FrameResources frame) {
+        RealFramePresentThread presentThread = realFramePresentThread;
+        if (presentThread == null) {
+            presentThread = new RealFramePresentThread();
+            realFramePresentThread = presentThread;
+        }
+        // Waits for the previous present to return. Recreation stays on the render thread
+        // because it reads the window size, so it runs here, between two presents.
+        presentThread.drain();
+        plannedGeneratedFrames = 0;
+        if (swapchainFrameGenerationActive) {
+            recreateRequested = true;
+        }
+        if (recreateRequested) {
+            recreate();
+        }
+        boolean presentable = swapchain != VK_NULL_HANDLE && width > 0 && height > 0;
+        String providerId = FrameGeneration.mode().getId();
+        // The render-thread path makes these calls around its present while frame generation
+        // is off: preparing the external frame only disables frame generation, and the frame
+        // is finished as inactive. They stay on the render thread.
+        FrameGeneration.disableFrameGeneration();
+        presentThread.submit(() -> presentOnPresentThread(frame, providerId));
+        FrameGeneration.finishExternalFrame(frame, ExternalFrameGenerationDispatchResult.INACTIVE);
+        return presentable;
+    }
+
+    private void presentOnPresentThread(FrameResources frame, String providerId) {
+        FramePacingTrace.Span trace = FramePacingTrace.INSTANCE.begin(
+                "external_present",
+                frame.logicalFrameIndex(),
+                -1L,
+                -1L,
+                -1L,
+                -1L,
+                "REAL",
+                providerId
+        );
+        try {
+            ExternalPresentSubmission submission = submitPresentFrame(frame, true, providerId);
+            if (submission == null) {
+                trace.complete("fallback", "present_submission_unavailable");
+                return;
+            }
+            boolean presented = queuePresent(submission.imageIndex(), frame.logicalFrameIndex(),
+                    providerId, reservePresentTimingId(0L), false);
+            trace.complete("complete", "presented=" + presented);
+        } catch (Throwable throwable) {
+            if (!frame.isSubmitted()) {
+                frame.markUnrecoverable();
+            }
+            trace.complete("failed", throwable.getClass().getSimpleName() + ": "
+                    + String.valueOf(throwable.getMessage()));
+            throw throwable;
+        } finally {
+            trace.close();
+        }
+    }
+
+    private void drainRealFramePresentThread() {
+        RealFramePresentThread presentThread = realFramePresentThread;
+        if (presentThread != null) {
+            presentThread.drain();
+        }
+    }
+
+    /**
+     * Records and submits the blit of the captured final color. On the present thread
+     * ({@code onPresentThread}) the render thread has already recreated the swapchain if needed
+     * and made the frame-generation calls; an image that cannot be acquired skips the frame
+     * and leaves the recreation to the render thread.
+     */
+    private ExternalPresentSubmission submitPresentFrame(
+            FrameResources frame, boolean onPresentThread, String providerId
+    ) {
         try {
             if (!frame.hasFinalColor()) {
-                consumeWithoutPresentInternal(frame);
+                releaseWithoutPresent(frame, onPresentThread);
                 return null;
             }
-            plannedGeneratedFrames = 0;
-            if (swapchainFrameGenerationActive) {
-                recreateRequested = true;
-            }
-            if (recreateRequested) {
-                recreate();
+            if (!onPresentThread) {
+                plannedGeneratedFrames = 0;
+                if (swapchainFrameGenerationActive) {
+                    recreateRequested = true;
+                }
+                if (recreateRequested) {
+                    recreate();
+                }
             }
             if (swapchain == VK_NULL_HANDLE || width <= 0 || height <= 0) {
-                consumeWithoutPresentInternal(frame);
+                releaseWithoutPresent(frame, onPresentThread);
                 return null;
             }
 
             int syncSlot = nextImageAvailableIndex();
-            int imageIndex = acquireImage(syncSlot);
+            // The present thread must not hold the Reflex lock: the render thread takes it
+            // every frame. It only runs while no low-latency mode is configured.
+            int imageIndex = onPresentThread ? acquireImage(imageAvailable[syncSlot]) : acquireImage(syncSlot);
+            if (imageIndex < 0 && onPresentThread) {
+                requestRecreate();
+                releaseWithoutPresent(frame, true);
+                return null;
+            }
             if (imageIndex < 0) {
                 recreate();
                 if (swapchain == VK_NULL_HANDLE) {
@@ -341,43 +445,44 @@ final class VulkanSwapchain {
             // This runs on the render thread, so the blit waits for the captured frame on the GPU
             // (see the submit below). An external frame generation provider may also submit work
             // of its own that reads the captures, so wait on the CPU while one is enabled.
-            if (FrameGeneration.isFrameGenerationEnabled()) {
+            if (!onPresentThread && FrameGeneration.isFrameGenerationEnabled()) {
                 frame.awaitCaptureReady();
             }
             VulkanCommandBuffer commandBuffer = commandBuffers.acquire(device);
             commandBuffer.reset();
             commandBuffer.begin();
-            String providerId = FrameGeneration.mode().getId();
-            ExternalFrameGenerationDispatchResult externalResult;
-            FramePacingTrace.Span prepareTrace = FramePacingTrace.INSTANCE.begin(
-                    "external_frame_generation_prepare",
-                    frame.logicalFrameIndex(),
-                    -1L,
-                    -1L,
-                    imageIndex,
-                    -1L,
-                    "REAL",
-                    providerId
-            );
-            try {
-                externalResult = FrameGeneration.prepareExternalFrame(
-                        frame,
-                        width,
-                        height,
-                        imageFormat,
-                        imageCount,
-                        commandBuffer.getNativeCommandBuffer().address()
+            ExternalFrameGenerationDispatchResult externalResult = ExternalFrameGenerationDispatchResult.INACTIVE;
+            if (!onPresentThread) {
+                FramePacingTrace.Span prepareTrace = FramePacingTrace.INSTANCE.begin(
+                        "external_frame_generation_prepare",
+                        frame.logicalFrameIndex(),
+                        -1L,
+                        -1L,
+                        imageIndex,
+                        -1L,
+                        "REAL",
+                        providerId
                 );
-                prepareTrace.complete("complete", "");
-            } catch (Throwable throwable) {
-                prepareTrace.complete(
-                        "failed",
-                        throwable.getClass().getSimpleName() + ": "
-                                + String.valueOf(throwable.getMessage())
-                );
-                throw throwable;
-            } finally {
-                prepareTrace.close();
+                try {
+                    externalResult = FrameGeneration.prepareExternalFrame(
+                            frame,
+                            width,
+                            height,
+                            imageFormat,
+                            imageCount,
+                            commandBuffer.getNativeCommandBuffer().address()
+                    );
+                    prepareTrace.complete("complete", "");
+                } catch (Throwable throwable) {
+                    prepareTrace.complete(
+                            "failed",
+                            throwable.getClass().getSimpleName() + ": "
+                                    + String.valueOf(throwable.getMessage())
+                    );
+                    throw throwable;
+                } finally {
+                    prepareTrace.close();
+                }
             }
 
             FramePacingTrace.Span blitTrace = FramePacingTrace.INSTANCE.begin(
@@ -424,12 +529,15 @@ final class VulkanSwapchain {
 
             return new ExternalPresentSubmission(imageIndex, externalResult);
         } catch (Throwable throwable) {
-            FrameGeneration.disableFrameGeneration();
+            if (!onPresentThread) {
+                FrameGeneration.disableFrameGeneration();
+            }
             throw throwable;
         }
     }
 
     public void consumeWithoutPresent(FrameResources frame) {
+        drainRealFramePresentThread();
         if (presentationSuspended || surface.isMinimized()) {
             consumeWithoutPresentInternal(frame);
             return;
@@ -444,6 +552,19 @@ final class VulkanSwapchain {
 
     private void consumeWithoutPresentInternal(FrameResources frame) {
         FrameGeneration.disableFrameGeneration();
+        releaseWithoutPresent(frame);
+    }
+
+    private void releaseWithoutPresent(FrameResources frame, boolean onPresentThread) {
+        if (onPresentThread) {
+            releaseWithoutPresent(frame);
+        } else {
+            consumeWithoutPresentInternal(frame);
+        }
+    }
+
+    /** Releases a captured frame without presenting it. */
+    private void releaseWithoutPresent(FrameResources frame) {
         try {
             VulkanCommandBuffer commandBuffer = commandBuffers.acquire(device);
             commandBuffer.reset();
@@ -481,13 +602,30 @@ final class VulkanSwapchain {
 
     public void destroy() {
         Throwable failure = null;
+        RealFramePresentThread presentThread = realFramePresentThread;
+        realFramePresentThread = null;
+        if (presentThread != null) {
+            try {
+                presentThread.close();
+            } catch (Throwable throwable) {
+                failure = throwable;
+            }
+            if (!presentThread.isStopped()) {
+                throw new IllegalStateException("Cannot destroy presentation resources while the present thread is active",
+                        failure);
+            }
+        }
         AsyncFramePresenter presenter = asyncFramePresenter;
         try {
             if (presenter != null) {
                 presenter.close();
             }
         } catch (Throwable throwable) {
-            failure = throwable;
+            if (failure == null) {
+                failure = throwable;
+            } else {
+                failure.addSuppressed(throwable);
+            }
         }
         if (presenter != null && !presenter.isTerminated()) {
             throw new IllegalStateException("Cannot destroy presentation resources while a worker is active", failure);
@@ -520,7 +658,7 @@ final class VulkanSwapchain {
         destroySemaphores(renderFinished);
         renderFinished = new long[0];
         if (failure != null) {
-            throw new IllegalStateException("Application-managed presenter shutdown failed", failure);
+            throw new IllegalStateException("Presentation worker shutdown failed", failure);
         }
     }
 
@@ -528,7 +666,8 @@ final class VulkanSwapchain {
             int imageIndex,
             int logicalFrame,
             String providerId,
-            long timingPresentId
+            long timingPresentId,
+            boolean lowLatencyLock
     ) {
         FramePacingTrace.Span presentTrace = FramePacingTrace.INSTANCE.begin(
                 "present_call",
@@ -559,7 +698,8 @@ final class VulkanSwapchain {
                             timingPresentId,
                             "REAL",
                             providerId
-                    )
+                    ),
+                    lowLatencyLock
             );
             presentTrace.complete("complete", "vk_result=" + result);
         } catch (Throwable throwable) {
@@ -601,7 +741,8 @@ final class VulkanSwapchain {
                 0L,
                 0L,
                 false,
-                FramePacingTrace.Context.empty()
+                FramePacingTrace.Context.empty(),
+                true
         );
     }
 
@@ -614,7 +755,8 @@ final class VulkanSwapchain {
             long timingPresentId,
             long latencyMarkerId,
             boolean applicationManaged,
-            FramePacingTrace.Context timingContext
+            FramePacingTrace.Context timingContext,
+            boolean lowLatencyLock
     ) {
         if (!surface.isShown()) {
             return VK_SUCCESS;
@@ -705,7 +847,9 @@ final class VulkanSwapchain {
         // GPU work retires, so holding that lock across an application-managed present
         // stalled the render thread behind the present thread. The latency calls carry no
         // external-sync requirement on the swapchain; swapchainAccessLock covers the present.
-        return applicationManaged
+        // The present thread passes lowLatencyLock = false for the same reason. It only runs
+        // while no low-latency mode is configured.
+        return applicationManaged || !lowLatencyLock
                 ? operation.getAsInt()
                 : VulkanLowLatency.synchronizedSwapchainOperation(operation);
     }
@@ -900,7 +1044,7 @@ final class VulkanSwapchain {
             }
             return presentImage(target.imageIndex(), image.outOfBand(), target.swapchainHandle(),
                     target.renderFinishedSemaphore(), image.presentId(), image.timingPresentId(),
-                    image.latencyMarkerId(), true, timingContext);
+                    image.latencyMarkerId(), true, timingContext, true);
         }
     }
 
@@ -943,7 +1087,7 @@ final class VulkanSwapchain {
                 imageLayouts[target.imageIndex()] = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
             }
             int result = presentImage(target.imageIndex(), true, target.swapchainHandle(),
-                    target.renderFinishedSemaphore(), 0L, 0L, 0L, true, FramePacingTrace.Context.empty());
+                    target.renderFinishedSemaphore(), 0L, 0L, 0L, true, FramePacingTrace.Context.empty(), true);
             if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
                 requestRecreate();
             } else {

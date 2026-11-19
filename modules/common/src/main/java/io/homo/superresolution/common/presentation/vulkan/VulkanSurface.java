@@ -48,7 +48,8 @@ import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 public final class VulkanSurface {
     private long handle = VK_NULL_HANDLE;
     private long surface = VK_NULL_HANDLE;
-    private boolean shown;
+    // Read by the present thread.
+    private volatile boolean shown;
     private boolean framebufferResized;
     private int framebufferWidth = 1;
     private int framebufferHeight = 1;
