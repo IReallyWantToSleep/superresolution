@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.lowlatency.nv;
 
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.perf.FramePacingTrace;
 
 import java.util.Arrays;
 
@@ -33,11 +34,17 @@ import java.util.Arrays;
  * whole window of frames lands within 0.1 ms of the interval, and frame generation spaces its
  * output just as evenly.</p>
  *
- * <p>Works on windows of {@link #WINDOW_FRAMES} frame starts. A cap the frames do not hold is
- * replaced by the measured period plus {@link #HEADROOM}, and that period is remembered as what
- * the GPU sustains. A cap that holds is probed downwards to notice the GPU speeding up: in 1%
- * steps while still above the remembered period, in growing steps once below it, and each
- * failed probe pushes the next one further out.</p>
+ * <p>Works on windows of {@link #WINDOW_FRAMES} frame starts. A cap that holds is probed
+ * downwards to notice the GPU speeding up: in 1% steps while still above the remembered
+ * sustained period, in growing steps once below it. A probe the frames cannot hold, falling
+ * behind or spreading wider than {@link #SPREAD_TOLERANCE}, returns to the cap that held before
+ * it, and pushes the next probe further out. Only frames falling behind a cap that held mean
+ * the GPU slowed down: then the measured period becomes the sustained one and the cap that plus
+ * {@link #HEADROOM}, after {@link #BEHIND_WINDOWS} such windows in a row so that one hitch does
+ * not count. Frames that keep up but spread wide otherwise leave the cap alone: raising
+ * a cap the frames already meet cannot even them out. Raising it there, and on failed probes,
+ * held the cap far above what the GPU sustains (it climbed from 25 ms to 38 ms against frames
+ * that ran at 23 ms when the cap allowed it).</p>
  */
 final class AdaptiveFrameCap {
     private static final int WINDOW_FRAMES = 40;
@@ -53,6 +60,9 @@ final class AdaptiveFrameCap {
     private static final double MAX_PROBE_STEP = 0.08;
     private static final int BASE_PROBE_DELAY_WINDOWS = 3;
     private static final int MAX_PROBE_DELAY_WINDOWS = 12;
+    // A cap that held is only re-measured after this many windows in a row fall behind it: one
+    // slow window (a chunk load, a hitch) would otherwise lift it by the headroom and more.
+    private static final int BEHIND_WINDOWS = 2;
     private static final long MAX_PERIOD_NANOS = 250_000_000L;
 
     private final long[] periods = new long[WINDOW_FRAMES];
@@ -64,6 +74,8 @@ final class AdaptiveFrameCap {
     private int probeDelayWindows = BASE_PROBE_DELAY_WINDOWS;
     private double probeStep = MIN_PROBE_STEP;
     private boolean probing;
+    private long capBeforeProbeNanos;
+    private int behindWindows;
 
     /** The real-frame interval to enforce, in microseconds; 0 when no cap applies. */
     int capMicros() {
@@ -79,6 +91,8 @@ final class AdaptiveFrameCap {
         probeDelayWindows = BASE_PROBE_DELAY_WINDOWS;
         probeStep = MIN_PROBE_STEP;
         probing = false;
+        capBeforeProbeNanos = 0L;
+        behindWindows = 0;
     }
 
     /**
@@ -117,37 +131,66 @@ final class AdaptiveFrameCap {
 
     private void evaluate(long typicalNanos, long p90Nanos, long userIntervalNanos) {
         long previousCap = capNanos;
-        boolean holding = capNanos != 0L
-                && typicalNanos <= capNanos * HOLD_TOLERANCE
-                && p90Nanos <= capNanos * SPREAD_TOLERANCE;
+        boolean keepsUp = capNanos != 0L && typicalNanos <= capNanos * HOLD_TOLERANCE;
+        boolean even = p90Nanos <= capNanos * SPREAD_TOLERANCE;
+        if (keepsUp) {
+            behindWindows = 0;
+        }
+        String decision;
         if (userIntervalNanos > 0L && typicalNanos <= userIntervalNanos * HOLD_TOLERANCE) {
             // The user's own limit (or Minecraft's AFK limit) already paces every frame.
             capNanos = 0L;
             holdingWindows = 0;
             probing = false;
-        } else if (!holding) {
-            // No cap yet, or the GPU no longer keeps up with it: this window is what it sustains.
-            if (probing) {
-                probeDelayWindows = Math.min(probeDelayWindows * 2, MAX_PROBE_DELAY_WINDOWS);
-            }
-            sustainedNanos = typicalNanos;
-            capNanos = Math.round(typicalNanos * HEADROOM);
+            decision = "user_limit";
+        } else if (probing && (!keepsUp || !even)) {
+            // The probe asked for more than the GPU gives: back to the cap that held before it.
+            capNanos = capBeforeProbeNanos;
+            probeDelayWindows = Math.min(probeDelayWindows * 2, MAX_PROBE_DELAY_WINDOWS);
             probeStep = MIN_PROBE_STEP;
             probing = false;
             holdingWindows = 0;
+            decision = keepsUp ? "probe_uneven" : "probe_behind";
+        } else if (!keepsUp && capNanos != 0L && ++behindWindows < BEHIND_WINDOWS) {
+            // Noise until the next window says otherwise: it neither counts towards a probe nor
+            // restarts the count, or periodic slow windows would keep the cap from ever probing.
+            decision = "behind_once";
+        } else if (!keepsUp) {
+            // No cap yet, or the GPU no longer keeps up with a cap that held: this window is what
+            // it sustains now. The new cap sits well clear of the limit, so probing resumes soon.
+            behindWindows = 0;
+            sustainedNanos = typicalNanos;
+            capNanos = Math.round(typicalNanos * HEADROOM);
+            probeStep = MIN_PROBE_STEP;
+            probeDelayWindows = BASE_PROBE_DELAY_WINDOWS;
+            holdingWindows = 0;
+            decision = "behind";
+        } else if (!even) {
+            // The frames meet the cap but spread wide. That is not the cap's to fix: keep it,
+            // without restarting the count towards the next probe.
+            decision = "uneven";
         } else if (probing || ++holdingWindows >= probeDelayWindows) {
             if (probing && capNanos < sustainedNanos) {
                 // Faster than the GPU last managed and still holding: it sped up, search quickly.
                 probeStep = Math.min(probeStep * 2.0, MAX_PROBE_STEP);
                 probeDelayWindows = BASE_PROBE_DELAY_WINDOWS;
             }
+            capBeforeProbeNanos = capNanos;
             capNanos = Math.round(capNanos * (1.0 - probeStep));
             probing = true;
             holdingWindows = 0;
+            decision = "probe";
+        } else {
+            decision = "hold";
         }
         if (capNanos != previousCap) {
             SuperResolution.LOGGER.debug("Frame generation frame cap: {} us (window {} us, p90 {} us)",
                     capMicros(), typicalNanos / 1000L, p90Nanos / 1000L);
+        }
+        if (FramePacingTrace.INSTANCE.isRecording()) {
+            FramePacingTrace.INSTANCE.instant("adaptive_frame_cap", FramePacingTrace.Context.empty(), "complete",
+                    decision + " cap_us=" + capMicros() + " window_us=" + typicalNanos / 1000L
+                            + " p90_us=" + p90Nanos / 1000L + " sustained_us=" + sustainedNanos / 1000L);
         }
     }
 }
