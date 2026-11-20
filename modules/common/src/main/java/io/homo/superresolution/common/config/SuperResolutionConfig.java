@@ -664,7 +664,13 @@ public class SuperResolutionConfig {
     }
 
     public static boolean isEnableImgui() {
+        #if MC_VER >= MC_26_3
+        // The ImGui overlay runs on ImGui's GLFW backend, and Minecraft 26.3 replaced GLFW with
+        // SDL3: its classes are gone, so loading ImguiMain would crash the game.
+        return false;
+        #else
         return ENABLE_IMGUI.get();
+        #endif
     }
 
     public static void setEnableImgui(boolean value) {
