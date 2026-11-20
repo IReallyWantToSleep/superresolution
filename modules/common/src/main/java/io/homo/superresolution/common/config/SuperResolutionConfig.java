@@ -79,6 +79,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue ENABLE_RENDER_DOC;
     public static final BooleanValue ENABLE_IMGUI;
     public static final BooleanValue ENABLE_PRESENT_INDICATOR;
+    public static final BooleanValue LOG_FRAME_RATE;
     public static final BooleanValue PAUSE_GAME_ON_GUI;
     public static final BooleanValue AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS;
     public static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
@@ -260,6 +261,11 @@ public class SuperResolutionConfig {
                 "debug/enable_present_indicator",
                 () -> false,
                 "Stamp a small square onto every presented frame (white = rendered, cyan = generated) to visualize frame generation cadence"
+        );
+        LOG_FRAME_RATE = builder.defineBoolean(
+                "debug/log_frame_rate",
+                () -> false,
+                "Log the frame rate once a second: rendered and shown fps, frame times, present blocking, low-latency sleep, frame cap and driver latency"
         );
         ENABLE_EXPERIMENTAL_ALGORITHMS = builder.defineBoolean(
                 "experiment/enable_experimental_algorithms",
@@ -691,6 +697,14 @@ public class SuperResolutionConfig {
 
     public static void setEnablePresentIndicator(boolean value) {
         ENABLE_PRESENT_INDICATOR.set(value);
+    }
+
+    public static boolean isLogFrameRate() {
+        return LOG_FRAME_RATE.get();
+    }
+
+    public static void setLogFrameRate(boolean value) {
+        LOG_FRAME_RATE.set(value);
     }
 
     public static PresentationBackendType getPresentationBackend() {

@@ -29,6 +29,7 @@ import io.homo.superresolution.api.registry.AlgorithmDescription;
 import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.debug.AutoFramePacingTrace;
+import io.homo.superresolution.common.perf.FrameRateLog;
 import io.homo.superresolution.common.debug.imgui.ImguiMain;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.gui.ConfigScreenBuilder;
@@ -162,6 +163,7 @@ public final class SuperResolution implements Destroyable {
             );
         }
         AutoFramePacingTrace.onFrameEnd();
+        FrameRateLog.onFrameEnd();
     }
 
     public static void registerEvents() {

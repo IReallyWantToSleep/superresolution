@@ -20,6 +20,7 @@ package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispatchCompletion;
 import io.homo.superresolution.common.perf.FramePacingTrace;
+import io.homo.superresolution.common.perf.FrameRateLog;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 
 import java.util.ArrayList;
@@ -342,6 +343,7 @@ final class PresentWorker {
 
     private void presentImage(PresentImageBatch batch, PreparedImage image) {
         device.requirePresentSubmitTimeline().awaitIssued(image.submission.submissionTicket());
+        long presentStart = System.nanoTime();
         int result = swapchain.presentTarget(
                 image.target,
                 image.image,
@@ -355,6 +357,7 @@ final class PresentWorker {
                         presenter.providerId()
                 )
         );
+        FrameRateLog.onPresent(image.image.kind() == PresentImage.Kind.GENERATED, System.nanoTime() - presentStart);
         // The present was still queued for these results, so its semaphore wait executes and
         // the image goes back to the swapchain. A lost surface only reaches here as out of date
         // once presentation is retired for shutdown; during play it fails the presenter.

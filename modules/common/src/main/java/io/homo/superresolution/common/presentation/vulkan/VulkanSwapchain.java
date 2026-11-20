@@ -27,6 +27,7 @@ import io.homo.superresolution.common.lowlatency.LowLatencyDescriptions;
 import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.perf.FramePacingTrace;
+import io.homo.superresolution.common.perf.FrameRateLog;
 import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
@@ -734,6 +735,7 @@ final class VulkanSwapchain {
                 providerId
         );
         int result;
+        long presentStart = System.nanoTime();
         try {
             result = presentImage(
                     imageIndex,
@@ -756,6 +758,7 @@ final class VulkanSwapchain {
                     lowLatencyLock
             );
             presentTrace.complete("complete", "vk_result=" + result);
+            FrameRateLog.onPresent(false, System.nanoTime() - presentStart);
         } catch (Throwable throwable) {
             presentTrace.complete(
                     "failed",
