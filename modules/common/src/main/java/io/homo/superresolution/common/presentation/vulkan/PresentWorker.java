@@ -215,7 +215,8 @@ final class PresentWorker {
             try {
                 pacer.beginPresentFrameBatch(
                         waited, batch.pacingEnabled(), batch.generatedCount(), batch.intervalNanos());
-                for (PreparedImage image : prepared) {
+                for (int position = 0; position < prepared.size(); position++) {
+                    PreparedImage image = prepared.get(position);
                     if (isPaused()) {
                         pacer.reset();
                         break;
@@ -224,10 +225,10 @@ final class PresentWorker {
                     FramePacingTrace.Span waitTrace =
                             beginTrace("present_pacing_wait", batch, image.image);
                     try {
-                        if (image.image.kind() == PresentImage.Kind.GENERATED) {
-                            pacer.sleepAtPresentGeneratedFrame();
-                        } else {
-                            pacer.sleepAtPresentRealFrame();
+                        pacer.sleepAtPresentImage(prepared.size(), position);
+                        if (FramePacingTrace.INSTANCE.isRecording()) {
+                            waitTrace.complete("complete",
+                                    "lead_us=" + pacer.presentLeadNanos(prepared.size(), position) / 1000L);
                         }
                     } finally {
                         waitTrace.close();
@@ -237,8 +238,11 @@ final class PresentWorker {
                     FramePacingTrace.Span presentTrace =
                             beginTrace("present_call", batch, image.image);
                     try {
-                        presentImage(batch, image);
+                        long blockedNanos = presentImage(batch, image);
                         presented = true;
+                        if (batch.pacingEnabled()) {
+                            pacer.recordPresentBlock(prepared.size(), position, blockedNanos);
+                        }
                         presentTrace.complete("complete", "presented=true");
                     } catch (Throwable throwable) {
                         presentTrace.complete(
@@ -341,7 +345,8 @@ final class PresentWorker {
         }
     }
 
-    private void presentImage(PresentImageBatch batch, PreparedImage image) {
+    /** Presents one image and returns how long vkQueuePresentKHR blocked. */
+    private long presentImage(PresentImageBatch batch, PreparedImage image) {
         device.requirePresentSubmitTimeline().awaitIssued(image.submission.submissionTicket());
         long presentStart = System.nanoTime();
         int result = swapchain.presentTarget(
@@ -357,7 +362,8 @@ final class PresentWorker {
                         presenter.providerId()
                 )
         );
-        FrameRateLog.onPresent(image.image.kind() == PresentImage.Kind.GENERATED, System.nanoTime() - presentStart);
+        long blockedNanos = System.nanoTime() - presentStart;
+        FrameRateLog.onPresent(image.image.kind() == PresentImage.Kind.GENERATED, blockedNanos);
         // The present was still queued for these results, so its semaphore wait executes and
         // the image goes back to the swapchain. A lost surface only reaches here as out of date
         // once presentation is retired for shutdown; during play it fails the presenter.
@@ -367,6 +373,7 @@ final class PresentWorker {
         } else if (result != VK_SUCCESS) {
             throw new IllegalStateException("Failed to present an application-managed image, VkResult=" + result);
         }
+        return blockedNanos;
     }
 
     private void discardBatch(PresentImageBatch batch) {

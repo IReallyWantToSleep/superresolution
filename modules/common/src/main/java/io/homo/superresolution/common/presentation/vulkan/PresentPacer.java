@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
+import java.util.Arrays;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicLongArray;
@@ -29,6 +30,10 @@ final class PresentPacer {
     private static final long MAX_PRESENT_INTERVAL_NANOS = 100_000_000L;
     private static final long FINAL_SPIN_WINDOW_NANOS = 200_000L;
     private static final long BACKLOG_CATCH_UP_DIVISOR = 8L;
+    // Batches of up to this many images get their own present block averages.
+    private static final int MAX_TRACKED_BATCH_SIZE = 8;
+    private static final long PRESENT_BLOCK_AVERAGE_DIVISOR = 16L;
+    private static final long MIN_PRESENT_BLOCK_SAMPLE_CAP_NANOS = 1_000_000L;
 
     private final AsyncFramePresenter.NanoClock clock;
     private final LongConsumer deadlineWaiter;
@@ -41,6 +46,9 @@ final class PresentPacer {
     private boolean previousPacingEnabled;
     private int previousGeneratedCount = -1;
     private long presentIntervalNanos;
+    // Running average of how long each position's vkQueuePresentKHR blocked, per batch size;
+    // -1 until measured. Present thread only.
+    private final long[][] presentBlockNanos = newPresentBlockAverages();
 
     PresentPacer(AsyncFramePresenter.NanoClock clock) {
         this.clock = clock;
@@ -125,12 +133,53 @@ final class PresentPacer {
         }
     }
 
-    void sleepAtPresentGeneratedFrame() {
-        awaitNextImage();
+    /**
+     * Waits until the image at {@code position} of a batch of {@code batchSize} images should be
+     * presented.
+     *
+     * <p>The frame reaches the compositor when vkQueuePresentKHR returns, and a later image's
+     * present can block much longer than the batch's first. On NVIDIA under Wayland the first
+     * goes out right after frame generation, while the GPU is idle, and returned in 0.2 ms. The
+     * real frame goes out in the middle of Minecraft's next frame, where the driver's present
+     * work waits for a GPU timeslice: 3-4.5 ms (2560x1380, RTX 4060 Laptop, X2). Presents called
+     * on an even timeline thus arrived 14.7 and 9.8 ms apart instead of 12.3, and at 240 Hz the
+     * shown frames alternated between 2 and 4 refreshes. So each later image starts early by how
+     * much longer its present blocks than the first image's. The block is measured at the lead
+     * in use, so this settles where every present returns one first-image block after its
+     * deadline, however the driver's block responds to presenting earlier. With Reflex this
+     * also kept the driver out of a slow pacing state the late real present pushed it into
+     * (30 to 39-41 real fps; 240 Hz judder 52-60% to 28-42%).</p>
+     */
+    void sleepAtPresentImage(int batchSize, int position) {
+        if (nextDeadlineNanos != 0L) {
+            deadlineWaiter.accept(nextDeadlineNanos - presentLeadNanos(batchSize, position));
+        }
     }
 
-    void sleepAtPresentRealFrame() {
-        awaitNextImage();
+    /** Records how long the present of the image at {@code position} of a paced batch blocked. */
+    void recordPresentBlock(int batchSize, int position, long blockedNanos) {
+        if (batchSize < 1 || batchSize > MAX_TRACKED_BATCH_SIZE || position < 0 || position >= batchSize) {
+            return;
+        }
+        // A hitch must not drag the lead for the next many frames.
+        long sample = Math.min(Math.max(0L, blockedNanos),
+                Math.max(presentIntervalNanos, MIN_PRESENT_BLOCK_SAMPLE_CAP_NANOS));
+        long[] averages = presentBlockNanos[batchSize];
+        long previous = averages[position];
+        averages[position] = previous < 0L
+                ? sample
+                : previous + (sample - previous) / PRESENT_BLOCK_AVERAGE_DIVISOR;
+    }
+
+    long presentLeadNanos(int batchSize, int position) {
+        if (position <= 0 || batchSize > MAX_TRACKED_BATCH_SIZE || position >= batchSize) {
+            return 0L;
+        }
+        long[] averages = presentBlockNanos[batchSize];
+        if (averages[0] < 0L || averages[position] < 0L) {
+            return 0L;
+        }
+        return Math.max(0L, Math.min(averages[position] - averages[0], presentIntervalNanos / 2L));
     }
 
     long lastPhaseDurationNanos(Phase phase) {
@@ -168,10 +217,13 @@ final class PresentPacer {
         previousGeneratedCount = generatedCount;
     }
 
-    private void awaitNextImage() {
-        if (nextDeadlineNanos != 0L) {
-            deadlineWaiter.accept(nextDeadlineNanos);
+    private static long[][] newPresentBlockAverages() {
+        long[][] averages = new long[MAX_TRACKED_BATCH_SIZE + 1][];
+        for (int batchSize = 0; batchSize <= MAX_TRACKED_BATCH_SIZE; batchSize++) {
+            averages[batchSize] = new long[batchSize];
+            Arrays.fill(averages[batchSize], -1L);
         }
+        return averages;
     }
 
     private void sleepUntil(long targetNanos) {

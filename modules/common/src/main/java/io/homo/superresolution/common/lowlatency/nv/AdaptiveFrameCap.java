@@ -46,7 +46,9 @@ import java.util.Arrays;
  * held the cap far above what the GPU sustains (it climbed from 25 ms to 38 ms against frames
  * that ran at 23 ms when the cap allowed it). After every re-measure, the first included, the
  * cap descends in growing steps every window until a probe fails ({@link #DESCENT_STEP}), and
- * the window after a reset or a pause is discarded.</p>
+ * the window after a reset or a pause is discarded. A descent that ends in a failed probe is
+ * started again, up to {@link #DESCENT_RESTARTS} times, and a probe whose window falls behind
+ * even the cap before it is a hitch rather than a failure.</p>
  */
 final class AdaptiveFrameCap {
     private static final int WINDOW_FRAMES = 40;
@@ -76,6 +78,11 @@ final class AdaptiveFrameCap {
     // A descending probe whose frames keep up but spread wide is retried this many times before
     // it counts as failed.
     private static final int DESCENT_UNEVEN_RETRIES = 2;
+    // A descent that ends in a failed probe is started again this many times, after the base
+    // probe delay, before probing falls back to small steps behind a growing delay. Right after
+    // a world loads, chunk loading failed descents, and the doubled delays plus 1% steps then
+    // held the cap at 32.8-34.7 ms for 15-26 s against frames that settled at 23 ms.
+    private static final int DESCENT_RESTARTS = 2;
     private static final long MAX_PERIOD_NANOS = 250_000_000L;
 
     private final long[] periods = new long[WINDOW_FRAMES];
@@ -91,6 +98,8 @@ final class AdaptiveFrameCap {
     private int behindWindows;
     private boolean descending;
     private int unevenDescents;
+    private int descentRestarts;
+    private boolean resumeDescent;
     // The first window after a reset or a pause holds the hitches around it.
     private boolean discardWindow = true;
 
@@ -112,6 +121,8 @@ final class AdaptiveFrameCap {
         behindWindows = 0;
         descending = false;
         unevenDescents = 0;
+        descentRestarts = 0;
+        resumeDescent = false;
         discardWindow = true;
     }
 
@@ -170,10 +181,31 @@ final class AdaptiveFrameCap {
             holdingWindows = 0;
             probing = false;
             decision = "user_limit";
+        } else if (probing && !keepsUp && typicalNanos > capBeforeProbeNanos * HOLD_TOLERANCE) {
+            // Behind even the cap that held before the probe: a hitch, which says nothing about
+            // the probe. Go back without counting it as failed; a descent carries on.
+            capNanos = capBeforeProbeNanos;
+            probing = false;
+            unevenDescents = 0;
+            holdingWindows = 0;
+            decision = "probe_hitch";
         } else if (descending && probing && keepsUp && !even && ++unevenDescents <= DESCENT_UNEVEN_RETRIES) {
             // Mid-descent the frames keep up but spread wide: a loading hitch as likely as the
             // limit. Try the same cap again rather than ending the descent.
             decision = "descend_uneven";
+        } else if (descending && probing && (!keepsUp || !even) && descentRestarts > 0) {
+            // Soon after a re-measure the GPU is often still settling (chunk loading after a
+            // world loads): hold the last cap that kept up and descend again shortly.
+            descentRestarts--;
+            capNanos = capBeforeProbeNanos;
+            probeDelayWindows = BASE_PROBE_DELAY_WINDOWS;
+            probeStep = MIN_PROBE_STEP;
+            probing = false;
+            descending = false;
+            resumeDescent = true;
+            unevenDescents = 0;
+            holdingWindows = 0;
+            decision = "descend_restart";
         } else if (probing && (!keepsUp || !even)) {
             // The probe asked for more than the GPU gives: back to the cap that held before it.
             capNanos = capBeforeProbeNanos;
@@ -181,6 +213,7 @@ final class AdaptiveFrameCap {
             probeStep = MIN_PROBE_STEP;
             probing = false;
             descending = false;
+            resumeDescent = false;
             unevenDescents = 0;
             holdingWindows = 0;
             decision = keepsUp ? "probe_uneven" : "probe_behind";
@@ -197,6 +230,8 @@ final class AdaptiveFrameCap {
             probeStep = MIN_PROBE_STEP;
             probeDelayWindows = BASE_PROBE_DELAY_WINDOWS;
             descending = true;
+            descentRestarts = DESCENT_RESTARTS;
+            resumeDescent = false;
             holdingWindows = 0;
             decision = "behind";
         } else if (!even) {
@@ -204,6 +239,10 @@ final class AdaptiveFrameCap {
             // without restarting the count towards the next probe.
             decision = "uneven";
         } else if (descending || probing || ++holdingWindows >= probeDelayWindows) {
+            if (resumeDescent) {
+                resumeDescent = false;
+                descending = true;
+            }
             if (descending) {
                 probeStep = probing ? Math.min(probeStep * 2.0, MAX_PROBE_STEP) : DESCENT_STEP;
             } else if (probing && capNanos < sustainedNanos) {
