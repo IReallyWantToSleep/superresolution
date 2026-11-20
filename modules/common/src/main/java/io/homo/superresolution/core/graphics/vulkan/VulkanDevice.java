@@ -165,7 +165,7 @@ public class VulkanDevice implements IDevice {
             VulkanAsyncDispatchCapabilities requestedAsyncDispatchCapabilities
     ) {
         this(instance, physicalDevice, device, graphicsQueueFamilyIndex, ownsVkDevice,
-                createFrameGenerationQueue, createPresentQueue, requestedAsyncDispatchCapabilities, false);
+                createFrameGenerationQueue, 1, createPresentQueue, 2, requestedAsyncDispatchCapabilities, false);
     }
 
     private VulkanDevice(
@@ -175,7 +175,9 @@ public class VulkanDevice implements IDevice {
             int graphicsQueueFamilyIndex,
             boolean ownsVkDevice,
             boolean createFrameGenerationQueue,
+            int frameGenerationQueueIndex,
             boolean createPresentQueue,
+            int presentQueueIndex,
             VulkanAsyncDispatchCapabilities requestedAsyncDispatchCapabilities,
             boolean deferInitialization
     ) {
@@ -198,7 +200,7 @@ public class VulkanDevice implements IDevice {
                 ? new VulkanQueue(
                         this,
                         graphicsQueueFamilyIndex,
-                        1,
+                        frameGenerationQueueIndex,
                         VulkanQueueRole.FRAME_GENERATION
                 )
                 : null;
@@ -206,7 +208,7 @@ public class VulkanDevice implements IDevice {
                 ? new VulkanQueue(
                         this,
                         graphicsQueueFamilyIndex,
-                        2,
+                        presentQueueIndex,
                         VulkanQueueRole.PRESENT
                 )
                 : null;
@@ -264,12 +266,24 @@ public class VulkanDevice implements IDevice {
             VkQueue graphicsQueue,
             int graphicsQueueFamilyIndex
     ) {
+        // Minecraft created the device, so SR's frame generation and present queues exist only
+        // if SR reserved them while Minecraft created it (BorrowedDeviceSetup).
+        BorrowedDeviceSetup.QueueReservation queues = BorrowedDeviceSetup.queuesFor(graphicsQueueFamilyIndex);
+        boolean frameGenerationQueue = queues != null && queues.hasFrameGenerationQueue();
+        boolean presentQueue = frameGenerationQueue && queues.hasPresentQueue();
+        // Minecraft's device always enables timelineSemaphore: its own submissions use it.
+        boolean timelineSemaphore = device.getCapabilities().vkWaitSemaphores != VK_NULL_HANDLE;
+        VulkanAsyncDispatchCapabilities capabilities = queues == null
+                ? VulkanAsyncDispatchCapabilities.evaluate("", false, graphicsQueueFamilyIndex,
+                        1, false, false, false, false)
+                : VulkanAsyncDispatchCapabilities.evaluate(queues.providerId(), true, graphicsQueueFamilyIndex,
+                        queues.availableQueueCount(), timelineSemaphore, timelineSemaphore,
+                        frameGenerationQueue, presentQueue);
         VulkanDevice wrapper = new VulkanDevice(
-                instance, physicalDevice, device, graphicsQueueFamilyIndex,
-                false, false, false,
-                VulkanAsyncDispatchCapabilities.evaluate("", false, graphicsQueueFamilyIndex,
-                        1, false, false, false, false),
-                true);
+                instance, physicalDevice, device, graphicsQueueFamilyIndex, false,
+                frameGenerationQueue, frameGenerationQueue ? queues.frameGenerationQueueIndex() : -1,
+                presentQueue, presentQueue ? queues.presentQueueIndex() : -1,
+                capabilities, true);
         if (graphicsQueue != null) {
             wrapper.mainQueue.adoptQueue(graphicsQueue);
         }
@@ -282,6 +296,9 @@ public class VulkanDevice implements IDevice {
         }
         memoryAllocator.initialize();
         defaultCommandPool.init();
+        if (frameGenerationCommandPool != null) {
+            frameGenerationCommandPool.init();
+        }
     }
 
     @Override

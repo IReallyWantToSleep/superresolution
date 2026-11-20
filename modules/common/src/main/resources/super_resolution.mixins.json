@@ -82,6 +82,7 @@
         "presentation.v26_2.VulkanPresentationMinecraftBackendMixin",
         "presentation.v26_2.VulkanPresentationMinecraftCaptureMixin",
         "presentation.v26_2.VulkanPresentationWindowCloseMixin",
+        "presentation.v26_3.MinecraftVulkanDeviceSetupMixin",
         "presentation.v26_3.MinecraftVulkanQueueSubmitMixin",
         "presentation.v26_3.MinecraftVulkanQueueWaitMixin",
         "presentation.v26_3.VulkanPresentationGameRendererCaptureMixin",

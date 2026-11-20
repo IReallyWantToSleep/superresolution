@@ -104,6 +104,15 @@ public class VkRenderSystem implements IRenderSystem {
         VulkanPresentationFeature.validateBorrowedDevice(this);
         capabilities.init(instance, vulkanDevice.getPhysicalDevice());
         vulkanDevice.initializeBorrowedResources();
+        // Native Reflex needs present ids and timeline semaphores. SR enabled the former on
+        // Minecraft's device when it was created (BorrowedDeviceSetup); Minecraft requires the
+        // latter. This runs before the swapchain exists, which then enables its latency mode.
+        VulkanLowLatency.onDeviceCreated(
+                vulkanDevice,
+                BorrowedDeviceSetup.lowLatencyFeatures()
+                        && vulkanDevice.getVkDevice().getCapabilities().vkWaitSemaphores != VK_NULL_HANDLE
+                        && !Streamline.isInitialized()
+        );
         VulkanPresentationFeature.completeInitialization(this);
         initialized = true;
         LOGGER.info("Borrowed Vulkan initialization completed");
