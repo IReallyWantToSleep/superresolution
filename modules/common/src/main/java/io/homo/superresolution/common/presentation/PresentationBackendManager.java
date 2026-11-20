@@ -75,6 +75,20 @@ public final class PresentationBackendManager {
         return backend().shutdownApplicationManagedProvider(providerId, teardown);
     }
 
+    /**
+     * Stops presenting before Minecraft destroys its window, which on 26.2+ happens before
+     * {@link #shutdown} runs. Never throws: it runs at the start of {@code Minecraft.close()},
+     * and an exception there would skip the window and SDL teardown. A presenter failure is
+     * still reported when frame generation shuts the presenter down.
+     */
+    public static void retirePresentation() {
+        try {
+            backend().retirePresentation();
+        } catch (Throwable throwable) {
+            SuperResolution.LOGGER.warn("Failed to stop presenting before the window closed", throwable);
+        }
+    }
+
     public static synchronized void shutdown() {
         backend().shutdown();
     }

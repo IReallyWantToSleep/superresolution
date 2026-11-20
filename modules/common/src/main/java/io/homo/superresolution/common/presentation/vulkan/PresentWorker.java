@@ -26,7 +26,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
-import static org.lwjgl.vulkan.KHRSwapchain.VK_ERROR_OUT_OF_DATE_KHR;
 import static org.lwjgl.vulkan.KHRSwapchain.VK_SUBOPTIMAL_KHR;
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 
@@ -97,7 +96,7 @@ final class PresentWorker {
                 boolean discard;
                 synchronized (presenter.stateLock) {
                     inFlight = true;
-                    discard = paused || presenter.hasFailed();
+                    discard = paused || presenter.hasFailed() || swapchain.isPresentationRetired();
                 }
                 try {
                     releaseCompletedAcquires(false);
@@ -356,8 +355,11 @@ final class PresentWorker {
                         presenter.providerId()
                 )
         );
+        // The present was still queued for these results, so its semaphore wait executes and
+        // the image goes back to the swapchain. A lost surface only reaches here as out of date
+        // once presentation is retired for shutdown; during play it fails the presenter.
         image.presented = true;
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+        if (swapchain.isSwapchainOutOfDate(result) || result == VK_SUBOPTIMAL_KHR) {
             swapchain.requestRecreate();
         } else if (result != VK_SUCCESS) {
             throw new IllegalStateException("Failed to present an application-managed image, VkResult=" + result);

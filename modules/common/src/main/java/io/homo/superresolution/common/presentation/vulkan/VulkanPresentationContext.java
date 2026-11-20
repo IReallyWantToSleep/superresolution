@@ -108,6 +108,10 @@ public final class VulkanPresentationContext {
         return swapchain.shutdownApplicationManagedProvider(providerId, teardown);
     }
 
+    public void retirePresentation() {
+        swapchain.retirePresentation();
+    }
+
     public void destroy() {
         swapchain.destroy();
         surface.destroySurface(renderSystem.getVulkanInstance());

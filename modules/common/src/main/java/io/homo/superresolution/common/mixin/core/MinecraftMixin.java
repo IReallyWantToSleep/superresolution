@@ -172,6 +172,15 @@ public abstract class MinecraftMixin {
     }
     #endif
     #if MC_VER > MC_26_1_2
+    // close() destroys the GL context (RenderSystem.shutdownRenderer) and then the window
+    // (Window.close) before onDestroy below runs Super Resolution's teardown. Stop presenting
+    // first, while both still exist, so the frame-generation workers do not present queued
+    // frames into the surface of a destroyed window (VK_ERROR_SURFACE_LOST_KHR).
+    @Inject(method = "close", at = @At("HEAD"))
+    private void super_resolution$retirePresentation(CallbackInfo ci) {
+        PresentationBackendManager.retirePresentation();
+    }
+
     @Inject(method = "close", at = @At("HEAD"))
     private void super_resolution$closeNanoVG(CallbackInfo ci) {
         NanoVGBackend.destroy();

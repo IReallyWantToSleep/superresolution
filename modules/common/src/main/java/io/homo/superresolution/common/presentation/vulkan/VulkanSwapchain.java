@@ -57,6 +57,7 @@ final class VulkanSwapchain {
     private static final long ACQUIRE_TIMEOUT_NANOS = 100_000_000L;
     private static final int ACQUIRE_TIMEOUT = -1;
     private static final int ACQUIRE_OUT_OF_DATE = -2;
+    private static final long RETIRE_DRAIN_TIMEOUT_NANOS = 2_000_000_000L;
     private static final long[] NO_SEMAPHORES = new long[0];
     private static final int[] NO_STAGES = new int[0];
 
@@ -84,6 +85,9 @@ final class VulkanSwapchain {
     // Render thread only. Created on the first frame the no-worker path presents off-thread.
     private RealFramePresentThread realFramePresentThread;
     private boolean presentationSuspended;
+    // Set once, before Minecraft destroys the window this surface belongs to. Read by the
+    // present threads.
+    private volatile boolean presentationRetired;
     // 1x1 solid-color sources for the per-present cadence indicator (white = real
     // frame, cyan = interpolated); blitted into a corner of the swapchain image.
     private VulkanTexture realFrameIndicator;
@@ -220,6 +224,49 @@ final class VulkanSwapchain {
         presentationSuspended = true;
     }
 
+    /**
+     * Stops presenting for good. Minecraft 26.2+ destroys its window in {@code close()} before
+     * Super Resolution's teardown runs, and until then the frame-generation workers kept
+     * presenting queued frames into the surface of the destroyed window
+     * ({@code VK_ERROR_SURFACE_LOST_KHR}). Render thread only, while the window still exists.
+     * The workers stay alive so frame generation can still shut its provider down on its own
+     * thread; from here on they release frames without presenting them.
+     */
+    void retirePresentation() {
+        if (presentationRetired) {
+            return;
+        }
+        presentationRetired = true;
+        // Acquires and new batches see an unavailable configuration from here on, and
+        // recreate() no longer clears this.
+        requestRecreate();
+        try {
+            drainRealFramePresentThread();
+        } finally {
+            AsyncFramePresenter presenter = asyncFramePresenter;
+            if (presenter != null && !presenter.awaitPresentationIdle(RETIRE_DRAIN_TIMEOUT_NANOS)) {
+                SuperResolution.LOGGER.warn(
+                        "Frame-generation presentation did not go idle before the window closed");
+            } else {
+                SuperResolution.LOGGER.debug("Stopped Vulkan presentation before the window closes");
+            }
+        }
+    }
+
+    boolean isPresentationRetired() {
+        return presentationRetired;
+    }
+
+    /**
+     * Whether a present or acquire result only invalidates the swapchain, so the frame can be
+     * dropped. Surface loss counts only after {@link #retirePresentation}: then Minecraft is
+     * destroying the window. During play it is still an error.
+     */
+    boolean isSwapchainOutOfDate(int result) {
+        return result == VK_ERROR_OUT_OF_DATE_KHR
+                || (result == VK_ERROR_SURFACE_LOST_KHR && presentationRetired);
+    }
+
     public void resumePresentation() {
         presentationSuspended = false;
         if (asyncFramePresenter != null) {
@@ -242,6 +289,13 @@ final class VulkanSwapchain {
     }
 
     public boolean present(FrameResources frame) {
+        if (presentationRetired) {
+            // Nothing presents any more. The frame-generation workers stay paused until
+            // shutdown, so handing them a frame could block on a full queue.
+            drainRealFramePresentThread();
+            consumeWithoutPresentInternal(frame);
+            return false;
+        }
         AsyncFramePresenter scheduler = ensureAsyncFramePresenter();
         if (scheduler != null) {
             drainRealFramePresentThread();
@@ -538,7 +592,7 @@ final class VulkanSwapchain {
 
     public void consumeWithoutPresent(FrameResources frame) {
         drainRealFramePresentThread();
-        if (presentationSuspended || surface.isMinimized()) {
+        if (presentationSuspended || presentationRetired || surface.isMinimized()) {
             consumeWithoutPresentInternal(frame);
             return;
         }
@@ -712,7 +766,7 @@ final class VulkanSwapchain {
         } finally {
             presentTrace.close();
         }
-        if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+        if (isSwapchainOutOfDate(result)) {
             recreateRequested = true;
             return false;
         }
@@ -885,7 +939,7 @@ final class VulkanSwapchain {
                 if (result == VK_TIMEOUT) {
                     return ACQUIRE_TIMEOUT;
                 }
-                if (result == VK_ERROR_OUT_OF_DATE_KHR) {
+                if (isSwapchainOutOfDate(result)) {
                     recreateRequested = true;
                     return ACQUIRE_OUT_OF_DATE;
                 }
@@ -940,7 +994,8 @@ final class VulkanSwapchain {
         synchronized (swapchainLock) {
             return new PresentationConfiguration(swapchainGeneration, swapchain, width, height,
                     imageFormat, imageCount,
-                    !recreateRequested && swapchain != VK_NULL_HANDLE && width > 0 && height > 0);
+                    !recreateRequested && !presentationRetired
+                            && swapchain != VK_NULL_HANDLE && width > 0 && height > 0);
         }
     }
 
@@ -957,7 +1012,7 @@ final class VulkanSwapchain {
 
     PresentTarget acquirePresentTarget() {
         synchronized (applicationManagedTargetLock) {
-            if (recreateRequested || applicationManagedTargetCount >= imageCount - 1) {
+            if (recreateRequested || presentationRetired || applicationManagedTargetCount >= imageCount - 1) {
                 throw new PresentTargetUnavailableException();
             }
             applicationManagedTargetCount++;
@@ -1088,7 +1143,7 @@ final class VulkanSwapchain {
             }
             int result = presentImage(target.imageIndex(), true, target.swapchainHandle(),
                     target.renderFinishedSemaphore(), 0L, 0L, 0L, true, FramePacingTrace.Context.empty(), true);
-            if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+            if (isSwapchainOutOfDate(result) || result == VK_SUBOPTIMAL_KHR) {
                 requestRecreate();
             } else {
                 check(result, "return an unpresented swapchain image");
@@ -1425,6 +1480,10 @@ final class VulkanSwapchain {
     }
 
     private void recreate() {
+        if (presentationRetired) {
+            // The window is about to be destroyed; never build a swapchain for it again.
+            return;
+        }
         AsyncFramePresenter scheduler = asyncFramePresenter;
         if (scheduler != null) {
             scheduler.awaitPresentationDrain();
