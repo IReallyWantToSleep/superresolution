@@ -18,6 +18,10 @@
 
 package io.homo.superresolution.shadercompat;
 
+import io.homo.superresolution.api.registry.AlgorithmDescription;
+import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.upscale.AlgorithmManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRShaderCompatData;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.ShaderCompatHandler;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
@@ -41,12 +45,7 @@ public class IrisShaderCompatUtils {
     }
 
     public static Optional<SRShaderCompatData.WorldProfile> getCurrentConfig() {
-        return Optional.ofNullable(
-                getProfileForWorld(
-                        getCurrentShaderPackConfig().orElseThrow(),
-                        Iris.getCurrentDimension()
-                )
-        );
+        return getCurrentShaderPackConfig().map(data -> getProfileForWorld(data, Iris.getCurrentDimension()));
     }
 
     public static boolean isFrameGenerationOnlySupported() {
@@ -62,6 +61,9 @@ public class IrisShaderCompatUtils {
     }
 
     public static Optional<SRShaderCompatData> getCurrentShaderPackConfig() {
+        if (isIrisVulkan() && ShaderCompatHandler.isLoadingShader()) {
+            return Optional.ofNullable(ShaderCompatHandler.getShaderCompatData());
+        }
         return Optional.ofNullable(
                 getCurrentShaderPack().map(
                 pack -> ((IrisSRCompatShaderPack) pack)
@@ -75,11 +77,35 @@ public class IrisShaderCompatUtils {
     }
 
     public static boolean shouldApplySuperResolutionChanges() {
-        return (IrisApi.getInstance().isShaderPackInUse() || ShaderCompatHandler.irisHasShaderPack()) && getCurrentShaderPack().isPresent() &&
-                ((IrisSRCompatShaderPack) getCurrentShaderPack().get()).superresolution$isSupportsSuperResolution()
-                && getCurrentConfig().isPresent()
-                && getCurrentConfig().get().enabled
-                && getCurrentConfig().get().upscale.enabled;
+        if (isIrisVulkan() && ShaderCompatHandler.isLoadingShader()) {
+            if (ShaderCompatHandler.getCachedShaderPackPath() == null) return false;
+            if (ShaderCompatHandler.getShaderCompatData() == null) return true;
+        } else if (!(IrisApi.getInstance().isShaderPackInUse() || ShaderCompatHandler.irisHasShaderPack())
+                || !getCurrentShaderPack().map(pack -> ((IrisSRCompatShaderPack) pack).superresolution$isSupportsSuperResolution()).orElse(false)) {
+            return false;
+        }
+        return getCurrentConfig().map(profile -> {
+            if (!profile.enabled || profile.upscale == null || !profile.upscale.enabled) return false;
+            var disabled = profile.upscale.disabledAlgorithms;
+            return !isIrisVulkan() || disabled.isEmpty() || !disabled.contains(SuperResolutionConfig.UPSCALE_ALGO.get())
+                    || !disabled.contains(SuperResolutionConfig.getDefaultAlgorithm().codeName);
+        }).orElse(false);
+    }
+
+    public static boolean isIrisVulkan() {
+        #if MC_VER == MC_26_3 && IS_VULKAN == 1
+        return B3DVulkanBridge.isB3DVulkanBackend();
+        #else
+        return false;
+        #endif
+    }
+
+    public static boolean isUpscaleEnabledForPack() {
+        return SuperResolutionConfig.isEnableUpscaleOriginal() && (!isIrisVulkan() || shouldApplySuperResolutionChanges());
+    }
+
+    public static boolean shouldApplyJitter(AlgorithmDescription<?> algorithm, boolean frameGenerationOnly) {
+        return !frameGenerationOnly && (!isIrisVulkan() || AlgorithmManager.supportsJitter(algorithm));
     }
 
     public static TextureFormat getInternalTextureFormat() {

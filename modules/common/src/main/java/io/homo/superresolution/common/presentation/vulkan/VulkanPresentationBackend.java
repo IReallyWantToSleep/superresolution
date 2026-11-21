@@ -68,6 +68,11 @@ public final class VulkanPresentationBackend implements PresentationBackend {
     }
 
     @Override
+    public void retirePresentation() {
+        VulkanPresentationWindow.retirePresentation();
+    }
+
+    @Override
     public void shutdown() {
         VulkanPresentationFeature.shutdown();
     }

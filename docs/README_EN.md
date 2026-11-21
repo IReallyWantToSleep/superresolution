@@ -38,6 +38,19 @@ Built-in super-resolution algorithms for Minecraft to improve performance and vi
 * Voxy - Works fine
 * OptiFine - Not supported
 
+## Minecraft 26.3: Iris on native Vulkan (Fabric)
+
+Use the **Vulkan** build of Super Resolution, a RenderPearl-compatible Iris snapshot, matching Sodium, and Minecraft's Vulkan graphics backend. Enable a shader pack with an active `shaders/superresolution.json` or `superresolution.vN.json` profile. Select the upscaler in Super Resolution's settings. FSR 1 only needs color; AMD FSR and NVIDIA DLSS also need the pack's depth and motion vectors. DLSS requires a supported RTX GPU and its NGX feature library. The existing `dev-vulkan` safety fallback uses the FSR 2 provider when FSR 3 is selected on Minecraft's device.
+
+To build against the bundled Iris, run `./gradlew :fabric:build -Pminecraft_version_config=26.3.vk`. To use local snapshots without replacing the bundled JAR:
+
+```sh
+./gradlew :fabric:build -Pminecraft_version_config=26.3.vk \
+  -PirisVulkanJar=/absolute/path/to/iris.jar -PsodiumJar=/absolute/path/to/sodium.jar
+```
+
+Use `:fabric:runClient` with the same properties to start an isolated dev client in `runs/fabric-iris-vulkan`. For a smoke test, copy `modules/common/src/test/resources/iris-vulkan-smoke` into its `shaderpacks` directory, select the pack, and enter a world at 640×400. It upscales a 376×235 gradient into the same color target before a compute-only pass. A passing run fills the frame with the gradient; magenta outside it means the crop was not upscaled, and cyan indicates inconsistent scaling or jitter macros.
+
 # Requirements
 
 ## System Requirements

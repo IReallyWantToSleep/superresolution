@@ -58,7 +58,7 @@ public class ShaderCompatSRWorkModeProvider implements SRWorkModeProvider {
         TextureFormat internalFormat = TextureFormat.RGBA16F;
         String motionVectorPreprocessingFunction = null;
 
-        if (profile.isPresent() && profile.get().enabled) {
+        if (profile.isPresent() && profile.get().enabled && profile.get().upscale != null) {
             SRShaderCompatData.UpscaleConfig upscale = profile.get().upscale;
             desc.setHdrInput(upscale.isHdrInput)
                     .setAutoExposure(upscale.isAutoExposure)

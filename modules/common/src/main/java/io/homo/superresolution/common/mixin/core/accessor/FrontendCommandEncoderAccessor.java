@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.mixin.core.accessor;
 
+#if MC_VER >= MC_26_3
 import com.mojang.renderpearl.backend.api.CommandEncoderBackend;
 import com.mojang.renderpearl.frontend.FrontendCommandEncoder;
 
@@ -29,3 +30,11 @@ public interface FrontendCommandEncoderAccessor {
     @Accessor(value = "backend")
     CommandEncoderBackend backend();
 }
+#else
+import net.minecraft.client.Minecraft;
+import org.spongepowered.asm.mixin.Mixin;
+
+@Mixin(Minecraft.class)
+public interface FrontendCommandEncoderAccessor {
+}
+#endif

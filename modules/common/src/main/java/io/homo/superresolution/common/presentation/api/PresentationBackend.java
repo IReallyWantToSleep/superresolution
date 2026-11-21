@@ -19,5 +19,9 @@ public interface PresentationBackend {
 
     boolean shutdownApplicationManagedProvider(String providerId, Runnable teardown);
 
+    /** Stops presenting for good, before Minecraft destroys the window. */
+    default void retirePresentation() {
+    }
+
     void shutdown();
 }

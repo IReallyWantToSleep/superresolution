@@ -28,6 +28,7 @@ import io.homo.superresolution.common.presentation.capture.FrameResources;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.BooleanSupplier;
 
@@ -172,10 +173,26 @@ final class AsyncFramePresenter implements AutoCloseable {
         synchronized (stateLock) {
             generationWorker.pause();
             presentWorker.pause();
-            awaitState(() -> !generationWorker.isInFlight()
-                    && presentationQueue.isEmpty() && !presentWorker.isInFlight());
+            awaitState(this::isPresentationIdle);
         }
         throwIfFailed();
+    }
+
+    /**
+     * Pauses both workers and waits up to {@code timeoutNanos} until no batch is being
+     * generated, queued or presented. Unlike {@link #awaitPresentationDrain} it does not
+     * rethrow a worker failure: the presenter's shutdown reports that. Returns false on timeout.
+     */
+    boolean awaitPresentationIdle(long timeoutNanos) {
+        synchronized (stateLock) {
+            generationWorker.pause();
+            presentWorker.pause();
+            return awaitState(this::isPresentationIdle, System.nanoTime() + timeoutNanos);
+        }
+    }
+
+    private boolean isPresentationIdle() {
+        return !generationWorker.isInFlight() && presentationQueue.isEmpty() && !presentWorker.isInFlight();
     }
 
     void awaitPresentIdle() {
@@ -271,6 +288,28 @@ final class AsyncFramePresenter implements AutoCloseable {
         }
         if (interrupted) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private boolean awaitState(BooleanSupplier complete, long deadlineNanos) {
+        boolean interrupted = false;
+        try {
+            while (!complete.getAsBoolean()) {
+                long remaining = deadlineNanos - System.nanoTime();
+                if (remaining <= 0L) {
+                    return false;
+                }
+                try {
+                    TimeUnit.NANOSECONDS.timedWait(stateLock, remaining);
+                } catch (InterruptedException exception) {
+                    interrupted = true;
+                }
+            }
+            return true;
+        } finally {
+            if (interrupted) {
+                Thread.currentThread().interrupt();
+            }
         }
     }
 

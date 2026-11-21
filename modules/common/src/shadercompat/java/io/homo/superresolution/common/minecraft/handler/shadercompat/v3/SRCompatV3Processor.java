@@ -222,11 +222,11 @@ public class SRCompatV3Processor implements SRCompatProcessor {
         AlgorithmDescription<?> selectedAlgorithm = description != null
                 ? description
                 : SuperResolutionConfig.getUpscaleAlgorithm();
-        boolean frameGenOnly = SuperResolutionConfig.isEnableUpscaleOriginal()
+        boolean frameGenOnly = IrisShaderCompatUtils.isUpscaleEnabledForPack()
                 && IrisShaderCompatUtils.isFrameGenerationOnlySupported()
                 && AlgorithmDescriptions.NONE.equals(selectedAlgorithm);
 
-        if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
+        if (IrisShaderCompatUtils.isUpscaleEnabledForPack()) {
             r.registerMacro("SR_ENABLE", "1");
             r.registerMacro("SR_DISABLE", "0");
             r.registerMacro("SR_ALGO_SUPPORTS_JITTER",
@@ -234,7 +234,7 @@ public class SRCompatV3Processor implements SRCompatProcessor {
             r.registerMacro("SR_USING_ALGO", Integer.toString(
                     idMap.get(selectedAlgorithm)));
             r.registerMacro("SR_SHOULD_APPLY_SCALE", frameGenOnly ? "0" : "1");
-            r.registerMacro("SR_SHOULD_APPLY_JITTER", frameGenOnly ? "0" : "1");
+            r.registerMacro("SR_SHOULD_APPLY_JITTER", IrisShaderCompatUtils.shouldApplyJitter(selectedAlgorithm, frameGenOnly) ? "1" : "0");
             r.registerMacro("SR_SCALED_WIDTH",
                     Integer.toString(frameGenOnly ? SuperResolutionAPI.getScreenWidth() : SuperResolutionAPI.getRenderWidth()));
             r.registerMacro("SR_SCALED_HEIGHT",
@@ -279,7 +279,7 @@ public class SRCompatV3Processor implements SRCompatProcessor {
         // endregion
 
         // region V2
-        if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
+        if (IrisShaderCompatUtils.isUpscaleEnabledForPack()) {
             float rsf = frameGenOnly ? 1.0f : SuperResolutionConfig.getRenderScaleFactor();
             float ratio = frameGenOnly ? 1.0f : SuperResolutionConfig.getUpscaleRatio();
             r.registerMacro("SR_UPSCALE_RATIO_HALF",
@@ -303,11 +303,11 @@ public class SRCompatV3Processor implements SRCompatProcessor {
     public void registerUniforms(UniformRegistrar r, SRShaderCompatData config, AbstractAlgorithm algorithm, AlgorithmDescription<?> description) {
         // region V1
         r.uniform1f("SRRenderScale",
-                () -> SuperResolutionConfig.isEnableUpscaleOriginal() ? SuperResolutionConfig.getRenderScaleFactor() : 1);
+                () -> IrisShaderCompatUtils.isUpscaleEnabledForPack() ? SuperResolutionConfig.getRenderScaleFactor() : 1);
         r.uniform1f("SRRatio",
-                () -> SuperResolutionConfig.isEnableUpscaleOriginal() ? SuperResolutionConfig.getUpscaleRatio() : 1);
+                () -> IrisShaderCompatUtils.isUpscaleEnabledForPack() ? SuperResolutionConfig.getUpscaleRatio() : 1);
         r.uniform1f("SRRenderScaleLog2",
-                () -> SuperResolutionConfig.isEnableUpscaleOriginal()
+                () -> IrisShaderCompatUtils.isUpscaleEnabledForPack()
                         ? (float) (Math.log((double) SuperResolutionAPI.getRenderWidth() /
                         SuperResolutionAPI.getScreenWidth()) / Math.log(2))
                         : 0);

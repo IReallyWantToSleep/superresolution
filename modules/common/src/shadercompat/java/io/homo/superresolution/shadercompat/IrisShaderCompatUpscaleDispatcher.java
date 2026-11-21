@@ -36,6 +36,18 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 #if IS_VULKAN == 1
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
+#endif
+#if MC_VER == MC_26_3 && IS_VULKAN == 1
+import com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder;
+import io.homo.superresolution.common.mixin.core.accessor.VulkanCommandEncoderAccessor;
+import net.irisshaders.iris.Iris;
+import net.irisshaders.iris.backend.RenderBackend;
+import net.irisshaders.iris.mixinterface.VulkanWorldPassAccess;
+import net.irisshaders.iris.vulkan.VulkanRenderBackend;
+import net.irisshaders.iris.vulkan.VulkanSynchronization;
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VK13;
 #endif
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import io.homo.superresolution.common.minecraft.handler.shadercompat.SRCompatProcessor;
@@ -64,6 +76,7 @@ import org.lwjgl.opengl.GL41;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -348,13 +361,62 @@ public class IrisShaderCompatUpscaleDispatcher {
     }
 
     public static void dispatchUpscale(ICompositeRendererAccessor compositeRenderer, NamedCompositePass pass) {
+        if (!IrisShaderCompatUtils.isUpscaleEnabledForPack()) return;
+        #if MC_VER == MC_26_3 && IS_VULKAN == 1
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            syncIrisForExternalCommands();
+            B3DVulkanBridge.memoryBarrier();
+            try {
+                dispatchConfiguredUpscale(compositeRenderer, pass);
+            } finally {
+                B3DVulkanBridge.memoryBarrier();
+            }
+            return;
+        }
+        #endif
+        dispatchConfiguredUpscale(compositeRenderer, pass);
+    }
+
+    #if MC_VER == MC_26_3 && IS_VULKAN == 1
+    /**
+     * Hands Minecraft's command buffer from Iris to SR's raw Vulkan commands, the way Iris does
+     * for commands that go through {@code VulkanCommandEncoder.execute}. SR records straight into
+     * the current command buffer, which skips that hook, so prepare the handoff here:
+     * <ul>
+     *     <li>finish held render work and apply Iris's deferred clears, so they cannot leave stale
+     *     inputs or wipe SR's output when a later pass loads that target;</li>
+     *     <li>invalidate mipmaps and record SR's all-command memory reads and writes in Iris's
+     *     access planner, so Iris synchronizes its next access against them.</li>
+     * </ul>
+     */
+    private static void syncIrisForExternalCommands() {
+        RenderBackend backend = Iris.getRenderBackend();
+        if (backend instanceof VulkanRenderBackend vulkanBackend) {
+            var encoder = (VulkanCommandEncoder) B3DVulkanBridge.createCommandEncoder();
+            ((VulkanWorldPassAccess) encoder).iris$flushRenderPass();
+            vulkanBackend.textures.flush(encoder);
+            vulkanBackend.textures.invalidateMipmaps();
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                long stages = VK13.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
+                long access = VK13.VK_ACCESS_2_MEMORY_READ_BIT | VK13.VK_ACCESS_2_MEMORY_WRITE_BIT;
+                // Handle zero is Iris's wildcard for every resource of the specified kind.
+                VulkanSynchronization.before(
+                        ((VulkanCommandEncoderAccessor) encoder).currentCommandBuffer(), stack,
+                        List.of(
+                                new VulkanSynchronization.Access(new VulkanSynchronization.Resource(true, 0L), stages, access, true),
+                                new VulkanSynchronization.Access(new VulkanSynchronization.Resource(false, 0L), stages, access, true)
+                        )
+                );
+            }
+        }
+    }
+    #endif
+
+    private static void dispatchConfiguredUpscale(ICompositeRendererAccessor compositeRenderer, NamedCompositePass pass) {
         SuperResolution.resizeAlgorithmIfChanged(
                 RenderHandlerManager.getScreenWidth(),
                 RenderHandlerManager.getScreenHeight()
         );
-        if (!SuperResolutionConfig.isEnableUpscaleOriginal()) {
-            return;
-        }
         if (IrisShaderCompatUtils.getCurrentConfig().isEmpty()) {
             return;
         }
@@ -376,8 +438,11 @@ public class IrisShaderCompatUpscaleDispatcher {
         boolean needsPreProcessMotionVectors = processor != null && processor.needsPreProcessMotionVectors(shaderCompatData, algorithm, description);
         boolean needsPreProcessExposure = processor != null && processor.needsPreProcessExposure(shaderCompatData, algorithm, description);
 
+        // A renderer change also changes the pass, so reset (and wait for the GPU) only once.
+        boolean borrowedTexturesReset = false;
         if (compositeRenderer != cachedCompositeRenderer && !compositeRenderer.isSameInstance(cachedCompositeRenderer)) {
             resetBorrowedTextures();
+            borrowedTexturesReset = true;
             cachedCompositeRenderer = compositeRenderer;
             cachedOutputTargetTextures.clear();
             needUpdate = true;
@@ -385,7 +450,9 @@ public class IrisShaderCompatUpscaleDispatcher {
 
         if (!pass.equals(cachedNamedCompositePass)) {
             #if IS_VULKAN == 1
-            resetBorrowedTextures();
+            if (!borrowedTexturesReset) {
+                resetBorrowedTextures();
+            }
             #endif
             cachedNamedCompositePass = pass;
             cachedOutputTargetTextures.clear();
@@ -698,6 +765,12 @@ public class IrisShaderCompatUpscaleDispatcher {
                                 || targetRegion[3] != sourceTexture.getHeight()) {
                             throw new IllegalArgumentException("Upscale output region does not match the algorithm output");
                         }
+                        if (sourceTexture.getTextureFormat() != targetTexture.getTextureFormat()) {
+                            B3DVulkanBridge.recordCommands(cb -> RenderSystems.vulkan().device().blitColor(
+                                    (VulkanCommandBuffer) cb,
+                                    sourceTexture, targetTexture, targetRegion[0], targetRegion[1]));
+                            continue;
+                        }
                         B3DVulkanBridge.recordCommands(cb -> cb.copyTexture(
                                 sourceTexture, targetTexture, 0, 0,
                                 sourceTexture.getWidth(), sourceTexture.getHeight(), 0,
@@ -711,18 +784,39 @@ public class IrisShaderCompatUpscaleDispatcher {
                 GlDebug.pushGroup(64108436, "SRUpscale-CopyResult");
                 ITexture sourceTexture = SuperResolution.getCurrentAlgorithm().getOutputTexture();
                 for (String targetName : outputConfig.targetNames) {
-                    ITexture targetTexture = cachedOutputTargetTextures.computeIfAbsent(targetName,
-                            name -> IrisTextureResolver.getIrisTexture(compositeRenderer, name, pass, false));
+                    // Resolved every frame, not through cachedOutputTargetTextures: a borrowed GL
+                    // wrapper pins one texture name, and Iris replaces its targets on resize
+                    // without changing the renderer or pass.
+                    ITexture targetTexture = IrisTextureResolver.getIrisTexture(
+                            compositeRenderer, targetName, pass, false);
                     if (targetTexture != null && sourceTexture != null) {
-                        GlTextureCopier.copy(
-                                CopyOperation.create()
-                                        .src(sourceTexture)
-                                        .dst(targetTexture)
-                                        .fromTo(CopyOperation.TextureChannel.A, CopyOperation.TextureChannel.A)
-                                        .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
-                                        .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
-                                        .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B)
-                        );
+                        int[] targetRegion = outputConfig.region.resolveChecked(
+                                RenderHandlerManager.getRenderSize(), RenderHandlerManager.getScreenSize(),
+                                targetTexture.getWidth(), targetTexture.getHeight());
+                        if (targetRegion[2] > sourceTexture.getWidth()
+                                || targetRegion[3] > sourceTexture.getHeight()) {
+                            throw new IllegalArgumentException("Upscale output region is larger than the algorithm output");
+                        }
+                        if (sourceTexture.getTextureFormat() != targetTexture.getTextureFormat()) {
+                            // Converting copy; like the OpenGL build it always writes at the origin.
+                            GlTextureCopier.copy(
+                                    CopyOperation.create()
+                                            .src(sourceTexture)
+                                            .dst(targetTexture)
+                                            .fromTo(CopyOperation.TextureChannel.A, CopyOperation.TextureChannel.A)
+                                            .fromTo(CopyOperation.TextureChannel.R, CopyOperation.TextureChannel.R)
+                                            .fromTo(CopyOperation.TextureChannel.G, CopyOperation.TextureChannel.G)
+                                            .fromTo(CopyOperation.TextureChannel.B, CopyOperation.TextureChannel.B)
+                            );
+                        } else {
+                            Gl.DSA.copyImageSubData(
+                                    (int) sourceTexture.handle(), GL41.GL_TEXTURE_2D, 0,
+                                    0, 0, 0,
+                                    (int) targetTexture.handle(), GL41.GL_TEXTURE_2D, 0,
+                                    targetRegion[0], targetRegion[1], 0,
+                                    targetRegion[2], targetRegion[3], 1
+                            );
+                        }
                     }
                 }
                 GlDebug.popGroup();

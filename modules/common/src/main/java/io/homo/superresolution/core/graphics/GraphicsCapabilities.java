@@ -21,6 +21,7 @@ package io.homo.superresolution.core.graphics;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.impl.Pair;
+import org.lwjgl.opengl.GL;
 #if MC_VER >= MC_26_3
 import org.lwjgl.sdl.SDLVideo;
 #else
@@ -52,9 +53,8 @@ public class GraphicsCapabilities {
     }
 
     public static GpuVendor detectGpuVendor() {
-        if (isB3DVulkan()) {
-            gpuVendor = GpuVendor.Unknown;
-            return gpuVendor;
+        if (!hasOpenGLContext()) {
+            return GpuVendor.Unknown;
         }
         if (gpuVendor == null) {
             String renderer = glGetString(GL_RENDERER);
@@ -81,7 +81,7 @@ public class GraphicsCapabilities {
     }
 
     private static int[] detectGLVersion() {
-        if (isB3DVulkan()) {
+        if (!hasOpenGLContext()) {
             return new int[]{0, 0};
         }
         if (glVersion[0] != -1 && glVersion[1] != -1) {
@@ -209,9 +209,6 @@ public class GraphicsCapabilities {
     }
 
     private static Set<String> detectGLExtensions() {
-        if (isB3DVulkan()) {
-            return Collections.emptySet();
-        }
         int count = glGetInteger(GL_NUM_EXTENSIONS);
         return Collections.unmodifiableSet(
                 IntStream.range(0, count)
@@ -247,7 +244,7 @@ public class GraphicsCapabilities {
     }
 
     public static String getGLVersionString() {
-        if (isB3DVulkan()) {
+        if (!hasOpenGLContext()) {
             return "unavailable";
         }
         int[] glVersion = detectGLVersion();
@@ -255,6 +252,7 @@ public class GraphicsCapabilities {
     }
 
     public static Set<String> getGLExtensions() {
+        if (!hasOpenGLContext()) return Collections.emptySet();
         if (glExtensions == null) {
             glExtensions = Collections.unmodifiableSet(detectGLExtensions());
         }
@@ -262,10 +260,7 @@ public class GraphicsCapabilities {
     }
 
     public static boolean hasGLExtension(String name) {
-        if (glExtensions == null) {
-            glExtensions = Collections.unmodifiableSet(detectGLExtensions());
-        }
-        return glExtensions.contains(name);
+        return getGLExtensions().contains(name);
     }
 
     public static int[] getVulkanVersion() {
@@ -296,6 +291,15 @@ public class GraphicsCapabilities {
             );
         }
         return new HashSet<>();
+    }
+
+    private static boolean hasOpenGLContext() {
+        if (isB3DVulkan()) return false;
+        try {
+            return GL.getCapabilities() != null;
+        } catch (IllegalStateException ignored) {
+            return false;
+        }
     }
 
     private static boolean isB3DVulkan() {

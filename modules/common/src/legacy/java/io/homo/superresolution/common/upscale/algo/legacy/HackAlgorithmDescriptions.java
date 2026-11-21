@@ -16,6 +16,12 @@ import io.homo.superresolution.api.utils.Requirement;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.common.upscale.algo.legacy.anime4k.Anime4K;
 import io.homo.superresolution.common.upscale.algo.legacy.fsr1.FSR1;
+#if MC_VER == MC_26_3 && IS_VULKAN == 1
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.upscale.algo.legacy.fsr1.IrisVulkanFsr1;
+import static io.homo.superresolution.srapi.SRRenderApiType.OPENGL;
+import static io.homo.superresolution.srapi.SRRenderApiType.VULKAN;
+#endif
 import io.homo.superresolution.common.upscale.algo.legacy.fsr2.FSR2;
 import io.homo.superresolution.common.upscale.algo.legacy.sgsr.v1.Sgsr1;
 import io.homo.superresolution.common.upscale.algo.legacy.sgsr.v2.Sgsr2;
@@ -29,12 +35,21 @@ public final class HackAlgorithmDescriptions {
             .briefName("AMD FSR 1")
             .codeName("fsr1")
             .displayName("AMD FidelityFX Super Resolution 1")
+            #if MC_VER == MC_26_3 && IS_VULKAN == 1
+            .graphicsPath(OPENGL, OPENGL)
+            .graphicsPath(VULKAN, VULKAN)
+            .factory(() -> B3DVulkanBridge.isB3DVulkanBackend() ? new IrisVulkanFsr1() : new FSR1())
+            #endif
             .requirement(
                     Requirement.nothing()
                             .glMajorVersion(4)
                             .glMinorVersion(3)
+                            #if MC_VER == MC_26_3 && IS_VULKAN == 1
+                            .isTrue(() -> B3DVulkanBridge.isB3DVulkanBackend() || (!Gl.isLegacy() && Gl.isSupportDSA()))
+                            #else
                             .isFalse(Gl::isLegacy)
                             .isTrue(Gl::isSupportDSA)
+                            #endif
             )
             .build();
 

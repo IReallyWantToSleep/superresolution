@@ -70,6 +70,13 @@ public final class DebugPage implements ConfigPage {
                 .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.enable_present_indicator"))
                 .setSaveConsumer(SuperResolutionConfig::setEnablePresentIndicator)
                 .build();
+        builder.booleanOption(
+                        Text.translatable("superresolution.screen.config.options.label.log_frame_rate"),
+                        SuperResolutionConfig.isLogFrameRate())
+                .setDefaultValue(() -> false)
+                .setDescription(Text.translatable("superresolution.screen.config.options.tooltip.log_frame_rate"))
+                .setSaveConsumer(SuperResolutionConfig::setLogFrameRate)
+                .build();
         context.addOptionGroupToContainer(container, builder);
         context.finalizeFrame(frame, container);
         return frame;

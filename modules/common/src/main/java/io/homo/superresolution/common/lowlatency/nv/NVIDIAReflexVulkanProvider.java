@@ -24,6 +24,7 @@ import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.perf.FramePacingTrace;
+import io.homo.superresolution.common.perf.FrameRateLog;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 import net.minecraft.client.Minecraft;
 
@@ -109,7 +110,8 @@ public final class NVIDIAReflexVulkanProvider implements LowLatencyProvider {
         } else {
             frameCap.reset();
         }
-        traceLatencyReports();
+        FrameRateLog.onFrameLimit(lastAppliedOptions != null ? lastAppliedOptions.frameIntervalUs() : 0);
+        collectLatencyReports();
     }
 
     private static boolean stabilizesFrameRate() {
@@ -120,12 +122,18 @@ public final class NVIDIAReflexVulkanProvider implements LowLatencyProvider {
     }
 
     // Copies the driver's own per-frame view (vkGetLatencyTimingsNV) into a running
-    // frame-pacing trace. Timestamps stay in the driver's microseconds in the details.
-    private static void traceLatencyReports() {
-        if (!FramePacingTrace.INSTANCE.isRecording()) {
+    // frame-pacing trace and the frame rate log. Timestamps stay in the driver's microseconds
+    // in the trace details.
+    private static void collectLatencyReports() {
+        boolean tracing = FramePacingTrace.INSTANCE.isRecording();
+        if (!tracing && !FrameRateLog.isEnabled()) {
             return;
         }
         for (VulkanLowLatency.LatencyFrameReport report : VulkanLowLatency.takeLatencyReports()) {
+            FrameRateLog.onLatencyReport(report.simStartUs(), report.renderSubmitStartUs(), report.gpuRenderEndUs());
+            if (!tracing) {
+                continue;
+            }
             FramePacingTrace.INSTANCE.instant(
                     "reflex_latency_report",
                     new FramePacingTrace.Context(-1, -1L, -1L, -1L, report.presentId(), "REAL", ""),

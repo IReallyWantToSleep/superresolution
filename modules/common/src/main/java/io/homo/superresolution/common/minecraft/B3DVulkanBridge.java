@@ -27,17 +27,26 @@ import com.mojang.renderpearl.api.commands.GpuFence;
 import com.mojang.blaze3d.buffers.GpuFence;
 #endif
 #endif
+#if MC_VER >= MC_26_3
 import io.homo.superresolution.core.graphics.vulkan.B3DVulkanCommandBuffer;
+#endif
+import org.lwjgl.system.MemoryStack;
+import org.lwjgl.vulkan.VK10;
+import org.lwjgl.vulkan.VK12;
 import org.lwjgl.vulkan.VkDevice;
+import org.lwjgl.vulkan.VkSemaphoreWaitInfo;
 import org.lwjgl.vulkan.VkInstance;
 import org.lwjgl.vulkan.VkPhysicalDevice;
 import org.lwjgl.vulkan.VkQueue;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.impl.command.ICommandBuffer;
 import java.util.function.Consumer;
-import java.util.function.BooleanSupplier;
 
 import java.lang.reflect.Method;
+#if MC_VER == MC_26_3 && IS_VULKAN == 1
+import com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder;
+import io.homo.superresolution.common.mixin.core.accessor.VulkanCommandEncoderAccessor;
+#endif
 
 public final class B3DVulkanBridge {
     #if MC_VER >= MC_26_3
@@ -267,51 +276,88 @@ public final class B3DVulkanBridge {
         #endif
     }
 
+    #if MC_VER == MC_26_3 && IS_VULKAN == 1
+    public static void memoryBarrier() {
+        var encoder = (VulkanCommandEncoderAccessor) createCommandEncoder();
+        try (var stack = MemoryStack.stackPush()) {
+            VulkanCommandEncoder.memoryBarrier(encoder.currentCommandBuffer(), stack);
+        }
+    }
+    #endif
+
     public static CommandCompletion captureCompletion() {
-        #if MC_VER >= MC_26_3 && IS_VULKAN == 1
-        var encoder = (com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder) createCommandEncoder();
-        GpuFence fence = encoder.createFence();
-        return new CommandCompletion(encoder::submit,
-                () -> fence.awaitCompletion(Long.MAX_VALUE), fence::close);
+        #if MC_VER == MC_26_3 && IS_VULKAN == 1
+        var encoder = (VulkanCommandEncoder) createCommandEncoder();
+        var timeline = (VulkanCommandEncoderAccessor) encoder;
+        return new CommandCompletion(encoder::submit, vkDevice(),
+                timeline.submitSemaphore(), timeline.currentSubmitIndex());
         #else
         throw new UnsupportedOperationException("Minecraft Vulkan capture requires the Vulkan 26.3 configuration");
         #endif
     }
 
     /**
-     * A fence for the current Minecraft encoder submission. An early flush must
-     * submit its recording before waiting; normal frame submission marks it first.
+     * Completion of the Minecraft encoder submission that is being recorded, as the value that
+     * submission signals on Minecraft's submit timeline semaphore. Only the render thread may
+     * submit it. Once it is submitted, any thread can wait for it: the wait is a plain
+     * {@code vkWaitSemaphores} and leaves Minecraft's own fence bookkeeping alone.
      */
     public static final class CommandCompletion {
         private final Runnable submit;
-        private final BooleanSupplier await;
-        private final Runnable close;
-        private boolean submitted;
-        private boolean completed;
+        private final VkDevice device;
+        private final long semaphore;
+        private final long value;
+        private volatile boolean submitted;
+        private volatile boolean completed;
 
-        CommandCompletion(Runnable submit, BooleanSupplier await, Runnable close) {
+        CommandCompletion(Runnable submit, VkDevice device, long semaphore, long value) {
             this.submit = submit;
-            this.await = await;
-            this.close = close;
+            this.device = device;
+            this.semaphore = semaphore;
+            this.value = value;
+        }
+
+        public long semaphore() {
+            return semaphore;
+        }
+
+        public long value() {
+            return value;
         }
 
         public void markSubmitted() {
             submitted = true;
         }
 
+        /** Render thread only: submits Minecraft's recording if it still holds this work. */
+        public void ensureSubmitted() {
+            if (!submitted) {
+                submit.run();
+                submitted = true;
+            }
+        }
+
+        /** Any thread, after the render thread has submitted the work. */
         public void awaitCompletion() {
             if (completed) {
                 return;
             }
             if (!submitted) {
-                submit.run();
-                submitted = true;
+                throw new IllegalStateException("Minecraft Vulkan capture has not been submitted");
             }
-            if (!await.getAsBoolean()) {
-                throw new IllegalStateException("Minecraft Vulkan capture submission did not complete");
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                VkSemaphoreWaitInfo waitInfo = VkSemaphoreWaitInfo.calloc(stack)
+                        .sType(VK12.VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO)
+                        .semaphoreCount(1)
+                        .pSemaphores(stack.longs(semaphore))
+                        .pValues(stack.longs(value));
+                int result = VK12.vkWaitSemaphores(device, waitInfo, Long.MAX_VALUE);
+                if (result != VK10.VK_SUCCESS) {
+                    throw new IllegalStateException(
+                            "Minecraft Vulkan capture submission did not complete, VkResult=" + result);
+                }
             }
             completed = true;
-            close.run();
         }
     }
 }

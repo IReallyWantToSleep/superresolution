@@ -53,18 +53,18 @@ public class SRCompatBuiltinMacros {
         AlgorithmDescription<?> selectedAlgorithm = description != null
                 ? description
                 : SuperResolutionConfig.getUpscaleAlgorithm();
-        boolean frameGenOnly = SuperResolutionConfig.isEnableUpscaleOriginal()
+        boolean frameGenOnly = IrisShaderCompatUtils.isUpscaleEnabledForPack()
                 && IrisShaderCompatUtils.isFrameGenerationOnlySupported()
                 && AlgorithmDescriptions.NONE.equals(selectedAlgorithm);
 
-        if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
+        if (IrisShaderCompatUtils.isUpscaleEnabledForPack()) {
             preprocessor.addMacro("SR_ENABLE", "1");
             preprocessor.addMacro("SR_DISABLE", "0");
             preprocessor.addMacro("SR_ALGO_SUPPORTS_JITTER",
                     !frameGenOnly && AlgorithmManager.supportsJitter(selectedAlgorithm) ? "1" : "0");
             preprocessor.addMacro("SR_USING_ALGO", Integer.toString(idMap.get(selectedAlgorithm)));
             preprocessor.addMacro("SR_SHOULD_APPLY_SCALE", frameGenOnly ? "0" : "1");
-            preprocessor.addMacro("SR_SHOULD_APPLY_JITTER", frameGenOnly ? "0" : "1");
+            preprocessor.addMacro("SR_SHOULD_APPLY_JITTER", IrisShaderCompatUtils.shouldApplyJitter(selectedAlgorithm, frameGenOnly) ? "1" : "0");
             preprocessor.addMacro("SR_SCALED_WIDTH",
                     Integer.toString(frameGenOnly ? SuperResolutionAPI.getScreenWidth() : SuperResolutionAPI.getRenderWidth()));
             preprocessor.addMacro("SR_SCALED_HEIGHT",
@@ -106,7 +106,7 @@ public class SRCompatBuiltinMacros {
         // endregion
 
         // region V2
-        if (SuperResolutionConfig.isEnableUpscaleOriginal()) {
+        if (IrisShaderCompatUtils.isUpscaleEnabledForPack()) {
             float rsf = frameGenOnly ? 1.0f : SuperResolutionConfig.getRenderScaleFactor();
             float ratio = frameGenOnly ? 1.0f : SuperResolutionConfig.getUpscaleRatio();
             preprocessor.addMacro("SR_UPSCALE_RATIO_HALF",

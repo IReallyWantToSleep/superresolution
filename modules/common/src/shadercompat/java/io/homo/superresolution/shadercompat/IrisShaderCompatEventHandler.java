@@ -146,6 +146,7 @@ public class IrisShaderCompatEventHandler {
     }
 
     private static void onMacroRegistration(MacroRegistrationEvent event) {
+        if (IrisShaderCompatUtils.isIrisVulkan()) event.registerMacro("SR_IRIS_VULKAN", "1");
         if (SuperResolutionConfig.isIrisExtensionEnabledAtStartup()){
             event.registerMacro(
                     "SR_IRIS_EXT_ENABLED",

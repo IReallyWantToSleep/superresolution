@@ -23,7 +23,6 @@ import com.mojang.blaze3d.systems.RenderSystem;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.core.RenderSystems;
-import io.homo.superresolution.core.graphics.vulkan.B3DVulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.thirdparty.nanovg.NanoVGRhiBridge;
 #if MC_VER >= MC_26_3

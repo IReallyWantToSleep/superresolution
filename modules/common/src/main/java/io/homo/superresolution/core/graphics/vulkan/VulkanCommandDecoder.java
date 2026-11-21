@@ -32,11 +32,13 @@ import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceA
 import io.homo.superresolution.core.graphics.impl.shader.uniform.ShaderResourceDescription;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.ITextureView;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.core.graphics.impl.vertex.IVertexBuffer;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.*;
 
 import java.nio.ByteBuffer;
+import java.util.EnumMap;
 import java.util.Map;
 
 import static org.lwjgl.vulkan.KHRDynamicRendering.*;
@@ -44,6 +46,7 @@ import static org.lwjgl.vulkan.VK10.*;
 
 public class VulkanCommandDecoder implements ICommandDecoder {
     private VulkanDevice vulkanDevice;
+    private final Map<TextureFormat, Integer> optimalTilingFeatures = new EnumMap<>(TextureFormat.class);
 
     public VulkanCommandDecoder(VulkanDevice vulkanDevice) {
         this.vulkanDevice = vulkanDevice;
@@ -349,6 +352,46 @@ public class VulkanCommandDecoder implements ICommandDecoder {
             markTextureState(src, ResourceAccessType.TRANSFER_SRC);
             markTextureState(dst, ResourceAccessType.TRANSFER_DST);
         }
+    }
+
+    void blitColor(VulkanCommandBuffer commands, ITexture source, ITexture target, int left, int top) {
+        var srcFormat = source.getTextureFormat();
+        var dstFormat = target.getTextureFormat();
+        if (srcFormat.isDepth() || srcFormat.isStencil() || srcFormat.isInteger()
+                || dstFormat.isDepth() || dstFormat.isStencil() || dstFormat.isInteger()) {
+            throw new IllegalArgumentException("Expected non-integer Iris color targets, got " + srcFormat + " -> " + dstFormat);
+        }
+        if (left < 0 || top < 0 || left > target.getWidth() - source.getWidth() || top > target.getHeight() - source.getHeight()) {
+            throw new IllegalArgumentException("Iris color output region does not fit the target");
+        }
+        if ((formatFeatures(srcFormat) & VK_FORMAT_FEATURE_BLIT_SRC_BIT) == 0 || (formatFeatures(dstFormat) & VK_FORMAT_FEATURE_BLIT_DST_BIT) == 0) {
+            throw new IllegalArgumentException("Device does not support color blit " + srcFormat + " -> " + dstFormat);
+        }
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkCommandBuffer handle = commands.getNativeCommandBuffer();
+            transitionTexture(handle, source, ResourceAccessType.TRANSFER_SRC);
+            transitionTexture(handle, target, ResourceAccessType.TRANSFER_DST);
+            var region = VkImageBlit.calloc(1, stack);
+            region.srcSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT).layerCount(1);
+            region.dstSubresource().aspectMask(VK_IMAGE_ASPECT_COLOR_BIT).layerCount(1);
+            region.srcOffsets(1).set(source.getWidth(), source.getHeight(), 1);
+            region.dstOffsets(0).set(left, top, 0);
+            region.dstOffsets(1).set(left + source.getWidth(), top + source.getHeight(), 1);
+            vkCmdBlitImage(handle, resolveImageHandle(source), copyLayout(source, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL),
+                    resolveImageHandle(target), copyLayout(target, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL), region, VK_FILTER_NEAREST);
+            markTextureState(source, ResourceAccessType.TRANSFER_SRC);
+            markTextureState(target, ResourceAccessType.TRANSFER_DST);
+        }
+    }
+
+    private int formatFeatures(TextureFormat format) {
+        return optimalTilingFeatures.computeIfAbsent(format, key -> {
+            try (var stack = MemoryStack.stackPush()) {
+                var properties = VkFormatProperties.malloc(stack);
+                vkGetPhysicalDeviceFormatProperties(vulkanDevice.getPhysicalDevice(), key.vk(), properties);
+                return properties.optimalTilingFeatures();
+            }
+        });
     }
 
     @Override

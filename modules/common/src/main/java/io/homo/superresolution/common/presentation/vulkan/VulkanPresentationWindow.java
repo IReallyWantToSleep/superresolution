@@ -167,6 +167,14 @@ public final class VulkanPresentationWindow {
                 && presentationContext.shutdownApplicationManagedProvider(providerId, teardown);
     }
 
+    /** Stops presenting before Minecraft destroys the window; see VulkanSwapchain#retirePresentation. */
+    public static void retirePresentation() {
+        VulkanPresentationContext presentationContext = context;
+        if (presentationContext != null) {
+            presentationContext.retirePresentation();
+        }
+    }
+
     public static synchronized void shutdown() {
         initialized = false;
         VulkanPresentationContext presentationContext = context;

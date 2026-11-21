@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.graphics.vulkan;
 
+#if MC_VER >= MC_26_3
 import com.mojang.renderpearl.api.commands.CommandEncoder;
 import com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder;
 import io.homo.superresolution.common.mixin.core.accessor.FrontendCommandEncoderAccessor;
@@ -79,3 +80,4 @@ public class B3DVulkanCommandBuffer extends VulkanCommandBuffer {
 
     }
 }
+#endif

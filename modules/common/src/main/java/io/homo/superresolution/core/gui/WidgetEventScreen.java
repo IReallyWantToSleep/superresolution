@@ -26,8 +26,8 @@ import io.homo.superresolution.thirdparty.yoga.appliedenergistics.yoga.YogaNode;
 #if MC_VER < MC_26_1
 import net.minecraft.client.gui.GuiGraphics;
 #endif
-#if MC_VER >= MC_26_3
 import net.minecraft.client.Minecraft;
+#if MC_VER >= MC_26_3
 import org.lwjgl.sdl.SDLMouse;
 #endif
 import net.minecraft.client.gui.screens.Screen;

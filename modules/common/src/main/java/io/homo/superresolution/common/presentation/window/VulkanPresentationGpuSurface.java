@@ -16,10 +16,18 @@ import com.mojang.renderpearl.api.device.SurfaceException;
 import com.mojang.renderpearl.api.textures.GpuTextureView;
 import com.mojang.renderpearl.backend.api.CommandEncoderBackend;
 import com.mojang.renderpearl.backend.api.GpuSurfaceBackend;
+import com.mojang.renderpearl.backend.vulkan.VulkanConst;
 import com.mojang.renderpearl.backend.vulkan.VulkanDevice;
+import com.mojang.renderpearl.backend.vulkan.VulkanGpuTextureView;
+import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationFeature;
 import io.homo.superresolution.common.presentation.vulkan.VulkanPresentationWindow;
 import io.homo.superresolution.common.presentation.vulkan.VulkanSurface;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
+import io.homo.superresolution.core.graphics.impl.texture.TextureType;
+import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
+import io.homo.superresolution.core.graphics.vulkan.VulkanExternalTexture;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkSurfaceCapabilitiesKHR;
 
@@ -31,6 +39,7 @@ import java.util.Set;
 import java.util.function.BooleanSupplier;
 
 import static org.lwjgl.vulkan.KHRSurface.*;
+import static org.lwjgl.vulkan.VK10.VK_IMAGE_LAYOUT_GENERAL;
 import static org.lwjgl.vulkan.VK10.VK_SUCCESS;
 
 /**
@@ -54,6 +63,7 @@ public final class VulkanPresentationGpuSurface implements GpuSurfaceBackend {
             surface = VulkanPresentationFeature.attachBorrowedWindow(
                     windowHandle, device.vkDevice(), device.graphicsQueue().queueFamilyIndex());
             presentModes = queryPresentModes();
+            FrameCaptureManager.setPresentedColorHandoff(true);
         } catch (RuntimeException | Error failure) {
             try {
                 VulkanPresentationFeature.shutdown();
@@ -149,6 +159,18 @@ public final class VulkanPresentationGpuSurface implements GpuSurfaceBackend {
             throw new IllegalStateException("SR surface must be acquired once before its frontend blit");
         }
         blitted = true;
+        // This is the image to show. It may not be the main target: the frontend surface's
+        // callers can replace it, for example with an HDR-encoded copy.
+        if (textureView instanceof VulkanGpuTextureView vkView
+                && !vkView.isClosed() && !vkView.texture().isClosed()) {
+            FrameCaptureManager.capturePresentedColor(VulkanExternalTexture.fixedLayout(
+                    RenderSystems.vulkan().device(),
+                    vkView.texture().vkImage(), vkView.vkImageView(),
+                    TextureFormat.fromVk(VulkanConst.toVk(vkView.texture().getFormat())),
+                    TextureType.Texture2D, vkView.getWidth(0), vkView.getHeight(0), vkView.mipLevels(),
+                    VK_IMAGE_LAYOUT_GENERAL,
+                    TextureUsages.create().sampler().transferSource()));
+        }
     }
 
     @Override
@@ -174,6 +196,7 @@ public final class VulkanPresentationGpuSurface implements GpuSurfaceBackend {
         if (acquired) {
             throw new IllegalStateException("Cannot close an acquired SR surface");
         }
+        FrameCaptureManager.setPresentedColorHandoff(false);
         VulkanPresentationFeature.shutdown();
         closed = true;
     }

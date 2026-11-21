@@ -18,14 +18,31 @@
 
 package io.homo.superresolution.common.mixin.core.accessor;
 
-
+#if MC_VER >= MC_26_3
 import com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.gen.Accessor;
 import org.spongepowered.asm.mixin.gen.Invoker;
 
 @Mixin(VulkanCommandEncoder.class)
 public interface VulkanCommandEncoderAccessor {
     @Invoker(value = "commandBuffer")
     VkCommandBuffer currentCommandBuffer();
+
+    /** Timeline semaphore that each submission signals with its submit index. */
+    @Accessor(value = "submitSemaphore")
+    long submitSemaphore();
+
+    /** Submit index of the recording in progress; its submission signals this value. */
+    @Accessor(value = "currentSubmitIndex")
+    long currentSubmitIndex();
 }
+#else
+import net.minecraft.client.Minecraft;
+import org.spongepowered.asm.mixin.Mixin;
+
+@Mixin(Minecraft.class)
+public interface VulkanCommandEncoderAccessor {
+}
+#endif

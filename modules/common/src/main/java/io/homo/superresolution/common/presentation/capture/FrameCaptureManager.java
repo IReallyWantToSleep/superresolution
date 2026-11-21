@@ -23,6 +23,7 @@ import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
@@ -43,6 +44,8 @@ public final class FrameCaptureManager {
     private static final CaptureFrameRing FRAME_RING = new CaptureFrameRing();
     private static volatile FrameResources lastFinishedFrame;
     private static boolean registered;
+    private static boolean presentedColorHandoff;
+    private static boolean finalColorPending;
 
     private FrameCaptureManager() {
     }
@@ -63,13 +66,17 @@ public final class FrameCaptureManager {
     }
 
     public static void captureHudlessColor() {
-        if (!isInitialized() || !isWorldFrame()) {
+        if (!isInitialized() || !FrameGeneration.needsCapturedInputs() || !isWorldFrame()) {
             return;
         }
         FrameResources frame = beginFrame(GameFrameIndex.current());
         ITexture color = originColorTexture();
         if (frame != null && color != null) {
-            frame.copyHudlessColor(color);
+            if (B3DVulkanBridge.isB3DVulkanBackend()) {
+                frame.copyNativeHudlessColor(color);
+            } else {
+                frame.copyHudlessColor(color);
+            }
         }
     }
 
@@ -77,11 +84,62 @@ public final class FrameCaptureManager {
         if (!isInitialized()) {
             return;
         }
+        if (presentedColorHandoff) {
+            // Wait for the image Minecraft hands to the surface backend (capturePresentedColor).
+            finalColorPending = true;
+            return;
+        }
         ITexture color = originColorTexture();
         if (color == null) {
             throw new IllegalStateException("Vulkan presentation final color is unavailable");
         }
         beginFrame(GameFrameIndex.current()).copyFinalColor(color);
+    }
+
+    /**
+     * Turned on while SR's Vulkan surface backend replaces Minecraft's. The final color then
+     * comes from the image Minecraft passes to {@code GpuSurfaceBackend.blitFromTexture}, not
+     * from the main target read at the end of {@code GameRenderer.render}. Between those two
+     * points other mods may swap in their own image: an HDR output mod converts the frame to
+     * its window encoding (PQ, for instance) there. Presenting the main target in that window
+     * instead shows SDR values as HDR ones, with oversaturated, blown-out colors.
+     */
+    public static void setPresentedColorHandoff(boolean enabled) {
+        presentedColorHandoff = enabled;
+        if (!enabled) {
+            finalColorPending = false;
+        }
+    }
+
+    /**
+     * Captures the image Minecraft asked SR's surface backend to show, while Minecraft's frame
+     * is still being recorded, so the copy lands in the command buffer it submits next.
+     */
+    public static void capturePresentedColor(ITexture presented) {
+        if (!finalColorPending || !isInitialized()) {
+            return;
+        }
+        finalColorPending = false;
+        beginFrame(GameFrameIndex.current()).copyPresentedColor(presented);
+    }
+
+    /**
+     * Called just before Minecraft submits the frame. Captures the main target when Minecraft
+     * skipped the surface blit, so the frame still has a final color.
+     */
+    public static void flushPendingFinalColor() {
+        if (!finalColorPending) {
+            return;
+        }
+        finalColorPending = false;
+        if (!isInitialized()) {
+            return;
+        }
+        ITexture color = originColorTexture();
+        if (color == null) {
+            throw new IllegalStateException("Vulkan presentation final color is unavailable");
+        }
+        beginFrame(GameFrameIndex.current()).copyPresentedColor(color);
     }
 
     public static FrameResources captureVulkanInputs(
@@ -141,6 +199,7 @@ public final class FrameCaptureManager {
                 || (!B3DVulkanBridge.isB3DVulkanBackend()
                     && event.getAlgorithm() instanceof InteropAlgorithm<?> interop
                     && interop.supportsInputCapture())
+                || !FrameGeneration.needsCapturedInputs()
                 || !isWorldFrame()) {
             return;
         }

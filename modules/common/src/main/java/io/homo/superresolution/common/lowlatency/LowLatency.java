@@ -26,6 +26,7 @@ import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
+import io.homo.superresolution.common.perf.FrameRateLog;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 import io.homo.superresolution.core.streamline.Streamline;
@@ -159,7 +160,9 @@ public final class LowLatency {
         }
         LowLatencyProvider active = lowLatency;
         if (active != null) {
+            long start = System.nanoTime();
             active.sleep();
+            FrameRateLog.onLowLatencySleep(System.nanoTime() - start);
         }
     }
 

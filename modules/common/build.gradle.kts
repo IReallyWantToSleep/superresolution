@@ -163,7 +163,8 @@ dependencies {
     if (irisDependency != null) {
         val dep = irisDependency.first
         if (irisDependency.second) {
-            compileOnly(mapOf("name" to dep.name, "ext" to "jar"))
+            val overrideJar = gradle.extensions.extraProperties.properties["irisVulkanJar"] as? File
+            compileOnly(files(overrideJar ?: rootProject.file("libs/${dep.name}.jar")))
         } else {
             if (irisPlatform == "neoforge") {
                 compileOnly(
@@ -182,8 +183,8 @@ dependencies {
                 "1.21.10"
             )) || lib.name == "sodium.maven"
         ) {
-            var depName = "net.caffeinemc:sodium-fabric:${lib.version}"
-            modCompileOnlyCompat(depName)
+            val localSodium = gradle.extensions.extraProperties.properties["sodiumJar"] as? File
+            modCompileOnlyCompat(localSodium?.let { files(it) } ?: "net.caffeinemc:sodium-fabric:${lib.version}")
             break
         }
     }
@@ -211,6 +212,9 @@ testSourceSet.annotationProcessorPath += mainSourceSet.annotationProcessorPath
 testSourceSet.compileClasspath += mainSourceSet.compileClasspath
 testSourceSet.runtimeClasspath += mainSourceSet.compileClasspath
 val irisapiSourceSet = sourceSets.maybeCreate("irisapi")
+if (gradle.extensions.extraProperties["isVulkan"] == true) {
+    dependencies.add(irisapiSourceSet.compileOnlyConfigurationName, "io.github.llamalad7:mixinextras-common:0.5.0")
+}
 val sharedSourceSet = sourceSets.maybeCreate("shared")
 val materialSourceSet = sourceSets.maybeCreate("material")
 val legacySourceSet = sourceSets.maybeCreate("legacy")

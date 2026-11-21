@@ -371,7 +371,14 @@ final class FrameGenerationWorker {
                         signals[cursor++] = handoffs[handoffs.length - 1];
                         System.arraycopy(captureSignals, 0, signals, cursor, captureSignals.length);
                     }
-                    lastFence = submitProviderWork(buffers.get(index), waits, stages, signals);
+                    // The provider's work reads the captured inputs. On Minecraft's Vulkan
+                    // backend they are written by Minecraft's submission, so the first
+                    // submission waits for its timeline value on the GPU, as the OpenGL path
+                    // waits for the inputs' ready semaphores.
+                    long captureTimeline = index == 0 ? work.frameResources().captureTimelineSemaphore() : 0L;
+                    long captureValue = index == 0 ? work.frameResources().captureTimelineValue() : 0L;
+                    lastFence = submitProviderWork(buffers.get(index), waits, stages, signals,
+                            captureTimeline, captureValue);
                     submittedCount++;
                     FrameGenerationDispatchCompletion completion = GpuReadyFences.completion(buffers.get(index));
                     if (outputSignals != 0) {
@@ -408,9 +415,11 @@ final class FrameGenerationWorker {
     }
 
     private long submitProviderWork(
-            VulkanCommandBuffer buffer, long[] waits, int[] stages, long[] signals
+            VulkanCommandBuffer buffer, long[] waits, int[] stages, long[] signals,
+            long timelineSemaphore, long timelineValue
     ) {
-        return device.submitCommandBuffer(device.requireFgQueue(), buffer, waits, stages, signals);
+        return device.submitCommandBuffer(device.requireFgQueue(), buffer, waits, stages, signals,
+                timelineSemaphore, timelineValue, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
     }
 
     private PresentImageBatch buildPresentImageBatch(

@@ -180,7 +180,11 @@ abstract class VulkanInputInterop<C extends InteropCommandContext> implements In
     }
 
     protected final VulkanCommandBuffer getCurrentCommandBuffer() {
+        #if MC_VER >= MC_26_3
         return new B3DVulkanCommandBuffer(RenderSystem.getDevice().createCommandEncoder());
+        #else
+        throw new UnsupportedOperationException("Minecraft Vulkan recording requires Minecraft 26.3");
+        #endif
     }
 
     protected final void rememberExecution(VulkanInteropState states) {

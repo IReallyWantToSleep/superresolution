@@ -73,6 +73,15 @@ val minecraftVersion = commonConfig["minecraft_version"]?.toString()
 gradle.extensions.extraProperties["minecraft_version"] = minecraftVersion
 
 val vulkanConfiguration = minecraftVersionConfig.endsWith(".vk")
+for (property in listOf("irisVulkanJar", "sodiumJar")) {
+    providers.gradleProperty(property).orNull?.let { path ->
+        require(minecraftVersion == "26.3") { "$property requires Minecraft 26.3" }
+        require(property != "irisVulkanJar" || vulkanConfiguration) { "$property requires minecraft_version_config=26.3.vk" }
+        gradle.extensions.extraProperties[property] = file(path).also {
+            require(it.isFile) { "$property not found: $it" }
+        }
+    }
+}
 val explicitVulkan = providers.gradleProperty("is_vulkan").orNull?.let {
     it.toBooleanStrictOrNull()
         ?: throw GradleException("is_vulkan must be true or false")

@@ -79,6 +79,7 @@ public class SuperResolutionConfig {
     public static final BooleanValue ENABLE_RENDER_DOC;
     public static final BooleanValue ENABLE_IMGUI;
     public static final BooleanValue ENABLE_PRESENT_INDICATOR;
+    public static final BooleanValue LOG_FRAME_RATE;
     public static final BooleanValue PAUSE_GAME_ON_GUI;
     public static final BooleanValue AUTO_HIDE_SHADERPACK_DISABLED_ALGORITHMS;
     public static final StringListValue INJECT_POST_CHAIN_BLACKLIST;
@@ -261,6 +262,11 @@ public class SuperResolutionConfig {
                 () -> false,
                 "Stamp a small square onto every presented frame (white = rendered, cyan = generated) to visualize frame generation cadence"
         );
+        LOG_FRAME_RATE = builder.defineBoolean(
+                "debug/log_frame_rate",
+                () -> false,
+                "Log the frame rate once a second: rendered and shown fps, frame times, present blocking, low-latency sleep, frame cap and driver latency"
+        );
         ENABLE_EXPERIMENTAL_ALGORITHMS = builder.defineBoolean(
                 "experiment/enable_experimental_algorithms",
                 () -> false,
@@ -439,6 +445,10 @@ public class SuperResolutionConfig {
 
     public static AlgorithmDescription<?> getDefaultAlgorithm() {
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            #if MC_VER == MC_26_3 && IS_VULKAN == 1
+            AlgorithmDescription<?> spatial = AlgorithmRegistry.getDescriptionByID("fsr1");
+            if (spatial != null && Platform.currentPlatform.isInstallIris()) return spatial;
+            #endif
             return AlgorithmDescriptions.NONE;
         }
         try {
@@ -660,7 +670,13 @@ public class SuperResolutionConfig {
     }
 
     public static boolean isEnableImgui() {
+        #if MC_VER >= MC_26_3
+        // The ImGui overlay runs on ImGui's GLFW backend, and Minecraft 26.3 replaced GLFW with
+        // SDL3: its classes are gone, so loading ImguiMain would crash the game.
+        return false;
+        #else
         return ENABLE_IMGUI.get();
+        #endif
     }
 
     public static void setEnableImgui(boolean value) {
@@ -681,6 +697,14 @@ public class SuperResolutionConfig {
 
     public static void setEnablePresentIndicator(boolean value) {
         ENABLE_PRESENT_INDICATOR.set(value);
+    }
+
+    public static boolean isLogFrameRate() {
+        return LOG_FRAME_RATE.get();
+    }
+
+    public static void setLogFrameRate(boolean value) {
+        LOG_FRAME_RATE.set(value);
     }
 
     public static PresentationBackendType getPresentationBackend() {

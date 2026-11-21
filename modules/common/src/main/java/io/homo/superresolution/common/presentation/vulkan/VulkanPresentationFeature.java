@@ -175,8 +175,8 @@ public final class VulkanPresentationFeature {
                 || device.getCapabilities().vkQueuePresentKHR == VK_NULL_HANDLE) {
             throw new IllegalStateException("Minecraft's Vulkan instance/device did not enable surface and swapchain support");
         }
-        // Borrowed devices cannot enable optional present-id, Reflex or present-timing
-        // features after creation. Their SR feature flags remain disabled.
+        // Extensions cannot be enabled after creation. SR adds present ids and Reflex while
+        // Minecraft creates its device (MinecraftVulkanDeviceSetup); present timing stays off.
     }
 
     private static void validatePresentQueue(VkPhysicalDevice physicalDevice, int queueFamily) {
