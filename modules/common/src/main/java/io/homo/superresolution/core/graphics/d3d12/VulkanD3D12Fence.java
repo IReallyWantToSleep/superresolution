@@ -1,15 +1,13 @@
 package io.homo.superresolution.core.graphics.d3d12;
 
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
+import org.lwjgl.system.JNI;
 import org.lwjgl.system.MemoryStack;
-import org.lwjgl.system.MemoryUtil;
 import org.lwjgl.vulkan.VkImportSemaphoreWin32HandleInfoKHR;
 import org.lwjgl.vulkan.VkPhysicalDeviceIDProperties;
 import org.lwjgl.vulkan.VkPhysicalDeviceProperties2;
 import org.lwjgl.vulkan.VkSemaphoreCreateInfo;
-import org.lwjgl.vulkan.VkSemaphoreSignalInfo;
 import org.lwjgl.vulkan.VkSemaphoreTypeCreateInfo;
-import org.lwjgl.vulkan.VkSemaphoreWaitInfo;
 
 import java.nio.ByteOrder;
 
@@ -40,9 +38,15 @@ public final class VulkanD3D12Fence implements AutoCloseable {
                 VkImportSemaphoreWin32HandleInfoKHR info = VkImportSemaphoreWin32HandleInfoKHR.calloc(stack)
                         .sType(VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR)
                         .semaphore(semaphore).handleType(VK_EXTERNAL_SEMAPHORE_HANDLE_TYPE_D3D12_FENCE_BIT)
-                        .handle(source.sharedHandleLocked())
-                        .name(MemoryUtil.memUTF16("WHAT"));
-                VK_CHECK(vkImportSemaphoreWin32HandleKHR(device.getVkDevice(), info),
+                        .handle(source.sharedHandleLocked());
+                var vkDevice = device.getVkDevice();
+                long importFunction = vkDevice.getCapabilities().vkImportSemaphoreWin32HandleKHR;
+                if (importFunction == 0 || info.handle() == 0) {
+                    throw new IllegalStateException("D3D12 fence import requires a Vulkan import function and a shared handle");
+                }
+                // LWJGL 3.4.3 requires a non-null name in its generated validator.
+                // Vulkan requires a null name for an import by handle (VUID 01469).
+                VK_CHECK(JNI.callPPI(vkDevice.address(), info.address(), importFunction),
                         "Import D3D12 shared fence into Vulkan");
             } catch (RuntimeException | Error failure) {
                 close();
@@ -69,22 +73,15 @@ public final class VulkanD3D12Fence implements AutoCloseable {
         }
     }
 
-    /** Signal only after the ordered Minecraft copy/release fence has completed. */
-    public void signal(long value) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VK_CHECK(vkSignalSemaphore(device.getVkDevice(), VkSemaphoreSignalInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_SEMAPHORE_SIGNAL_INFO).semaphore(semaphore).value(value)),
-                    "Signal Vulkan/D3D12 shared timeline");
+    /**
+     * Returns the imported Vulkan timeline semaphore used for GPU queue waits and signals.
+     * The handle is owned by this wrapper and remains valid until {@link #close()}.
+     */
+    public long semaphore() {
+        if (semaphore == VK_NULL_HANDLE) {
+            throw new IllegalStateException("Vulkan/D3D12 shared timeline is closed");
         }
-    }
-
-    public void await(long value) {
-        try (MemoryStack stack = MemoryStack.stackPush()) {
-            VK_CHECK(vkWaitSemaphores(device.getVkDevice(), VkSemaphoreWaitInfo.calloc(stack)
-                    .sType(VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO)
-                    .pSemaphores(stack.longs(semaphore)).pValues(stack.longs(value)), Long.MAX_VALUE),
-                    "Wait Vulkan/D3D12 shared timeline");
-        }
+        return semaphore;
     }
 
     @Override

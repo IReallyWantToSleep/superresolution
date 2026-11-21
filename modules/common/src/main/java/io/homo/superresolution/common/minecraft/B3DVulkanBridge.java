@@ -46,6 +46,8 @@ import java.lang.reflect.Method;
 #if MC_VER == MC_26_3 && IS_VULKAN == 1
 import com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder;
 import io.homo.superresolution.common.mixin.core.accessor.VulkanCommandEncoderAccessor;
+
+import static org.lwjgl.vulkan.VK13.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 #endif
 
 public final class B3DVulkanBridge {
@@ -284,6 +286,27 @@ public final class B3DVulkanBridge {
         }
     }
     #endif
+
+    /** Queues a GPU wait before subsequently recorded commands. Render thread only. */
+    public static void waitSemaphore(long semaphore, long value) {
+        #if MC_VER == MC_26_3 && IS_VULKAN == 1
+        var encoder = (VulkanCommandEncoder) createCommandEncoder();
+        encoder.waitSemaphore(semaphore, value, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
+        #else
+        throw new UnsupportedOperationException("Minecraft Vulkan semaphore waits require the Vulkan 26.3 configuration");
+        #endif
+    }
+
+    /** Signals after the current recording and submits it. Render thread only. */
+    public static void submitSignalingSemaphore(long semaphore, long value) {
+        #if MC_VER == MC_26_3 && IS_VULKAN == 1
+        var encoder = (VulkanCommandEncoder) createCommandEncoder();
+        encoder.signalSemaphore(semaphore, value, VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT);
+        encoder.submit();
+        #else
+        throw new UnsupportedOperationException("Minecraft Vulkan semaphore signals require the Vulkan 26.3 configuration");
+        #endif
+    }
 
     public static CommandCompletion captureCompletion() {
         #if MC_VER == MC_26_3 && IS_VULKAN == 1

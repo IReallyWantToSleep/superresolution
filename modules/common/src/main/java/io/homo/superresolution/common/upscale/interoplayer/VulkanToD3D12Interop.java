@@ -116,25 +116,23 @@ public final class VulkanToD3D12Interop extends VulkanInputInterop<D3D12CommandC
         if (pending != null || !resolveLayout(resource).equals(builtLayout)) {
             throw new IllegalStateException("D3D12 dispatch is pending or requires resource rebuild");
         }
+        // The allocator must be reusable before we record or submit the next handoff.
+        commands.waitForFence();
         long ready = fence.reserveValue();
         long done = fence.reserveValue();
         VulkanCommandBuffer inputCopy = getCurrentCommandBuffer();
         VulkanInteropState states = new VulkanInteropState();
-        boolean submissionAttempted = false;
-        boolean released = false;
+        boolean producerSubmitted = false;
         D3D12CommandContext context = null;
         try {
             rememberExecution(states);
             acquireShared(inputCopy, states);
             prepareInputs(inputCopy, states, resource.resources());
             releaseShared(inputCopy, states);
-            submissionAttempted = true;
-            // The host timeline signal must follow GPU completion of the input copies and release.
-            B3DVulkanBridge.awaitIdle();
-            externalOwned = true;
-            timeline.signal(ready);
-            released = true;
-            commands.waitForFence();
+            // Flush the producer before D3D12 submission or its synchronous error
+            // recovery can wait on ready. The semaphore orders GPU execution.
+            B3DVulkanBridge.submitSignalingSemaphore(timeline.semaphore(), ready);
+            producerSubmitted = true;
             commands.reset();
             commands.begin();
             for (Map.Entry<InteropResourceType, ITexture> entry : executionTextures.entrySet()) {
@@ -148,11 +146,15 @@ public final class VulkanToD3D12Interop extends VulkanInputInterop<D3D12CommandC
             return prepared;
         } catch (RuntimeException | Error failure) {
             if (context != null) {
-                context.close();
+                try {
+                    context.close();
+                } catch (RuntimeException | Error cleanupFailure) {
+                    failure.addSuppressed(cleanupFailure);
+                }
             }
-            if (released) {
+            if (producerSubmitted) {
                 recoverUnsubmitted(ready, done, failure);
-            } else if (submissionAttempted) {
+            } else {
                 unusable = true;
             }
             throw failure;
@@ -190,8 +192,8 @@ public final class VulkanToD3D12Interop extends VulkanInputInterop<D3D12CommandC
             commands.end();
             submissionAttempted = true;
             device.directQueue().submit(commands, fence, recording.ready(), recording.done());
-            timeline.await(recording.done());
-            copyOutput();
+            VulkanCommandBuffer outputCopy = reacquireAfter(recording.done());
+            publishOutput(recordOutput(outputCopy, new VulkanInteropState()));
         } catch (RuntimeException | Error failure) {
             try {
                 resource.commandContext().close();
@@ -215,6 +217,7 @@ public final class VulkanToD3D12Interop extends VulkanInputInterop<D3D12CommandC
                     externalOwned ? VK_QUEUE_FAMILY_EXTERNAL : VK_QUEUE_FAMILY_IGNORED,
                     externalOwned ? vulkanDevice.getMainQueue().getQueueFamilyIndex() : VK_QUEUE_FAMILY_IGNORED);
         }
+        externalOwned = false;
     }
 
     private void releaseShared(VulkanCommandBuffer commands, VulkanInteropState states) {
@@ -222,27 +225,21 @@ public final class VulkanToD3D12Interop extends VulkanInputInterop<D3D12CommandC
             states.transition(commands, texture, VK_IMAGE_LAYOUT_GENERAL, 0, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                     vulkanDevice.getMainQueue().getQueueFamilyIndex(), VK_QUEUE_FAMILY_EXTERNAL);
         }
+        externalOwned = true;
     }
 
-    private void copyOutput() {
-        VulkanCommandBuffer copy = getCurrentCommandBuffer();
-        VulkanInteropState states = new VulkanInteropState();
-        try {
-            rememberExecution(states);
-            acquireShared(copy, states);
-            int output = recordOutput(copy, states);
-            releaseShared(copy, states);
-            publishOutput(output);
-        } catch (RuntimeException | Error failure) {
-            throw failure;
-        }
+    private VulkanCommandBuffer reacquireAfter(long done) {
+        B3DVulkanBridge.waitSemaphore(timeline.semaphore(), done);
+        VulkanCommandBuffer commands = getCurrentCommandBuffer();
+        acquireShared(commands, new VulkanInteropState());
+        return commands;
     }
 
     private void recoverUnsubmitted(long ready, long done, Throwable original) {
         try {
             commands.reset();
             device.directQueue().recoverSharedFence(fence, ready, done);
-            timeline.await(done);
+            reacquireAfter(done);
         } catch (RuntimeException | Error recoveryFailure) {
             unusable = true;
             if (original != null) {

@@ -235,7 +235,7 @@ loom {
 
             programArguments.add("--renderDebugLabels=true")
 
-            runDirectory.set(rootProject.file(if (graphicsBackend == "vulkan") "runs/fabric-iris-vulkan" else "runs/fabric"))
+            runDirectory.set(rootProject.file("runs/fabric"))
         }
     }
 }
