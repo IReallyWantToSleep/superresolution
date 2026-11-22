@@ -23,9 +23,14 @@ import io.homo.superresolution.api.platform.OperatingSystemType;
 import io.homo.superresolution.api.platform.Platform;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.core.NativeLibManager;
 import io.homo.superresolution.core.SuperResolutionConstants;
 import org.lwjgl.system.Configuration;
+#if MC_VER >= MC_26_3
+import org.lwjgl.sdl.SDLError;
+import org.lwjgl.sdl.SDLVulkan;
+#endif
 import org.lwjgl.vulkan.VkPhysicalDevice;
 
 import java.nio.file.Path;
@@ -34,7 +39,14 @@ public final class Streamline {
     private static final String INTERPOSER_FILE_NAME = "sl.interposer.dll";
 
     private static boolean initAttempted;
+    private static boolean interposerLoadAttempted;
     private static boolean interposerLoaded;
+    private static Path loadedInterposerPath;
+#if MC_VER >= MC_26_3
+    private static boolean sdlVulkanLoaderAttempted;
+    private static boolean sdlVulkanLoaderReady;
+    private static boolean sdlVulkanLoaderLeaseHeld;
+#endif
     private static StreamlineSession defaultSession;
     private static StreamlineTypes.FrameToken currentFrame;
 
@@ -84,6 +96,75 @@ public final class Streamline {
         return true;
     }
 
+#if MC_VER >= MC_26_3
+    /**
+     * SDL loads its Vulkan library while Minecraft constructs the Vulkan presentation window,
+     * before onClientStarted() calls prepareEarly(). Pin SDL to Streamline's interposer first.
+     */
+    public static synchronized boolean prepareSDLVulkanLoader() {
+        if (!PresentationBackendManager.shouldInitializeStreamline()
+                || !isSupportedPlatform()
+                || B3DVulkanBridge.isB3DVulkanBackend()) {
+            return false;
+        }
+        if (sdlVulkanLoaderAttempted) {
+            return sdlVulkanLoaderReady;
+        }
+        sdlVulkanLoaderAttempted = true;
+        if (!isInitialized()) {
+            SuperResolution.LOGGER.error("Cannot route SDL Vulkan through Streamline before slInit succeeds");
+            return false;
+        }
+
+        Path pluginDir = StreamlineDistribution.pluginDirectory();
+        if (pluginDir == null) {
+            SuperResolution.LOGGER.error("Cannot route SDL Vulkan through Streamline: plugin directory is unavailable");
+            return false;
+        }
+        Path interposer = pluginDir.resolve(INTERPOSER_FILE_NAME).toAbsolutePath().normalize();
+        if (!loadInterposer(pluginDir)) {
+            return false;
+        }
+
+        Configuration.VULKAN_LIBRARY_NAME.set(interposer.toString());
+        if (!SDLVulkan.SDL_Vulkan_LoadLibrary(interposer.toString())) {
+            SuperResolution.LOGGER.error(
+                    "Failed to load SDL Vulkan through Streamline interposer {}: {}",
+                    interposer,
+                    SDLError.SDL_GetError()
+            );
+            return false;
+        }
+        sdlVulkanLoaderLeaseHeld = true;
+        if (SDLVulkan.SDL_Vulkan_GetVkGetInstanceProcAddr() == 0L) {
+            String error = SDLError.SDL_GetError();
+            SDLVulkan.SDL_Vulkan_UnloadLibrary();
+            sdlVulkanLoaderLeaseHeld = false;
+            SuperResolution.LOGGER.error(
+                    "SDL loaded the Streamline Vulkan library but returned no vkGetInstanceProcAddr: {}",
+                    error
+            );
+            return false;
+        }
+
+        sdlVulkanLoaderReady = true;
+        SuperResolution.LOGGER.info("SDL Vulkan loader routed through Streamline interposer: {}", interposer);
+        return true;
+    }
+
+    /**
+     * Releases the explicit SDL loader reference only after SR's Vulkan objects are gone.
+     * The SDL Vulkan window owns a separate reference until that window is destroyed.
+     */
+    public static synchronized void releaseSDLVulkanLoader() {
+        if (!sdlVulkanLoaderLeaseHeld) {
+            return;
+        }
+        SDLVulkan.SDL_Vulkan_UnloadLibrary();
+        sdlVulkanLoaderLeaseHeld = false;
+    }
+#endif
+
     public static synchronized boolean prepareEarly() {
         if (!PresentationBackendManager.shouldInitializeStreamline()) {
             return false;
@@ -105,25 +186,56 @@ public final class Streamline {
         if (!PresentationBackendManager.shouldInitializeStreamline()) {
             return false;
         }
+#if MC_VER >= MC_26_3
+        if (sdlVulkanLoaderAttempted
+                && !sdlVulkanLoaderReady
+                && !B3DVulkanBridge.isB3DVulkanBackend()) {
+            SuperResolution.LOGGER.warn(
+                    "Streamline initialization skipped because SDL's Vulkan loader was not routed through the interposer before window creation"
+            );
+            return false;
+        }
+#endif
+        if (isInitialized()) {
+            return true;
+        }
         Path pluginDir = StreamlineDistribution.pluginDirectory();
-        if (pluginDir == null) {
+        if (pluginDir == null || !loadInterposer(pluginDir)) {
             return false;
         }
-        Path interposer = pluginDir.resolve(INTERPOSER_FILE_NAME).toAbsolutePath();
-        try {
-            // sl.interposer.dll resolves sl.common.dll by plain name, so the latter has to
-            // already be in the process before the interposer itself is loaded.
-            System.load(pluginDir.resolve("sl.common.dll").toAbsolutePath().toString());
-            System.load(interposer.toString());
-            interposerLoaded = true;
-        } catch (Throwable failure) {
-            SuperResolution.LOGGER.error("Failed to load the Streamline interposer from {}", pluginDir, failure);
-            return false;
-        }
+        Path interposer = loadedInterposerPath;
         Configuration.VULKAN_LIBRARY_NAME.set(interposer.toString());
         NativeLibManager.extract(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         NativeLibManager.load(SuperResolutionConstants.NATIVE_LIBRARIES_DIR.getPath());
         return initEarly(config);
+    }
+
+    private static boolean loadInterposer(Path pluginDir) {
+        Path interposer = pluginDir.resolve(INTERPOSER_FILE_NAME).toAbsolutePath().normalize();
+        if (interposerLoadAttempted) {
+            if (interposerLoaded && interposer.equals(loadedInterposerPath)) {
+                return true;
+            }
+            SuperResolution.LOGGER.error(
+                    "Streamline interposer load was already attempted for a different or unavailable path: {}",
+                    interposer
+            );
+            return false;
+        }
+
+        interposerLoadAttempted = true;
+        try {
+            // sl.interposer.dll resolves sl.common.dll by plain name, so the latter has to
+            // already be in the process before the interposer itself is loaded.
+            System.load(pluginDir.resolve("sl.common.dll").toAbsolutePath().normalize().toString());
+            System.load(interposer.toString());
+            loadedInterposerPath = interposer;
+            interposerLoaded = true;
+            return true;
+        } catch (Throwable failure) {
+            SuperResolution.LOGGER.error("Failed to load the Streamline interposer from {}", pluginDir, failure);
+            return false;
+        }
     }
 
     public static synchronized boolean initEarly() {

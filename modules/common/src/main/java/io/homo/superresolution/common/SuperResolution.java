@@ -773,6 +773,9 @@ public final class SuperResolution implements Destroyable {
         // GLFW must destroy the hidden OpenGL context before the Vulkan driver is torn down.
         PresentationWindowState.destroyRenderWindow();
         RenderSystems.destroy();
+#if MC_VER >= MC_26_3
+        Streamline.releaseSDLVulkanLoader();
+#endif
         graphicsBackendDestroyed = true;
     }
 }

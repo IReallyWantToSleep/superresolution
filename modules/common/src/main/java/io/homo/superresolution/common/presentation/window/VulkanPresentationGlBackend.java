@@ -23,8 +23,11 @@ import com.mojang.renderpearl.api.device.BackendCreationException;
 import com.mojang.renderpearl.api.device.GpuDebugOptions;
 import com.mojang.renderpearl.api.device.GpuDevice;
 import com.mojang.renderpearl.backend.opengl.GlBackend;
+import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
+import io.homo.superresolution.core.streamline.Streamline;
 import org.lwjgl.sdl.SDLVideo;
+import org.lwjgl.sdl.SDLError;
 import static org.lwjgl.system.MemoryUtil.NULL;
 #elif MC_VER >= MC_26_1
 import com.mojang.blaze3d.GLFWErrorCapture;
@@ -74,18 +77,62 @@ public final class VulkanPresentationGlBackend extends GlBackend {
             return super.createWindow(title, width, height, flags);
         }
 
-        long window = SDLVideo.SDL_CreateWindow(
-                title,
-                width,
-                height,
-                (flags & ~SDL_WINDOW_OPENGL) | SDL_WINDOW_VULKAN
-        );
+        // RenderPearl reaches this branch while Minecraft constructs its Window, before the
+        // later client-start hook. Initialize Streamline, then set SDL's independent loader
+        // before SDL_WINDOW_VULKAN can implicitly load vulkan-1.dll.
+        boolean streamLineReady = false;
+        boolean sdlLoaderReady = false;
+        if (PresentationBackendManager.shouldInitializeStreamline()) {
+            // slInit must precede SDL's Vulkan loader's extension enumeration.
+            streamLineReady = Streamline.prepareEarly();
+            sdlLoaderReady = Streamline.prepareSDLVulkanLoader();
+            if (streamLineReady && !sdlLoaderReady) {
+                try {
+                    Streamline.shutdown();
+                } catch (Throwable failure) {
+                    SuperResolution.LOGGER.error("Failed to shut down Streamline after SDL loader setup failed", failure);
+                } finally {
+                    Streamline.releaseSDLVulkanLoader();
+                }
+            }
+        }
+
+        long window;
+        try {
+            window = SDLVideo.SDL_CreateWindow(
+                    title,
+                    width,
+                    height,
+                    (flags & ~SDL_WINDOW_OPENGL) | SDL_WINDOW_VULKAN
+            );
+        } catch (RuntimeException | Error failure) {
+            if (sdlLoaderReady) {
+                shutdownStreamlineWindowBootstrap(failure);
+            }
+            throw failure;
+        }
         if (window == NULL) {
-            throw new IllegalStateException("Failed to create the Vulkan presentation window");
+            IllegalStateException failure = new IllegalStateException(
+                    "Failed to create the Vulkan presentation window: " + SDLError.SDL_GetError()
+            );
+            if (sdlLoaderReady) {
+                shutdownStreamlineWindowBootstrap(failure);
+            }
+            throw failure;
         }
         presentationWindow = window;
         PresentationWindowState.attachPresentation(window);
         return window;
+    }
+
+    private static void shutdownStreamlineWindowBootstrap(Throwable failure) {
+        try {
+            Streamline.shutdown();
+        } catch (Throwable shutdownFailure) {
+            failure.addSuppressed(shutdownFailure);
+        } finally {
+            Streamline.releaseSDLVulkanLoader();
+        }
     }
 
     @Override
