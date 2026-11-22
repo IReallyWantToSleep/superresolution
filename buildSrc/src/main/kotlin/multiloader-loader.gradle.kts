@@ -1,3 +1,4 @@
+import utils.publishSrDirectories
 import org.gradle.api.tasks.compile.JavaCompile
 import org.gradle.jvm.tasks.Jar
 import org.gradle.api.tasks.javadoc.Javadoc
@@ -44,4 +45,10 @@ tasks.named<Jar>("sourcesJar") {
     from(commonJava)
     dependsOn(commonResources)
     from(commonResources)
+}
+
+// The loader already links all SR common sources and resources into its output.
+// Consumers running from directories must use this output as the only copy of the SR mod.
+afterEvaluate {
+    publishSrDirectories("srDevOutput", listOf(sourceSets.main.get()), resources = true)
 }

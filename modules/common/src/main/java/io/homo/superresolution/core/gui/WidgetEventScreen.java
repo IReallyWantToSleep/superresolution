@@ -283,7 +283,7 @@ public abstract class WidgetEventScreen<T> extends Screen {
         if (Minecraft.getInstance().level != null) {
             return;
         }
-        super.extractBlurredBackground(guiGraphics,mouseX,mouseY,partialTick);
+        super.renderBackground(guiGraphics, mouseX, mouseY, partialTick);
     }
     #endif
 

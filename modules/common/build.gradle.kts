@@ -5,6 +5,7 @@ import multiversion.Dependency
 import multiversion.VersionConfig
 import org.gradle.jvm.tasks.Jar
 import utils.MinecraftVersion
+import utils.publishSrDirectories
 import java.util.zip.ZipFile
 
 plugins {
@@ -342,19 +343,14 @@ tasks.named<Jar>("jar") {
     }
 }
 
+val commonSourceSets = listOf(
+    mainSourceSet, irisapiSourceSet, sharedSourceSet, materialSourceSet, legacySourceSet, shaderCompatSourceSet,
+) + if (irisVelocityExtSupported) listOf(irisVelocityExtSourceSet) else emptyList()
+
+publishSrDirectories("srCommonClasses", commonSourceSets, resources = false)
+
 artifacts {
-    var sourceSets: ArrayList<SourceSet> = ArrayList(
-        listOf(
-            mainSourceSet,
-            irisapiSourceSet,
-            sharedSourceSet,
-            materialSourceSet,
-            legacySourceSet,
-            shaderCompatSourceSet
-        )
-    )
-    if (irisVelocityExtSupported) sourceSets.add(irisVelocityExtSourceSet)
-    sourceSets.forEach { sourceSet ->
+    commonSourceSets.forEach { sourceSet ->
         sourceSet.java.sourceDirectories.files.forEach { dir ->
             add("commonJava", dir)
         }

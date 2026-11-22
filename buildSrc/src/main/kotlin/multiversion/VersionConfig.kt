@@ -4,6 +4,7 @@ import groovy.json.JsonSlurper
 import java.io.File
 
 class VersionConfig(json: Map<*, *>) {
+    val unobfuscated = json["unobfuscated"] as? Boolean ?: false
     val common: CommonConfig = CommonConfig(json["common"] as? Map<*, *> ?: emptyMap<String, Any>())
 
     var fabric: FabricPlatformConfig = if (json["fabric"] != null && common.enableFabric) {

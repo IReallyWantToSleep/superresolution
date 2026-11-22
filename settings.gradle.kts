@@ -60,8 +60,6 @@ val versionConfigSrc = JsonSlurper().parse(
     File(rootDir, "configs/${minecraftVersionConfig}.json")
 ) as Map<*, *>
 
-val isUnobfuscated = versionConfigSrc["unobfuscated"] as? Boolean ?: false
-
 gradle.extensions.extraProperties["versionConfigSrc"] = versionConfigSrc
 
 val commonConfig = versionConfigSrc["common"] as? Map<*, *>
@@ -82,32 +80,27 @@ if (!nativeOnlyMode) {
     println("Graphics API: " + if (isVulkan) "Vulkan" else "OpenGL")
     println("Current Minecraft version: $minecraftVersion")
 
-    val platforms = commonConfig["platforms"] as? List<*> ?: emptyList<Any?>()
+    val platforms = (commonConfig["platforms"] as? List<*>)
+        .orEmpty().mapNotNull { it?.toString()?.trim()?.takeIf(String::isNotEmpty) }
     for (loader in platforms) {
-        val loaderName = loader?.toString()?.trim().orEmpty()
-        if (loaderName.isBlank()) continue
-        println("Enabled loader: $loaderName")
-        include(loaderName)
-        project(":$loaderName").projectDir = File(rootDir, "modules/$loaderName")
-        if (loaderName == "fabric") {
-            val fabricBuildFile = File(rootDir, "modules/fabric/build.gradle.kts")
-            val targetPluginId = if (isUnobfuscated) {
-                "net.fabricmc.fabric-loom"
-            } else {
-                "net.fabricmc.fabric-loom-remap"
-            }
+        println("Enabled loader: $loader")
+        include(loader)
+        project(":$loader").projectDir = file("modules/$loader")
+    }
 
-            val originalScript = fabricBuildFile.readText()
-            val loomPluginPattern = Regex(
-                """(id\s*\(\s*")net\.fabricmc\.fabric-loom[^"]*("\s*\)(?:\s*version\s*"[^"]*")?)"""
-            )
-            val updatedScript = originalScript.replace(loomPluginPattern) { match ->
-                "${match.groupValues[1]}$targetPluginId${match.groupValues[2]}"
-            }
-
-            if (updatedScript != originalScript) {
-                fabricBuildFile.writeText(updatedScript)
+    val wisteriaDir = file("modules/wisteria")
+    if (wisteriaDir.resolve("gradle.properties").isFile && wisteriaDir.resolve("common/src").isDirectory) {
+        for (module in listOf("common") + platforms) {
+            val name = "wisteria-$module"
+            include(name)
+            project(":$name").apply {
+                projectDir = wisteriaDir.resolve(module)
+                // SR owns the embedded build. The gitlink can point to an upstream commit as-is.
+                val script = if (module == "common") "common" else "loader"
+                buildFileName = "../../../gradle/wisteria-$script.gradle.kts"
             }
         }
+    } else if (requestedTasks.any { it.removePrefix(":").startsWith("wisteria-") }) {
+        throw GradleException("Initialize Wisteria with `git submodule update --init -- modules/wisteria`.")
     }
 }

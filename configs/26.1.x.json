@@ -59,7 +59,7 @@
         "modmenu_version": "18.0.0-alpha.8"
     },
     "neoforge": {
-        "loader_version": "26.1.2.31-beta",
+        "loader_version": "26.1.2.76",
         "dependencies": {
             "modrinth": [
                 {

@@ -28,6 +28,8 @@ private val consoleReader = BufferedReader(InputStreamReader(System.`in`))
 
 plugins {
     id("net.neoforged.moddev") version "2.0.147" apply false
+    id("net.fabricmc.fabric-loom") version "1.18.2" apply false
+    id("net.fabricmc.fabric-loom-remap") version "1.18.2" apply false
     id("multiversion")
     id("multiversion-neoform")
 }
@@ -151,6 +153,21 @@ if (srConfigsDir.exists()) {
 
         val platforms = normalizePlatforms(config)
         val suffix = normalizeTaskSuffix(versionName)
+        val cleanVersionArchivesTaskName = "cleanVersionArchives_$suffix"
+        val cleanVersionArchivesTask = tasks.register<Delete>(cleanVersionArchivesTaskName) {
+            group = "build"
+            description = "Clean SR compiler and archive outputs for Minecraft $versionName"
+            // NeoForm artifacts are shared with the outer build and must stay locked in
+            // place while the nested build configures ModDevGradle.
+            val outputDirs = (listOf("common") + platforms).flatMap { module ->
+                val dirs = listOf("classes", "resources", "libs", "test-results", "reports")
+                val loaderDirs = if (module == "common") emptyList() else listOf(
+                    "generated/jarJar", "mixin", "sourcesSets", "devlibs", "processIncludeJars",
+                )
+                (dirs + loaderDirs).map { File(rootDir, "modules/$module/build/$it") }
+            }
+            delete(outputDirs)
+        }
         val nestedBuildTaskName = "buildVersion_$suffix"
         val collectTaskName = "collectVersion_$suffix"
 
@@ -159,9 +176,10 @@ if (srConfigsDir.exists()) {
             description = "Build version $versionName"
             buildName = "superresolution_$suffix"
             dir = rootDir
-            setTasks(listOf("clean", "build"))
+            dependsOn(cleanVersionArchivesTask)
+            val buildTasks = (listOf("common") + platforms).map { ":$it:build" }
+            setTasks(buildTasks)
             startParameter.projectProperties["minecraft_version_config"] = versionName
-            startParameter.excludedTaskNames.add(":native:build")
             startParameter.isContinueOnFailure = true
             startParameter.consoleOutput = ConsoleOutput.Plain
         }

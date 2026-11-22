@@ -13,3 +13,6 @@
 [submodule "modules/native/cpp/SRNativeNGX/third_party/DLSS"]
 	path = modules/native/cpp/SRNativeNGX/third_party/DLSS
 	url = https://github.com/NVIDIA/DLSS
+[submodule "modules/wisteria"]
+	path = modules/wisteria
+	url = https://github.com/IReallyWantToSleep/Wisteria
