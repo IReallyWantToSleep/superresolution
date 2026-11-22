@@ -61,7 +61,7 @@
 
 # 有问题？
 
-在[这里](https://github.com/187J3X1-114514/superresolution/issues)打开一个issues
+在[这里](https://github.com/187J3X1-114514/superresolution/issues)打开一个issue
 
 # 赞助
 
