@@ -468,6 +468,17 @@ public final class OpenGLToVulkanInterop implements InteropImplementation<Vulkan
             return;
         }
 
+        if (!flipInteropResourcesY) {
+            // Keep the shared upscaler inputs untouched; only FG gets the capture copies' Y correction.
+            InputResourceSet inputs = dispatchResource.resources();
+            FrameCaptureManager.captureCopiedVulkanInputs(
+                    dispatchResource.frameCount(),
+                    hasDepth ? inputs.get(InputResourceType.Depth) : null,
+                    hasMotionVectors ? inputs.get(InputResourceType.MotionVectors) : null
+            );
+            return;
+        }
+
         FrameResources captureFrame = FrameCaptureManager.captureVulkanInputs(
                 dispatchResource.frameCount(),
                 hasDepth ? inFlight.vulkan(Depth) : null,

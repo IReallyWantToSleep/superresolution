@@ -103,6 +103,24 @@ public final class FrameCaptureManager {
         return frame;
     }
 
+    public static FrameResources captureCopiedVulkanInputs(
+            int logicalFrameIndex,
+            ITexture depth,
+            ITexture motionVector
+    ) {
+        if (!isInitialized() || !isWorldFrame()) {
+            return null;
+        }
+        FrameResources frame = beginFrame(logicalFrameIndex);
+        if (depth != null) {
+            frame.copyDepth(depth);
+        }
+        if (motionVector != null) {
+            frame.copyMotionVector(motionVector);
+        }
+        return frame;
+    }
+
     public static FrameResources finishFrame() {
         if (!isInitialized()) {
             return null;
