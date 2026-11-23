@@ -26,6 +26,7 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 #if IS_VULKAN == 1
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.core.graphics.vulkan.VulkanExternalTexture;
 #endif
 
 import java.util.List;
@@ -42,6 +43,11 @@ public class ShaderCompatTextureInfo {
     #if IS_VULKAN == 1
     private ITexture internalTexture;
     private ITexture processedTexture;
+    /** The Iris image limited to the input region, when the region starts at the origin. */
+    private VulkanExternalTexture regionView;
+    private VulkanExternalTexture regionViewSource;
+    /** Whether this frame's input is {@link #regionView}, read in place instead of copied. */
+    private boolean readInPlace;
     #else
     private GlTexture2D internalTexture;
     private GlTexture2D processedTexture;
@@ -82,6 +88,11 @@ public class ShaderCompatTextureInfo {
         if (!isOutput && canUseSourceTextureDirectly()) {
             return getSourceTexture();
         }
+        #if IS_VULKAN == 1
+        if (readInPlace) {
+            return regionView;
+        }
+        #endif
         return internalTexture;
     }
 
@@ -120,6 +131,25 @@ public class ShaderCompatTextureInfo {
     }
 
     public void updateTexture() {
+        updateTexture(false);
+    }
+
+    /**
+     * Brings this frame's input up to date: copies the region out of the Iris image, unless the
+     * input can be read where it is.
+     *
+     * @param allowReadInPlace whether every reader of this input this frame addresses texels from
+     *                         the origin, as the upscale interop and the frame-generation captures
+     *                         do. On Minecraft's Vulkan backend such an input with a region that
+     *                         starts at the origin is then read through a region-sized view of the
+     *                         Iris image instead of a per-frame copy. Pass false when a
+     *                         pre-processing pass reads it, since that may sample with normalized
+     *                         coordinates, which a view of the larger image would scale.
+     */
+    public void updateTexture(boolean allowReadInPlace) {
+        #if IS_VULKAN == 1
+        readInPlace = false;
+        #endif
         ITexture sourceTexture = getSourceTexture();
         if (sourceTexture == null) return;
 
@@ -132,6 +162,12 @@ public class ShaderCompatTextureInfo {
         if (!isOutput && canUseSourceTextureDirectly()) {
             return;
         }
+        #if IS_VULKAN == 1
+        if (allowReadInPlace && !isOutput && updateRegionView(sourceTexture, resolvedRegion)) {
+            readInPlace = true;
+            return;
+        }
+        #endif
 
         if (internalTexture == null) {
             createInternalTexture(width, height);
@@ -156,6 +192,21 @@ public class ShaderCompatTextureInfo {
             );
         }
     }
+
+    #if IS_VULKAN == 1
+    /** Points {@link #regionView} at the region of the current Iris image; false if it can't be. */
+    private boolean updateRegionView(ITexture sourceTexture, int[] region) {
+        if (region[0] != 0 || region[1] != 0 || !(sourceTexture instanceof VulkanExternalTexture source)) {
+            return false;
+        }
+        if (regionView == null || regionViewSource != source
+                || regionView.getWidth() != region[2] || regionView.getHeight() != region[3]) {
+            regionView = source.originRegion(region[2], region[3]);
+            regionViewSource = source;
+        }
+        return true;
+    }
+    #endif
 
     public void createInternalTexture(int width, int height) {
         ITexture sourceTexture = getSourceTexture();
@@ -235,6 +286,12 @@ public class ShaderCompatTextureInfo {
             internalTexture = null;
         }
         destroyProcessedTexture();
+        #if IS_VULKAN == 1
+        // The view owns nothing; the Iris image belongs to Iris.
+        regionView = null;
+        regionViewSource = null;
+        readInPlace = false;
+        #endif
     }
 
     private void awaitOwnedTextureUsers() {

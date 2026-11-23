@@ -150,6 +150,19 @@ public final class FrameResources {
         motionVector.copyFrom(source, true);
     }
 
+    /** Same result as {@link #copyDepth} and {@link #copyMotionVector}, in one pass on Vulkan. */
+    void copyDepthAndMotionVector(ITexture depthSource, ITexture motionVectorSource) {
+        requireWritable();
+        trackCaptureSubmission();
+        if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            FrameTextureResource.copyNativeVulkanDepthAndMotionVector(
+                    depth, depthSource, motionVector, motionVectorSource);
+        } else {
+            depth.copyFrom(depthSource, false);
+            motionVector.copyFrom(motionVectorSource, true);
+        }
+    }
+
     void borrowDepth(
             VulkanTexture vkTexture,
             GlImportableTexture2D glTexture,

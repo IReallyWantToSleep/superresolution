@@ -424,4 +424,63 @@ public class VulkanExternalTexture implements ITexture, VulkanLayoutTracked {
         }
         destroyed = true;
     }
+
+    /**
+     * This image limited to its top-left {@code regionWidth} x {@code regionHeight} texels, for
+     * readers that address texels from the origin (texelFetch, image copies from offset zero). It
+     * reports the region's size, shares this texture's tracked state, so barriers recorded
+     * through either one account for the other's accesses, and owns nothing.
+     */
+    public VulkanExternalTexture originRegion(int regionWidth, int regionHeight) {
+        if (regionWidth == width && regionHeight == height) {
+            return this;
+        }
+        if (regionWidth < 1 || regionHeight < 1 || regionWidth > width || regionHeight > height) {
+            throw new IllegalArgumentException("Region " + regionWidth + "x" + regionHeight
+                    + " does not fit a " + width + "x" + height + " texture");
+        }
+        return new OriginRegion(this, regionWidth, regionHeight);
+    }
+
+    private static final class OriginRegion extends VulkanExternalTexture {
+        private final VulkanExternalTexture parent;
+
+        private OriginRegion(VulkanExternalTexture parent, int width, int height) {
+            super(parent.device, parent.image, parent.imageView, false, parent.format, parent.type,
+                    width, height, parent.mipLevels, parent.getCurrentLayout(), parent.fixedLayout, parent.usages);
+            this.parent = parent;
+        }
+
+        @Override
+        public int getCurrentLayout() {
+            return parent.getCurrentLayout();
+        }
+
+        @Override
+        public void setCurrentLayout(int layout) {
+            parent.setCurrentLayout(layout);
+        }
+
+        @Override
+        public VulkanResourceState getCurrentResourceState() {
+            return parent.getCurrentResourceState();
+        }
+
+        @Override
+        public void setCurrentResourceState(VulkanResourceState state) {
+            parent.setCurrentResourceState(state);
+        }
+
+        @Override
+        public void transitionImageLayout(VulkanCommandBuffer commandBuffer, int newLayout, int srcStageMask,
+                                          int dstStageMask, int srcAccessMask, int dstAccessMask) {
+            parent.transitionImageLayout(commandBuffer, newLayout, srcStageMask, dstStageMask,
+                    srcAccessMask, dstAccessMask);
+        }
+
+        @Override
+        public void destroy() {
+            destroyed = true;
+        }
+    }
 }

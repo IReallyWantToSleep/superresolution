@@ -46,6 +46,8 @@ import java.lang.reflect.Method;
 #if MC_VER == MC_26_3 && IS_VULKAN == 1
 import com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder;
 import io.homo.superresolution.common.mixin.core.accessor.VulkanCommandEncoderAccessor;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 
 import static org.lwjgl.vulkan.VK13.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
 #endif
@@ -275,6 +277,40 @@ public final class B3DVulkanBridge {
         recording.accept(new B3DVulkanCommandBuffer(RenderSystem.getDevice().createCommandEncoder()));
         #else
         throw new UnsupportedOperationException("Minecraft Vulkan recording requires the Vulkan 26.3 configuration");
+        #endif
+    }
+
+    /**
+     * Opens a GPU timing region in Minecraft's command buffer that is being recorded. Returns
+     * the slot for {@link #endGpuRegion}, or -1 when GPU timing is off. Render thread only, and
+     * outside a render pass.
+     */
+    public static int beginGpuRegion(String name) {
+        #if MC_VER == MC_26_3 && IS_VULKAN == 1
+        VulkanTimestampProfiler profiler = RenderSystems.vulkan().device().timestampProfiler();
+        if (profiler == null) {
+            return -1;
+        }
+        return profiler.beginRegionAfterPriorWork(
+                ((VulkanCommandEncoderAccessor) createCommandEncoder()).currentCommandBuffer(), name);
+        #else
+        return -1;
+        #endif
+    }
+
+    /**
+     * Closes a region from {@link #beginGpuRegion}. The closing timestamp goes into the command
+     * buffer recorded now, which is a newer one if Minecraft submitted in between.
+     */
+    public static void endGpuRegion(int slot) {
+        #if MC_VER == MC_26_3 && IS_VULKAN == 1
+        if (slot < 0) {
+            return;
+        }
+        VulkanTimestampProfiler profiler = RenderSystems.vulkan().device().timestampProfiler();
+        if (profiler != null) {
+            profiler.endRegion(((VulkanCommandEncoderAccessor) createCommandEncoder()).currentCommandBuffer(), slot);
+        }
         #endif
     }
 

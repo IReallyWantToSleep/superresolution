@@ -6,7 +6,10 @@ import io.homo.superresolution.api.interop.InteropResourceDescription;
 import io.homo.superresolution.api.interop.InteropResourceRequirement;
 import io.homo.superresolution.api.interop.InteropResourceType;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.perf.PerformanceTracker;
 import io.homo.superresolution.common.upscale.DispatchResource;
+import io.homo.superresolution.core.RenderSystems;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureFormat;
 import io.homo.superresolution.srapi.SRRenderApiType;
@@ -137,7 +140,7 @@ public abstract class InteropAlgorithm<C extends InteropCommandContext> extends 
                 if (prepared.commandContext().api() != executionApi()) {
                     throw new IllegalStateException("Dispatch command context API does not match algorithm");
                 }
-                success = dispatchAlgorithm(prepared);
+                success = timedDispatchAlgorithm(prepared);
             } catch (RuntimeException | Error failure) {
                 dispatchFailure = failure;
                 throw failure;
@@ -168,6 +171,30 @@ public abstract class InteropAlgorithm<C extends InteropCommandContext> extends 
             throw failure;
         } finally {
             operationInProgress = false;
+        }
+    }
+
+    /** Times the provider's own GPU work when it records into a Vulkan command buffer. */
+    private boolean timedDispatchAlgorithm(InteropDispatchResource<C> prepared) {
+        if (!(prepared.commandContext() instanceof VulkanCommandContext vulkanContext)) {
+            return dispatchAlgorithm(prepared);
+        }
+        VulkanTimestampProfiler profiler = RenderSystems.vulkan().device().timestampProfiler();
+        int slot = profiler == null ? -1 : profiler.beginRegionAfterPriorWork(
+                vulkanContext.nativeCommandBuffer(), PerformanceTracker.VK_UPSCALE_PROVIDER);
+        boolean success = false;
+        try {
+            success = dispatchAlgorithm(prepared);
+            return success;
+        } finally {
+            if (slot >= 0) {
+                if (success) {
+                    profiler.endRegion(vulkanContext.nativeCommandBuffer(), slot);
+                } else {
+                    // A failed dispatch may reset the recording instead of submitting it.
+                    profiler.cancelRegion(slot);
+                }
+            }
         }
     }
 

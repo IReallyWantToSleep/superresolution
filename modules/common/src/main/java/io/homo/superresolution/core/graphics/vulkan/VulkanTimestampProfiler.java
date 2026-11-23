@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.graphics.vulkan;
 
+import io.homo.superresolution.common.perf.FrameRateLog;
 import io.homo.superresolution.common.perf.PerformanceTracker;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkCommandBuffer;
@@ -55,6 +56,9 @@ public final class VulkanTimestampProfiler implements AutoCloseable {
     private final boolean[] slotPending = new boolean[MAX_REGIONS];
     private final boolean[] slotClosed = new boolean[MAX_REGIONS];
     private final int[] slotPolls = new int[MAX_REGIONS];
+    /** The last timestamps read from each slot, to recognize them if they are read again. */
+    private final long[] lastStart = new long[MAX_REGIONS];
+    private final long[] lastEnd = new long[MAX_REGIONS];
     private int cursor;
     private boolean destroyed;
 
@@ -119,6 +123,19 @@ public final class VulkanTimestampProfiler implements AutoCloseable {
      * the matching {@code endRegion}).
      */
     public synchronized int beginRegion(VkCommandBuffer commandBuffer, String name) {
+        return beginRegion(commandBuffer, name, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+    }
+
+    /**
+     * Opens a region in the middle of a command buffer that already holds other work, such as
+     * Minecraft's frame. The opening timestamp waits for that earlier work to finish, so the
+     * region measures only the commands recorded after it, not the tail of the work before.
+     */
+    public synchronized int beginRegionAfterPriorWork(VkCommandBuffer commandBuffer, String name) {
+        return beginRegion(commandBuffer, name, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT);
+    }
+
+    private int beginRegion(VkCommandBuffer commandBuffer, String name, int startStage) {
         if (destroyed || commandBuffer == null || name == null) {
             return -1;
         }
@@ -130,7 +147,7 @@ public final class VulkanTimestampProfiler implements AutoCloseable {
         // Reset and both writes live in one submission, so the pool never needs a host
         // reset and a slot can be recycled as soon as its results have been read.
         vkCmdResetQueryPool(commandBuffer, queryPool, base, 2);
-        vkCmdWriteTimestamp(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, queryPool, base);
+        vkCmdWriteTimestamp(commandBuffer, startStage, queryPool, base);
         slotNames[slot] = name;
         slotPending[slot] = true;
         slotClosed[slot] = false;
@@ -212,11 +229,22 @@ public final class VulkanTimestampProfiler implements AutoCloseable {
                 }
                 long start = results.get(0);
                 long end = results.get(1);
+                if (start == lastStart[slot] && end == lastEnd[slot]) {
+                    // The reset that opens the region is recorded in its command buffer, so until
+                    // the GPU runs it the queries still hold the slot's previous region, and report
+                    // them as available. Those values were read already, and a new region's
+                    // timestamps are always later, so equal values mean it has not run yet.
+                    if (++slotPolls[slot] > ABANDONED_POLL_LIMIT) {
+                        releaseSlot(slot);
+                    }
+                    continue;
+                }
+                lastStart[slot] = start;
+                lastEnd[slot] = end;
                 if (end > start) {
-                    PerformanceTracker.submitExternalGpuSample(
-                            slotNames[slot],
-                            (long) ((end - start) * timestampPeriodNanos)
-                    );
+                    long nanos = (long) ((end - start) * timestampPeriodNanos);
+                    PerformanceTracker.submitExternalGpuSample(slotNames[slot], nanos);
+                    FrameRateLog.onGpuSample(slotNames[slot], nanos);
                 }
                 releaseSlot(slot);
             }

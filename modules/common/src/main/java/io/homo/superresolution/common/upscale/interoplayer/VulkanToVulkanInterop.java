@@ -62,10 +62,8 @@ public final class VulkanToVulkanInterop extends VulkanInputInterop<VulkanComman
                 return;
             }
             restoreGeneral(recording.commands(), recording.states());
-            int output = recordOutput(recording.commands(), recording.states());
-            restoreGeneral(recording.commands(), recording.states());
             recording.commands().end();
-            publishOutput(output);
+            publishOutput(0);
         } catch (RuntimeException | Error failure) {
             throw failure;
         }
@@ -94,6 +92,12 @@ public final class VulkanToVulkanInterop extends VulkanInputInterop<VulkanComman
 
     @Override
     protected void initializeExecution() {
+    }
+
+    @Override
+    protected boolean publishesExecutionOutput() {
+        // The provider records into Minecraft's command buffer, on Minecraft's queue.
+        return true;
     }
 
     @Override

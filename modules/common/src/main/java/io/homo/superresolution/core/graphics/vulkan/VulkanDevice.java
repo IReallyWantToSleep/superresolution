@@ -851,12 +851,12 @@ public class VulkanDevice implements IDevice {
     }
 
     /**
-     * GPU timing for Vulkan-side work, or {@code null} when detailed profiling is off or
-     * the driver cannot write timestamps on this queue. Created lazily so a normal session
-     * never allocates the query pool.
+     * GPU timing for Vulkan-side work, or {@code null} when neither detailed profiling nor the
+     * frame-rate log is on, or the driver cannot write timestamps on this queue. Created lazily
+     * so a normal session never allocates the query pool.
      */
     public synchronized VulkanTimestampProfiler timestampProfiler() {
-        if (!SuperResolutionConfig.isEnableDetailedProfiling()) {
+        if (!SuperResolutionConfig.isEnableDetailedProfiling() && !SuperResolutionConfig.isLogFrameRate()) {
             return null;
         }
         if (!timestampProfilerResolved) {

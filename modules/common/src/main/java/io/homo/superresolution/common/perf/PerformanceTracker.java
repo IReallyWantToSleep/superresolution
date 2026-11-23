@@ -27,6 +27,10 @@ import java.util.Arrays;
 
 public class PerformanceTracker {
     public static final String VK_UPSCALE = "VK Upscale";
+    /** The provider's own evaluation (DLSS, for example) inside {@link #VK_UPSCALE}. */
+    public static final String VK_UPSCALE_PROVIDER = "VK Upscale Provider";
+    /** Frame-generation input captures recorded into Minecraft's Vulkan frame. */
+    public static final String VK_FRAME_CAPTURE = "VK Frame Capture";
     public static final String VK_FRAME_GEN = "VK FrameGen";
     public static final String VK_PRESENT_BLIT = "VK Present Blit";
     public static final String GL_INTEROP_FLIP = "GL Interop Flip";
@@ -47,6 +51,8 @@ public class PerformanceTracker {
         // VulkanTimestampProfiler, the GL ones from the interop/capture passes. Registered
         // up front so submitExternalGpuSample only ever writes into an existing context.
         addExternalGpuOperation(VK_UPSCALE);
+        addExternalGpuOperation(VK_UPSCALE_PROVIDER);
+        addExternalGpuOperation(VK_FRAME_CAPTURE);
         addExternalGpuOperation(VK_FRAME_GEN);
         addExternalGpuOperation(VK_PRESENT_BLIT);
         addOperation(GL_INTEROP_FLIP);

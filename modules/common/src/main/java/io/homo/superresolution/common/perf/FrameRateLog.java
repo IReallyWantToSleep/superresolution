@@ -25,6 +25,7 @@ import io.homo.superresolution.common.lowlatency.LowLatency;
 import io.homo.superresolution.common.minecraft.handler.RenderHandlerManager;
 import net.minecraft.client.Minecraft;
 
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -59,6 +60,23 @@ public final class FrameRateLog {
     private static Object world;
     private static long worldStartNanos;
     private static String lastSetup;
+
+    // GPU time of SR's own Vulkan work, from VulkanTimestampProfiler.collect on the render thread.
+    // The samples land a few frames after the work, so a total over the interval divided by its
+    // frames is the per-frame cost.
+    private static final String[] GPU_REGIONS = {
+            PerformanceTracker.VK_UPSCALE,
+            PerformanceTracker.VK_UPSCALE_PROVIDER,
+            PerformanceTracker.VK_FRAME_CAPTURE,
+            PerformanceTracker.VK_FRAME_GEN,
+            PerformanceTracker.VK_PRESENT_BLIT
+    };
+    private static final String[] GPU_LABELS = {
+            "upscale", "provider", "capture", "frame generation", "present blit"
+    };
+    private static final int GPU_UPSCALE = 0;
+    private static final int GPU_PROVIDER = 1;
+    private static final long[] gpuNanos = new long[GPU_REGIONS.length];
 
     // Present threads, under PRESENT_LOCK.
     private static int realPresents;
@@ -161,6 +179,19 @@ public final class FrameRateLog {
         }
     }
 
+    /** Records the GPU time of one timed region of SR's Vulkan work. Render thread. */
+    public static void onGpuSample(String region, long nanos) {
+        if (!enabled) {
+            return;
+        }
+        for (int i = 0; i < GPU_REGIONS.length; i++) {
+            if (GPU_REGIONS[i].equals(region)) {
+                gpuNanos[i] += nanos;
+                return;
+            }
+        }
+    }
+
     private static void start(long now) {
         lastSetup = null;
         synchronized (PRESENT_LOCK) {
@@ -182,6 +213,7 @@ public final class FrameRateLog {
         latencyMicros = 0L;
         submitReports = 0;
         submitMicros = 0L;
+        Arrays.fill(gpuNanos, 0L);
     }
 
     private static void resetPresents() {
@@ -241,8 +273,28 @@ public final class FrameRateLog {
             line.append(format(latencyReports > 0 ? ", submit->GPU end %.1f ms" : " | submit->GPU end %.1f ms",
                     submitMicros / 1000.0 / submitReports));
         }
+        appendGpuTimes(line);
         line.append(world == null ? " | no world" : format(" | world %d s", (now - worldStartNanos) / 1_000_000_000L));
         SuperResolution.LOGGER.info(PREFIX + "{}", line);
+    }
+
+    /** Appends e.g. {@code | SR GPU per frame: upscale 2.10 ms (provider 1.62), capture 0.31 ms}. */
+    private static void appendGpuTimes(StringBuilder line) {
+        double frameCount = Math.max(frames, 1);
+        boolean any = false;
+        for (int i = 0; i < GPU_REGIONS.length; i++) {
+            // The provider runs inside the upscale region, so it is shown as a part of it.
+            boolean nestedProvider = i == GPU_PROVIDER && gpuNanos[GPU_UPSCALE] != 0L;
+            if (gpuNanos[i] == 0L || nestedProvider) {
+                continue;
+            }
+            line.append(any ? ", " : " | SR GPU per frame: ");
+            line.append(format("%s %.2f ms", GPU_LABELS[i], gpuNanos[i] / 1e6 / frameCount));
+            if (i == GPU_UPSCALE && gpuNanos[GPU_PROVIDER] != 0L) {
+                line.append(format(" (%s %.2f)", GPU_LABELS[GPU_PROVIDER], gpuNanos[GPU_PROVIDER] / 1e6 / frameCount));
+            }
+            any = true;
+        }
     }
 
     private static String describeSetup() {

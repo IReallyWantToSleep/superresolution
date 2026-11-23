@@ -209,10 +209,14 @@ public final class FrameCaptureManager {
         }
         FrameResources frame = beginFrame(dispatch.frameCount());
         InputResourceSet resources = dispatch.resources();
-        if (resources.has(InputResourceType.Depth)) {
+        boolean hasDepth = resources.has(InputResourceType.Depth);
+        boolean hasMotionVectors = resources.has(InputResourceType.MotionVectors);
+        if (hasDepth && hasMotionVectors) {
+            frame.copyDepthAndMotionVector(
+                    resources.get(InputResourceType.Depth), resources.get(InputResourceType.MotionVectors));
+        } else if (hasDepth) {
             frame.copyDepth(resources.get(InputResourceType.Depth));
-        }
-        if (resources.has(InputResourceType.MotionVectors)) {
+        } else if (hasMotionVectors) {
             frame.copyMotionVector(resources.get(InputResourceType.MotionVectors));
         }
     }

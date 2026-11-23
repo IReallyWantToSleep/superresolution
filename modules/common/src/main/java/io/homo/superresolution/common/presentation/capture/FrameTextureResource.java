@@ -37,6 +37,7 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanTexture;
 import io.homo.superresolution.core.graphics.vulkan.VulkanExternalTexture;
 import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 import io.homo.superresolution.core.graphics.vulkan.VulkanResourceState;
+import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.VkMemoryBarrier;
 import org.lwjgl.vulkan.VkImageMemoryBarrier;
@@ -257,14 +258,11 @@ final class FrameTextureResource {
     }
 
     private void copyNativeVulkan(ITexture source, boolean motionVector) {
-        if (!(source instanceof VulkanTexture) && !(source instanceof VulkanExternalTexture)) {
-            throw new IllegalArgumentException("Minecraft Vulkan capture requires a Vulkan texture");
-        }
-        TextureFormat format = source.getTextureFormat().isDepth()
-                ? TextureFormat.R32F : nativeStorageFormat(source.getTextureFormat());
-        ensureOwned(source.getWidth(), source.getHeight(), format);
+        requireNativeVulkanSource(source);
+        ensureOwned(source.getWidth(), source.getHeight(), nativeCaptureFormat(source));
         B3DVulkanBridge.recordCommands(commands -> {
             VulkanCommandBuffer vkCommands = (VulkanCommandBuffer) commands;
+            int gpuRegion = beginCaptureGpuRegion(vkCommands);
             // Minecraft keeps its images in GENERAL and owns their state tracking.
             // Cover game writes before the read and return the read dependency to it.
             nativeMemoryBarrier(vkCommands);
@@ -280,8 +278,74 @@ final class FrameTextureResource {
             }
             restoreSnapshotForConsumers(vkCommands);
             nativeMemoryBarrier(vkCommands);
+            endCaptureGpuRegion(vkCommands, gpuRegion);
         });
         valid = true;
+    }
+
+    /**
+     * Captures depth and motion vectors on Minecraft's Vulkan device in one compute pass, so the
+     * pair costs one dispatch and one set of barriers in Minecraft's frame instead of two. Each
+     * output is written exactly as {@link #copyFrom} would write it.
+     */
+    static void copyNativeVulkanDepthAndMotionVector(
+            FrameTextureResource depth, ITexture depthSource,
+            FrameTextureResource motionVector, ITexture motionVectorSource
+    ) {
+        requireTexture2D(depthSource);
+        requireTexture2D(motionVectorSource);
+        requireNativeVulkanSource(depthSource);
+        requireNativeVulkanSource(motionVectorSource);
+        depth.ensureOwned(depthSource.getWidth(), depthSource.getHeight(), nativeCaptureFormat(depthSource));
+        motionVector.ensureOwned(motionVectorSource.getWidth(), motionVectorSource.getHeight(),
+                nativeCaptureFormat(motionVectorSource));
+        // A depth-format source goes through the depth slot (R32F); any other format through the
+        // color slot, which keeps it, as copyNativeVulkan does.
+        boolean depthFormat = depthSource.getTextureFormat().isDepth();
+        B3DVulkanBridge.recordCommands(commands -> {
+            VulkanCommandBuffer vkCommands = (VulkanCommandBuffer) commands;
+            int gpuRegion = beginCaptureGpuRegion(vkCommands);
+            nativeMemoryBarrier(vkCommands);
+            InteropResourcesPreprocessor.processInputTextures(commands,
+                    depthFormat ? null : depthSource, depthFormat ? null : depth.vkTexture,
+                    depthFormat ? depthSource : null, depthFormat ? depth.vkTexture : null,
+                    motionVectorSource, motionVector.vkTexture,
+                    null, null, null, true);
+            depth.restoreSnapshotForConsumers(vkCommands);
+            motionVector.restoreSnapshotForConsumers(vkCommands);
+            nativeMemoryBarrier(vkCommands);
+            endCaptureGpuRegion(vkCommands, gpuRegion);
+        });
+        depth.valid = true;
+        motionVector.valid = true;
+    }
+
+    private static TextureFormat nativeCaptureFormat(ITexture source) {
+        return source.getTextureFormat().isDepth()
+                ? TextureFormat.R32F : nativeStorageFormat(source.getTextureFormat());
+    }
+
+    private static void requireNativeVulkanSource(ITexture source) {
+        if (!(source instanceof VulkanTexture) && !(source instanceof VulkanExternalTexture)) {
+            throw new IllegalArgumentException("Minecraft Vulkan capture requires a Vulkan texture");
+        }
+    }
+
+    private static int beginCaptureGpuRegion(VulkanCommandBuffer commands) {
+        VulkanTimestampProfiler profiler = commands.getDevice() instanceof VulkanDevice vulkanDevice
+                ? vulkanDevice.timestampProfiler() : null;
+        return profiler == null ? -1
+                : profiler.beginRegionAfterPriorWork(commands.getNativeCommandBuffer(), PerformanceTracker.VK_FRAME_CAPTURE);
+    }
+
+    private static void endCaptureGpuRegion(VulkanCommandBuffer commands, int slot) {
+        if (slot < 0 || !(commands.getDevice() instanceof VulkanDevice vulkanDevice)) {
+            return;
+        }
+        VulkanTimestampProfiler profiler = vulkanDevice.timestampProfiler();
+        if (profiler != null) {
+            profiler.endRegion(commands.getNativeCommandBuffer(), slot);
+        }
     }
 
     /**

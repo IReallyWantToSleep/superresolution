@@ -366,9 +366,11 @@ public class IrisShaderCompatUpscaleDispatcher {
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
             syncIrisForExternalCommands();
             B3DVulkanBridge.memoryBarrier();
+            int gpuRegion = B3DVulkanBridge.beginGpuRegion(PerformanceTracker.VK_UPSCALE);
             try {
                 dispatchConfiguredUpscale(compositeRenderer, pass);
             } finally {
+                B3DVulkanBridge.endGpuRegion(gpuRegion);
                 B3DVulkanBridge.memoryBarrier();
             }
             return;
@@ -385,9 +387,10 @@ public class IrisShaderCompatUpscaleDispatcher {
      * <ul>
      *     <li>finish held render work and apply Iris's deferred clears, so they cannot leave stale
      *     inputs or wipe SR's output when a later pass loads that target;</li>
-     *     <li>invalidate mipmaps and record SR's all-command memory reads and writes in Iris's
-     *     access planner, so Iris synchronizes its next access against them.</li>
+     *     <li>record SR's all-command memory reads and writes in Iris's access planner, so Iris
+     *     synchronizes its next access against them.</li>
      * </ul>
+     * The targets SR writes are reported to Iris after the copy ({@link #markWrittenForIris}).
      */
     private static void syncIrisForExternalCommands() {
         RenderBackend backend = Iris.getRenderBackend();
@@ -395,7 +398,6 @@ public class IrisShaderCompatUpscaleDispatcher {
             var encoder = (VulkanCommandEncoder) B3DVulkanBridge.createCommandEncoder();
             ((VulkanWorldPassAccess) encoder).iris$flushRenderPass();
             vulkanBackend.textures.flush(encoder);
-            vulkanBackend.textures.invalidateMipmaps();
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 long stages = VK13.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
                 long access = VK13.VK_ACCESS_2_MEMORY_READ_BIT | VK13.VK_ACCESS_2_MEMORY_WRITE_BIT;
@@ -408,6 +410,17 @@ public class IrisShaderCompatUpscaleDispatcher {
                         )
                 );
             }
+        }
+    }
+
+    /**
+     * Tells Iris that SR wrote this target, so Iris regenerates its mipmaps before a later pass
+     * samples them. Only the targets SR writes are reported: clearing Iris's whole mipmap cache
+     * made it regenerate the mipmaps of every texture that a later pass asked for, written or not.
+     */
+    private static void markWrittenForIris(ITexture target) {
+        if (Iris.getRenderBackend() instanceof VulkanRenderBackend vulkanBackend) {
+            vulkanBackend.textures.written(target.handle());
         }
     }
     #endif
@@ -536,17 +549,18 @@ public class IrisShaderCompatUpscaleDispatcher {
             #if IS_VULKAN == 0
             GlDebug.pushGroup(64108436, "SRUpscale-CopyInput");
             #endif
+            // An input that no pre-processing pass reads may be read in place (see updateTexture).
             if (colorTexture != null) {
-                colorTexture.updateTexture();
+                colorTexture.updateTexture(!needsPreProcessColor);
             }
             if (depthTexture != null) {
-                depthTexture.updateTexture();
+                depthTexture.updateTexture(!needsPreProcessDepth);
             }
             if (motionVectorsTexture != null) {
-                motionVectorsTexture.updateTexture();
+                motionVectorsTexture.updateTexture(!needsPreProcessMotionVectors);
             }
             if (exposureTexture != null) {
-                exposureTexture.updateTexture();
+                exposureTexture.updateTexture(!needsPreProcessExposure);
             }
             updateSupplementalInputTextures(currentConfig, compositeRenderer, pass, needUpdate);
             #if IS_VULKAN == 0
@@ -769,14 +783,17 @@ public class IrisShaderCompatUpscaleDispatcher {
                             B3DVulkanBridge.recordCommands(cb -> RenderSystems.vulkan().device().blitColor(
                                     (VulkanCommandBuffer) cb,
                                     sourceTexture, targetTexture, targetRegion[0], targetRegion[1]));
-                            continue;
+                        } else {
+                            B3DVulkanBridge.recordCommands(cb -> cb.copyTexture(
+                                    sourceTexture, targetTexture, 0, 0,
+                                    sourceTexture.getWidth(), sourceTexture.getHeight(), 0,
+                                    targetRegion[0], targetRegion[1],
+                                    targetRegion[0] + targetRegion[2],
+                                    targetRegion[1] + targetRegion[3], 0));
                         }
-                        B3DVulkanBridge.recordCommands(cb -> cb.copyTexture(
-                                sourceTexture, targetTexture, 0, 0,
-                                sourceTexture.getWidth(), sourceTexture.getHeight(), 0,
-                                targetRegion[0], targetRegion[1],
-                                targetRegion[0] + targetRegion[2],
-                                targetRegion[1] + targetRegion[3], 0));
+                        #if MC_VER == MC_26_3
+                        markWrittenForIris(targetTexture);
+                        #endif
                     }
                 }
             }

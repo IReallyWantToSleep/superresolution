@@ -59,6 +59,17 @@ abstract class VulkanInputInterop<C extends InteropCommandContext> implements In
     protected void awaitExecution() {
     }
 
+    /**
+     * Whether the provider's output image itself is published as the algorithm output, instead
+     * of a copy in {@link #sourceOutputs}. That is possible when the provider runs on Minecraft's
+     * queue: everything that reads the published output is recorded after the dispatch and
+     * before the next one, in queue order, so nothing still reads it when the next dispatch
+     * writes it. That saves a full-resolution copy per frame and the two copy images.
+     */
+    protected boolean publishesExecutionOutput() {
+        return false;
+    }
+
     @Override
     public final void initialize(InitializationDescription description,
                                  List<InteropResourceRequirement> requirements) {
@@ -152,6 +163,10 @@ abstract class VulkanInputInterop<C extends InteropCommandContext> implements In
             InteropResourceDescription description = entry.getValue();
             TextureUsages usages = TextureUsages.create();
             usages.getUsages().addAll(description.usages());
+            if (entry.getKey() == OutputColor && publishesExecutionOutput()) {
+                // Readers copy or blit the published output, which needs transfer-source usage.
+                usages.transferSource();
+            }
             ITexture texture = allocateExecution(entry.getKey(), TextureDescription.create()
                     .type(TextureType.Texture2D).width(description.width()).height(description.height())
                     .format(description.format()).usages(usages)
@@ -159,18 +174,22 @@ abstract class VulkanInputInterop<C extends InteropCommandContext> implements In
             executionTextures.put(entry.getKey(), texture);
         }
         InteropResourceDescription output = layout.resources().get(OutputColor);
-        for (int i = 0; i < sourceOutputs.length; i++) {
-            sourceOutputs[i] = (VulkanTexture) vulkanDevice.createTexture(TextureDescription.create()
-                    .type(TextureType.Texture2D).width(output.width()).height(output.height())
-                    .format(output.format()).usages(TextureUsages.create().sampler().storage()
-                            .transferSource().transferDestination())
-                    .label("VulkanInterop-SourceOutput-" + i).build());
+        if (!publishesExecutionOutput()) {
+            for (int i = 0; i < sourceOutputs.length; i++) {
+                sourceOutputs[i] = (VulkanTexture) vulkanDevice.createTexture(TextureDescription.create()
+                        .type(TextureType.Texture2D).width(output.width()).height(output.height())
+                        .format(output.format()).usages(TextureUsages.create().sampler().storage()
+                                .transferSource().transferDestination())
+                        .label("VulkanInterop-SourceOutput-" + i).build());
+            }
         }
         builtLayout = layout;
         publishedSource = -1;
         unusable = false;
         resourceAccess = new InteropResourceAccess(inputApi(), executionApi(), executionTextures,
-                layout.resources(), sourceOutputs[0], executionDevice());
+                layout.resources(),
+                publishesExecutionOutput() ? executionTextures.get(OutputColor) : sourceOutputs[0],
+                executionDevice());
     }
 
     protected final void requireReady() {
@@ -190,7 +209,9 @@ abstract class VulkanInputInterop<C extends InteropCommandContext> implements In
     protected final void rememberExecution(VulkanInteropState states) {
         vulkanTextures.values().forEach(states::remember);
         for (VulkanTexture texture : sourceOutputs) {
-            states.remember(texture);
+            if (texture != null) {
+                states.remember(texture);
+            }
         }
     }
 
@@ -243,7 +264,10 @@ abstract class VulkanInputInterop<C extends InteropCommandContext> implements In
 
     @Override
     public final ITexture outputTexture() {
-        return publishedSource < 0 ? null : sourceOutputs[publishedSource];
+        if (publishedSource < 0) {
+            return null;
+        }
+        return publishesExecutionOutput() ? executionTextures.get(OutputColor) : sourceOutputs[publishedSource];
     }
 
     @Override
