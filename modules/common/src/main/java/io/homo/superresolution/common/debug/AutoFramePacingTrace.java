@@ -33,6 +33,11 @@ import java.util.concurrent.CompletableFuture;
  * <p>Warmup counts from the first frame with a loaded level. After recording for
  * {@code duration} seconds the CSV is exported like the ImGui "Stop & Export" button does,
  * and with {@code exit=true} the game quits once the export has finished.</p>
+ *
+ * <p>A still camera never leaves the state it settles in, so two keys disturb the run the way
+ * play does: {@code turn=DEGREES} turns the player by that much over 0.3 s every
+ * {@code every=SECONDS} (default 3), which changes the GPU load at once, and {@code hitch=MS}
+ * stalls the render thread for that long at the same moments.</p>
  */
 public final class AutoFramePacingTrace {
     private static final Settings SETTINGS = Settings.parse(System.getenv("SR_AUTO_TRACE"));
@@ -42,6 +47,9 @@ public final class AutoFramePacingTrace {
     private static Object framerateLimitTracker;
     private static Method reportInput;
     private static boolean inputReportUnavailable;
+    private static long levelEnteredAtNanos;
+    private static long lastFrameNanos;
+    private static long disturbances;
 
     private AutoFramePacingTrace() {
     }
@@ -53,6 +61,7 @@ public final class AutoFramePacingTrace {
         }
         Minecraft minecraft = Minecraft.getInstance();
         keepOutOfAfk(minecraft);
+        disturb(minecraft);
         long elapsedNanos = System.nanoTime() - phaseStartedAtNanos;
         switch (state) {
             case WAITING_FOR_LEVEL -> {
@@ -60,6 +69,7 @@ public final class AutoFramePacingTrace {
                     return;
                 }
                 keepRenderingWhenUnfocused(minecraft);
+                levelEnteredAtNanos = System.nanoTime();
                 enterPhase(State.WARMUP);
                 SuperResolution.LOGGER.info("Auto frame-pacing trace: level loaded, warming up for {}s",
                         SETTINGS.warmupSeconds());
@@ -147,6 +157,37 @@ public final class AutoFramePacingTrace {
         }
     }
 
+    private static final long TURN_NANOS = 300_000_000L;
+
+    // Turns the player and stalls the render thread on a fixed schedule from the level's first
+    // frame, so that runs compare.
+    private static void disturb(Minecraft minecraft) {
+        if (levelEnteredAtNanos == 0L || minecraft.player == null
+                || (SETTINGS.turnDegrees() == 0.0 && SETTINGS.hitchMillis() == 0L)) {
+            return;
+        }
+        long now = System.nanoTime();
+        long previous = lastFrameNanos;
+        lastFrameNanos = now;
+        long periodNanos = SETTINGS.everySeconds() * 1_000_000_000L;
+        long sinceLevel = now - levelEnteredAtNanos;
+        long phase = sinceLevel % periodNanos;
+        if (SETTINGS.turnDegrees() != 0.0 && previous != 0L && phase < TURN_NANOS) {
+            double share = Math.min(now - previous, TURN_NANOS) / (double) TURN_NANOS;
+            // Entity.turn scales its arguments by 0.15.
+            minecraft.player.turn(SETTINGS.turnDegrees() * share / 0.15, 0.0);
+        }
+        long index = sinceLevel / periodNanos;
+        if (SETTINGS.hitchMillis() > 0L && index > disturbances) {
+            disturbances = index;
+            try {
+                Thread.sleep(SETTINGS.hitchMillis());
+            } catch (InterruptedException exception) {
+                Thread.currentThread().interrupt();
+            }
+        }
+    }
+
     private enum State {
         WAITING_FOR_LEVEL,
         WARMUP,
@@ -155,7 +196,10 @@ public final class AutoFramePacingTrace {
         DONE
     }
 
-    private record Settings(long warmupSeconds, long durationSeconds, boolean exit) {
+    private record Settings(
+            long warmupSeconds, long durationSeconds, boolean exit,
+            double turnDegrees, long hitchMillis, long everySeconds
+    ) {
         static Settings parse(String value) {
             if (value == null || value.isBlank()) {
                 return null;
@@ -163,6 +207,9 @@ public final class AutoFramePacingTrace {
             long warmup = 20L;
             long duration = 10L;
             boolean exit = false;
+            double turn = 0.0;
+            long hitch = 0L;
+            long every = 3L;
             for (String entry : value.split(",")) {
                 String[] pair = entry.trim().split("=", 2);
                 String key = pair[0].trim();
@@ -171,12 +218,16 @@ public final class AutoFramePacingTrace {
                     case "warmup" -> warmup = Long.parseLong(setting);
                     case "duration" -> duration = Long.parseLong(setting);
                     case "exit" -> exit = Boolean.parseBoolean(setting);
+                    case "turn" -> turn = Double.parseDouble(setting);
+                    case "hitch" -> hitch = Long.parseLong(setting);
+                    case "every" -> every = Math.max(1L, Long.parseLong(setting));
                     default -> SuperResolution.LOGGER.warn("Ignoring unknown SR_AUTO_TRACE key '{}'", key);
                 }
             }
-            SuperResolution.LOGGER.info("Auto frame-pacing trace enabled: warmup={}s duration={}s exit={}",
-                    warmup, duration, exit);
-            return new Settings(warmup, duration, exit);
+            SuperResolution.LOGGER.info(
+                    "Auto frame-pacing trace enabled: warmup={}s duration={}s exit={} turn={} hitch={}ms every={}s",
+                    warmup, duration, exit, turn, hitch, every);
+            return new Settings(warmup, duration, exit, turn, hitch, every);
         }
     }
 }
