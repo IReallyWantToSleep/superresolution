@@ -824,7 +824,10 @@ public class SuperResolutionConfig {
     }
 
     public static boolean isLiquidGlassEnabled() {
-        return LIQUID_GLASS_ENABLED.get();
+        // A native library without liquid glass draws plain panels; the rest of the UI then uses
+        // the ordinary theme instead of the glass-only dark one.
+        return LIQUID_GLASS_ENABLED.get()
+                && io.homo.superresolution.thirdparty.nanovg.NanoVGContext.isLiquidGlassAvailable();
     }
 
     public static void setLiquidGlassEnabled(boolean value) {

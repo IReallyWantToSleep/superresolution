@@ -456,18 +456,61 @@ public class NanoVGContext implements AutoCloseable {
                 10f / 255f, 11f / 255f, 15f / 255f, 95f / 255f, 0.32f);
     }
 
+    /**
+     * Whether the loaded native library can draw liquid glass. False once a draw found the JNI
+     * function missing, as in a native library built before liquid glass was added (the shipped
+     * Linux library of 2026-11-17 lacked it and opening the settings screen crashed the game).
+     */
+    public static boolean isLiquidGlassAvailable() {
+        return liquidGlassAvailable;
+    }
+
+    private static volatile boolean liquidGlassAvailable = true;
+
     public void roundedRectLiquidGlass(float x, float y, float w, float h,
                                       float bottomLeft, float bottomRight, float topLeft, float topRight,
                                       float lightAngle, float lightIntensity, float refraction,
                                       float depth, float dispersion, float frost,
                                       float brightness, float contrast, float saturation, float alpha,
                                       float tintRed, float tintGreen, float tintBlue, float tintAlpha, float legibility) {
-        if (nRoundedRectLiquidGlass(nativeHandle, x, y, w, h,
-                bottomLeft, bottomRight, topLeft, topRight,
-                lightAngle, lightIntensity, refraction, depth, dispersion, frost,
-                brightness, contrast, saturation, alpha,
-                tintRed, tintGreen, tintBlue, tintAlpha, legibility) == 0) {
+        int queued;
+        if (liquidGlassAvailable) {
+            try {
+                queued = nRoundedRectLiquidGlass(nativeHandle, x, y, w, h,
+                        bottomLeft, bottomRight, topLeft, topRight,
+                        lightAngle, lightIntensity, refraction, depth, dispersion, frost,
+                        brightness, contrast, saturation, alpha,
+                        tintRed, tintGreen, tintBlue, tintAlpha, legibility);
+            } catch (UnsatisfiedLinkError missing) {
+                liquidGlassAvailable = false;
+                org.slf4j.LoggerFactory.getLogger("SuperResolution/NanoVG").warn(
+                        "The native library has no liquid glass ({}); drawing plain panels instead."
+                                + " Rebuild the native library to get liquid glass back.", missing.getMessage());
+                fillPlainPanel(x, y, w, h, bottomLeft, bottomRight, topLeft, topRight,
+                        tintRed, tintGreen, tintBlue, Math.max(tintAlpha, 0.6f) * alpha);
+                return;
+            }
+        } else {
+            fillPlainPanel(x, y, w, h, bottomLeft, bottomRight, topLeft, topRight,
+                    tintRed, tintGreen, tintBlue, Math.max(tintAlpha, 0.6f) * alpha);
+            return;
+        }
+        if (queued == 0) {
             throw new IllegalStateException("Failed to queue NanoVG liquid glass draw");
+        }
+    }
+
+    private void fillPlainPanel(float x, float y, float w, float h,
+                                float bottomLeft, float bottomRight, float topLeft, float topRight,
+                                float red, float green, float blue, float alpha) {
+        save();
+        try (NanoVGColor color = colorRGBAf(red, green, blue, alpha)) {
+            beginPath();
+            roundedRectVarying(x, y, w, h, topLeft, topRight, bottomRight, bottomLeft);
+            fillColor(color);
+            fill();
+        } finally {
+            restore();
         }
     }
 
