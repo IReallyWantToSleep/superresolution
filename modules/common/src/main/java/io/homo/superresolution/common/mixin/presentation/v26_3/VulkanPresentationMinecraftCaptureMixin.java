@@ -16,6 +16,7 @@ import com.mojang.renderpearl.api.device.GpuSurface;
 import com.mojang.renderpearl.api.device.SurfaceException;
 import com.mojang.renderpearl.api.textures.GpuTextureView;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.debug.GpuHangWatchdog;
 import io.homo.superresolution.common.lowlatency.FrameStartScheduler;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
@@ -75,6 +76,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
                 && B3DVulkanBridge.isB3DVulkanBackend()) {
             FrameCaptureManager.onMinecraftCommandsSubmitted();
             FrameStartScheduler.onFrameSubmitted();
+            GpuHangWatchdog.onMinecraftSubmitted(GameFrameIndex.current());
             PresentationBackendManager.endMinecraftFrame();
         }
     }

@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.common.presentation.vulkan;
 
+import io.homo.superresolution.common.debug.GpuHangWatchdog;
 import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispatchCompletion;
 import io.homo.superresolution.common.lowlatency.FrameStartScheduler;
 import io.homo.superresolution.common.perf.FramePacingTrace;
@@ -177,6 +178,8 @@ final class PresentWorker {
                 try {
                     image.submission = swapchain.submitPresentBlit(image.target, image.image, waits, signals);
                     image.rendered = true;
+                    GpuHangWatchdog.record(GpuHangWatchdog.Queue.PRESENT,
+                            real ? "blit real" : "blit generated", batch.frameResources().logicalFrameIndex(), 0L);
                 } catch (VulkanDevice.SubmissionTicketPublicationException exception) {
                     image.rendered = true;
                     if (batch.gpuReadyFences().size() != 0) {
@@ -337,6 +340,9 @@ final class PresentWorker {
             long waitStart = System.nanoTime();
             if (image.submission.awaitCompletion(GPU_READY_TIMEOUT_NANOS)) {
                 long readyNanos = System.nanoTime();
+                GpuHangWatchdog.record(GpuHangWatchdog.Queue.PRESENT,
+                        image.image.kind() == PresentImage.Kind.GENERATED ? "blit done generated" : "blit done real",
+                        batch.frameResources().logicalFrameIndex(), 0L);
                 // The last generated image's blit waits for frame generation, so when the wait
                 // actually blocked, its end is when frame generation finished this frame.
                 if (image.image.kind() == PresentImage.Kind.GENERATED
@@ -381,6 +387,8 @@ final class PresentWorker {
         long presentEnd = System.nanoTime();
         long blockedNanos = presentEnd - presentStart;
         boolean generated = image.image.kind() == PresentImage.Kind.GENERATED;
+        GpuHangWatchdog.record(GpuHangWatchdog.Queue.PRESENT, generated ? "presented generated" : "presented real",
+                batch.frameResources().logicalFrameIndex(), result);
         FrameRateLog.onPresent(generated, blockedNanos);
         if (!generated) {
             FrameRateLog.onRealFrameShown(presentEnd - batch.producerTimeNanos());

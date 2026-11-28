@@ -19,6 +19,7 @@
 package io.homo.superresolution.core.graphics.vulkan;
 
 import io.homo.superresolution.common.config.SuperResolutionConfig;
+import io.homo.superresolution.common.debug.VulkanHangBisect;
 import io.homo.superresolution.core.graphics.impl.buffer.BufferDescription;
 import io.homo.superresolution.core.graphics.impl.buffer.IBuffer;
 import io.homo.superresolution.core.graphics.impl.command.CommandPoolFlags;
@@ -856,7 +857,8 @@ public class VulkanDevice implements IDevice {
      * so a normal session never allocates the query pool.
      */
     public synchronized VulkanTimestampProfiler timestampProfiler() {
-        if (!SuperResolutionConfig.isEnableDetailedProfiling() && !SuperResolutionConfig.isLogFrameRate()) {
+        if (!SuperResolutionConfig.isEnableDetailedProfiling()
+                && !(SuperResolutionConfig.isLogFrameRate() && VulkanHangBisect.GPU_TIMERS)) {
             return null;
         }
         if (!timestampProfilerResolved) {

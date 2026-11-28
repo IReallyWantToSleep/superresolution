@@ -45,6 +45,8 @@ import java.util.function.Consumer;
 import java.lang.reflect.Method;
 #if MC_VER == MC_26_3 && IS_VULKAN == 1
 import com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder;
+import com.mojang.renderpearl.backend.vulkan.checkpoints.CheckpointExtension;
+import io.homo.superresolution.common.debug.VulkanHangBisect;
 import io.homo.superresolution.common.mixin.core.accessor.VulkanCommandEncoderAccessor;
 import io.homo.superresolution.core.RenderSystems;
 import io.homo.superresolution.core.graphics.vulkan.VulkanTimestampProfiler;
@@ -281,6 +283,26 @@ public final class B3DVulkanBridge {
     }
 
     /**
+     * Records a GPU checkpoint into Minecraft's command buffer that is being recorded. On device
+     * loss Minecraft's crash report names the last checkpoint that reached the top and the bottom
+     * of the pipe, so checkpoints around SR's steps show which step the GPU stopped in. Shown as
+     * {@code BEGIN_RENDER_PASS}/{@code END_RENDER_PASS} with the label. Render thread only;
+     * a no-op off Minecraft's Vulkan backend or with {@code -Dsr.vk.checkpoints=false}.
+     */
+    public static void checkpoint(boolean begin, String label) {
+        #if MC_VER == MC_26_3 && IS_VULKAN == 1
+        if (!VulkanHangBisect.CHECKPOINTS || !isB3DVulkanBackend()) {
+            return;
+        }
+        var encoder = (VulkanCommandEncoderAccessor) createCommandEncoder();
+        encoder.checkpointStorage().recordCheckpoint(encoder.currentCommandBuffer(),
+                begin ? CheckpointExtension.CheckpointType.BEGIN_RENDER_PASS
+                        : CheckpointExtension.CheckpointType.END_RENDER_PASS,
+                () -> label);
+        #endif
+    }
+
+    /**
      * Opens a GPU timing region in Minecraft's command buffer that is being recorded. Returns
      * the slot for {@link #endGpuRegion}, or -1 when GPU timing is off. Render thread only, and
      * outside a render pass.
@@ -352,6 +374,37 @@ public final class B3DVulkanBridge {
                 timeline.submitSemaphore(), timeline.currentSubmitIndex());
         #else
         throw new UnsupportedOperationException("Minecraft Vulkan capture requires the Vulkan 26.3 configuration");
+        #endif
+    }
+
+    /**
+     * Minecraft's submit timeline semaphore and the value its latest submission signals. Render
+     * thread, right after Minecraft submitted. Null off the Vulkan 26.3 configuration.
+     */
+    public static long[] minecraftSubmitTimeline() {
+        #if MC_VER == MC_26_3 && IS_VULKAN == 1
+        var timeline = (VulkanCommandEncoderAccessor) createCommandEncoder();
+        return new long[]{timeline.submitSemaphore(), timeline.currentSubmitIndex() - 1L};
+        #else
+        return null;
+        #endif
+    }
+
+    /**
+     * Minecraft's GPU checkpoints on its graphics queue, formatted as in its device-lost crash
+     * report: the last marker each pipeline stage passed. NVIDIA returns them on a hung device
+     * that the driver has not marked lost yet, too.
+     */
+    public static String gpuCheckpointReport() {
+        #if MC_VER == MC_26_3 && IS_VULKAN == 1
+        Object backend = backend();
+        if (!(backend instanceof com.mojang.renderpearl.backend.vulkan.VulkanDevice device)) {
+            return "(not Minecraft's Vulkan backend)";
+        }
+        return com.mojang.renderpearl.backend.vulkan.VulkanUtils.formatCheckpoints(
+                device.checkpointExtension().retrieveCheckpoints(true));
+        #else
+        return "(unavailable)";
         #endif
     }
 

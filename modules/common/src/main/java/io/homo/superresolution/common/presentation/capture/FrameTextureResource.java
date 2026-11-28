@@ -260,8 +260,11 @@ final class FrameTextureResource {
     private void copyNativeVulkan(ITexture source, boolean motionVector) {
         requireNativeVulkanSource(source);
         ensureOwned(source.getWidth(), source.getHeight(), nativeCaptureFormat(source));
+        String checkpoint = source.getTextureFormat().isDepth() ? "SR FG capture depth"
+                : motionVector ? "SR FG capture motion vectors" : "SR FG capture color";
         B3DVulkanBridge.recordCommands(commands -> {
             VulkanCommandBuffer vkCommands = (VulkanCommandBuffer) commands;
+            B3DVulkanBridge.checkpoint(true, checkpoint);
             int gpuRegion = beginCaptureGpuRegion(vkCommands);
             // Minecraft keeps its images in GENERAL and owns their state tracking.
             // Cover game writes before the read and return the read dependency to it.
@@ -279,6 +282,7 @@ final class FrameTextureResource {
             restoreSnapshotForConsumers(vkCommands);
             nativeMemoryBarrier(vkCommands);
             endCaptureGpuRegion(vkCommands, gpuRegion);
+            B3DVulkanBridge.checkpoint(false, checkpoint);
         });
         valid = true;
     }
@@ -304,6 +308,7 @@ final class FrameTextureResource {
         boolean depthFormat = depthSource.getTextureFormat().isDepth();
         B3DVulkanBridge.recordCommands(commands -> {
             VulkanCommandBuffer vkCommands = (VulkanCommandBuffer) commands;
+            B3DVulkanBridge.checkpoint(true, "SR FG capture depth+motion vectors");
             int gpuRegion = beginCaptureGpuRegion(vkCommands);
             nativeMemoryBarrier(vkCommands);
             InteropResourcesPreprocessor.processInputTextures(commands,
@@ -315,6 +320,7 @@ final class FrameTextureResource {
             motionVector.restoreSnapshotForConsumers(vkCommands);
             nativeMemoryBarrier(vkCommands);
             endCaptureGpuRegion(vkCommands, gpuRegion);
+            B3DVulkanBridge.checkpoint(false, "SR FG capture depth+motion vectors");
         });
         depth.valid = true;
         motionVector.valid = true;

@@ -20,6 +20,7 @@ package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.api.registry.framegeneration.*;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.debug.GpuHangWatchdog;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.common.perf.PerformanceTracker;
@@ -380,6 +381,9 @@ final class FrameGenerationWorker {
                     lastFence = submitProviderWork(buffers.get(index), waits, stages, signals,
                             captureTimeline, captureValue);
                     submittedCount++;
+                    GpuHangWatchdog.record(GpuHangWatchdog.Queue.FRAME_GENERATION,
+                            index == 0 ? "submit (waits value)" : "submit", work.frameResources().logicalFrameIndex(),
+                            captureValue);
                     FrameGenerationDispatchCompletion completion = GpuReadyFences.completion(buffers.get(index));
                     if (outputSignals != 0) {
                         completions[index] = completion;
@@ -517,6 +521,8 @@ final class FrameGenerationWorker {
             batch.output().release();
         }
         batch.gpuReadyFences().release();
+        GpuHangWatchdog.record(GpuHangWatchdog.Queue.FRAME_GENERATION, "batch released",
+                batch.frameResources().logicalFrameIndex(), 0L);
     }
 
     private long acquireSemaphore() {

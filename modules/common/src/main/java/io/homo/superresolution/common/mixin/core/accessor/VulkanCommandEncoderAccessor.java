@@ -20,6 +20,7 @@ package io.homo.superresolution.common.mixin.core.accessor;
 
 #if MC_VER >= MC_26_3
 import com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder;
+import com.mojang.renderpearl.backend.vulkan.checkpoints.CheckpointExtension;
 import org.lwjgl.vulkan.VkCommandBuffer;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.gen.Accessor;
@@ -37,6 +38,10 @@ public interface VulkanCommandEncoderAccessor {
     /** Submit index of the recording in progress; its submission signals this value. */
     @Accessor(value = "currentSubmitIndex")
     long currentSubmitIndex();
+
+    /** Where the encoder records the GPU checkpoints its device-lost report prints. */
+    @Accessor(value = "checkpointStorage")
+    CheckpointExtension.CheckpointStorage checkpointStorage();
 }
 #else
 import net.minecraft.client.Minecraft;

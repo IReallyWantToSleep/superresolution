@@ -23,6 +23,7 @@ import io.homo.superresolution.api.InputResourceType;
 import io.homo.superresolution.api.SuperResolutionAPI;
 import io.homo.superresolution.api.event.AlgorithmDispatchEvent;
 import io.homo.superresolution.common.SuperResolution;
+import io.homo.superresolution.common.debug.VulkanHangBisect;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
@@ -211,13 +212,16 @@ public final class FrameCaptureManager {
         InputResourceSet resources = dispatch.resources();
         boolean hasDepth = resources.has(InputResourceType.Depth);
         boolean hasMotionVectors = resources.has(InputResourceType.MotionVectors);
-        if (hasDepth && hasMotionVectors) {
+        if (hasDepth && hasMotionVectors && VulkanHangBisect.COMBINED_CAPTURE) {
             frame.copyDepthAndMotionVector(
                     resources.get(InputResourceType.Depth), resources.get(InputResourceType.MotionVectors));
-        } else if (hasDepth) {
-            frame.copyDepth(resources.get(InputResourceType.Depth));
-        } else if (hasMotionVectors) {
-            frame.copyMotionVector(resources.get(InputResourceType.MotionVectors));
+        } else {
+            if (hasDepth) {
+                frame.copyDepth(resources.get(InputResourceType.Depth));
+            }
+            if (hasMotionVectors) {
+                frame.copyMotionVector(resources.get(InputResourceType.MotionVectors));
+            }
         }
     }
 

@@ -20,6 +20,7 @@ package io.homo.superresolution.common.lowlatency;
 
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
+import io.homo.superresolution.common.debug.GpuHangWatchdog;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.common.perf.FrameRateLog;
@@ -341,6 +342,8 @@ public final class FrameStartScheduler {
                 for (int attempt = 0; attempt < 20 && frame.doneNanos == 0L; attempt++) {
                     if (frame.completion.awaitCompletion(50_000_000L)) {
                         frame.markDone(System.nanoTime());
+                        GpuHangWatchdog.record(GpuHangWatchdog.Queue.MINECRAFT, "done", frame.frame,
+                                frame.completion.value());
                     }
                 }
             } catch (Throwable throwable) {

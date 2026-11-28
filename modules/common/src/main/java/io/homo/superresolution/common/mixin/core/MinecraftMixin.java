@@ -21,6 +21,7 @@ package io.homo.superresolution.common.mixin.core;
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.lowlatency.LowLatency;
+import io.homo.superresolution.common.debug.GpuHangWatchdog;
 import io.homo.superresolution.common.lowlatency.FrameStartScheduler;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
@@ -183,6 +184,7 @@ public abstract class MinecraftMixin {
     // frames into the surface of a destroyed window (VK_ERROR_SURFACE_LOST_KHR).
     @Inject(method = "close", at = @At("HEAD"))
     private void super_resolution$retirePresentation(CallbackInfo ci) {
+        GpuHangWatchdog.shutdown();
         PresentationBackendManager.retirePresentation();
     }
 

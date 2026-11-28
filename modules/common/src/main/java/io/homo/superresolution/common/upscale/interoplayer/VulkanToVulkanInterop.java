@@ -1,6 +1,8 @@
 package io.homo.superresolution.common.upscale.interoplayer;
 
 import io.homo.superresolution.api.interop.InteropResourceType;
+import io.homo.superresolution.common.debug.VulkanHangBisect;
+import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.upscale.DispatchResource;
 import io.homo.superresolution.core.graphics.impl.texture.ITexture;
 import io.homo.superresolution.core.graphics.impl.texture.TextureDescription;
@@ -32,6 +34,7 @@ public final class VulkanToVulkanInterop extends VulkanInputInterop<VulkanComman
         VulkanCommandContext context = new VulkanCommandContext(commands);
         try {
             rememberExecution(states);
+            B3DVulkanBridge.checkpoint(true, "SR provider inputs");
             prepareInputs(commands, states, resource.resources());
             for (Map.Entry<InteropResourceType, ITexture> entry : vulkanTextures.entrySet()) {
                 states.transition(commands, entry.getValue(),
@@ -39,6 +42,8 @@ public final class VulkanToVulkanInterop extends VulkanInputInterop<VulkanComman
                         entry.getKey().isInput() ? VK_ACCESS_SHADER_READ_BIT : VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT,
                         VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
             }
+            // Everything the provider records until completeDispatch lies between these two.
+            B3DVulkanBridge.checkpoint(true, "SR provider dispatch");
             InteropDispatchResource<VulkanCommandContext> prepared = new InteropDispatchResource<>(
                     InteropFrameData.from(resource), new InteropResourceSet(executionTextures), context);
             pending = new PendingDispatch(prepared, commands, states);
@@ -61,9 +66,16 @@ public final class VulkanToVulkanInterop extends VulkanInputInterop<VulkanComman
             if (!success) {
                 return;
             }
+            B3DVulkanBridge.checkpoint(false, "SR provider dispatch");
             restoreGeneral(recording.commands(), recording.states());
+            int output = 0;
+            if (!publishesExecutionOutput()) {
+                // The copy the provider's output went through before 6307f8a5, kept for bisecting.
+                output = recordOutput(recording.commands(), recording.states());
+                restoreGeneral(recording.commands(), recording.states());
+            }
             recording.commands().end();
-            publishOutput(0);
+            publishOutput(output);
         } catch (RuntimeException | Error failure) {
             throw failure;
         }
@@ -97,7 +109,7 @@ public final class VulkanToVulkanInterop extends VulkanInputInterop<VulkanComman
     @Override
     protected boolean publishesExecutionOutput() {
         // The provider records into Minecraft's command buffer, on Minecraft's queue.
-        return true;
+        return VulkanHangBisect.PUBLISH_PROVIDER_OUTPUT;
     }
 
     @Override

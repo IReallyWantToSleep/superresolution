@@ -25,6 +25,7 @@ import io.homo.superresolution.core.graphics.impl.texture.TextureType;
 import io.homo.superresolution.core.graphics.impl.texture.TextureUsages;
 import io.homo.superresolution.core.graphics.opengl.texture.GlTexture2D;
 #if IS_VULKAN == 1
+import io.homo.superresolution.common.debug.VulkanHangBisect;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.core.graphics.vulkan.VulkanExternalTexture;
 #endif
@@ -163,7 +164,8 @@ public class ShaderCompatTextureInfo {
             return;
         }
         #if IS_VULKAN == 1
-        if (allowReadInPlace && !isOutput && updateRegionView(sourceTexture, resolvedRegion)) {
+        if (allowReadInPlace && VulkanHangBisect.IN_PLACE_INPUTS && !isOutput
+                && updateRegionView(sourceTexture, resolvedRegion)) {
             readInPlace = true;
             return;
         }

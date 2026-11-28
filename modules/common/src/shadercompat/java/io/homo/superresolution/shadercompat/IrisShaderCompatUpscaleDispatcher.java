@@ -40,6 +40,7 @@ import io.homo.superresolution.core.graphics.vulkan.VulkanCommandBuffer;
 #endif
 #if MC_VER == MC_26_3 && IS_VULKAN == 1
 import com.mojang.renderpearl.backend.vulkan.VulkanCommandEncoder;
+import io.homo.superresolution.common.debug.VulkanHangBisect;
 import io.homo.superresolution.common.mixin.core.accessor.VulkanCommandEncoderAccessor;
 import net.irisshaders.iris.Iris;
 import net.irisshaders.iris.backend.RenderBackend;
@@ -364,14 +365,17 @@ public class IrisShaderCompatUpscaleDispatcher {
         if (!IrisShaderCompatUtils.isUpscaleEnabledForPack()) return;
         #if MC_VER == MC_26_3 && IS_VULKAN == 1
         if (B3DVulkanBridge.isB3DVulkanBackend()) {
+            B3DVulkanBridge.checkpoint(true, "SR iris sync");
             syncIrisForExternalCommands();
             B3DVulkanBridge.memoryBarrier();
+            B3DVulkanBridge.checkpoint(true, "SR upscale");
             int gpuRegion = B3DVulkanBridge.beginGpuRegion(PerformanceTracker.VK_UPSCALE);
             try {
                 dispatchConfiguredUpscale(compositeRenderer, pass);
             } finally {
                 B3DVulkanBridge.endGpuRegion(gpuRegion);
                 B3DVulkanBridge.memoryBarrier();
+                B3DVulkanBridge.checkpoint(false, "SR upscale");
             }
             return;
         }
@@ -398,6 +402,10 @@ public class IrisShaderCompatUpscaleDispatcher {
             var encoder = (VulkanCommandEncoder) B3DVulkanBridge.createCommandEncoder();
             ((VulkanWorldPassAccess) encoder).iris$flushRenderPass();
             vulkanBackend.textures.flush(encoder);
+            if (!VulkanHangBisect.MARK_WRITTEN_TARGETS) {
+                // Behaviour before markWrittenForIris, kept for bisecting.
+                vulkanBackend.textures.invalidateMipmaps();
+            }
             try (MemoryStack stack = MemoryStack.stackPush()) {
                 long stages = VK13.VK_PIPELINE_STAGE_2_ALL_COMMANDS_BIT;
                 long access = VK13.VK_ACCESS_2_MEMORY_READ_BIT | VK13.VK_ACCESS_2_MEMORY_WRITE_BIT;
@@ -419,7 +427,8 @@ public class IrisShaderCompatUpscaleDispatcher {
      * made it regenerate the mipmaps of every texture that a later pass asked for, written or not.
      */
     private static void markWrittenForIris(ITexture target) {
-        if (Iris.getRenderBackend() instanceof VulkanRenderBackend vulkanBackend) {
+        if (VulkanHangBisect.MARK_WRITTEN_TARGETS
+                && Iris.getRenderBackend() instanceof VulkanRenderBackend vulkanBackend) {
             vulkanBackend.textures.written(target.handle());
         }
     }
@@ -767,6 +776,7 @@ public class IrisShaderCompatUpscaleDispatcher {
             // Vulkan Iris targets are borrowed GENERAL-layout textures; copy them on
             // Minecraft's command encoder so no OpenGL IDs or intermediate GL image is used.
             if (B3DVulkanBridge.isB3DVulkanBackend() && outputConfig.enabled) {
+                B3DVulkanBridge.checkpoint(true, "SR output copy");
                 ITexture sourceTexture = SuperResolution.getCurrentAlgorithm().getOutputTexture();
                 for (String targetName : outputConfig.targetNames) {
                     ITexture targetTexture = IrisTextureResolver.getIrisTexture(
@@ -796,6 +806,7 @@ public class IrisShaderCompatUpscaleDispatcher {
                         #endif
                     }
                 }
+                B3DVulkanBridge.checkpoint(false, "SR output copy");
             }
             if (!B3DVulkanBridge.isB3DVulkanBackend() && outputConfig.enabled) {
                 GlDebug.pushGroup(64108436, "SRUpscale-CopyResult");
