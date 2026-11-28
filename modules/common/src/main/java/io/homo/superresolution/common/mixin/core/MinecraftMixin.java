@@ -21,6 +21,7 @@ package io.homo.superresolution.common.mixin.core;
 import com.mojang.blaze3d.platform.Window;
 import io.homo.superresolution.common.SuperResolution;
 import io.homo.superresolution.common.lowlatency.LowLatency;
+import io.homo.superresolution.common.lowlatency.FrameStartScheduler;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
 import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
@@ -92,6 +93,9 @@ public abstract class MinecraftMixin {
         if (SuperResolution.gameIsLoaded) {
             int frameIndex = GameFrameIndex.beginFrame();
             LowLatency.beginFrame(frameIndex);
+            // With frame generation on Minecraft's Vulkan backend, each frame starts so that its
+            // submission reaches the GPU as frame generation finishes the previous frame.
+            FrameStartScheduler.awaitFrameStart();
             // Tracked on its own so the Frame chart's variance can be attributed. The
             // sleep stays inside the Frame sample by design (see above), but it is a
             // latency control loop rather than render cost, and when the GPU is
@@ -99,6 +103,7 @@ public abstract class MinecraftMixin {
             PerformanceTracker.push("Reflex Sleep");
             LowLatency.sleep();
             PerformanceTracker.pop("Reflex Sleep");
+            FrameStartScheduler.onSimulationStart();
             LowLatency.beginSimulation();
         }
         if (B3DVulkanBridge.isB3DVulkanBackend()) {

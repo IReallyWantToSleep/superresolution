@@ -31,8 +31,9 @@ import java.util.Locale;
 /**
  * Logs the frame rate once a second while {@code debug/log_frame_rate} is on, so that a game
  * log shows how a session ran without a trace: rendered and shown frame rates, the slowest
- * frame, how long presents blocked, the low-latency sleep and frame cap, the driver's latency
- * reports, and the time since the world was entered. Whenever the upscaler, frame generation or
+ * frame, how long presents blocked, how long after rendering frame generation's real frames were
+ * shown, the low-latency sleep and frame cap, the driver's latency reports, and the time since
+ * the world was entered. Whenever the upscaler, frame generation or
  * low-latency setup changes, a line describing it comes first.
  *
  * <p>Frames, sleeps and latency reports are recorded on the render thread; presents arrive
@@ -51,8 +52,17 @@ public final class FrameRateLog {
     private static int frames;
     private static long maxFrameNanos;
     private static int sleeps;
+    // FrameStartScheduler: frames it scheduled, how long it held them, and its lead (how far
+    // before the previous frame's GPU end a frame starts; negative: after it).
+    private static int holds;
+    private static long holdNanos;
+    private static long maxHoldNanos;
+    private static long leadNanos;
     private static long sleepNanos;
     private static int frameLimitMicros;
+    // The Reflex frame cap's decisions over the interval, each with the cap it left.
+    private static final StringBuilder capDecisions = new StringBuilder();
+    private static int capDecisionCount;
     private static int latencyReports;
     private static long latencyMicros;
     private static int submitReports;
@@ -84,6 +94,11 @@ public final class FrameRateLog {
     private static int generatedPresents;
     private static long generatedPresentNanos;
     private static long maxPresentNanos;
+    // Frame generation's real frames, from the render thread finishing one to its present
+    // returning: the GPU work still queued ahead of it, frame generation and pacing.
+    private static int shownRealFrames;
+    private static long shownRealFrameNanos;
+    private static long maxShownRealFrameNanos;
 
     private FrameRateLog() {
     }
@@ -146,6 +161,22 @@ public final class FrameRateLog {
         }
     }
 
+    /**
+     * Records how long after the render thread finished a real frame its present returned, for
+     * frame generation's present thread. Unlike the driver's latency reports, which end at the
+     * frame's GPU work and often go missing, this covers the frame generation and pacing after it.
+     */
+    public static void onRealFrameShown(long nanosSinceRender) {
+        if (!enabled || nanosSinceRender <= 0L) {
+            return;
+        }
+        synchronized (PRESENT_LOCK) {
+            shownRealFrames++;
+            shownRealFrameNanos += nanosSinceRender;
+            maxShownRealFrameNanos = Math.max(maxShownRealFrameNanos, nanosSinceRender);
+        }
+    }
+
     /** Records how long the low-latency provider slept before a frame. Render thread. */
     public static void onLowLatencySleep(long nanos) {
         if (!enabled) {
@@ -155,9 +186,41 @@ public final class FrameRateLog {
         sleepNanos += nanos;
     }
 
+    /**
+     * Records how long the frame start scheduler held a frame, and the lead it scheduled it with,
+     * while frame generation is on. Render thread.
+     */
+    public static void onFrameStartHold(long nanos, long lead) {
+        if (!enabled) {
+            return;
+        }
+        holds++;
+        holdNanos += nanos;
+        maxHoldNanos = Math.max(maxHoldNanos, nanos);
+        leadNanos += lead;
+    }
+
     /** Records the real-frame interval the low-latency provider enforces, 0 if none. Render thread. */
     public static void onFrameLimit(int micros) {
         frameLimitMicros = micros;
+    }
+
+    /**
+     * Records one decision of the adaptive Reflex frame cap (stabilize frame rate) and the cap it
+     * left, 0 for none. Render thread.
+     */
+    public static void onFrameCapDecision(String decision, int capMicros) {
+        if (!enabled) {
+            return;
+        }
+        // A few windows end every second; the bound only guards a runaway line.
+        if (++capDecisionCount > 8) {
+            return;
+        }
+        if (capDecisions.length() > 0) {
+            capDecisions.append(", ");
+        }
+        capDecisions.append(decision).append(format(" %.1f", capMicros / 1000.0));
     }
 
     /**
@@ -207,8 +270,14 @@ public final class FrameRateLog {
         frames = 0;
         maxFrameNanos = 0L;
         sleeps = 0;
+        holds = 0;
+        holdNanos = 0L;
+        maxHoldNanos = 0L;
+        leadNanos = 0L;
         sleepNanos = 0L;
         frameLimitMicros = 0;
+        capDecisions.setLength(0);
+        capDecisionCount = 0;
         latencyReports = 0;
         latencyMicros = 0L;
         submitReports = 0;
@@ -222,6 +291,9 @@ public final class FrameRateLog {
         generatedPresents = 0;
         generatedPresentNanos = 0L;
         maxPresentNanos = 0L;
+        shownRealFrames = 0;
+        shownRealFrameNanos = 0L;
+        maxShownRealFrameNanos = 0L;
     }
 
     private static void logInterval(long now, long elapsedNanos) {
@@ -235,12 +307,18 @@ public final class FrameRateLog {
         long realNanos;
         long generatedNanos;
         long maxPresent;
+        int shown;
+        long shownNanos;
+        long maxShown;
         synchronized (PRESENT_LOCK) {
             real = realPresents;
             generated = generatedPresents;
             realNanos = realPresentNanos;
             generatedNanos = generatedPresentNanos;
             maxPresent = maxPresentNanos;
+            shown = shownRealFrames;
+            shownNanos = shownRealFrameNanos;
+            maxShown = maxShownRealFrameNanos;
             resetPresents();
         }
         double seconds = elapsedNanos / 1e9;
@@ -260,10 +338,25 @@ public final class FrameRateLog {
             }
             line.append(format(" max %.2f ms", maxPresent / 1e6));
         }
+        if (shown > 0) {
+            line.append(format(" | real shown %.1f ms after render, %.1f max",
+                    shownNanos / 1e6 / shown, maxShown / 1e6));
+        }
+        if (holds > 0) {
+            line.append(format(" | frame start held %.1f ms, %.1f max, lead %.1f ms",
+                    holdNanos / 1e6 / holds, maxHoldNanos / 1e6, leadNanos / 1e6 / holds));
+        }
         if (sleeps > 0) {
             line.append(format(" | low-latency sleep %.1f ms", sleepNanos / 1e6 / sleeps));
             if (frameLimitMicros > 0) {
                 line.append(format(", cap %.1f ms", frameLimitMicros / 1000.0));
+            }
+            if (capDecisions.length() > 0) {
+                line.append(" [").append(capDecisions);
+                if (capDecisionCount > 8) {
+                    line.append(", ...");
+                }
+                line.append(']');
             }
         }
         if (latencyReports > 0) {

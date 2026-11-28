@@ -19,6 +19,7 @@
 package io.homo.superresolution.common.presentation.vulkan;
 
 import io.homo.superresolution.api.registry.framegeneration.FrameGenerationDispatchCompletion;
+import io.homo.superresolution.common.lowlatency.FrameStartScheduler;
 import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.common.perf.FrameRateLog;
 import io.homo.superresolution.core.graphics.vulkan.VulkanDevice;
@@ -212,9 +213,13 @@ final class PresentWorker {
                 }
             }
             PresentPacer pacer = presenter.pacer;
+            // Real frames behind this batch: batches queued after it, and frames handed off but
+            // not yet through frame generation (the worker keeps the one it dispatches queued).
+            int backlogFrames = Math.max(0, presenter.presentationQueue.size() - 1)
+                    + presenter.generationQueue.size();
             try {
-                pacer.beginPresentFrameBatch(
-                        waited, batch.pacingEnabled(), batch.generatedCount(), batch.intervalNanos());
+                pacer.beginPresentFrameBatch(waited, batch.pacingEnabled(), batch.generatedCount(),
+                        batch.intervalNanos(), backlogFrames);
                 for (int position = 0; position < prepared.size(); position++) {
                     PreparedImage image = prepared.get(position);
                     if (isPaused()) {
@@ -228,7 +233,8 @@ final class PresentWorker {
                         pacer.sleepAtPresentImage(prepared.size(), position);
                         if (FramePacingTrace.INSTANCE.isRecording()) {
                             waitTrace.complete("complete",
-                                    "lead_us=" + pacer.presentLeadNanos(prepared.size(), position) / 1000L);
+                                    "lead_us=" + pacer.presentLeadNanos(prepared.size(), position) / 1000L
+                                            + " backlog=" + backlogFrames);
                         }
                     } finally {
                         waitTrace.close();
@@ -328,7 +334,17 @@ final class PresentWorker {
     private void awaitPresentable(PresentImageBatch batch, PreparedImage image) {
         FramePacingTrace.Span readyTrace = beginTrace("present_gpu_ready_wait", batch, image.image);
         try {
+            long waitStart = System.nanoTime();
             if (image.submission.awaitCompletion(GPU_READY_TIMEOUT_NANOS)) {
+                long readyNanos = System.nanoTime();
+                // The last generated image's blit waits for frame generation, so when the wait
+                // actually blocked, its end is when frame generation finished this frame.
+                if (image.image.kind() == PresentImage.Kind.GENERATED
+                        && image.image.displayIndex() == batch.images().get(batch.generatedCount() - 1).displayIndex()
+                        && readyNanos - waitStart > 200_000L) {
+                    FrameStartScheduler.onGeneratedFrameReady(
+                            batch.frameResources().logicalFrameIndex(), readyNanos);
+                }
                 presenter.pacer.imageReady();
             } else {
                 readyTrace.complete("timeout", "timeout_ms=" + GPU_READY_TIMEOUT_NANOS / 1_000_000L);
@@ -362,8 +378,13 @@ final class PresentWorker {
                         presenter.providerId()
                 )
         );
-        long blockedNanos = System.nanoTime() - presentStart;
-        FrameRateLog.onPresent(image.image.kind() == PresentImage.Kind.GENERATED, blockedNanos);
+        long presentEnd = System.nanoTime();
+        long blockedNanos = presentEnd - presentStart;
+        boolean generated = image.image.kind() == PresentImage.Kind.GENERATED;
+        FrameRateLog.onPresent(generated, blockedNanos);
+        if (!generated) {
+            FrameRateLog.onRealFrameShown(presentEnd - batch.producerTimeNanos());
+        }
         // The present was still queued for these results, so its semaphore wait executes and
         // the image goes back to the swapchain. A lost surface only reaches here as out of date
         // once presentation is retired for shutdown; during play it fails the presenter.

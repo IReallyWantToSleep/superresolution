@@ -51,6 +51,8 @@ import static org.lwjgl.vulkan.VK11.VK_FORMAT_FEATURE_TRANSFER_DST_BIT;
 
 final class VulkanSwapchain {
     private static final int MAX_IN_FLIGHT_FRAMES = 3;
+    private static final boolean PRESENT_QUEUE_OUT_OF_BAND =
+            !"false".equalsIgnoreCase(System.getProperty("sr.vk.presentQueueOutOfBand"));
     private static final int DESIRED_SWAPCHAIN_IMAGES = 3;
     // FrameGenerationMode.X6 generates up to 5 frames; each needs its own acquire.
     private static final int MAX_GENERATED_FRAMES = AsyncFramePresenter.MAX_GENERATED_FRAMES;
@@ -216,6 +218,7 @@ final class VulkanSwapchain {
             asyncFramePresenter.awaitPresentationDrain();
         }
         device.getMainQueue().waitIdle();
+        waitForDedicatedPresentQueueIdle();
         if (asyncFramePresenter != null && device.getFrameGenerationQueue() != null) {
             device.getFrameGenerationQueue().waitIdle();
         }
@@ -687,6 +690,7 @@ final class VulkanSwapchain {
         }
         asyncFramePresenter = null;
         device.getMainQueue().waitIdle();
+        waitForDedicatedPresentQueueIdle();
         if (device.getFrameGenerationQueue() != null) {
             device.getFrameGenerationQueue().waitIdle();
         }
@@ -1067,7 +1071,7 @@ final class VulkanSwapchain {
         VulkanLowLatency.renderSubmitMarker(image.latencyMarkerId(), true, true);
         try {
             VulkanDevice.IssuedSubmission issued = device.submitCommandBufferIssued(
-                    device.getMainQueue(), buffer, waits, stages, signals, 0L);
+                    presentationWorkQueue(), buffer, waits, stages, signals, 0L);
             return new PresentBlitSubmission(buffer, issued.fence(), issued.submissionTicket(),
                     buffer.submissionGeneration(), GpuReadyFences.completion(buffer));
         } catch (VulkanDevice.SubmissionTicketPublicationException exception) {
@@ -1086,7 +1090,7 @@ final class VulkanSwapchain {
         buffer.end();
         int[] stages = new int[waits.length];
         Arrays.fill(stages, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
-        long fence = device.submitCommandBuffer(device.getMainQueue(), buffer, waits, stages, signals);
+        long fence = device.submitCommandBuffer(presentationWorkQueue(), buffer, waits, stages, signals);
         return new PresentBlitSubmission(buffer, fence, 0L, buffer.submissionGeneration(),
                 GpuReadyFences.completion(buffer));
     }
@@ -1137,7 +1141,7 @@ final class VulkanSwapchain {
                     }
                 }
                 buffer.end();
-                device.submitCommandBuffer(device.getMainQueue(), buffer,
+                device.submitCommandBuffer(presentationWorkQueue(), buffer,
                         new long[]{target.acquireLease().semaphore()},
                         new int[]{VK_PIPELINE_STAGE_ALL_COMMANDS_BIT},
                         new long[]{target.renderFinishedSemaphore()});
@@ -1155,6 +1159,23 @@ final class VulkanSwapchain {
             target.acquireLease().close();
             releasePresentTarget();
         }
+    }
+
+    /**
+     * The queue for SR's presentation blits and releases: the dedicated present queue when the
+     * device has one, declared out of band to Reflex, otherwise Minecraft's queue. On Minecraft's
+     * queue the driver counted the blits as the next game frame's in-band GPU work (its GPU span
+     * began ~20 ms before its simulation, the whole stall after a long frame), which threw
+     * Reflex into ~38 ms pacing with no latency reports for seconds after a hitch.
+     * {@code -Dsr.vk.presentQueueOutOfBand=false} restores Minecraft's queue.
+     */
+    private VulkanQueue presentationWorkQueue() {
+        VulkanQueue queue = device.getDedicatedPresentQueue();
+        if (queue == null || !PRESENT_QUEUE_OUT_OF_BAND) {
+            return device.getMainQueue();
+        }
+        VulkanLowLatency.notifyPresentQueueOutOfBand(queue);
+        return queue;
     }
 
     private VulkanCommandBufferRing presentationCommandBuffers() {

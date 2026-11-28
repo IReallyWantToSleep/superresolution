@@ -84,6 +84,11 @@ final class PresentImageBatch {
         return work.realIndex();
     }
 
+    /** When the render thread finished this batch's real frame, on System.nanoTime(). */
+    long producerTimeNanos() {
+        return work.producerTimeNanos();
+    }
+
     long batchId() {
         return batchId;
     }

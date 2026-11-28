@@ -30,6 +30,9 @@ final class PresentPacer {
     private static final long MAX_PRESENT_INTERVAL_NANOS = 100_000_000L;
     private static final long FINAL_SPIN_WINDOW_NANOS = 200_000L;
     private static final long BACKLOG_CATCH_UP_DIVISOR = 8L;
+    // A batch with one real frame queued behind it runs on 3/4 of the interval, with two or more
+    // on half of it.
+    private static final long BACKLOG_ONE_FRAME_INTERVAL_NUMERATOR = 3L;
     // Batches of up to this many images get their own present block averages.
     private static final int MAX_TRACKED_BATCH_SIZE = 8;
     private static final long PRESENT_BLOCK_AVERAGE_DIVISOR = 16L;
@@ -94,8 +97,30 @@ final class PresentPacer {
     void beginPresentFrameBatch(
             boolean waited, boolean pacingEnabled, int generatedCount, long intervalNanos
     ) {
+        beginPresentFrameBatch(waited, pacingEnabled, generatedCount, intervalNanos, 0);
+    }
+
+    /**
+     * Starts presenting a batch. {@code backlogFrames} counts the real frames already queued
+     * behind it (generated or waiting for frame generation).
+     *
+     * <p>A queued frame means the presenter runs a whole frame or more behind production, and
+     * every queued frame is display latency Reflex cannot see: its in-band present is the handoff
+     * to frame generation. The interval comes from the production period, so once a backlog
+     * formed nothing drained it but the 1/16-per-frame catch-up below, and while the queues were
+     * full they throttled production to the presenter's own pace, which the period estimate then
+     * measured. Coming out of a slow stretch (43 ms frames, then 28 ms) the real frame was shown
+     * 130-210 ms after rendering for seconds instead of ~42 ms (26.3 Vulkan, DLSS-G X2). So a
+     * batch with frames queued behind it is presented on a shorter interval, which drains the
+     * queue within a few frames while still spacing the batch evenly.</p>
+     */
+    void beginPresentFrameBatch(
+            boolean waited, boolean pacingEnabled, int generatedCount, long intervalNanos, int backlogFrames
+    ) {
         beginPhase(Phase.PRESENT_FRAME_BATCH);
-        presentIntervalNanos = intervalNanos;
+        presentIntervalNanos = backlogFrames <= 0 ? intervalNanos
+                : backlogFrames == 1 ? intervalNanos * BACKLOG_ONE_FRAME_INTERVAL_NUMERATOR / 4L
+                : intervalNanos / 2L;
         beginBatch(waited, pacingEnabled, generatedCount);
     }
 

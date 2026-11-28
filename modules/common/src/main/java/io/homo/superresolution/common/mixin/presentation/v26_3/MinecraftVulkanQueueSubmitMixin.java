@@ -1,6 +1,8 @@
 package io.homo.superresolution.common.mixin.presentation.v26_3;
 
 #if MC_VER >= MC_26_3
+import io.homo.superresolution.common.perf.FramePacingTrace;
+import io.homo.superresolution.core.graphics.vulkan.VulkanLowLatency;
 import io.homo.superresolution.core.graphics.vulkan.VulkanQueue;
 import org.lwjgl.vulkan.KHRSynchronization2;
 import org.lwjgl.vulkan.VkQueue;
@@ -23,6 +25,14 @@ public abstract class MinecraftVulkanQueueSubmitMixin {
             VkSubmitInfo2.Buffer submits,
             long fence
     ) {
+        if (FramePacingTrace.INSTANCE.isRecording()) {
+            // Lines Minecraft's submissions up with the Reflex markers of the frame they belong to.
+            FramePacingTrace.INSTANCE.instant("mc_queue_submit",
+                    new FramePacingTrace.Context(-1, -1L, -1L, -1L,
+                            VulkanLowLatency.currentFramePresentId(), "", ""),
+                    "complete", "count=" + submits.remaining()
+                            + " thread=" + Thread.currentThread().getName());
+        }
         synchronized (VulkanQueue.submissionLock(queue)) {
             return KHRSynchronization2.vkQueueSubmit2KHR(queue, submits, fence);
         }

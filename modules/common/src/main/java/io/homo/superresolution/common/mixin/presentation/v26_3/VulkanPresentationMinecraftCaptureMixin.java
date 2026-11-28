@@ -16,6 +16,8 @@ import com.mojang.renderpearl.api.device.GpuSurface;
 import com.mojang.renderpearl.api.device.SurfaceException;
 import com.mojang.renderpearl.api.textures.GpuTextureView;
 import io.homo.superresolution.common.minecraft.B3DVulkanBridge;
+import io.homo.superresolution.common.lowlatency.FrameStartScheduler;
+import io.homo.superresolution.common.minecraft.GameFrameIndex;
 import io.homo.superresolution.common.presentation.PresentationBackendManager;
 import io.homo.superresolution.common.presentation.capture.FrameCaptureManager;
 import net.minecraft.client.Minecraft;
@@ -55,6 +57,8 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
         if (PresentationBackendManager.isVulkanPresentationRequested()
                 && B3DVulkanBridge.isB3DVulkanBackend()) {
             FrameCaptureManager.flushPendingFinalColor();
+            // After the flush, which may submit, so this is the frame's last submission.
+            FrameStartScheduler.onFrameSubmitting(GameFrameIndex.current());
         }
     }
 
@@ -70,6 +74,7 @@ public abstract class VulkanPresentationMinecraftCaptureMixin {
         if (PresentationBackendManager.isVulkanPresentationRequested()
                 && B3DVulkanBridge.isB3DVulkanBackend()) {
             FrameCaptureManager.onMinecraftCommandsSubmitted();
+            FrameStartScheduler.onFrameSubmitted();
             PresentationBackendManager.endMinecraftFrame();
         }
     }

@@ -22,6 +22,7 @@ import io.homo.superresolution.api.registry.lowlatency.LowLatencyMarker;
 import io.homo.superresolution.api.registry.lowlatency.LowLatencyProvider;
 import io.homo.superresolution.common.config.SuperResolutionConfig;
 import io.homo.superresolution.common.framegeneration.FrameGeneration;
+import io.homo.superresolution.common.lowlatency.FrameStartScheduler;
 import io.homo.superresolution.common.minecraft.MinecraftUtils;
 import io.homo.superresolution.common.perf.FramePacingTrace;
 import io.homo.superresolution.common.perf.FrameRateLog;
@@ -104,9 +105,15 @@ public final class NVIDIAReflexVulkanProvider implements LowLatencyProvider {
             pacingWarmupRemaining--;
             return;
         }
+        long sleepStart = System.nanoTime();
+        // Called every frame even when the frame start scheduler timed the frame: without it the
+        // driver's low-latency mode held every present for 25.7 ms (19 fps, 100 ms latency).
         VulkanLowLatency.sleep();
+        long frameStart = System.nanoTime();
         if (stabilizesFrameRate()) {
-            frameCap.onFrameStart(System.nanoTime(), userRealFrameIntervalUs() * 1000L);
+            // The frame start scheduler's hold keeps frames from queuing just as the sleep does.
+            frameCap.onFrameStart(frameStart, userRealFrameIntervalUs() * 1000L,
+                    frameStart - sleepStart + FrameStartScheduler.lastHoldNanos());
         } else {
             frameCap.reset();
         }

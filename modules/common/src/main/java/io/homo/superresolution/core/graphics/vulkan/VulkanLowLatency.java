@@ -18,6 +18,7 @@
 
 package io.homo.superresolution.core.graphics.vulkan;
 
+import io.homo.superresolution.common.perf.FramePacingTrace;
 import org.lwjgl.system.MemoryStack;
 import org.lwjgl.vulkan.KHRTimelineSemaphore;
 import org.lwjgl.vulkan.VK12;
@@ -79,6 +80,7 @@ public final class VulkanLowLatency {
     private static long claimedFramePresentId;
     private static long lastLatencyReportPresentId;
     private static boolean fgQueueOutOfBandNotified;
+    private static boolean presentQueueOutOfBandNotified;
     private static long[] legacyBatchPresentIds;
     private static int legacyBatchCursor;
     private static long legacyCurrentPresentId;
@@ -250,14 +252,35 @@ public final class VulkanLowLatency {
             if (!enabledLocked() || fgQueueOutOfBandNotified || queue == null) {
                 return;
             }
-            try (MemoryStack stack = MemoryStack.stackPush()) {
-                VkOutOfBandQueueTypeInfoNV queueTypeInfo = VkOutOfBandQueueTypeInfoNV.calloc(stack)
-                        .sType(VK_STRUCTURE_TYPE_OUT_OF_BAND_QUEUE_TYPE_INFO_NV)
-                        .queueType(VK_OUT_OF_BAND_QUEUE_TYPE_RENDER_NV);
-                synchronized (queue.submitLock()) {
-                    vkQueueNotifyOutOfBandNV(queue.getQueue(), queueTypeInfo);
-                }
-                fgQueueOutOfBandNotified = true;
+            notifyOutOfBandLocked(queue, VK_OUT_OF_BAND_QUEUE_TYPE_RENDER_NV);
+            fgQueueOutOfBandNotified = true;
+        }
+    }
+
+    /**
+     * Declares SR's dedicated present queue out of band: its blits and presents are not part of
+     * any game frame's in-band work. Without this the driver counted them as the next frame's GPU
+     * work, starting ~20 ms before that frame's simulation, and after a long frame the whole
+     * stall (a 150 ms stall read as a frame whose GPU work began 149 ms before it started).
+     * Reflex then paced every frame at ~38 ms for seconds and its latency reports stopped.
+     */
+    public static void notifyPresentQueueOutOfBand(VulkanQueue queue) {
+        synchronized (LOCK) {
+            if (!enabledLocked() || presentQueueOutOfBandNotified || queue == null) {
+                return;
+            }
+            notifyOutOfBandLocked(queue, VK_OUT_OF_BAND_QUEUE_TYPE_PRESENT_NV);
+            presentQueueOutOfBandNotified = true;
+        }
+    }
+
+    private static void notifyOutOfBandLocked(VulkanQueue queue, int queueType) {
+        try (MemoryStack stack = MemoryStack.stackPush()) {
+            VkOutOfBandQueueTypeInfoNV queueTypeInfo = VkOutOfBandQueueTypeInfoNV.calloc(stack)
+                    .sType(VK_STRUCTURE_TYPE_OUT_OF_BAND_QUEUE_TYPE_INFO_NV)
+                    .queueType(queueType);
+            synchronized (queue.submitLock()) {
+                vkQueueNotifyOutOfBandNV(queue.getQueue(), queueTypeInfo);
             }
         }
     }
@@ -577,6 +600,11 @@ public final class VulkanLowLatency {
     }
 
     private static void emitMarkerLocked(long presentId, int marker) {
+        if (FramePacingTrace.INSTANCE.isRecording()) {
+            FramePacingTrace.INSTANCE.instant("reflex_marker",
+                    new FramePacingTrace.Context(-1, -1L, -1L, -1L, presentId, "", ""),
+                    "complete", "marker=" + marker);
+        }
         try (MemoryStack stack = MemoryStack.stackPush()) {
             VkSetLatencyMarkerInfoNV markerInfo = VkSetLatencyMarkerInfoNV.calloc(stack)
                     .sType(VK_STRUCTURE_TYPE_SET_LATENCY_MARKER_INFO_NV)
@@ -610,6 +638,8 @@ public final class VulkanLowLatency {
         lastIssuedPresentId = 0L;
         claimedFramePresentId = 0L;
         lastLatencyReportPresentId = 0L;
+        fgQueueOutOfBandNotified = false;
+        presentQueueOutOfBandNotified = false;
         legacyBatchPresentIds = null;
         legacyBatchCursor = 0;
         legacyCurrentPresentId = 0L;

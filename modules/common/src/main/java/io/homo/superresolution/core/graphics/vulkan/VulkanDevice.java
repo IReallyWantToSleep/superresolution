@@ -938,7 +938,7 @@ public class VulkanDevice implements IDevice {
         if (queue == null || commandBuffer == null) {
             throw new IllegalArgumentException("queue and commandBuffer cannot be null");
         }
-        if (queue != mainQueue && queue != frameGenerationQueue) {
+        if (queue != mainQueue && queue != frameGenerationQueue && queue != presentQueue) {
             throw new IllegalArgumentException("queue is not owned by this Vulkan device");
         }
         if (!(commandBuffer.ownerPool() instanceof VulkanCommandPool ownerPool)

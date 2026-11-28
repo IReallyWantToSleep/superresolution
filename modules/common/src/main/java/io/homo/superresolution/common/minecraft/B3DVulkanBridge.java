@@ -418,5 +418,31 @@ public final class B3DVulkanBridge {
             }
             completed = true;
         }
+
+        /**
+         * Any thread: waits up to {@code timeoutNanos} for the submitted work. Returns false on
+         * timeout, on device loss (Minecraft reports that itself) or when the work was never
+         * submitted, instead of throwing.
+         */
+        public boolean awaitCompletion(long timeoutNanos) {
+            if (completed) {
+                return true;
+            }
+            if (!submitted) {
+                return false;
+            }
+            try (MemoryStack stack = MemoryStack.stackPush()) {
+                VkSemaphoreWaitInfo waitInfo = VkSemaphoreWaitInfo.calloc(stack)
+                        .sType(VK12.VK_STRUCTURE_TYPE_SEMAPHORE_WAIT_INFO)
+                        .semaphoreCount(1)
+                        .pSemaphores(stack.longs(semaphore))
+                        .pValues(stack.longs(value));
+                if (VK12.vkWaitSemaphores(device, waitInfo, timeoutNanos) != VK10.VK_SUCCESS) {
+                    return false;
+                }
+            }
+            completed = true;
+            return true;
+        }
     }
 }
