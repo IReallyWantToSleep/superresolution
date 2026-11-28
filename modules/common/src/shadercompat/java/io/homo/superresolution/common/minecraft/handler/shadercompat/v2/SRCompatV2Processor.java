@@ -80,6 +80,7 @@ public class SRCompatV2Processor implements SRCompatProcessor {
         if (
                 description.equals(AlgorithmDescriptions.FSR) ||
                         description.equals(AlgorithmDescriptions.DLSS) ||
+                        description.equals(AlgorithmDescriptions.DLSSRR) ||
                         description.equals(AlgorithmDescriptions.XESS)||
                         description.equals(AlgorithmDescriptions.FSR4_D3D12)
         ) {
@@ -120,6 +121,7 @@ public class SRCompatV2Processor implements SRCompatProcessor {
         if (
                 description.equals(AlgorithmDescriptions.FSR) ||
                         description.equals(AlgorithmDescriptions.DLSS) ||
+                        description.equals(AlgorithmDescriptions.DLSSRR) ||
                         description.equals(AlgorithmDescriptions.XESS)||
                         description.equals(AlgorithmDescriptions.FSR4_D3D12)
         ) {
